@@ -45,11 +45,11 @@
         <td>
           <div class="date-cell">
             <span [class.line-through]="order.superseded">{{ formatDate(order.timestamp) }}</span>
-            @if (order.revisedFromId && getOriginalDate(order); as d) {
-              <div class="order-ref">↳ înlocuiește: {{ d }}</div>
+            @if (order.revisedFromId) {
+              <div class="order-ref">↳ înlocuiește: {{ getAncestorChain(order) }}</div>
             }
-            @if (order.superseded && getReplacementDate(order); as d) {
-              <div class="order-ref order-ref-sup">↳ înlocuit de: {{ d }}</div>
+            @if (order.superseded) {
+              <div class="order-ref order-ref-sup">↳ înlocuit de: {{ getDescendantChain(order) }}</div>
             }
           </div>
         </td>

@@ -20,7 +20,8 @@
 /* ── Date cell with reference ── */
 .date-cell { display: flex; flex-direction: column; gap: 2px; }
 .order-ref {
-  font-size: 0.72rem; color: #1565c0; font-style: italic; white-space: nowrap;
+  font-size: 0.72rem; color: #1565c0; font-style: italic;
+  white-space: nowrap; padding-left: 1rem;
 }
 .order-ref-sup { color: #c62828; }
 

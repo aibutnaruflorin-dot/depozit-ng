@@ -50,15 +50,31 @@ export class HistoryComponent {
     return new Date(iso).toLocaleString('ro-RO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
   }
 
-  getOriginalDate(order: Order): string | null {
-    if (!order.revisedFromId) return null;
-    const orig = this.myOrders().find(o => o.id === order.revisedFromId);
-    return orig ? this.shortDate(orig.timestamp) : order.revisedFromId.slice(0, 8);
+  getAncestorChain(order: Order): string {
+    const all = this.myOrders();
+    const chain: string[] = [];
+    let cur = order;
+    for (let i = 0; i < 20; i++) {
+      if (!cur.revisedFromId) break;
+      const parent = all.find(o => o.id === cur.revisedFromId);
+      if (!parent) break;
+      chain.push(this.shortDate(parent.timestamp));
+      cur = parent;
+    }
+    return chain.join(' → ');
   }
 
-  getReplacementDate(order: Order): string | null {
-    const rep = this.myOrders().find(o => o.revisedFromId === order.id);
-    return rep ? this.shortDate(rep.timestamp) : null;
+  getDescendantChain(order: Order): string {
+    const all = this.myOrders();
+    const chain: string[] = [];
+    let cur = order;
+    for (let i = 0; i < 20; i++) {
+      const child = all.find(o => o.revisedFromId === cur.id);
+      if (!child) break;
+      chain.push(this.shortDate(child.timestamp));
+      cur = child;
+    }
+    return chain.join(' → ');
   }
 
   toggleExpand(orderId: string): void {
