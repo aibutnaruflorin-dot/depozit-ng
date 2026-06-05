@@ -49,7 +49,7 @@
 } @else {
   <div class="product-list">
     @for (p of suggestions(); track p.nr) {
-      <div class="product-row" (click)="addProduct(p)">
+      <div class="product-row">
         <div class="product-info">
           <span class="product-name">{{ p.name }}</span>
           <span class="product-meta">
@@ -57,12 +57,24 @@
             <span class="um-text">{{ p.um }}</span>
           </span>
         </div>
-        <button mat-icon-button color="primary"
-                (click)="$event.stopPropagation(); addProduct(p)"
-                [matTooltip]="isInCart(p.nr) ? 'Deja adăugat' : 'Adaugă'"
-                [disabled]="isInCart(p.nr)">
-          <mat-icon>{{ isInCart(p.nr) ? 'check_circle' : 'add_circle' }}</mat-icon>
-        </button>
+        <div class="row-actions" (click)="$event.stopPropagation()">
+          <button mat-icon-button class="qty-adj" (click)="decPending(p.nr)">
+            <mat-icon>remove</mat-icon>
+          </button>
+          <input class="row-qty" type="number" min="1"
+                 [value]="getPendingQty(p.nr)"
+                 (change)="setPendingQty(p.nr, $any($event.target).value)"
+                 (click)="$any($event.target).select()">
+          <button mat-icon-button class="qty-adj" (click)="incPending(p.nr)">
+            <mat-icon>add</mat-icon>
+          </button>
+          <button mat-flat-button class="add-btn"
+                  [class.in-cart]="isInCart(p.nr)"
+                  (click)="addProduct(p)"
+                  [matTooltip]="isInCart(p.nr) ? 'Actualizează cantitatea' : 'Adaugă în coș'">
+            <mat-icon>{{ isInCart(p.nr) ? 'check' : 'add_shopping_cart' }}</mat-icon>
+          </button>
+        </div>
       </div>
     }
   </div>

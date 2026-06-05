@@ -18,6 +18,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface CartItem { product: Product; qty: number; }
 
+// Cantități pending pentru fiecare produs din listă (înainte de adăugare)
+type NrKey = string | number;
+
 @Component({
   selector: 'app-new-order',
   standalone: true,
@@ -36,10 +39,13 @@ export class NewOrderComponent implements OnInit {
   noteCtrl  = new FormControl('');
 
   /* ── search / cart state ── */
-  searchQuery   = '';
+  searchQuery    = '';
   categoryFilter = signal('');
   cart           = signal<CartItem[]>([]);
   showCart       = signal(false);
+
+  // Cantitate selectată în rândul produsului (înainte de adăugare în coș)
+  private _pendingQty: Record<string, number> = {};
 
   /* ── submit state ── */
   submitting = false;
@@ -72,6 +78,16 @@ export class NewOrderComponent implements OnInit {
       .slice(0, 80);
   });
 
+  /* ── pending qty helpers (în rândul din listă) ── */
+  getPendingQty(nr: NrKey): number {
+    return this._pendingQty[String(nr)] ?? 1;
+  }
+  setPendingQty(nr: NrKey, val: string | number): void {
+    this._pendingQty[String(nr)] = Math.max(1, parseInt(String(val)) || 1);
+  }
+  incPending(nr: NrKey): void { this.setPendingQty(nr, this.getPendingQty(nr) + 1); }
+  decPending(nr: NrKey): void { this.setPendingQty(nr, this.getPendingQty(nr) - 1); }
+
   /* ── cart helpers ── */
   isInCart(nr: number | string): boolean {
     return this.cart().some(i => i.product.nr === nr);
@@ -81,14 +97,20 @@ export class NewOrderComponent implements OnInit {
   closeCart(): void { this.showCart.set(false); }
 
   addProduct(product: Product): void {
+    const qty = this.getPendingQty(product.nr);
     if (this.isInCart(product.nr)) {
-      this.snackBar.open(`${product.name.slice(0, 40)} este deja în coș.`, '', { duration: 1800 });
-      return;
+      // dacă e deja în coș, actualizează cantitatea
+      this.cart.update(c => c.map(i => i.product.nr === product.nr ? { ...i, qty } : i));
+      this.snackBar.open(`✓ Cantitate actualizată: ${qty} ${product.um}`, '', {
+        duration: 1500, panelClass: ['snack-success']
+      });
+    } else {
+      this.cart.update(c => [...c, { product, qty }]);
+      this.snackBar.open(`✓ ${product.name.slice(0, 40)} adăugat (${qty} ${product.um}).`, '', {
+        duration: 1500, panelClass: ['snack-success']
+      });
     }
-    this.cart.update(c => [...c, { product, qty: 1 }]);
-    this.snackBar.open(`✓ ${product.name.slice(0, 40)} adăugat.`, '', {
-      duration: 1500, panelClass: ['snack-success']
-    });
+    delete this._pendingQty[String(product.nr)];
   }
 
   updateQty(nr: number | string, val: string): void {
