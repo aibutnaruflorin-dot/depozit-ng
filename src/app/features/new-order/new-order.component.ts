@@ -123,8 +123,11 @@ export class NewOrderComponent implements OnInit {
 
   addProduct(product: Product): void {
     const pending = this.getPendingQty(product);
-    const qty     = pending > 0 ? pending : 1;
     const key     = this.pkey(product);
+    const qty     = pending > 0 ? pending : 1;
+    if (pending === 0) {
+      this._pendingQty.update(m => ({ ...m, [key]: 1 }));
+    }
     if (this.isInCart(product)) {
       this.cart.update(c => c.map(i =>
         this.pkey(i.product) === key ? { ...i, qty } : i
