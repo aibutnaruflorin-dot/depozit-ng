@@ -173,7 +173,7 @@ export class HistoryAllComponent {
           p.name, String(p.qty), p.um, status]);
       }
     }
-    this._downloadCsv([headers, ...rows], `comenzi-toate-${new Date().toISOString().slice(0, 10)}.csv`);
+    this._downloadCsv([headers, ...rows], `comenzi-toate-${new Date().toISOString().slice(0, 10)}.csv`, [4]);
   }
 
   downloadOrderCsv(order: Order, e: Event): void {
@@ -185,11 +185,14 @@ export class HistoryAllComponent {
       order.agent?.name ?? '', order.client.name, order.client.phone ?? '',
       p.name, String(p.qty), p.um, status
     ]);
-    this._downloadCsv([headers, ...rows], `comanda-${order.orderNumber ?? order.id.slice(0, 6)}.csv`);
+    this._downloadCsv([headers, ...rows], `comanda-${order.orderNumber ?? order.id.slice(0, 6)}.csv`, [4]);
   }
 
-  private _downloadCsv(rows: string[][], filename: string): void {
-    const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  private _downloadCsv(rows: string[][], filename: string, textCols: number[] = []): void {
+    const csv = rows.map((r, ri) => r.map((v, ci) => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return ri > 0 && textCols.includes(ci) ? `="${s}"` : `"${s}"`;
+    }).join(',')).join('\r\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
