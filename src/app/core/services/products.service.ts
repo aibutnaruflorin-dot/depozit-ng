@@ -1,8 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { StorageService } from './storage.service';
 import { Product, ProductMeta, AppSettings } from '../models/product.model';
-
-declare const XLSX: any;
+import * as XLSX from 'xlsx';
 
 @Injectable({ providedIn: 'root' })
 export class ProductsService {
