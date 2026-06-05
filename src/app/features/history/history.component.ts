@@ -70,7 +70,14 @@ export class HistoryComponent {
     return this.ordersService.orders().filter(o => o.agent?.id === id);
   });
 
-  readonly sortedOrders = computed(() => sortByFamily(this.myOrders()));
+  hideSuperseded = signal(true);
+
+  readonly sortedOrders = computed(() => {
+    const orders = this.hideSuperseded()
+      ? this.myOrders().filter(o => !o.superseded)
+      : this.myOrders();
+    return sortByFamily(orders);
+  });
 
   formatDate(iso: string): string {
     return new Date(iso).toLocaleString('ro-RO');

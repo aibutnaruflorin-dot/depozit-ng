@@ -72,7 +72,14 @@ export class HistoryAllComponent {
     return users.map(u => ({ id: String(u.id), name: u.name }));
   });
 
-  readonly sortedFiltered = computed(() => sortByFamily(this.filtered()));
+  hideSuperseded = signal(true);
+
+  readonly sortedFiltered = computed(() => {
+    const orders = this.hideSuperseded()
+      ? this.filtered().filter(o => !o.superseded)
+      : this.filtered();
+    return sortByFamily(orders);
+  });
 
   readonly filtered = computed(() => {
     let orders = this.ordersService.orders();

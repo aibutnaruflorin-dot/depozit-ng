@@ -1,4 +1,12 @@
-.page-header { margin-bottom: 1.5rem; }
+.page-header {
+  display: flex; align-items: center; gap: 1rem;
+  flex-wrap: wrap; margin-bottom: 1.5rem;
+}
+.toggle-superseded-btn {
+  margin-left: auto;
+  font-size: 0.82rem;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
 .page-title {
   display: flex; align-items: center; gap: 0.5rem;
   font-size: 1.5rem; font-weight: 700; margin: 0;

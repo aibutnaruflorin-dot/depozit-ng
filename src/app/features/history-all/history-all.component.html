@@ -4,6 +4,12 @@
     Toate comenzile
     <span class="count-badge">{{ filtered().length }}</span>
   </h1>
+  <button mat-stroked-button class="toggle-superseded-btn"
+          (click)="hideSuperseded.set(!hideSuperseded())"
+          [matTooltip]="hideSuperseded() ? 'Arată și comenzile înlocuite' : 'Ascunde comenzile înlocuite'">
+    <mat-icon>{{ hideSuperseded() ? 'visibility_off' : 'visibility' }}</mat-icon>
+    {{ hideSuperseded() ? 'Înlocuite ascunse' : 'Înlocuite vizibile' }}
+  </button>
 </div>
 
 <!-- Filters -->
