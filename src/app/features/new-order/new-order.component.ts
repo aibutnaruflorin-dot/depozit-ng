@@ -123,19 +123,18 @@ export class NewOrderComponent implements OnInit {
 
   addProduct(product: Product): void {
     const pending = this.getPendingQty(product);
-    const addQty  = pending > 0 ? pending : 1;   // always at least +1
+    const qty     = pending > 0 ? pending : 1;
     const key     = this.pkey(product);
     if (this.isInCart(product)) {
       this.cart.update(c => c.map(i =>
-        this.pkey(i.product) === key ? { ...i, qty: i.qty + addQty } : i
+        this.pkey(i.product) === key ? { ...i, qty } : i
       ));
-      const newQty = this.cart().find(i => this.pkey(i.product) === key)?.qty ?? addQty;
-      this.snackBar.open(`+${addQty} → total ${newQty} ${product.um}`, '', { duration: 1200, panelClass: ['snack-success'] });
+      this.snackBar.open(`Actualizat: ${qty} ${product.um}`, '', { duration: 1000, panelClass: ['snack-success'] });
     } else {
-      this.cart.update(c => [...c, { product, qty: addQty }]);
-      this.snackBar.open(`✓ Adăugat (${addQty} ${product.um})`, '', { duration: 1200, panelClass: ['snack-success'] });
+      this.cart.update(c => [...c, { product, qty }]);
+      this.snackBar.open(`Adăugat: ${qty} ${product.um}`, '', { duration: 1000, panelClass: ['snack-success'] });
     }
-    this._pendingQty.update(m => { const n = { ...m }; delete n[key]; return n; });
+    // pending qty rămâne — nu se resetează
   }
 
   updateQty(product: Product, val: string): void {

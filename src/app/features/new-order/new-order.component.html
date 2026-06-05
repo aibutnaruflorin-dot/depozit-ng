@@ -104,7 +104,7 @@
             <button class="qty-btn" (click)="incPending(p)">+</button>
             <button class="add-btn" [class.in-cart]="cart().some(i => pkey(i.product) === pkey(p))"
                     (click)="addProduct(p)"
-                    [title]="cart().some(i => pkey(i.product) === pkey(p)) ? 'Adaugă mai mult' : 'Adaugă în coș'">
+                    [title]="cart().some(i => pkey(i.product) === pkey(p)) ? 'Actualizează cantitatea în coș' : 'Adaugă în coș'">
               <mat-icon>{{ cart().some(i => pkey(i.product) === pkey(p)) ? 'check' : 'add_shopping_cart' }}</mat-icon>
             </button>
           </div>
