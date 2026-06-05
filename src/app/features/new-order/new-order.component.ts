@@ -65,6 +65,7 @@ export class NewOrderComponent implements OnInit {
 
   readonly allCatSelected = computed(() => this.selectedCatIds().length === 0);
   readonly categories     = computed(() => this.catalogsService.categoriesFor(this.selectedCatIds()));
+  displayMode = signal<'mixed' | 'grouped'>('mixed');
 
   toggleCatalog(id: string): void {
     this.selectedCatIds.update(ids =>
@@ -73,17 +74,23 @@ export class NewOrderComponent implements OnInit {
     this.categoryFilter.set('');
   }
 
+  toggleDisplayMode(): void {
+    this.displayMode.update(m => m === 'mixed' ? 'grouped' : 'mixed');
+  }
+
   readonly suggestions = computed(() => {
-    const q   = this.searchQuery.trim().toLowerCase();
-    const cat = this.categoryFilter();
+    const q    = this.searchQuery.trim().toLowerCase();
+    const cat  = this.categoryFilter();
+    const mode = this.displayMode();
     if (!q && !cat && this.selectedCatIds().length === 0) return [];
-    return this.catalogsService.productsFor(this.selectedCatIds())
-      .filter(p => {
-        const matchQ   = !q   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
-        const matchCat = !cat || p.category === cat;
-        return matchQ && matchCat;
-      })
-      .slice(0, 80);
+    const base = mode === 'grouped'
+      ? this.catalogsService.productsForGrouped(this.selectedCatIds())
+      : this.catalogsService.productsFor(this.selectedCatIds());
+    return base.filter(p => {
+      const matchQ   = !q   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
+      const matchCat = !cat || p.category === cat;
+      return matchQ && matchCat;
+    }).slice(0, 80);
   });
 
   rowBg(catalogId: string): string { return this.catalogsService.bgColor(catalogId, 0.08); }

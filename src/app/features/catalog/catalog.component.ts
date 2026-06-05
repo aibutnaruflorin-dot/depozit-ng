@@ -32,7 +32,8 @@ export class CatalogComponent implements OnInit {
   search          = signal('');
   category        = signal('');
   currentPage     = signal(0);
-  selectedCatIds  = signal<string[]>([]);   // empty = all catalogs
+  selectedCatIds  = signal<string[]>([]);
+  displayMode     = signal<'mixed' | 'grouped'>('mixed');
 
   constructor(public catalogsService: CatalogsService, private router: Router) {}
 
@@ -44,9 +45,13 @@ export class CatalogComponent implements OnInit {
   readonly categories = computed(() => this.catalogsService.categoriesFor(this.selectedCatIds()));
 
   readonly filtered = computed(() => {
-    const q   = this.search().toLowerCase();
-    const cat = this.category();
-    return this.catalogsService.productsFor(this.selectedCatIds()).filter(p => {
+    const q    = this.search().toLowerCase();
+    const cat  = this.category();
+    const mode = this.displayMode();
+    const base = mode === 'grouped'
+      ? this.catalogsService.productsForGrouped(this.selectedCatIds())
+      : this.catalogsService.productsFor(this.selectedCatIds());
+    return base.filter(p => {
       const matchQ   = !q   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
       const matchCat = !cat || p.category === cat;
       return matchQ && matchCat;
@@ -57,6 +62,8 @@ export class CatalogComponent implements OnInit {
     const start = this.currentPage() * this.PAGE_SIZE;
     return this.filtered().slice(start, start + this.PAGE_SIZE);
   });
+
+  toggleDisplayMode(): void { this.displayMode.update(m => m === 'mixed' ? 'grouped' : 'mixed'); this.currentPage.set(0); }
 
   onSearch(val: string):   void { this.search.set(val);   this.currentPage.set(0); }
   onCategory(val: string): void { this.category.set(val); this.currentPage.set(0); }

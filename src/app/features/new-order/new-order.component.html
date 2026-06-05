@@ -48,6 +48,13 @@
       }
     </mat-select>
   </mat-form-field>
+
+  <button class="mode-toggle-btn" [class.active]="displayMode() === 'grouped'"
+          (click)="toggleDisplayMode()"
+          [title]="displayMode() === 'mixed' ? 'Grupat pe cataloage' : 'Amestecat alfabetic'">
+    <mat-icon>{{ displayMode() === 'mixed' ? 'sort' : 'category' }}</mat-icon>
+    <span class="mode-label">{{ displayMode() === 'mixed' ? 'Amestecat' : 'Grupat' }}</span>
+  </button>
 </div>
 
 <!-- ══ LISTA PRODUSE ══ -->
@@ -63,17 +70,27 @@
   </div>
 } @else {
   <div class="product-list">
-    @for (p of suggestions(); track p.nr) {
+    @for (p of suggestions(); track p.nr; let i = $index) {
+      @if (displayMode() === 'grouped' && (i === 0 || suggestions()[i-1].catalogId !== p.catalogId)) {
+        @if (catalogsService.getById(p.catalogId); as cat) {
+          <div class="catalog-group-header" [style.border-left-color]="cat.color" [style.color]="cat.color">
+            <span class="cgh-dot" [style.background]="cat.color"></span>
+            {{ cat.name }}
+          </div>
+        }
+      }
       <div class="product-row"
            [style.background-color]="rowBg(p.catalogId)"
            [style.border-left-color]="rowBorder(p.catalogId)">
         <div class="product-info">
           <span class="product-name">{{ p.name }}</span>
           <span class="product-meta">
-            @if (catalogsService.getById(p.catalogId); as cat) {
-              <span class="catalog-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
-                {{ cat.name }}
-              </span>
+            @if (displayMode() === 'mixed') {
+              @if (catalogsService.getById(p.catalogId); as cat) {
+                <span class="catalog-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
+                  {{ cat.name }}
+                </span>
+              }
             }
             <span class="cat-chip">{{ p.category }}</span>
             <span class="um-text">{{ p.um }}</span>
@@ -148,8 +165,15 @@
       } @else {
         <div class="cart-items">
           @for (item of cart(); track item.product.nr) {
-            <div class="cart-item">
-              <div class="ci-name">{{ item.product.name }}</div>
+            <div class="cart-item" [style.border-left-color]="rowBorder(item.product.catalogId)">
+              <div class="ci-name">
+                {{ item.product.name }}
+                @if (catalogsService.getById(item.product.catalogId); as cat) {
+                  <span class="catalog-badge ci-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
+                    {{ cat.name }}
+                  </span>
+                }
+              </div>
               <div class="ci-controls">
                 <button mat-icon-button (click)="decrementQty(item.product.nr)">
                   <mat-icon>remove</mat-icon>

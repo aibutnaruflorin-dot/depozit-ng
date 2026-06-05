@@ -37,6 +37,16 @@ export class CatalogsService {
                .sort((a, b) => a.name.localeCompare(b.name, 'ro'));
   }
 
+  /** Products grouped by catalog order, each group sorted A-Z */
+  productsForGrouped(catalogIds: string[]): Product[] {
+    const bycat = this._productsByCat();
+    const cats  = catalogIds.length ? this._catalogs().filter(c => catalogIds.includes(c.id))
+                                    : this._catalogs();
+    return cats.flatMap(c =>
+      (bycat[c.id] || []).slice().sort((a, b) => a.name.localeCompare(b.name, 'ro'))
+    );
+  }
+
   categoriesFor(catalogIds: string[]): string[] {
     return [...new Set(this.productsFor(catalogIds).map(p => p.category).filter(Boolean))].sort();
   }
