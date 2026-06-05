@@ -8,7 +8,31 @@ export class OrdersService {
   readonly orders = this._orders.asReadonly();
 
   constructor(private storage: StorageService) {
-    this._orders.set(this.storage.get<Order[]>('app_orders') || []);
+    let orders = this.storage.get<Order[]>('app_orders') || [];
+    if (orders.some(o => !o.orderNumber)) {
+      orders = this._assignMissingNumbers(orders);
+      this.storage.set('app_orders', orders);
+    }
+    this._orders.set(orders);
+  }
+
+  private _assignMissingNumbers(orders: Order[]): Order[] {
+    const maxExisting = orders.reduce((m, o) => Math.max(m, o.orderNumber ?? 0), 0);
+    if (maxExisting === 0) {
+      // No orders have numbers yet — assign 1, 2, 3… in chronological order
+      const sorted = [...orders].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+      let n = 1;
+      const numMap = new Map(sorted.map(o => [o.id, n++]));
+      return orders.map(o => ({ ...o, orderNumber: numMap.get(o.id) }));
+    } else {
+      // Some already numbered — fill gaps for the rest, continuing from max+1
+      const unnumbered = orders
+        .filter(o => !o.orderNumber)
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+      let n = maxExisting + 1;
+      const numMap = new Map(unnumbered.map(o => [o.id, n++]));
+      return orders.map(o => numMap.has(o.id) ? { ...o, orderNumber: numMap.get(o.id)! } : o);
+    }
   }
 
   private nextOrderNumber(): number {
@@ -37,9 +61,10 @@ export class OrdersService {
     const products = order.products.map((p, i) =>
       `  ${String(i + 1).padStart(3, ' ')}. ${p.name}\n       Cantitate: ${p.qty} ${p.um} | Categorie: ${p.category}`
     ).join('\n');
+    const numLabel = order.orderNumber ? `#${order.orderNumber}` : order.id.slice(0, 8);
     const header = order.revisedFromId
-      ? [`COMANDĂ REVIZUITĂ (înlocuiește: ${order.revisedFromId})`, line]
-      : ['COMANDĂ NOUĂ', line];
+      ? [`COMANDĂ REVIZUITĂ ${numLabel}`, line]
+      : [`COMANDĂ NOUĂ ${numLabel}`, line];
     return [
       ...header,
       `Data:       ${new Date(order.timestamp).toLocaleString('ro-RO')}`,
