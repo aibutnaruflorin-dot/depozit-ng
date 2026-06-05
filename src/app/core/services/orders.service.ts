@@ -56,6 +56,20 @@ export class OrdersService {
     this._orders.set(final);
   }
 
+  acceptOrder(id: string): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id === id ? { ...o, status: 'acceptat' } : o)
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
+  cancelOrder(id: string): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id === id ? { ...o, status: 'anulat' } : o)
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
   generateText(order: Order): string {
     const line = '─'.repeat(50);
     const products = order.products.map((p, i) =>

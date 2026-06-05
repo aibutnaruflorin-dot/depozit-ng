@@ -72,9 +72,13 @@
 /* ── Expand button ── */
 .expand-btn { width: 32px; height: 32px; line-height: 32px; }
 
-/* ── Superseded row ── */
+/* ── Superseded / anulat rows ── */
 .superseded-row td {
   opacity: 0.38;
+  font-style: italic;
+}
+.anulat-row td {
+  opacity: 0.5;
   font-style: italic;
 }
 .line-through { text-decoration: line-through; }
@@ -144,6 +148,17 @@
 }
 
 .expansion-footer {
-  display: flex; gap: 0.75rem; align-items: center;
+  display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;
   border-top: 1px solid var(--color-border); padding-top: 0.75rem;
 }
+
+.btn-cancel-order {
+  background: #c62828 !important; color: #fff !important;
+  mat-icon { font-size: 18px; }
+}
+.btn-accept-order {
+  background: #2e7d32 !important; color: #fff !important;
+  mat-icon { font-size: 18px; }
+}
+
+.order-ref-accept { color: #2e7d32; }

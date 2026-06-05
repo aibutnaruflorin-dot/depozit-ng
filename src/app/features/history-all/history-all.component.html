@@ -18,21 +18,17 @@
   </div>
 </div>
 
-<!-- Date filters + reset -->
 <div class="filters-bar">
   <p-datepicker [(ngModel)]="filterDateFrom" placeholder="De la data" dateFormat="dd.mm.yy"
     [showIcon]="true" class="date-picker" />
-
   <p-datepicker [(ngModel)]="filterDateTo" placeholder="Până la data" dateFormat="dd.mm.yy"
     [showIcon]="true" class="date-picker" />
-
   <button mat-stroked-button (click)="reset()">
     <mat-icon>filter_list_off</mat-icon>
     Resetează
   </button>
 </div>
 
-<!-- Table -->
 <p-table [value]="sortedFiltered()" [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15,30,50]"
          styleClass="p-datatable-sm p-datatable-striped"
          [tableStyle]="{'min-width':'700px'}">
@@ -83,9 +79,10 @@
                   [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"
                   (click)="$event.stopPropagation()">
             <option value="">Toate</option>
-            <option value="trimis">Trimis</option>
-            <option value="Revizuit">Revizuit</option>
-            <option value="Înlocuit">Înlocuit</option>
+            <option value="În așteptare">În așteptare</option>
+            <option value="Acceptată">Acceptată</option>
+            <option value="Anulată">Anulată</option>
+            <option value="Înlocuită">Înlocuită</option>
           </select>
         </div>
       </th>
@@ -94,48 +91,57 @@
   </ng-template>
 
   <ng-template pTemplate="body" let-order>
-    <!-- ── Main row ── -->
     <tr [class.superseded-row]="order.superseded"
-        [class.family-child]="!!order.revisedFromId"
-        [class.family-member]="order.superseded || !!order.revisedFromId"
-        (click)="toggleExpand(order.id)" style="cursor:pointer">
+        [class.anulat-row]="order.status === 'anulat' && !order.superseded"
+        [class.family-child]="!!order.revisedFromId && order.status === 'trimis'"
+        [class.family-member]="order.superseded || (!!order.revisedFromId && order.status === 'trimis')"
+        (click)="isPending(order) && toggleExpand(order.id)"
+        [style.cursor]="isPending(order) ? 'pointer' : 'default'">
       <td>
-        <button mat-icon-button class="expand-btn" (click)="$event.stopPropagation(); toggleExpand(order.id)">
-          <mat-icon>{{ expandedRows()[order.id] ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
-        </button>
+        @if (isPending(order)) {
+          <button mat-icon-button class="expand-btn"
+                  (click)="$event.stopPropagation(); toggleExpand(order.id)">
+            <mat-icon>{{ expandedRows()[order.id] ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+          </button>
+        }
       </td>
       <td>
-        <span class="order-num" [class.order-num-faded]="order.superseded">
+        <span class="order-num" [class.order-num-faded]="order.superseded || order.status === 'anulat'">
           #{{ order.orderNumber ?? '?' }}
         </span>
       </td>
       <td>
         <div class="date-cell">
-          <span [class.line-through]="order.superseded">{{ formatDate(order.timestamp) }}</span>
-          @if (order.revisedFromId) {
+          <span [class.line-through]="order.superseded || order.status === 'anulat'">{{ formatDate(order.timestamp) }}</span>
+          @if (order.revisedFromId && order.status === 'trimis') {
             <div class="order-ref">↳ înlocuiește: {{ getAncestorChain(order) }}</div>
+          }
+          @if (order.status === 'acceptat' && order.revisedFromId) {
+            <div class="order-ref order-ref-accept">↳ modificat din: {{ getAncestorChain(order) }}</div>
           }
           @if (order.superseded) {
             <div class="order-ref order-ref-sup">↳ înlocuit de: {{ getDescendantChain(order) }}</div>
           }
         </div>
       </td>
-      <td><strong [class.line-through]="order.superseded">{{ order.client.name }}</strong></td>
-      <td [class.line-through]="order.superseded">{{ order.client.phone }}</td>
+      <td><strong [class.line-through]="order.superseded || order.status === 'anulat'">{{ order.client.name }}</strong></td>
+      <td [class.line-through]="order.superseded || order.status === 'anulat'">{{ order.client.phone }}</td>
       <td>{{ order.agent?.name }}</td>
       <td>{{ order.products.length }} art.</td>
       <td>
         @if (order.superseded) {
-          <p-tag value="Înlocuit" severity="danger" />
-        } @else if (order.revisedFromId) {
-          <p-tag value="Revizuit" severity="info" />
+          <p-tag value="Înlocuită" severity="danger" />
+        } @else if (order.status === 'anulat') {
+          <p-tag value="Anulată" severity="danger" />
+        } @else if (order.status === 'acceptat') {
+          <p-tag value="Acceptată" severity="success" />
         } @else {
-          <p-tag [value]="order.status" severity="success" />
+          <p-tag value="În așteptare" severity="warn" />
         }
       </td>
       <td>
         <div class="action-btns" (click)="$event.stopPropagation()">
-          <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Retrimite email">
+          <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Trimite email">
             <mat-icon>email</mat-icon>
           </button>
           <button mat-icon-button (click)="downloadOrderCsv(order, $event)" matTooltip="Descarcă comandă">
@@ -145,8 +151,8 @@
       </td>
     </tr>
 
-    <!-- ── Expansion row ── -->
-    @if (expandedRows()[order.id]) {
+    <!-- Expansion — only for pending orders -->
+    @if (expandedRows()[order.id] && isPending(order)) {
       <tr class="expansion-row">
         <td colspan="9" class="expansion-cell">
           <div class="expansion-content" (click)="$event.stopPropagation()">
@@ -175,12 +181,21 @@
               }
             </div>
             <div class="expansion-footer">
-              <button mat-flat-button color="primary" (click)="reviseOrder(order)">
-                <mat-icon>send</mat-icon>
-                Retrimite modificat
+              <button mat-flat-button class="btn-cancel-order" (click)="cancelOrder(order)">
+                <mat-icon>block</mat-icon>
+                Anulează
+              </button>
+              <button mat-flat-button class="btn-accept-order" (click)="acceptOrder(order)">
+                <mat-icon>check_circle</mat-icon>
+                Acceptă
+              </button>
+              <button mat-flat-button color="primary" (click)="finalizeOrder(order)"
+                      [disabled]="!hasQtyChanges(order)">
+                <mat-icon>edit_note</mat-icon>
+                Finalizează cu modificări
               </button>
               <button mat-stroked-button (click)="collapseRow(order.id)">
-                Anulează
+                Închide
               </button>
             </div>
           </div>

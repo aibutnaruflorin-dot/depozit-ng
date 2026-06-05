@@ -3,12 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { OrdersService, generateId } from '../../core/services/orders.service';
+import { OrdersService } from '../../core/services/orders.service';
 import { Order } from '../../core/models/order.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -46,7 +45,7 @@ function sortByFamily(orders: Order[]): Order[] {
   standalone: true,
   imports: [
     CommonModule, FormsModule, RouterModule,
-    MatButtonModule, MatIconModule, MatSelectModule, MatSnackBarModule, MatTooltipModule,
+    MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
     TableModule, TagModule
   ],
   templateUrl: './history.component.html',
@@ -54,8 +53,6 @@ function sortByFamily(orders: Order[]): Order[] {
 })
 export class HistoryComponent {
   expandedRows = signal<Record<string, boolean>>({});
-  private _editQty = signal<Record<string, number>>({});
-  readonly editQtyMap = this._editQty.asReadonly();
 
   hideSuperseded = signal(true);
   filterNr     = signal('');
@@ -88,9 +85,10 @@ export class HistoryComponent {
     if (client) orders = orders.filter(o => o.client.name.toLowerCase().includes(client));
     if (phone)  orders = orders.filter(o => (o.client.phone ?? '').includes(phone));
     if (status) orders = orders.filter(o =>
-      status === 'Revizuit' ? !!o.revisedFromId :
-      status === 'Înlocuit' ? !!o.superseded    :
-      !o.superseded && !o.revisedFromId
+      status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
+      status === 'Acceptată'    ? o.status === 'acceptat' :
+      status === 'Anulată'      ? o.status === 'anulat'   :
+      status === 'Înlocuită'    ? !!o.superseded : true
     );
 
     return sortByFamily(orders);
@@ -101,7 +99,7 @@ export class HistoryComponent {
   }
 
   shortDate(iso: string): string {
-    return new Date(iso).toLocaleString('ro-RO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return new Date(iso).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
 
   getAncestorChain(order: Order): string {
@@ -135,7 +133,8 @@ export class HistoryComponent {
     const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
     const rows: string[][] = [];
     for (const o of this.sortedOrders()) {
-      const status = o.superseded ? 'Înlocuit' : o.revisedFromId ? 'Revizuit' : o.status;
+      const status = o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
+                     o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
       for (const p of o.products) {
         rows.push([`#${o.orderNumber ?? '?'}`, this.formatDate(o.timestamp),
           o.client.name, o.client.phone ?? '', p.name, String(p.qty), p.um, status]);
@@ -146,7 +145,8 @@ export class HistoryComponent {
 
   downloadOrderCsv(order: Order, e: Event): void {
     e.stopPropagation();
-    const status = order.superseded ? 'Înlocuit' : order.revisedFromId ? 'Revizuit' : order.status;
+    const status = order.superseded ? 'Înlocuită' : order.status === 'anulat' ? 'Anulată' :
+                   order.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
     const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
     const rows = order.products.map(p => [
       `#${order.orderNumber ?? '?'}`, this.formatDate(order.timestamp),
@@ -179,56 +179,6 @@ export class HistoryComponent {
     this.expandedRows.update(m =>
       Object.fromEntries(Object.entries(m).filter(([k]) => k !== orderId))
     );
-  }
-
-  ekey(orderId: string, idx: number): string { return `${orderId}::${idx}`; }
-
-  getEditQty(orderId: string, idx: number, def: number): number {
-    return this._editQty()[this.ekey(orderId, idx)] ?? def;
-  }
-  setEditQty(orderId: string, idx: number, def: number, val: number | string): void {
-    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: Math.max(0, parseInt(String(val)) || 0) }));
-  }
-  incEditQty(orderId: string, idx: number, def: number): void {
-    this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1);
-  }
-  decEditQty(orderId: string, idx: number, def: number): void {
-    this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);
-  }
-
-  reviseOrder(order: Order): void {
-    const newProducts = order.products
-      .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
-      .filter(p => p.qty > 0);
-
-    if (newProducts.length === 0) {
-      this.snackBar.open('Adaugă cel puțin un produs cu qty > 0.', '', { duration: 2500 });
-      return;
-    }
-
-    const session = this.auth.session()!;
-    const newOrder: Order = {
-      id:            generateId(),
-      timestamp:     new Date().toISOString(),
-      agent:         { id: session.userId, name: session.name, username: session.username },
-      client:        order.client,
-      products:      newProducts,
-      status:        'trimis',
-      revisedFromId: order.id
-    };
-
-    this.ordersService.reviseOrder(order.id, newOrder);
-
-    const text = this.ordersService.generateText(newOrder);
-    window.open(this.ordersService.generateMailto(newOrder, text), '_blank');
-
-    this._editQty.update(m => {
-      const n = { ...m };
-      order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
-      return n;
-    });
-    this.collapseRow(order.id);
-    this.snackBar.open('Comanda revizuită a fost trimisă!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   resendEmail(order: Order, e: Event): void {

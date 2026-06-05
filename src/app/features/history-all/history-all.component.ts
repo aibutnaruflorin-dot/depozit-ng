@@ -54,11 +54,9 @@ function sortByFamily(orders: Order[]): Order[] {
   styleUrl:    './history-all.component.scss'
 })
 export class HistoryAllComponent {
-  // Date pickers stay as plain props (bound via [(ngModel)])
   filterDateFrom: Date | null = null;
   filterDateTo:   Date | null = null;
 
-  // All other filters as signals for reactivity
   filterAgent  = signal('');
   filterNr     = signal('');
   filterClient = signal('');
@@ -88,16 +86,17 @@ export class HistoryAllComponent {
     if (client) orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
     if (phone)  orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
     if (status) orders = orders.filter(o =>
-      status === 'Revizuit' ? !!o.revisedFromId :
-      status === 'Înlocuit' ? !!o.superseded    :
-      !o.superseded && !o.revisedFromId
+      status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
+      status === 'Acceptată'    ? o.status === 'acceptat' :
+      status === 'Anulată'      ? o.status === 'anulat'   :
+      status === 'Înlocuită'    ? !!o.superseded : true
     );
     if (this.filterDateFrom) {
       const from = this.filterDateFrom.toISOString();
       orders = orders.filter(o => o.timestamp >= from);
     }
     if (this.filterDateTo) {
-      const to = new Date(this.filterDateTo); to.setHours(23,59,59);
+      const to = new Date(this.filterDateTo); to.setHours(23, 59, 59);
       orders = orders.filter(o => o.timestamp <= to.toISOString());
     }
     return orders;
@@ -117,6 +116,17 @@ export class HistoryAllComponent {
     private snackBar: MatSnackBar
   ) {}
 
+  isPending(order: Order): boolean {
+    return order.status === 'trimis' && !order.superseded;
+  }
+
+  hasQtyChanges(order: Order): boolean {
+    return order.products.some((p, i) => {
+      const edited = this._editQty()[this.ekey(order.id, i)];
+      return edited !== undefined && edited !== p.qty;
+    });
+  }
+
   reset(): void {
     this.filterAgent.set(''); this.filterClient.set('');
     this.filterNr.set(''); this.filterPhone.set(''); this.filterStatus.set('');
@@ -128,7 +138,7 @@ export class HistoryAllComponent {
   }
 
   shortDate(iso: string): string {
-    return new Date(iso).toLocaleString('ro-RO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return new Date(iso).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
 
   getAncestorChain(order: Order): string {
@@ -158,11 +168,59 @@ export class HistoryAllComponent {
     return chain.join(' → ');
   }
 
+  // ── Admin actions ─────────────────────────────────────────────────────────
+
+  acceptOrder(order: Order): void {
+    this.ordersService.acceptOrder(order.id);
+    this.collapseRow(order.id);
+    this.snackBar.open('Comanda acceptată!', 'OK', { duration: 2500, panelClass: ['snack-success'] });
+  }
+
+  cancelOrder(order: Order): void {
+    this.ordersService.cancelOrder(order.id);
+    this.collapseRow(order.id);
+    this.snackBar.open('Comanda anulată.', '', { duration: 2500 });
+  }
+
+  finalizeOrder(order: Order): void {
+    const newProducts = order.products
+      .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
+      .filter(p => p.qty > 0);
+
+    if (newProducts.length === 0) {
+      this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
+      return;
+    }
+
+    const newOrder: Order = {
+      id:            generateId(),
+      timestamp:     new Date().toISOString(),
+      agent:         order.agent,
+      client:        order.client,
+      products:      newProducts,
+      status:        'acceptat',
+      revisedFromId: order.id
+    };
+
+    this.ordersService.reviseOrder(order.id, newOrder);
+
+    this._editQty.update(m => {
+      const n = { ...m };
+      order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
+      return n;
+    });
+    this.collapseRow(order.id);
+    this.snackBar.open('Comanda finalizată cu modificări!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
+  }
+
+  // ── CSV export ────────────────────────────────────────────────────────────
+
   exportCsv(): void {
     const headers = ['Nr.', 'Data', 'Agent', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
     const rows: string[][] = [];
     for (const o of this.sortedFiltered()) {
-      const status = o.superseded ? 'Înlocuit' : o.revisedFromId ? 'Revizuit' : o.status;
+      const status = o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
+                     o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
       for (const p of o.products) {
         rows.push([`#${o.orderNumber ?? '?'}`, this.formatDate(o.timestamp),
           o.agent?.name ?? '', o.client.name, o.client.phone ?? '',
@@ -174,7 +232,8 @@ export class HistoryAllComponent {
 
   downloadOrderCsv(order: Order, e: Event): void {
     e.stopPropagation();
-    const status = order.superseded ? 'Înlocuit' : order.revisedFromId ? 'Revizuit' : order.status;
+    const status = order.superseded ? 'Înlocuită' : order.status === 'anulat' ? 'Anulată' :
+                   order.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
     const headers = ['Nr.', 'Data', 'Agent', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
     const rows = order.products.map(p => [
       `#${order.orderNumber ?? '?'}`, this.formatDate(order.timestamp),
@@ -196,6 +255,8 @@ export class HistoryAllComponent {
     document.body.appendChild(a); a.click();
     document.body.removeChild(a); URL.revokeObjectURL(url);
   }
+
+  // ── Expand / collapse ─────────────────────────────────────────────────────
 
   toggleExpand(orderId: string): void {
     this.expandedRows.update(m =>
@@ -223,41 +284,6 @@ export class HistoryAllComponent {
   }
   decEditQty(orderId: string, idx: number, def: number): void {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);
-  }
-
-  reviseOrder(order: Order): void {
-    const newProducts = order.products
-      .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
-      .filter(p => p.qty > 0);
-
-    if (newProducts.length === 0) {
-      this.snackBar.open('Adaugă cel puțin un produs cu qty > 0.', '', { duration: 2500 });
-      return;
-    }
-
-    const newOrder: Order = {
-      id:            generateId(),
-      timestamp:     new Date().toISOString(),
-      agent:         order.agent,
-      client:        order.client,
-      products:      newProducts,
-      status:        'trimis',
-      revisedFromId: order.id
-    };
-
-    this.ordersService.reviseOrder(order.id, newOrder);
-
-    const text = this.ordersService.generateText(newOrder);
-    window.open(this.ordersService.generateMailto(newOrder, text), '_blank');
-
-    this._editQty.update(m => {
-      const n = { ...m };
-      order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
-      return n;
-    });
-
-    this.collapseRow(order.id);
-    this.snackBar.open('Comanda revizuită a fost trimisă!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   resendEmail(order: Order, e: Event): void {
