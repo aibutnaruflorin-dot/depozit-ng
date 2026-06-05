@@ -1,5 +1,17 @@
 import { Component, computed, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
+import { OrdersService, generateId } from '../../core/services/orders.service';
 import { Order } from '../../core/models/order.model';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 
 function sortByFamily(orders: Order[]): Order[] {
   const families: Order[][] = [];
@@ -28,27 +40,13 @@ function sortByFamily(orders: Order[]): Order[] {
   );
   return families.flat();
 }
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
-import { OrdersService, generateId } from '../../core/services/orders.service';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatCardModule } from '@angular/material/card';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
 
 @Component({
   selector: 'app-history',
   standalone: true,
   imports: [
-    CommonModule, RouterModule,
-    MatCardModule, MatButtonModule, MatIconModule, MatChipsModule,
-    MatExpansionModule, MatSnackBarModule, MatTooltipModule,
+    CommonModule, FormsModule, RouterModule,
+    MatButtonModule, MatIconModule, MatSelectModule, MatSnackBarModule, MatTooltipModule,
     TableModule, TagModule
   ],
   templateUrl: './history.component.html',
@@ -58,6 +56,12 @@ export class HistoryComponent {
   expandedRows = signal<Record<string, boolean>>({});
   private _editQty = signal<Record<string, number>>({});
   readonly editQtyMap = this._editQty.asReadonly();
+
+  hideSuperseded = signal(true);
+  filterNr     = signal('');
+  filterClient = signal('');
+  filterPhone  = signal('');
+  filterStatus = signal('');
 
   constructor(
     public  auth: AuthService,
@@ -70,12 +74,25 @@ export class HistoryComponent {
     return this.ordersService.orders().filter(o => o.agent?.id === id);
   });
 
-  hideSuperseded = signal(true);
-
   readonly sortedOrders = computed(() => {
-    const orders = this.hideSuperseded()
+    const nr     = this.filterNr().trim().replace('#', '');
+    const client = this.filterClient().trim().toLowerCase();
+    const phone  = this.filterPhone().trim();
+    const status = this.filterStatus();
+
+    let orders = this.hideSuperseded()
       ? this.myOrders().filter(o => !o.superseded)
       : this.myOrders();
+
+    if (nr)     orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
+    if (client) orders = orders.filter(o => o.client.name.toLowerCase().includes(client));
+    if (phone)  orders = orders.filter(o => (o.client.phone ?? '').includes(phone));
+    if (status) orders = orders.filter(o =>
+      status === 'Revizuit' ? !!o.revisedFromId :
+      status === 'Înlocuit' ? !!o.superseded    :
+      !o.superseded && !o.revisedFromId
+    );
+
     return sortByFamily(orders);
   });
 
@@ -112,6 +129,31 @@ export class HistoryComponent {
       cur = child;
     }
     return chain.join(' → ');
+  }
+
+  exportCsv(): void {
+    const orders = this.sortedOrders();
+    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produse', 'Status'];
+    const rows = orders.map(o => [
+      `#${o.orderNumber ?? '?'}`,
+      this.formatDate(o.timestamp),
+      o.client.name,
+      o.client.phone ?? '',
+      o.products.map(p => `${p.qty}x ${p.name}`).join('; '),
+      o.superseded ? 'Înlocuit' : o.revisedFromId ? 'Revizuit' : o.status
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `comenzi-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   toggleExpand(orderId: string): void {
@@ -154,13 +196,13 @@ export class HistoryComponent {
 
     const session = this.auth.session()!;
     const newOrder: Order = {
-      id:             generateId(),
-      timestamp:      new Date().toISOString(),
-      agent:          { id: session.userId, name: session.name, username: session.username },
-      client:         order.client,
-      products:       newProducts,
-      status:         'trimis',
-      revisedFromId:  order.id
+      id:            generateId(),
+      timestamp:     new Date().toISOString(),
+      agent:         { id: session.userId, name: session.name, username: session.username },
+      client:        order.client,
+      products:      newProducts,
+      status:        'trimis',
+      revisedFromId: order.id
     };
 
     this.ordersService.reviseOrder(order.id, newOrder);
@@ -168,7 +210,6 @@ export class HistoryComponent {
     const text = this.ordersService.generateText(newOrder);
     window.open(this.ordersService.generateMailto(newOrder, text), '_blank');
 
-    // Clear edit state for this order
     this._editQty.update(m => {
       const n = { ...m };
       order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
@@ -182,13 +223,5 @@ export class HistoryComponent {
     e.stopPropagation();
     const text = this.ordersService.generateText(order);
     window.open(this.ordersService.generateMailto(order, text), '_blank');
-  }
-
-  copyOrder(order: Order, e: Event): void {
-    e.stopPropagation();
-    const text = this.ordersService.generateText(order);
-    navigator.clipboard.writeText(text).then(() => {
-      this.snackBar.open('Comanda copiată!', '', { duration: 2000, panelClass: ['snack-success'] });
-    });
   }
 }

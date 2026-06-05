@@ -4,12 +4,18 @@
     Comenzile mele
     <span class="count-badge">{{ myOrders().length }}</span>
   </h1>
-  <button mat-stroked-button class="toggle-superseded-btn"
-          (click)="hideSuperseded.set(!hideSuperseded())"
-          [matTooltip]="hideSuperseded() ? 'Arată și comenzile înlocuite' : 'Ascunde comenzile înlocuite'">
-    <mat-icon>{{ hideSuperseded() ? 'visibility_off' : 'visibility' }}</mat-icon>
-    {{ hideSuperseded() ? 'Înlocuite ascunse' : 'Înlocuite vizibile' }}
-  </button>
+  <div class="page-actions">
+    <button mat-stroked-button class="toggle-superseded-btn"
+            (click)="hideSuperseded.set(!hideSuperseded())"
+            [matTooltip]="hideSuperseded() ? 'Arată și comenzile înlocuite' : 'Ascunde comenzile înlocuite'">
+      <mat-icon>{{ hideSuperseded() ? 'visibility_off' : 'visibility' }}</mat-icon>
+      {{ hideSuperseded() ? 'Înlocuite ascunse' : 'Înlocuite vizibile' }}
+    </button>
+    <button mat-stroked-button (click)="exportCsv()" matTooltip="Descarcă Excel / CSV">
+      <mat-icon>download</mat-icon>
+      Excel
+    </button>
+  </div>
 </div>
 
 @if (myOrders().length === 0) {
@@ -29,17 +35,48 @@
     <ng-template pTemplate="header">
       <tr>
         <th style="width:3rem"></th>
-        <th style="width:4rem">Nr.</th>
-        <th>Data</th>
-        <th>Client</th>
-        <th>Telefon</th>
+        <th style="width:5rem">
+          <div class="col-header">Nr.
+            <input class="col-filter-input" type="text"
+                   [ngModel]="filterNr()" (ngModelChange)="filterNr.set($event)"
+                   placeholder="#…" (click)="$event.stopPropagation()">
+          </div>
+        </th>
+        <th>
+          <div class="col-header">Data</div>
+        </th>
+        <th>
+          <div class="col-header">Client
+            <input class="col-filter-input" type="text"
+                   [ngModel]="filterClient()" (ngModelChange)="filterClient.set($event)"
+                   placeholder="filtrează…" (click)="$event.stopPropagation()">
+          </div>
+        </th>
+        <th>
+          <div class="col-header">Telefon
+            <input class="col-filter-input" type="text"
+                   [ngModel]="filterPhone()" (ngModelChange)="filterPhone.set($event)"
+                   placeholder="filtrează…" (click)="$event.stopPropagation()">
+          </div>
+        </th>
         <th>Produse</th>
-        <th>Status</th>
+        <th>
+          <div class="col-header">Status
+            <select class="col-filter-select"
+                    [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"
+                    (click)="$event.stopPropagation()">
+              <option value="">Toate</option>
+              <option value="trimis">Trimis</option>
+              <option value="Revizuit">Revizuit</option>
+              <option value="Înlocuit">Înlocuit</option>
+            </select>
+          </div>
+        </th>
         <th>Acțiuni</th>
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-order let-i="rowIndex">
+    <ng-template pTemplate="body" let-order>
       <!-- ── Main row ── -->
       <tr [class.superseded-row]="order.superseded"
           [class.family-child]="!!order.revisedFromId"
@@ -82,9 +119,6 @@
           <div class="action-btns" (click)="$event.stopPropagation()">
             <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Retrimite email">
               <mat-icon>email</mat-icon>
-            </button>
-            <button mat-icon-button (click)="copyOrder(order, $event)" matTooltip="Copiază text">
-              <mat-icon>content_copy</mat-icon>
             </button>
           </div>
         </td>

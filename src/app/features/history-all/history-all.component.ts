@@ -1,5 +1,21 @@
 import { Component, computed, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Order } from '../../core/models/order.model';
+import { User } from '../../core/models/user.model';
+import { AuthService } from '../../core/services/auth.service';
+import { OrdersService, generateId } from '../../core/services/orders.service';
+import { StorageService } from '../../core/services/storage.service';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { DatePickerModule } from 'primeng/datepicker';
 
 function sortByFamily(orders: Order[]): Order[] {
   const families: Order[][] = [];
@@ -28,22 +44,6 @@ function sortByFamily(orders: Order[]): Order[] {
   );
   return families.flat();
 }
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../core/services/auth.service';
-import { OrdersService, generateId } from '../../core/services/orders.service';
-import { StorageService } from '../../core/services/storage.service';
-import { User } from '../../core/models/user.model';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { DatePickerModule } from 'primeng/datepicker';
 
 @Component({
   selector: 'app-history-all',
@@ -58,10 +58,17 @@ import { DatePickerModule } from 'primeng/datepicker';
   styleUrl:    './history-all.component.scss'
 })
 export class HistoryAllComponent {
-  filterAgent  = '';
-  filterClient = '';
+  // Date pickers stay as plain props (bound via [(ngModel)])
   filterDateFrom: Date | null = null;
   filterDateTo:   Date | null = null;
+
+  // All other filters as signals for reactivity
+  filterAgent  = signal('');
+  filterNr     = signal('');
+  filterClient = signal('');
+  filterPhone  = signal('');
+  filterStatus = signal('');
+  hideSuperseded = signal(true);
 
   expandedRows = signal<Record<string, boolean>>({});
   private _editQty = signal<Record<string, number>>({});
@@ -72,19 +79,23 @@ export class HistoryAllComponent {
     return users.map(u => ({ id: String(u.id), name: u.name }));
   });
 
-  hideSuperseded = signal(true);
-
-  readonly sortedFiltered = computed(() => {
-    const orders = this.hideSuperseded()
-      ? this.filtered().filter(o => !o.superseded)
-      : this.filtered();
-    return sortByFamily(orders);
-  });
-
   readonly filtered = computed(() => {
+    const agent  = this.filterAgent();
+    const nr     = this.filterNr().trim().replace('#', '');
+    const client = this.filterClient().trim().toLowerCase();
+    const phone  = this.filterPhone().trim();
+    const status = this.filterStatus();
+
     let orders = this.ordersService.orders();
-    if (this.filterAgent)  orders = orders.filter(o => String(o.agent?.id) === this.filterAgent);
-    if (this.filterClient) orders = orders.filter(o => o.client?.name?.toLowerCase().includes(this.filterClient.toLowerCase()));
+    if (agent)  orders = orders.filter(o => String(o.agent?.id) === agent);
+    if (nr)     orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
+    if (client) orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
+    if (phone)  orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
+    if (status) orders = orders.filter(o =>
+      status === 'Revizuit' ? !!o.revisedFromId :
+      status === 'Înlocuit' ? !!o.superseded    :
+      !o.superseded && !o.revisedFromId
+    );
     if (this.filterDateFrom) {
       const from = this.filterDateFrom.toISOString();
       orders = orders.filter(o => o.timestamp >= from);
@@ -96,6 +107,13 @@ export class HistoryAllComponent {
     return orders;
   });
 
+  readonly sortedFiltered = computed(() => {
+    const orders = this.hideSuperseded()
+      ? this.filtered().filter(o => !o.superseded)
+      : this.filtered();
+    return sortByFamily(orders);
+  });
+
   constructor(
     private auth: AuthService,
     private ordersService: OrdersService,
@@ -104,7 +122,8 @@ export class HistoryAllComponent {
   ) {}
 
   reset(): void {
-    this.filterAgent = ''; this.filterClient = '';
+    this.filterAgent.set(''); this.filterClient.set('');
+    this.filterNr.set(''); this.filterPhone.set(''); this.filterStatus.set('');
     this.filterDateFrom = null; this.filterDateTo = null;
   }
 
@@ -141,6 +160,32 @@ export class HistoryAllComponent {
       cur = child;
     }
     return chain.join(' → ');
+  }
+
+  exportCsv(): void {
+    const orders = this.sortedFiltered();
+    const headers = ['Nr.', 'Data', 'Agent', 'Client', 'Telefon', 'Produse', 'Status'];
+    const rows = orders.map(o => [
+      `#${o.orderNumber ?? '?'}`,
+      this.formatDate(o.timestamp),
+      o.agent?.name ?? '',
+      o.client.name,
+      o.client.phone ?? '',
+      o.products.map(p => `${p.qty}x ${p.name}`).join('; '),
+      o.superseded ? 'Înlocuit' : o.revisedFromId ? 'Revizuit' : o.status
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `comenzi-toate-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   toggleExpand(orderId: string): void {
@@ -201,8 +246,8 @@ export class HistoryAllComponent {
       order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
       return n;
     });
-    this.collapseRow(order.id);
 
+    this.collapseRow(order.id);
     this.snackBar.open('Comanda revizuită a fost trimisă!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
@@ -210,13 +255,5 @@ export class HistoryAllComponent {
     e.stopPropagation();
     const text = this.ordersService.generateText(order);
     window.open(this.ordersService.generateMailto(order, text), '_blank');
-  }
-
-  copyOrder(order: Order, e: Event): void {
-    e.stopPropagation();
-    const text = this.ordersService.generateText(order);
-    navigator.clipboard.writeText(text).then(() => {
-      this.snackBar.open('Comanda copiată!', '', { duration: 2000, panelClass: ['snack-success'] });
-    });
   }
 }

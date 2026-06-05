@@ -2,10 +2,32 @@
   display: flex; align-items: center; gap: 1rem;
   flex-wrap: wrap; margin-bottom: 1.5rem;
 }
-.toggle-superseded-btn {
-  margin-left: auto;
+.page-actions { margin-left: auto; display: flex; gap: 0.5rem; }
+.toggle-superseded-btn,
+.page-actions button {
   font-size: 0.82rem;
   mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+/* ── Column header filters ── */
+.col-header {
+  display: flex; flex-direction: column; gap: 4px;
+  font-weight: 600; font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.col-filter-input {
+  width: 100%; font-size: 0.78rem; font-weight: 400;
+  border: 1px solid var(--color-border); border-radius: 4px;
+  padding: 3px 6px; background: var(--color-bg);
+  outline: none; text-transform: none; letter-spacing: 0;
+  &:focus { border-color: var(--color-primary); }
+}
+.col-filter-select {
+  width: 100%; font-size: 0.78rem; font-weight: 400;
+  border: 1px solid var(--color-border); border-radius: 4px;
+  padding: 3px 4px; background: var(--color-bg);
+  outline: none; cursor: pointer;
+  &:focus { border-color: var(--color-primary); }
 }
 .page-title {
   display: flex; align-items: center; gap: 0.5rem;

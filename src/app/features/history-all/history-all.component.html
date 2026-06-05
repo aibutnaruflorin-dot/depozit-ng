@@ -4,30 +4,30 @@
     Toate comenzile
     <span class="count-badge">{{ filtered().length }}</span>
   </h1>
-  <button mat-stroked-button class="toggle-superseded-btn"
-          (click)="hideSuperseded.set(!hideSuperseded())"
-          [matTooltip]="hideSuperseded() ? 'Arată și comenzile înlocuite' : 'Ascunde comenzile înlocuite'">
-    <mat-icon>{{ hideSuperseded() ? 'visibility_off' : 'visibility' }}</mat-icon>
-    {{ hideSuperseded() ? 'Înlocuite ascunse' : 'Înlocuite vizibile' }}
-  </button>
+  <div class="page-actions">
+    <button mat-stroked-button class="toggle-superseded-btn"
+            (click)="hideSuperseded.set(!hideSuperseded())"
+            [matTooltip]="hideSuperseded() ? 'Arată și comenzile înlocuite' : 'Ascunde comenzile înlocuite'">
+      <mat-icon>{{ hideSuperseded() ? 'visibility_off' : 'visibility' }}</mat-icon>
+      {{ hideSuperseded() ? 'Înlocuite ascunse' : 'Înlocuite vizibile' }}
+    </button>
+    <button mat-stroked-button (click)="exportCsv()" matTooltip="Descarcă Excel / CSV">
+      <mat-icon>download</mat-icon>
+      Excel
+    </button>
+  </div>
 </div>
 
-<!-- Filters -->
+<!-- Date filters + reset -->
 <div class="filters-bar">
   <mat-form-field appearance="outline" class="filter-field">
     <mat-label>Agent</mat-label>
-    <mat-select [(ngModel)]="filterAgent">
+    <mat-select [ngModel]="filterAgent()" (ngModelChange)="filterAgent.set($event)">
       <mat-option value="">Toți agenții</mat-option>
       @for (a of agents(); track a.id) {
         <mat-option [value]="a.id">{{ a.name }}</mat-option>
       }
     </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="filter-field">
-    <mat-label>Client</mat-label>
-    <mat-icon matPrefix>search</mat-icon>
-    <input matInput [(ngModel)]="filterClient" placeholder="Caută client...">
   </mat-form-field>
 
   <p-datepicker [(ngModel)]="filterDateFrom" placeholder="De la data" dateFormat="dd.mm.yy"
@@ -50,18 +50,49 @@
   <ng-template pTemplate="header">
     <tr>
       <th style="width:3rem"></th>
-      <th style="width:4rem">Nr.</th>
-      <th>Data</th>
-      <th>Client</th>
-      <th>Telefon</th>
-      <th pSortableColumn="agent.name">Agent <p-sortIcon field="agent.name"/></th>
+      <th style="width:5rem">
+        <div class="col-header">Nr.
+          <input class="col-filter-input" type="text"
+                 [ngModel]="filterNr()" (ngModelChange)="filterNr.set($event)"
+                 placeholder="#…" (click)="$event.stopPropagation()">
+        </div>
+      </th>
+      <th>
+        <div class="col-header">Data</div>
+      </th>
+      <th>
+        <div class="col-header">Client
+          <input class="col-filter-input" type="text"
+                 [ngModel]="filterClient()" (ngModelChange)="filterClient.set($event)"
+                 placeholder="filtrează…" (click)="$event.stopPropagation()">
+        </div>
+      </th>
+      <th>
+        <div class="col-header">Telefon
+          <input class="col-filter-input" type="text"
+                 [ngModel]="filterPhone()" (ngModelChange)="filterPhone.set($event)"
+                 placeholder="filtrează…" (click)="$event.stopPropagation()">
+        </div>
+      </th>
+      <th>Agent</th>
       <th>Produse</th>
-      <th>Status</th>
+      <th>
+        <div class="col-header">Status
+          <select class="col-filter-select"
+                  [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"
+                  (click)="$event.stopPropagation()">
+            <option value="">Toate</option>
+            <option value="trimis">Trimis</option>
+            <option value="Revizuit">Revizuit</option>
+            <option value="Înlocuit">Înlocuit</option>
+          </select>
+        </div>
+      </th>
       <th>Acțiuni</th>
     </tr>
   </ng-template>
 
-  <ng-template pTemplate="body" let-order let-i="rowIndex">
+  <ng-template pTemplate="body" let-order>
     <!-- ── Main row ── -->
     <tr [class.superseded-row]="order.superseded"
         [class.family-child]="!!order.revisedFromId"
@@ -105,9 +136,6 @@
         <div class="action-btns" (click)="$event.stopPropagation()">
           <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Retrimite email">
             <mat-icon>email</mat-icon>
-          </button>
-          <button mat-icon-button (click)="copyOrder(order, $event)" matTooltip="Copiază">
-            <mat-icon>content_copy</mat-icon>
           </button>
         </div>
       </td>
