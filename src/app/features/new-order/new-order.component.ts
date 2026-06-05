@@ -44,8 +44,8 @@ export class NewOrderComponent implements OnInit {
   cart           = signal<CartItem[]>([]);
   showCart       = signal(false);
 
-  // Cantitate selectată în rândul produsului (înainte de adăugare în coș)
-  private _pendingQty: Record<string, number> = {};
+  // Cantitate selectată în rândul produsului — signal pt reactivity
+  private _pendingQty = signal<Record<string, number>>({});
 
   /* ── submit state ── */
   submitting = false;
@@ -80,10 +80,11 @@ export class NewOrderComponent implements OnInit {
 
   /* ── pending qty helpers (în rândul din listă) ── */
   getPendingQty(nr: NrKey): number {
-    return this._pendingQty[String(nr)] ?? 1;
+    return this._pendingQty()[String(nr)] ?? 1;
   }
   setPendingQty(nr: NrKey, val: string | number): void {
-    this._pendingQty[String(nr)] = Math.max(1, parseInt(String(val)) || 1);
+    const qty = Math.max(1, parseInt(String(val)) || 1);
+    this._pendingQty.update(m => ({ ...m, [String(nr)]: qty }));
   }
   incPending(nr: NrKey): void { this.setPendingQty(nr, this.getPendingQty(nr) + 1); }
   decPending(nr: NrKey): void { this.setPendingQty(nr, this.getPendingQty(nr) - 1); }
@@ -110,7 +111,7 @@ export class NewOrderComponent implements OnInit {
         duration: 1500, panelClass: ['snack-success']
       });
     }
-    delete this._pendingQty[String(product.nr)];
+    this._pendingQty.update(m => { const n = {...m}; delete n[String(product.nr)]; return n; });
   }
 
   updateQty(nr: number | string, val: string): void {
