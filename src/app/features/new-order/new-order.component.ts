@@ -105,7 +105,16 @@ export class NewOrderComponent implements OnInit {
     this._pendingQty.update(m => ({ ...m, [this.pkey(p)]: qty }));
   }
   incPending(p: Product): void { this.setPendingQty(p, this.getPendingQty(p) + 1); }
-  decPending(p: Product): void { this.setPendingQty(p, this.getPendingQty(p) - 1); }
+  decPending(p: Product): void {
+    const current = this.getPendingQty(p);
+    if (current <= 0) return;
+    const newQty = current - 1;
+    this.setPendingQty(p, newQty);
+    if (newQty === 0 && this.isInCart(p)) {
+      const key = this.pkey(p);
+      this.cart.update(c => c.filter(i => this.pkey(i.product) !== key));
+    }
+  }
 
   /* ── Cart helpers ── */
   isInCart(p: Product): boolean {
