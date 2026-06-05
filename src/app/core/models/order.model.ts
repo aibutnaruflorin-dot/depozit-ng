@@ -9,11 +9,12 @@ export interface OrderProduct {
 
 export interface Order {
   id: string;
+  orderNumber?: number;
   timestamp: string;
   agent: { id: number; name: string; username: string };
   client: { name: string; phone: string; email: string; note: string };
   products: OrderProduct[];
   status: string;
-  revisedFromId?: string;   // this order replaced another
-  superseded?: boolean;     // this order was replaced
+  revisedFromId?: string;
+  superseded?: boolean;
 }

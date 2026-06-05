@@ -22,6 +22,22 @@
 }
 .order-ref-sup { color: #c62828; }
 
+/* ── Order number ── */
+.order-num {
+  font-size: 0.8rem; font-weight: 700; color: var(--color-primary);
+  letter-spacing: 0.02em;
+  &.order-num-faded { color: var(--color-text-muted); }
+}
+
+/* ── Family grouping ── */
+.family-member td {
+  border-left: 3px solid #90caf9 !important;
+}
+.family-child td {
+  border-left: 3px solid var(--color-primary) !important;
+  background: rgba(21,101,192,0.03) !important;
+}
+
 /* ── Expand button ── */
 .expand-btn { width: 32px; height: 32px; line-height: 32px; }
 

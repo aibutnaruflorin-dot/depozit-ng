@@ -11,13 +11,19 @@ export class OrdersService {
     this._orders.set(this.storage.get<Order[]>('app_orders') || []);
   }
 
+  private nextOrderNumber(): number {
+    return this._orders().reduce((m, o) => Math.max(m, o.orderNumber ?? 0), 0) + 1;
+  }
+
   saveOrder(order: Order): void {
+    order.orderNumber = this.nextOrderNumber();
     const updated = [order, ...this._orders()];
     this.storage.set('app_orders', updated);
     this._orders.set(updated);
   }
 
   reviseOrder(originalId: string, newOrder: Order): void {
+    newOrder.orderNumber = this.nextOrderNumber();
     const updated = this._orders().map(o =>
       o.id === originalId ? { ...o, superseded: true } : o
     );

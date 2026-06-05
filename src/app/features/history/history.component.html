@@ -23,7 +23,8 @@
     <ng-template pTemplate="header">
       <tr>
         <th style="width:3rem"></th>
-        <th pSortableColumn="timestamp">Data <p-sortIcon field="timestamp"/></th>
+        <th style="width:4rem">Nr.</th>
+        <th>Data</th>
         <th>Client</th>
         <th>Telefon</th>
         <th>Produse</th>
@@ -32,14 +33,21 @@
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-order>
+    <ng-template pTemplate="body" let-order let-i="rowIndex">
       <!-- ── Main row ── -->
       <tr [class.superseded-row]="order.superseded"
+          [class.family-child]="!!order.revisedFromId"
+          [class.family-member]="order.superseded || !!order.revisedFromId"
           (click)="toggleExpand(order.id)" style="cursor:pointer">
         <td>
           <button mat-icon-button class="expand-btn" (click)="$event.stopPropagation(); toggleExpand(order.id)">
             <mat-icon>{{ expandedRows()[order.id] ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
           </button>
+        </td>
+        <td>
+          <span class="order-num" [class.order-num-faded]="order.superseded">
+            #{{ order.orderNumber ?? '?' }}
+          </span>
         </td>
         <td>
           <div class="date-cell">
@@ -79,27 +87,27 @@
       <!-- ── Expansion row ── -->
       @if (expandedRows()[order.id]) {
         <tr class="expansion-row">
-          <td colspan="7" class="expansion-cell">
+          <td colspan="8" class="expansion-cell">
             <div class="expansion-content" (click)="$event.stopPropagation()">
               <div class="expansion-products">
-                @for (p of order.products; track p.nr; let i = $index) {
+                @for (p of order.products; track p.nr; let j = $index) {
                   <div class="exp-product-row"
-                       [class.exp-removed]="(editQtyMap()[ekey(order.id, i)] ?? p.qty) === 0">
+                       [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
                     <span class="exp-product-name">{{ p.name }}</span>
                     <span class="exp-product-um">{{ p.um }}</span>
                     <div class="exp-qty-controls">
-                      <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, i, p.qty)">
+                      <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
                         <mat-icon>remove</mat-icon>
                       </button>
                       <input class="eq-input" type="number" min="0"
-                             [value]="editQtyMap()[ekey(order.id, i)] ?? p.qty"
-                             (change)="setEditQty(order.id, i, p.qty, $any($event.target).value)"
+                             [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
+                             (change)="setEditQty(order.id, j, p.qty, $any($event.target).value)"
                              (click)="$any($event.target).select()">
-                      <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, i, p.qty)">
+                      <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)">
                         <mat-icon>add</mat-icon>
                       </button>
                     </div>
-                    @if ((editQtyMap()[ekey(order.id, i)] ?? p.qty) === 0) {
+                    @if ((editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0) {
                       <span class="exp-remove-hint">va fi eliminat</span>
                     }
                   </div>
@@ -121,7 +129,7 @@
     </ng-template>
 
     <ng-template pTemplate="emptymessage">
-      <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted)">
+      <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-muted)">
         Nicio comandă găsită.
       </td></tr>
     </ng-template>

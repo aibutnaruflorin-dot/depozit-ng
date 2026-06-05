@@ -88,7 +88,7 @@ export class HistoryComponent {
       if (!cur.revisedFromId) break;
       const parent = all.find(o => o.id === cur.revisedFromId);
       if (!parent) break;
-      chain.push(this.shortDate(parent.timestamp));
+      chain.push(parent.orderNumber ? `#${parent.orderNumber}` : this.shortDate(parent.timestamp));
       cur = parent;
     }
     return chain.join(' → ');
@@ -101,7 +101,7 @@ export class HistoryComponent {
     for (let i = 0; i < 20; i++) {
       const child = all.find(o => o.revisedFromId === cur.id);
       if (!child) break;
-      chain.push(this.shortDate(child.timestamp));
+      chain.push(child.orderNumber ? `#${child.orderNumber}` : this.shortDate(child.timestamp));
       cur = child;
     }
     return chain.join(' → ');
