@@ -12,7 +12,6 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { DatePickerModule } from 'primeng/datepicker';
 
 function sortByFamily(orders: Order[]): Order[] {
   const families: Order[][] = [];
@@ -48,20 +47,19 @@ function sortByFamily(orders: Order[]): Order[] {
   imports: [
     CommonModule, FormsModule,
     MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
-    TableModule, TagModule, DatePickerModule
+    TableModule, TagModule
   ],
   templateUrl: './history-all.component.html',
   styleUrl:    './history-all.component.scss'
 })
 export class HistoryAllComponent {
-  filterDateFrom: Date | null = null;
-  filterDateTo:   Date | null = null;
-
-  filterAgent  = signal('');
-  filterNr     = signal('');
-  filterClient = signal('');
-  filterPhone  = signal('');
-  filterStatus = signal('');
+  filterAgent    = signal('');
+  filterNr       = signal('');
+  filterClient   = signal('');
+  filterPhone    = signal('');
+  filterStatus   = signal('');
+  filterDateFrom = signal('');
+  filterDateTo   = signal('');
   hideSuperseded = signal(true);
 
   expandedRows = signal<Record<string, boolean>>({});
@@ -74,31 +72,26 @@ export class HistoryAllComponent {
   });
 
   readonly filtered = computed(() => {
-    const agent  = this.filterAgent();
-    const nr     = this.filterNr().trim().replace('#', '');
-    const client = this.filterClient().trim().toLowerCase();
-    const phone  = this.filterPhone().trim();
-    const status = this.filterStatus();
+    const agent    = this.filterAgent();
+    const nr       = this.filterNr().trim().replace('#', '');
+    const client   = this.filterClient().trim().toLowerCase();
+    const phone    = this.filterPhone().trim();
+    const status   = this.filterStatus();
+    const dateFrom = this.filterDateFrom();
+    const dateTo   = this.filterDateTo();
 
     let orders = this.ordersService.orders();
-    if (agent)  orders = orders.filter(o => String(o.agent?.id) === agent);
-    if (nr)     orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
-    if (client) orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
-    if (phone)  orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
-    if (status) orders = orders.filter(o =>
+    if (agent)    orders = orders.filter(o => String(o.agent?.id) === agent);
+    if (nr)       orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
+    if (client)   orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
+    if (phone)    orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
+    if (status)   orders = orders.filter(o =>
       status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
       status === 'Acceptată'    ? o.status === 'acceptat' :
-      status === 'Anulată'      ? o.status === 'anulat'   :
-      status === 'Înlocuită'    ? !!o.superseded : true
+      status === 'Anulată'      ? o.status === 'anulat'   : true
     );
-    if (this.filterDateFrom) {
-      const from = this.filterDateFrom.toISOString();
-      orders = orders.filter(o => o.timestamp >= from);
-    }
-    if (this.filterDateTo) {
-      const to = new Date(this.filterDateTo); to.setHours(23, 59, 59);
-      orders = orders.filter(o => o.timestamp <= to.toISOString());
-    }
+    if (dateFrom) orders = orders.filter(o => o.timestamp.slice(0, 10) >= dateFrom);
+    if (dateTo)   orders = orders.filter(o => o.timestamp.slice(0, 10) <= dateTo);
     return orders;
   });
 
@@ -130,7 +123,7 @@ export class HistoryAllComponent {
   reset(): void {
     this.filterAgent.set(''); this.filterClient.set('');
     this.filterNr.set(''); this.filterPhone.set(''); this.filterStatus.set('');
-    this.filterDateFrom = null; this.filterDateTo = null;
+    this.filterDateFrom.set(''); this.filterDateTo.set('');
   }
 
   formatDate(iso: string): string {

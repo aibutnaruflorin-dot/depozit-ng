@@ -15,6 +15,15 @@
   font-weight: 600; font-size: 0.8rem; text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+.date-range-filter {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.col-date-input {
+  font-size: 0.72rem !important;
+  padding: 2px 4px !important;
+  cursor: pointer;
+}
+
 .col-filter-input {
   width: 100%; font-size: 0.78rem; font-weight: 400;
   border: 1px solid var(--color-border); border-radius: 4px;
@@ -38,11 +47,6 @@
   background: var(--color-primary-light); color: var(--color-primary);
   padding: 2px 10px; border-radius: 12px; font-size: 0.875rem; font-weight: 600;
 }
-.filters-bar {
-  display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem;
-}
-.filter-field { min-width: 160px; }
-.date-picker { height: 56px; }
 
 /* ── Date cell with reference ── */
 .date-cell { display: flex; flex-direction: column; gap: 2px; }

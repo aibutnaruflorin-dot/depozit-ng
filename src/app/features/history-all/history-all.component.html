@@ -11,22 +11,14 @@
       <mat-icon>{{ hideSuperseded() ? 'visibility_off' : 'visibility' }}</mat-icon>
       {{ hideSuperseded() ? 'Înlocuite ascunse' : 'Înlocuite vizibile' }}
     </button>
+    <button mat-stroked-button (click)="reset()" matTooltip="Resetează toate filtrele">
+      <mat-icon>filter_list_off</mat-icon>
+    </button>
     <button mat-stroked-button (click)="exportCsv()" matTooltip="Descarcă Excel / CSV">
       <mat-icon>download</mat-icon>
       Excel
     </button>
   </div>
-</div>
-
-<div class="filters-bar">
-  <p-datepicker [(ngModel)]="filterDateFrom" placeholder="De la data" dateFormat="dd.mm.yy"
-    [showIcon]="true" class="date-picker" />
-  <p-datepicker [(ngModel)]="filterDateTo" placeholder="Până la data" dateFormat="dd.mm.yy"
-    [showIcon]="true" class="date-picker" />
-  <button mat-stroked-button (click)="reset()">
-    <mat-icon>filter_list_off</mat-icon>
-    Resetează
-  </button>
 </div>
 
 <p-table [value]="sortedFiltered()" [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15,30,50]"
@@ -44,7 +36,16 @@
         </div>
       </th>
       <th>
-        <div class="col-header">Data</div>
+        <div class="col-header">Data
+          <div class="date-range-filter" (click)="$event.stopPropagation()">
+            <input class="col-filter-input col-date-input" type="date"
+                   [ngModel]="filterDateFrom()" (ngModelChange)="filterDateFrom.set($event)"
+                   title="De la data">
+            <input class="col-filter-input col-date-input" type="date"
+                   [ngModel]="filterDateTo()" (ngModelChange)="filterDateTo.set($event)"
+                   title="Până la data">
+          </div>
+        </div>
       </th>
       <th>
         <div class="col-header">Client
@@ -82,7 +83,6 @@
             <option value="În așteptare">În așteptare</option>
             <option value="Acceptată">Acceptată</option>
             <option value="Anulată">Anulată</option>
-            <option value="Înlocuită">Înlocuită</option>
           </select>
         </div>
       </th>
