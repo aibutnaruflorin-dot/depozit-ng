@@ -55,23 +55,21 @@
           <span class="product-meta">
             <span class="cat-chip">{{ p.category }}</span>
             <span class="um-text">{{ p.um }}</span>
+            @if (p.qty > 0) {
+              <span class="stoc-text">Stoc: {{ p.qty }}</span>
+            }
           </span>
         </div>
         <div class="row-actions" (click)="$event.stopPropagation()">
-          <button mat-icon-button class="qty-adj" (click)="decPending(p.nr)">
-            <mat-icon>remove</mat-icon>
-          </button>
+          <button class="qty-btn" (click)="decPending(p.nr)">−</button>
           <input class="row-qty" type="number" min="1"
                  [value]="getPendingQty(p.nr)"
                  (change)="setPendingQty(p.nr, $any($event.target).value)"
                  (click)="$any($event.target).select()">
-          <button mat-icon-button class="qty-adj" (click)="incPending(p.nr)">
-            <mat-icon>add</mat-icon>
-          </button>
-          <button mat-flat-button class="add-btn"
-                  [class.in-cart]="isInCart(p.nr)"
+          <button class="qty-btn" (click)="incPending(p.nr)">+</button>
+          <button class="add-btn" [class.in-cart]="isInCart(p.nr)"
                   (click)="addProduct(p)"
-                  [matTooltip]="isInCart(p.nr) ? 'Actualizează cantitatea' : 'Adaugă în coș'">
+                  [title]="isInCart(p.nr) ? 'Actualizează cantitatea' : 'Adaugă în coș'">
             <mat-icon>{{ isInCart(p.nr) ? 'check' : 'add_shopping_cart' }}</mat-icon>
           </button>
         </div>
