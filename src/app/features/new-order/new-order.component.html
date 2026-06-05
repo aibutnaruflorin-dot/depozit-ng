@@ -31,9 +31,9 @@
   <mat-form-field appearance="outline" class="search-field">
     <mat-label>Caută produs</mat-label>
     <mat-icon matPrefix>search</mat-icon>
-    <input matInput [(ngModel)]="searchQuery" placeholder="Nume sau cod…" autocomplete="off">
-    @if (searchQuery) {
-      <button matSuffix mat-icon-button (click)="searchQuery = ''" aria-label="Șterge">
+    <input matInput [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Nume sau cod…" autocomplete="off">
+    @if (searchQuery()) {
+      <button matSuffix mat-icon-button (click)="searchQuery.set('')" aria-label="Șterge">
         <mat-icon>close</mat-icon>
       </button>
     }
@@ -95,14 +95,14 @@
         <div class="row-actions" (click)="$event.stopPropagation()">
           <button class="qty-btn" (click)="decPending(p)">−</button>
           <input class="row-qty" type="number" min="0"
-                 [value]="getPendingQty(p)"
+                 [value]="pendingQtyMap()[pkey(p)] ?? 0"
                  (change)="setPendingQty(p, $any($event.target).value)"
                  (click)="$any($event.target).select()">
           <button class="qty-btn" (click)="incPending(p)">+</button>
-          <button class="add-btn" [class.in-cart]="isInCart(p)"
+          <button class="add-btn" [class.in-cart]="cart().some(i => pkey(i.product) === pkey(p))"
                   (click)="addProduct(p)"
-                  [title]="isInCart(p) ? 'Actualizează cantitatea' : 'Adaugă în coș'">
-            <mat-icon>{{ isInCart(p) ? 'check' : 'add_shopping_cart' }}</mat-icon>
+                  [title]="cart().some(i => pkey(i.product) === pkey(p)) ? 'Actualizează cantitatea' : 'Adaugă în coș'">
+            <mat-icon>{{ cart().some(i => pkey(i.product) === pkey(p)) ? 'check' : 'add_shopping_cart' }}</mat-icon>
           </button>
         </div>
       </div>

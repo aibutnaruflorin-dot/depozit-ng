@@ -34,14 +34,15 @@ export class NewOrderComponent implements OnInit {
   phoneCtrl = new FormControl('');
   noteCtrl  = new FormControl('');
 
-  searchQuery    = '';
+  searchQuery    = signal('');
   categoryFilter = signal('');
   selectedCatIds = signal<string[]>([]);
   cart           = signal<CartItem[]>([]);
   showCart       = signal(false);
   displayMode    = signal<'mixed' | 'grouped'>('mixed');
 
-  private _pendingQty = signal<Record<string, number>>({});
+  private _pendingQty     = signal<Record<string, number>>({});
+  readonly pendingQtyMap  = this._pendingQty.asReadonly();
 
   submitting = false;
   submitted  = false;
@@ -73,7 +74,7 @@ export class NewOrderComponent implements OnInit {
   }
 
   readonly suggestions = computed(() => {
-    const q    = this.searchQuery.trim().toLowerCase();
+    const q    = this.searchQuery().trim().toLowerCase();
     const cat  = this.categoryFilter();
     const mode = this.displayMode();
     const base = mode === 'grouped'
