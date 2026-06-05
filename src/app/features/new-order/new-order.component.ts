@@ -44,7 +44,7 @@ export class NewOrderComponent implements OnInit {
   showCart       = signal(false);
   displayMode    = signal<'mixed' | 'grouped'>('mixed');
 
-  private _pendingQty     = signal<Record<string, number>>({});
+  private _pendingQty     = signal<Record<string, number | undefined>>({});
   readonly pendingQtyMap  = this._pendingQty.asReadonly();
 
   confirmDeleteKey = signal<string | null>(null);

@@ -79,7 +79,7 @@ export class HistoryAllComponent {
   hideSuperseded = signal(true);
 
   expandedRows = signal<Record<string, boolean>>({});
-  private _editQty = signal<Record<string, number>>({});
+  private _editQty = signal<Record<string, number | undefined>>({});
   readonly editQtyMap = this._editQty.asReadonly();
 
   readonly agents = computed(() => {
