@@ -8,9 +8,6 @@ import { OrdersService, generateId } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TableModule } from 'primeng/table';
@@ -50,8 +47,7 @@ function sortByFamily(orders: Order[]): Order[] {
   standalone: true,
   imports: [
     CommonModule, FormsModule,
-    MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatSnackBarModule, MatTooltipModule,
+    MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
     TableModule, TagModule, DatePickerModule
   ],
   templateUrl: './history-all.component.html',

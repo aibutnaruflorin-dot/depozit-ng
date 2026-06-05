@@ -20,16 +20,6 @@
 
 <!-- Date filters + reset -->
 <div class="filters-bar">
-  <mat-form-field appearance="outline" class="filter-field">
-    <mat-label>Agent</mat-label>
-    <mat-select [ngModel]="filterAgent()" (ngModelChange)="filterAgent.set($event)">
-      <mat-option value="">Toți agenții</mat-option>
-      @for (a of agents(); track a.id) {
-        <mat-option [value]="a.id">{{ a.name }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-
   <p-datepicker [(ngModel)]="filterDateFrom" placeholder="De la data" dateFormat="dd.mm.yy"
     [showIcon]="true" class="date-picker" />
 
@@ -74,8 +64,19 @@
                  placeholder="filtrează…" (click)="$event.stopPropagation()">
         </div>
       </th>
-      <th>Agent</th>
-      <th>Produse</th>
+      <th>
+        <div class="col-header">Agent
+          <select class="col-filter-select"
+                  [ngModel]="filterAgent()" (ngModelChange)="filterAgent.set($event)"
+                  (click)="$event.stopPropagation()">
+            <option value="">Toți</option>
+            @for (a of agents(); track a.id) {
+              <option [value]="a.id">{{ a.name }}</option>
+            }
+          </select>
+        </div>
+      </th>
+      <th class="no-sort-col">Produse</th>
       <th>
         <div class="col-header">Status
           <select class="col-filter-select"
