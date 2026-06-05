@@ -139,24 +139,55 @@
         </td>
       </tr>
 
-      <!-- Expansion — read-only product list -->
+      <!-- Expansion -->
       @if (expandedRows()[order.id]) {
         <tr class="expansion-row">
           <td colspan="8" class="expansion-cell">
             <div class="expansion-content" (click)="$event.stopPropagation()">
               <div class="expansion-products">
-                @for (p of order.products; track p.nr) {
-                  <div class="exp-product-row"
-                       [class.anulat-row-product]="order.status === 'anulat'">
-                    <span class="exp-product-name"
-                          [class.line-through]="order.status === 'anulat'">{{ p.name }}</span>
-                    <span class="exp-product-um">{{ p.um }}</span>
-                    <span class="exp-qty-static"
-                          [class.line-through]="order.status === 'anulat'">{{ p.qty }}</span>
-                  </div>
+                @for (p of order.products; track p.nr; let j = $index) {
+                  @if (order.status === 'trimis' && !order.superseded) {
+                    <!-- Editabil — comandă în așteptare -->
+                    <div class="exp-product-row"
+                         [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
+                      <span class="exp-product-name">{{ p.name }}</span>
+                      <span class="exp-product-um">{{ p.um }}</span>
+                      <div class="exp-qty-controls">
+                        <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
+                          <mat-icon>remove</mat-icon>
+                        </button>
+                        <input class="eq-input" type="number" min="0"
+                               [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
+                               (change)="setEditQty(order.id, j, p.qty, $any($event.target).value)"
+                               (click)="$any($event.target).select()">
+                        <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)">
+                          <mat-icon>add</mat-icon>
+                        </button>
+                      </div>
+                      @if ((editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0) {
+                        <span class="exp-remove-hint">va fi eliminat</span>
+                      }
+                    </div>
+                  } @else {
+                    <!-- Read-only — comandă procesată -->
+                    <div class="exp-product-row"
+                         [class.anulat-row-product]="order.status === 'anulat'">
+                      <span class="exp-product-name"
+                            [class.line-through]="order.status === 'anulat'">{{ p.name }}</span>
+                      <span class="exp-product-um">{{ p.um }}</span>
+                      <span class="exp-qty-static"
+                            [class.line-through]="order.status === 'anulat'">{{ p.qty }}</span>
+                    </div>
+                  }
                 }
               </div>
               <div class="expansion-footer">
+                @if (order.status === 'trimis' && !order.superseded) {
+                  <button mat-flat-button color="primary" (click)="reviseOrder(order)">
+                    <mat-icon>send</mat-icon>
+                    Retrimite modificat
+                  </button>
+                }
                 <button mat-stroked-button (click)="collapseRow(order.id)">
                   <mat-icon>close</mat-icon>
                   Închide

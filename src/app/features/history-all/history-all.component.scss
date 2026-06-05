@@ -162,3 +162,10 @@
 }
 
 .order-ref-accept { color: #2e7d32; }
+
+.exp-qty-static {
+  min-width: 36px; text-align: center; font-weight: 600;
+  font-size: 0.95rem; color: var(--color-text);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 4px; padding: 2px 8px;
+}

@@ -95,15 +95,12 @@
         [class.anulat-row]="order.status === 'anulat' && !order.superseded"
         [class.family-child]="!!order.revisedFromId && order.status === 'trimis'"
         [class.family-member]="order.superseded || (!!order.revisedFromId && order.status === 'trimis')"
-        (click)="isPending(order) && toggleExpand(order.id)"
-        [style.cursor]="isPending(order) ? 'pointer' : 'default'">
+        (click)="toggleExpand(order.id)" style="cursor:pointer">
       <td>
-        @if (isPending(order)) {
-          <button mat-icon-button class="expand-btn"
-                  (click)="$event.stopPropagation(); toggleExpand(order.id)">
-            <mat-icon>{{ expandedRows()[order.id] ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
-          </button>
-        }
+        <button mat-icon-button class="expand-btn"
+                (click)="$event.stopPropagation(); toggleExpand(order.id)">
+          <mat-icon>{{ expandedRows()[order.id] ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+        </button>
       </td>
       <td>
         <span class="order-num" [class.order-num-faded]="order.superseded || order.status === 'anulat'">
@@ -151,49 +148,59 @@
       </td>
     </tr>
 
-    <!-- Expansion — only for pending orders -->
-    @if (expandedRows()[order.id] && isPending(order)) {
+    <!-- Expansion — all orders -->
+    @if (expandedRows()[order.id]) {
       <tr class="expansion-row">
         <td colspan="9" class="expansion-cell">
           <div class="expansion-content" (click)="$event.stopPropagation()">
             <div class="expansion-products">
               @for (p of order.products; track p.nr; let j = $index) {
-                <div class="exp-product-row"
-                     [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
-                  <span class="exp-product-name">{{ p.name }}</span>
-                  <span class="exp-product-um">{{ p.um }}</span>
-                  <div class="exp-qty-controls">
-                    <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
-                      <mat-icon>remove</mat-icon>
-                    </button>
-                    <input class="eq-input" type="number" min="0"
-                           [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
-                           (change)="setEditQty(order.id, j, p.qty, $any($event.target).value)"
-                           (click)="$any($event.target).select()">
-                    <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)">
-                      <mat-icon>add</mat-icon>
-                    </button>
+                @if (isPending(order)) {
+                  <div class="exp-product-row"
+                       [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
+                    <span class="exp-product-name">{{ p.name }}</span>
+                    <span class="exp-product-um">{{ p.um }}</span>
+                    <div class="exp-qty-controls">
+                      <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
+                        <mat-icon>remove</mat-icon>
+                      </button>
+                      <input class="eq-input" type="number" min="0"
+                             [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
+                             (change)="setEditQty(order.id, j, p.qty, $any($event.target).value)"
+                             (click)="$any($event.target).select()">
+                      <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)">
+                        <mat-icon>add</mat-icon>
+                      </button>
+                    </div>
+                    @if ((editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0) {
+                      <span class="exp-remove-hint">va fi eliminat</span>
+                    }
                   </div>
-                  @if ((editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0) {
-                    <span class="exp-remove-hint">va fi eliminat</span>
-                  }
-                </div>
+                } @else {
+                  <div class="exp-product-row">
+                    <span class="exp-product-name">{{ p.name }}</span>
+                    <span class="exp-product-um">{{ p.um }}</span>
+                    <span class="exp-qty-static">{{ p.qty }}</span>
+                  </div>
+                }
               }
             </div>
             <div class="expansion-footer">
-              <button mat-flat-button class="btn-cancel-order" (click)="cancelOrder(order)">
-                <mat-icon>block</mat-icon>
-                Anulează
-              </button>
-              <button mat-flat-button class="btn-accept-order" (click)="acceptOrder(order)">
-                <mat-icon>check_circle</mat-icon>
-                Acceptă
-              </button>
-              <button mat-flat-button color="primary" (click)="finalizeOrder(order)"
-                      [disabled]="!hasQtyChanges(order)">
-                <mat-icon>edit_note</mat-icon>
-                Finalizează cu modificări
-              </button>
+              @if (isPending(order)) {
+                <button mat-flat-button class="btn-cancel-order" (click)="cancelOrder(order)">
+                  <mat-icon>block</mat-icon>
+                  Anulează
+                </button>
+                <button mat-flat-button class="btn-accept-order" (click)="acceptOrder(order)">
+                  <mat-icon>check_circle</mat-icon>
+                  Acceptă
+                </button>
+                <button mat-flat-button color="primary" (click)="finalizeOrder(order)"
+                        [disabled]="!hasQtyChanges(order)">
+                  <mat-icon>edit_note</mat-icon>
+                  Finalizează cu modificări
+                </button>
+              }
               <button mat-stroked-button (click)="collapseRow(order.id)">
                 Închide
               </button>

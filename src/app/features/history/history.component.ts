@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { OrdersService } from '../../core/services/orders.service';
+import { OrdersService, generateId } from '../../core/services/orders.service';
 import { Order } from '../../core/models/order.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -53,6 +53,8 @@ function sortByFamily(orders: Order[]): Order[] {
 })
 export class HistoryComponent {
   expandedRows = signal<Record<string, boolean>>({});
+  private _editQty = signal<Record<string, number>>({});
+  readonly editQtyMap = this._editQty.asReadonly();
 
   hideSuperseded = signal(true);
   filterNr     = signal('');
@@ -166,6 +168,55 @@ export class HistoryComponent {
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click();
     document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
+  ekey(orderId: string, idx: number): string { return `${orderId}::${idx}`; }
+
+  getEditQty(orderId: string, idx: number, def: number): number {
+    return this._editQty()[this.ekey(orderId, idx)] ?? def;
+  }
+  setEditQty(orderId: string, idx: number, def: number, val: number | string): void {
+    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: Math.max(0, parseInt(String(val)) || 0) }));
+  }
+  incEditQty(orderId: string, idx: number, def: number): void {
+    this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1);
+  }
+  decEditQty(orderId: string, idx: number, def: number): void {
+    this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);
+  }
+
+  reviseOrder(order: Order): void {
+    const newProducts = order.products
+      .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
+      .filter(p => p.qty > 0);
+
+    if (newProducts.length === 0) {
+      this.snackBar.open('Adaugă cel puțin un produs cu qty > 0.', '', { duration: 2500 });
+      return;
+    }
+
+    const session = this.auth.session()!;
+    const newOrder: Order = {
+      id:            generateId(),
+      timestamp:     new Date().toISOString(),
+      agent:         { id: session.userId, name: session.name, username: session.username },
+      client:        order.client,
+      products:      newProducts,
+      status:        'trimis',
+      revisedFromId: order.id
+    };
+
+    this.ordersService.reviseOrder(order.id, newOrder);
+    const text = this.ordersService.generateText(newOrder);
+    window.open(this.ordersService.generateMailto(newOrder, text), '_blank');
+
+    this._editQty.update(m => {
+      const n = { ...m };
+      order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
+      return n;
+    });
+    this.collapseRow(order.id);
+    this.snackBar.open('Comanda revizuită a fost trimisă!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   toggleExpand(orderId: string): void {
