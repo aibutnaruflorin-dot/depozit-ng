@@ -9,6 +9,27 @@
   mat-icon { font-size: 18px; width: 18px; height: 18px; }
 }
 
+/* ── Material date range picker in th ── */
+.date-range-field {
+  width: 100%;
+  ::ng-deep {
+    .mat-mdc-text-field-wrapper { padding: 0 6px; }
+    .mat-mdc-form-field-flex { height: 36px; align-items: center; }
+    .mat-date-range-input-container { font-size: 0.72rem; }
+    .mat-mdc-icon-button.mat-mdc-button-base { width: 28px; height: 28px; padding: 2px; }
+    .mat-date-range-input-separator { margin: 0 2px; }
+  }
+}
+
+/* ── Produse sort ── */
+.col-header-sort {
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 600; font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.04em; cursor: pointer; user-select: none; gap: 4px;
+  &:hover { color: var(--color-primary); }
+}
+.sort-icon { font-size: 16px; width: 16px; height: 16px; vertical-align: middle; }
+
 /* ── Column header filters ── */
 .col-header {
   display: flex; flex-direction: column; gap: 4px;

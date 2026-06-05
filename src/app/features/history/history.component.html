@@ -11,6 +11,9 @@
       <mat-icon>{{ hideSuperseded() ? 'visibility_off' : 'visibility' }}</mat-icon>
       {{ hideSuperseded() ? 'Înlocuite ascunse' : 'Înlocuite vizibile' }}
     </button>
+    <button mat-stroked-button (click)="resetFilters()" matTooltip="Resetează toate filtrele">
+      <mat-icon>filter_list_off</mat-icon>
+    </button>
     <button mat-stroked-button (click)="exportCsv()" matTooltip="Descarcă Excel / CSV">
       <mat-icon>download</mat-icon>
       Excel
@@ -43,7 +46,17 @@
           </div>
         </th>
         <th>
-          <div class="col-header">Data</div>
+          <div class="col-header">Data
+            <mat-form-field appearance="outline" class="date-range-field"
+                            subscriptSizing="dynamic" (click)="$event.stopPropagation()">
+              <mat-date-range-input [rangePicker]="datePicker" [formGroup]="dateRangeForm" separator="–">
+                <input matStartDate formControlName="start" placeholder="De la">
+                <input matEndDate formControlName="end" placeholder="Până la">
+              </mat-date-range-input>
+              <mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
+              <mat-date-range-picker #datePicker></mat-date-range-picker>
+            </mat-form-field>
+          </div>
         </th>
         <th>
           <div class="col-header">Client
@@ -59,7 +72,14 @@
                    placeholder="filtrează…" (click)="$event.stopPropagation()">
           </div>
         </th>
-        <th>Produse</th>
+        <th>
+          <div class="col-header-sort" (click)="$event.stopPropagation(); cycleSortProduse()">
+            Produse
+            <mat-icon class="sort-icon">
+              {{ sortProduse() === 'asc' ? 'arrow_upward' : sortProduse() === 'desc' ? 'arrow_downward' : 'unfold_more' }}
+            </mat-icon>
+          </div>
+        </th>
         <th>
           <div class="col-header">Status
             <select class="col-filter-select"
@@ -69,7 +89,6 @@
               <option value="În așteptare">În așteptare</option>
               <option value="Acceptată">Acceptată</option>
               <option value="Anulată">Anulată</option>
-              <option value="Înlocuită">Înlocuită</option>
             </select>
           </div>
         </th>

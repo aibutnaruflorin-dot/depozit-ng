@@ -1,7 +1,8 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/services/auth.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { Order } from '../../core/models/order.model';
@@ -9,6 +10,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 
@@ -43,15 +48,25 @@ function sortByFamily(orders: Order[]): Order[] {
 @Component({
   selector: 'app-history',
   standalone: true,
+  providers: [provideNativeDateAdapter()],
   imports: [
-    CommonModule, FormsModule, RouterModule,
+    CommonModule, FormsModule, ReactiveFormsModule, RouterModule,
     MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
+    MatDatepickerModule, MatFormFieldModule, MatInputModule,
     TableModule, TagModule
   ],
   templateUrl: './history.component.html',
   styleUrl:    './history.component.scss'
 })
 export class HistoryComponent {
+  readonly dateRangeForm = new FormGroup({
+    start: new FormControl<Date | null>(null),
+    end:   new FormControl<Date | null>(null),
+  });
+  private readonly _dateRange = toSignal(this.dateRangeForm.valueChanges, {
+    initialValue: this.dateRangeForm.value
+  });
+
   expandedRows = signal<Record<string, boolean>>({});
   private _editQty = signal<Record<string, number>>({});
   readonly editQtyMap = this._editQty.asReadonly();
@@ -61,6 +76,7 @@ export class HistoryComponent {
   filterClient = signal('');
   filterPhone  = signal('');
   filterStatus = signal('');
+  sortProduse  = signal<'' | 'asc' | 'desc'>('');
 
   constructor(
     public  auth: AuthService,
@@ -74,10 +90,12 @@ export class HistoryComponent {
   });
 
   readonly sortedOrders = computed(() => {
-    const nr     = this.filterNr().trim().replace('#', '');
-    const client = this.filterClient().trim().toLowerCase();
-    const phone  = this.filterPhone().trim();
-    const status = this.filterStatus();
+    const nr        = this.filterNr().trim().replace('#', '');
+    const client    = this.filterClient().trim().toLowerCase();
+    const phone     = this.filterPhone().trim();
+    const status    = this.filterStatus();
+    const dateRange = this._dateRange();
+    const sortDir   = this.sortProduse();
 
     let orders = this.hideSuperseded()
       ? this.myOrders().filter(o => !o.superseded)
@@ -89,12 +107,39 @@ export class HistoryComponent {
     if (status) orders = orders.filter(o =>
       status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
       status === 'Acceptată'    ? o.status === 'acceptat' :
-      status === 'Anulată'      ? o.status === 'anulat'   :
-      status === 'Înlocuită'    ? !!o.superseded : true
+      status === 'Anulată'      ? o.status === 'anulat' : true
     );
+    if (dateRange.start) {
+      const from = this._localDate(dateRange.start);
+      orders = orders.filter(o => this._localDate(new Date(o.timestamp)) >= from);
+    }
+    if (dateRange.end) {
+      const to = this._localDate(dateRange.end);
+      orders = orders.filter(o => this._localDate(new Date(o.timestamp)) <= to);
+    }
 
+    if (sortDir) {
+      return [...orders].sort((a, b) =>
+        sortDir === 'asc' ? a.products.length - b.products.length
+                          : b.products.length - a.products.length
+      );
+    }
     return sortByFamily(orders);
   });
+
+  private _localDate(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  cycleSortProduse(): void {
+    this.sortProduse.update(s => s === '' ? 'asc' : s === 'asc' ? 'desc' : '');
+  }
+
+  resetFilters(): void {
+    this.filterNr.set(''); this.filterClient.set(''); this.filterPhone.set(''); this.filterStatus.set('');
+    this.sortProduse.set('');
+    this.dateRangeForm.reset();
+  }
 
   formatDate(iso: string): string {
     return new Date(iso).toLocaleString('ro-RO');
