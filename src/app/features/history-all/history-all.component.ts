@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Order } from '../../core/models/order.model';
 import { User } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
@@ -10,6 +11,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 
@@ -44,22 +49,31 @@ function sortByFamily(orders: Order[]): Order[] {
 @Component({
   selector: 'app-history-all',
   standalone: true,
+  providers: [provideNativeDateAdapter()],
   imports: [
-    CommonModule, FormsModule,
+    CommonModule, FormsModule, ReactiveFormsModule,
     MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
+    MatDatepickerModule, MatFormFieldModule, MatInputModule,
     TableModule, TagModule
   ],
   templateUrl: './history-all.component.html',
   styleUrl:    './history-all.component.scss'
 })
 export class HistoryAllComponent {
-  filterAgent    = signal('');
-  filterNr       = signal('');
-  filterClient   = signal('');
-  filterPhone    = signal('');
-  filterStatus   = signal('');
-  filterDateFrom = signal('');
-  filterDateTo   = signal('');
+  readonly dateRangeForm = new FormGroup({
+    start: new FormControl<Date | null>(null),
+    end:   new FormControl<Date | null>(null),
+  });
+  private readonly _dateRange = toSignal(this.dateRangeForm.valueChanges, {
+    initialValue: this.dateRangeForm.value
+  });
+
+  filterAgent  = signal('');
+  filterNr     = signal('');
+  filterClient = signal('');
+  filterPhone  = signal('');
+  filterStatus = signal('');
+  sortProduse  = signal<'' | 'asc' | 'desc'>('');
   hideSuperseded = signal(true);
 
   expandedRows = signal<Record<string, boolean>>({});
@@ -72,33 +86,47 @@ export class HistoryAllComponent {
   });
 
   readonly filtered = computed(() => {
-    const agent    = this.filterAgent();
-    const nr       = this.filterNr().trim().replace('#', '');
-    const client   = this.filterClient().trim().toLowerCase();
-    const phone    = this.filterPhone().trim();
-    const status   = this.filterStatus();
-    const dateFrom = this.filterDateFrom();
-    const dateTo   = this.filterDateTo();
+    const agent     = this.filterAgent();
+    const nr        = this.filterNr().trim().replace('#', '');
+    const client    = this.filterClient().trim().toLowerCase();
+    const phone     = this.filterPhone().trim();
+    const status    = this.filterStatus();
+    const dateRange = this._dateRange();
 
     let orders = this.ordersService.orders();
-    if (agent)    orders = orders.filter(o => String(o.agent?.id) === agent);
-    if (nr)       orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
-    if (client)   orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
-    if (phone)    orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
-    if (status)   orders = orders.filter(o =>
+    if (agent)  orders = orders.filter(o => String(o.agent?.id) === agent);
+    if (nr)     orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
+    if (client) orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
+    if (phone)  orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
+    if (status) orders = orders.filter(o =>
       status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
       status === 'Acceptată'    ? o.status === 'acceptat' :
       status === 'Anulată'      ? o.status === 'anulat'   : true
     );
-    if (dateFrom) orders = orders.filter(o => o.timestamp.slice(0, 10) >= dateFrom);
-    if (dateTo)   orders = orders.filter(o => o.timestamp.slice(0, 10) <= dateTo);
+    if (dateRange.start) {
+      const from = this._localDate(dateRange.start);
+      orders = orders.filter(o => this._localDate(new Date(o.timestamp)) >= from);
+    }
+    if (dateRange.end) {
+      const to = this._localDate(dateRange.end);
+      orders = orders.filter(o => this._localDate(new Date(o.timestamp)) <= to);
+    }
     return orders;
   });
 
   readonly sortedFiltered = computed(() => {
-    const orders = this.hideSuperseded()
+    const sortDir = this.sortProduse();
+    let orders = this.hideSuperseded()
       ? this.filtered().filter(o => !o.superseded)
       : this.filtered();
+
+    if (sortDir) {
+      return [...orders].sort((a, b) =>
+        sortDir === 'asc'
+          ? a.products.length - b.products.length
+          : b.products.length - a.products.length
+      );
+    }
     return sortByFamily(orders);
   });
 
@@ -108,6 +136,14 @@ export class HistoryAllComponent {
     private storage: StorageService,
     private snackBar: MatSnackBar
   ) {}
+
+  private _localDate(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  cycleSortProduse(): void {
+    this.sortProduse.update(s => s === '' ? 'asc' : s === 'asc' ? 'desc' : '');
+  }
 
   isPending(order: Order): boolean {
     return order.status === 'trimis' && !order.superseded;
@@ -123,7 +159,8 @@ export class HistoryAllComponent {
   reset(): void {
     this.filterAgent.set(''); this.filterClient.set('');
     this.filterNr.set(''); this.filterPhone.set(''); this.filterStatus.set('');
-    this.filterDateFrom.set(''); this.filterDateTo.set('');
+    this.sortProduse.set('');
+    this.dateRangeForm.reset();
   }
 
   formatDate(iso: string): string {
@@ -179,24 +216,16 @@ export class HistoryAllComponent {
     const newProducts = order.products
       .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
       .filter(p => p.qty > 0);
-
     if (newProducts.length === 0) {
       this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
       return;
     }
-
     const newOrder: Order = {
-      id:            generateId(),
-      timestamp:     new Date().toISOString(),
-      agent:         order.agent,
-      client:        order.client,
-      products:      newProducts,
-      status:        'acceptat',
-      revisedFromId: order.id
+      id: generateId(), timestamp: new Date().toISOString(),
+      agent: order.agent, client: order.client,
+      products: newProducts, status: 'acceptat', revisedFromId: order.id
     };
-
     this.ordersService.reviseOrder(order.id, newOrder);
-
     this._editQty.update(m => {
       const n = { ...m };
       order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
