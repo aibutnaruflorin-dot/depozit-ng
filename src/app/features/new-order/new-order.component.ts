@@ -116,14 +116,17 @@ export class NewOrderComponent implements OnInit {
 
   addProduct(product: Product): void {
     const pending = this.getPendingQty(product);
-    const qty     = pending > 0 ? pending : 1;
+    const addQty  = pending > 0 ? pending : 1;   // always at least +1
     const key     = this.pkey(product);
     if (this.isInCart(product)) {
-      this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty } : i));
-      this.snackBar.open(`✓ Cantitate actualizată: ${qty} ${product.um}`, '', { duration: 1500, panelClass: ['snack-success'] });
+      this.cart.update(c => c.map(i =>
+        this.pkey(i.product) === key ? { ...i, qty: i.qty + addQty } : i
+      ));
+      const newQty = this.cart().find(i => this.pkey(i.product) === key)?.qty ?? addQty;
+      this.snackBar.open(`+${addQty} → total ${newQty} ${product.um}`, '', { duration: 1200, panelClass: ['snack-success'] });
     } else {
-      this.cart.update(c => [...c, { product, qty }]);
-      this.snackBar.open(`✓ ${product.name.slice(0, 40)} adăugat (${qty} ${product.um}).`, '', { duration: 1500, panelClass: ['snack-success'] });
+      this.cart.update(c => [...c, { product, qty: addQty }]);
+      this.snackBar.open(`✓ Adăugat (${addQty} ${product.um})`, '', { duration: 1200, panelClass: ['snack-success'] });
     }
     this._pendingQty.update(m => { const n = { ...m }; delete n[key]; return n; });
   }
@@ -140,13 +143,20 @@ export class NewOrderComponent implements OnInit {
   }
 
   decrementQty(product: Product): void {
-    const key = this.pkey(product);
-    this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty: Math.max(1, i.qty - 1) } : i));
+    const key  = this.pkey(product);
+    const item = this.cart().find(i => this.pkey(i.product) === key);
+    if (!item) return;
+    if (item.qty <= 1) { this.removeProduct(product); return; }
+    this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty: i.qty - 1 } : i));
   }
 
   removeProduct(product: Product): void {
-    const key = this.pkey(product);
-    this.cart.update(c => c.filter(i => this.pkey(i.product) !== key));
+    const key  = this.pkey(product);
+    const name = product.name.slice(0, 35);
+    const ref  = this.snackBar.open(`Elimini "${name}" din coș?`, 'Da, elimină', { duration: 4000 });
+    ref.onAction().subscribe(() => {
+      this.cart.update(c => c.filter(i => this.pkey(i.product) !== key));
+    });
   }
 
   clearCart(): void {
