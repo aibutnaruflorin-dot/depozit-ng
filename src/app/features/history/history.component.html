@@ -1,0 +1,65 @@
+<div class="page-header">
+  <h1 class="page-title">
+    <mat-icon>list_alt</mat-icon>
+    Comenzile mele
+    <span class="count-badge">{{ myOrders().length }}</span>
+  </h1>
+</div>
+
+@if (myOrders().length === 0) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">inbox</mat-icon>
+    <h3>Nicio comandă trimisă</h3>
+    <p>Comenzile tale vor apărea aici după ce le trimiți.</p>
+    <a mat-flat-button routerLink="/app/new-order" class="btn-start">
+      <mat-icon>add_shopping_cart</mat-icon>
+      Comandă nouă
+    </a>
+  </div>
+} @else {
+  <!-- PrimeNG DataTable -->
+  <p-table [value]="myOrders()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]"
+           [tableStyle]="{'min-width':'640px'}" styleClass="p-datatable-sm p-datatable-striped"
+           [globalFilterFields]="['client.name','client.phone','id']"
+           sortField="timestamp" [sortOrder]="-1">
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="timestamp">Data <p-sortIcon field="timestamp"/></th>
+        <th>Client</th>
+        <th>Telefon</th>
+        <th pSortableColumn="products.length">Produse</th>
+        <th>Status</th>
+        <th>Acțiuni</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-order>
+      <tr>
+        <td>{{ formatDate(order.timestamp) }}</td>
+        <td><strong>{{ order.client.name }}</strong></td>
+        <td>{{ order.client.phone }}</td>
+        <td>{{ order.products.length }} articole</td>
+        <td>
+          <p-tag [value]="order.status" severity="success" />
+        </td>
+        <td>
+          <div style="display:flex;gap:0.25rem">
+            <button mat-icon-button (click)="resendEmail(order)" matTooltip="Retrimite email">
+              <mat-icon>email</mat-icon>
+            </button>
+            <button mat-icon-button (click)="copyOrder(order)" matTooltip="Copiază text">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted)">
+        Nicio comandă găsită.
+      </td></tr>
+    </ng-template>
+  </p-table>
+}

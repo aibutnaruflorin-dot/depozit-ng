@@ -1,0 +1,79 @@
+<mat-sidenav-container class="app-container">
+
+  <!-- ══════ SIDEBAR ══════ -->
+  <mat-sidenav #sidenav
+    [mode]="isMobile ? 'over' : 'side'"
+    [opened]="!isMobile"
+    class="app-sidenav">
+
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <span class="brand-icon">📦</span>
+      <span class="brand-name">Depozit</span>
+      @if (isMobile) {
+        <button mat-icon-button class="close-btn" (click)="sidenav.close()" aria-label="Închide">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </div>
+
+    <mat-divider />
+
+    <!-- Navigation -->
+    <mat-nav-list class="sidebar-nav">
+      @for (item of visibleNavItems; track item.route) {
+        <mat-list-item
+          [class.active]="isActive(item.route)"
+          (click)="navigate(item.route)"
+          [attr.aria-current]="isActive(item.route) ? 'page' : null">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </mat-list-item>
+      }
+    </mat-nav-list>
+
+    <!-- User footer -->
+    <div class="sidebar-footer">
+      <mat-divider />
+      <div class="user-info">
+        <div class="user-avatar">{{ auth.userInitial() }}</div>
+        <div class="user-details">
+          <div class="user-name">{{ auth.userName() }}</div>
+          <div class="user-role">{{ auth.roleLabel() }}</div>
+        </div>
+      </div>
+      <button mat-stroked-button class="logout-btn" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Deconectare
+      </button>
+    </div>
+  </mat-sidenav>
+
+  <!-- ══════ MAIN CONTENT ══════ -->
+  <mat-sidenav-content class="app-content">
+
+    <!-- Top toolbar -->
+    <mat-toolbar class="app-toolbar">
+      @if (isMobile) {
+        <button mat-icon-button (click)="sidenav.open()" aria-label="Deschide meniu">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+
+      <span class="toolbar-spacer"></span>
+
+      <!-- Dark mode toggle -->
+      <button mat-icon-button (click)="toggleTheme()"
+        [matTooltip]="darkMode() ? 'Mod luminos' : 'Mod întunecat'"
+        aria-label="Comută tema">
+        <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <!-- Page content -->
+    <div class="page-content">
+      <router-outlet />
+    </div>
+  </mat-sidenav-content>
+
+</mat-sidenav-container>

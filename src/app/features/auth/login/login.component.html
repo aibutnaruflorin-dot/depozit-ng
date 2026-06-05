@@ -1,0 +1,49 @@
+<div class="login-page">
+  <mat-card class="login-card" appearance="outlined">
+    <mat-card-content>
+      <div class="login-header">
+        <div class="login-icon">📦</div>
+        <h1 class="login-title">Depozit</h1>
+        <p class="login-subtitle">Gestiune comenzi · autentificare</p>
+      </div>
+
+      @if (error) {
+        <div class="login-error" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          {{ error }}
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Username</mat-label>
+          <mat-icon matPrefix>person</mat-icon>
+          <input matInput formControlName="username" autocomplete="username"
+                 (input)="error = ''">
+          @if (form.get('username')?.hasError('required') && form.get('username')?.touched) {
+            <mat-error>Username este obligatoriu.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Parolă</mat-label>
+          <mat-icon matPrefix>lock</mat-icon>
+          <input matInput [type]="hidePass ? 'password' : 'text'"
+                 formControlName="password" autocomplete="current-password"
+                 (input)="error = ''">
+          <button mat-icon-button matSuffix type="button"
+                  (click)="hidePass = !hidePass" [attr.aria-label]="hidePass ? 'Arată parola' : 'Ascunde parola'">
+            <mat-icon>{{ hidePass ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (form.get('password')?.hasError('required') && form.get('password')?.touched) {
+            <mat-error>Parola este obligatorie.</mat-error>
+          }
+        </mat-form-field>
+
+        <button mat-flat-button type="submit" class="submit-btn">
+          Autentificare
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

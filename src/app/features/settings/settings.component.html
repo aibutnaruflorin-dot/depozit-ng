@@ -1,0 +1,157 @@
+<div class="settings-page">
+  <h1 class="page-title">
+    <mat-icon>settings</mat-icon>
+    Setări
+  </h1>
+
+  <mat-tab-group animationDuration="200ms" class="settings-tabs">
+
+    <!-- ══ TAB 1: Sursă date (admin only) ══ -->
+    @if (auth.isAdmin()) {
+      <mat-tab label="Sursă date">
+        <div class="tab-content">
+
+          <!-- Meta info -->
+          @if (productsService.meta()) {
+            <div class="meta-info">
+              <mat-icon>info</mat-icon>
+              Ultima sincronizare:
+              <strong>{{ formatDate(productsService.meta()!.lastUpdate) }}</strong>
+              · {{ productsService.meta()!.count }} produse
+              · {{ productsService.meta()!.source === 'api' ? '🌐 API' : '📁 Excel' }}
+            </div>
+          }
+
+          <!-- Source selector -->
+          <mat-card appearance="outlined" class="source-card">
+            <mat-card-content>
+              <mat-radio-group [(ngModel)]="$any(dataSource)" (change)="dataSource.set($event.value)" class="source-radio">
+                <mat-radio-button value="excel">
+                  📁 Import Excel manual
+                  <small>Încărcați fișierul XLS/XLSX dimineața</small>
+                </mat-radio-button>
+                <mat-radio-button value="api">
+                  🌐 Nexus API (live)
+                  <small>Sincronizare automată la deschidere</small>
+                </mat-radio-button>
+              </mat-radio-group>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Excel panel -->
+          @if (dataSource() === 'excel') {
+            <mat-card appearance="outlined" class="panel-card">
+              <mat-card-header>
+                <mat-card-title>Import fișier Excel</mat-card-title>
+                <mat-card-subtitle>Format: XLS/XLSX · Date de la rândul 9</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                @if (importing()) {
+                  <mat-progress-bar mode="indeterminate" />
+                  <p class="loading-text">Se importă produsele...</p>
+                } @else {
+                  <label class="file-upload-label" for="excel-input">
+                    <mat-icon>upload_file</mat-icon>
+                    <span>Click pentru a selecta fișierul XLS/XLSX</span>
+                    <input id="excel-input" type="file" accept=".xls,.xlsx"
+                           (change)="onFileSelected($event)" hidden>
+                  </label>
+                }
+              </mat-card-content>
+            </mat-card>
+          }
+
+          <!-- API panel -->
+          @if (dataSource() === 'api') {
+            <mat-card appearance="outlined" class="panel-card">
+              <mat-card-header>
+                <mat-card-title>Configurare Nexus API</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <form [formGroup]="apiForm" class="api-form">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>URL Server</mat-label>
+                    <mat-icon matPrefix>dns</mat-icon>
+                    <input matInput formControlName="apiUrl" placeholder="http://192.168.1.100">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Cheie API</mat-label>
+                    <mat-icon matPrefix>key</mat-icon>
+                    <input matInput formControlName="apiKey" placeholder="abc123xyz...">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Cod gestiune</mat-label>
+                    <mat-icon matPrefix>warehouse</mat-icon>
+                    <input matInput formControlName="apiGestiune" placeholder="001">
+                  </mat-form-field>
+
+                  @if (apiStatus()) {
+                    <div [class]="'api-status ' + (apiStatus()!.ok ? 'ok' : 'err')">
+                      <mat-icon>{{ apiStatus()!.ok ? 'check_circle' : 'error' }}</mat-icon>
+                      {{ apiStatus()!.msg }}
+                    </div>
+                  }
+
+                  @if (syncing()) { <mat-progress-bar mode="indeterminate" /> }
+
+                  <div class="api-actions">
+                    <button mat-stroked-button (click)="testApi()" [disabled]="testing()">
+                      <mat-icon>wifi_tethering</mat-icon>
+                      {{ testing() ? 'Se testează...' : 'Testează conexiunea' }}
+                    </button>
+                    <button mat-flat-button class="btn-save" (click)="saveAndSync()" [disabled]="syncing()">
+                      <mat-icon>save</mat-icon>
+                      Salvează și sincronizează
+                    </button>
+                  </div>
+                </form>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      </mat-tab>
+    }
+
+    <!-- ══ TAB 2: Contul meu ══ -->
+    <mat-tab label="Contul meu">
+      <div class="tab-content">
+        <mat-card appearance="outlined" class="panel-card">
+          <mat-card-header>
+            <mat-card-title>Schimbă parola</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <form [formGroup]="passForm" class="pass-form">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Parola curentă</mat-label>
+                <input matInput type="password" formControlName="oldPass">
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Parola nouă</mat-label>
+                <input matInput type="password" formControlName="newPass">
+                @if (passForm.get('newPass')?.hasError('minlength') && passForm.get('newPass')?.touched) {
+                  <mat-error>Minimum 4 caractere.</mat-error>
+                }
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Confirmă parola</mat-label>
+                <input matInput type="password" formControlName="confirm">
+              </mat-form-field>
+
+              @if (passMsg) {
+                <div [class]="'pass-msg ' + (passMsgOk ? 'ok' : 'err')">
+                  <mat-icon>{{ passMsgOk ? 'check_circle' : 'error' }}</mat-icon>
+                  {{ passMsg }}
+                </div>
+              }
+
+              <button mat-flat-button class="btn-save" (click)="changePass()" [disabled]="passForm.invalid">
+                Schimbă parola
+              </button>
+            </form>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

@@ -1,0 +1,83 @@
+<div class="page-header">
+  <h1 class="page-title">
+    <mat-icon>bar_chart</mat-icon>
+    Toate comenzile
+    <span class="count-badge">{{ filtered().length }}</span>
+  </h1>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Agent</mat-label>
+    <mat-select [(ngModel)]="filterAgent">
+      <mat-option value="">Toți agenții</mat-option>
+      @for (a of agents(); track a.id) {
+        <mat-option [value]="a.id">{{ a.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Client</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput [(ngModel)]="filterClient" placeholder="Caută client...">
+  </mat-form-field>
+
+  <p-datepicker [(ngModel)]="filterDateFrom" placeholder="De la data" dateFormat="dd.mm.yy"
+    [showIcon]="true" class="date-picker" />
+
+  <p-datepicker [(ngModel)]="filterDateTo" placeholder="Până la data" dateFormat="dd.mm.yy"
+    [showIcon]="true" class="date-picker" />
+
+  <button mat-stroked-button (click)="reset()">
+    <mat-icon>filter_list_off</mat-icon>
+    Resetează
+  </button>
+</div>
+
+<!-- Table -->
+<p-table [value]="filtered()" [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15,30,50]"
+         styleClass="p-datatable-sm p-datatable-striped"
+         [tableStyle]="{'min-width':'700px'}"
+         sortField="timestamp" [sortOrder]="-1">
+
+  <ng-template pTemplate="header">
+    <tr>
+      <th pSortableColumn="timestamp">Data <p-sortIcon field="timestamp"/></th>
+      <th>Client</th>
+      <th>Telefon</th>
+      <th pSortableColumn="agent.name">Agent <p-sortIcon field="agent.name"/></th>
+      <th>Produse</th>
+      <th>Status</th>
+      <th>Acțiuni</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-order>
+    <tr>
+      <td>{{ formatDate(order.timestamp) }}</td>
+      <td><strong>{{ order.client.name }}</strong></td>
+      <td>{{ order.client.phone }}</td>
+      <td>{{ order.agent?.name }}</td>
+      <td>{{ order.products.length }} art.</td>
+      <td><p-tag [value]="order.status" severity="success"/></td>
+      <td>
+        <div style="display:flex;gap:0.25rem">
+          <button mat-icon-button (click)="resendEmail(order)" matTooltip="Retrimite email">
+            <mat-icon>email</mat-icon>
+          </button>
+          <button mat-icon-button (click)="copyOrder(order)" matTooltip="Copiază">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted)">
+      Nicio comandă pentru filtrele selectate.
+    </td></tr>
+  </ng-template>
+</p-table>

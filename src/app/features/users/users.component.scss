@@ -1,0 +1,26 @@
+.users-page { max-width: 860px; }
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.page-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1.5rem; font-weight: 700; margin: 0;
+  mat-icon { color: var(--color-primary); }
+}
+.btn-add { background: var(--color-primary) !important; color: #fff !important; }
+.actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
+code { font-size: 0.85rem; background: var(--color-surface-2); padding: 2px 6px; border-radius: 4px; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px);
+  z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-card {
+  width: 100%; max-width: 480px; border-radius: 16px !important; position: relative;
+}
+.modal-form { display: flex; flex-direction: column; gap: 0.25rem; padding-top: 0.5rem; }
+.full-width { width: 100%; }
+.modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; padding: 0.75rem 1rem 1rem !important; }
+.btn-save { background: var(--color-primary) !important; color: #fff !important; }

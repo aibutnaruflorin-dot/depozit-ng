@@ -1,0 +1,265 @@
+<!-- ════════════════════════════════
+     PAGINA COMANDĂ NOUĂ
+     ════════════════════════════════ -->
+
+@if (!submitted) {
+  <div class="order-page">
+
+    <div class="page-header">
+      <h1 class="page-title">
+        <mat-icon>add_shopping_cart</mat-icon>
+        Comandă nouă
+      </h1>
+    </div>
+
+    <div class="order-layout">
+
+      <!-- ── COLOANA STÂNGA: Date client + Căutare produse ── -->
+      <div class="left-col">
+
+        <!-- 1. Date client -->
+        <mat-card appearance="outlined" class="section-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>person</mat-icon>
+            <mat-card-title>Date client</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <form [formGroup]="clientForm" class="client-form">
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Nume client *</mat-label>
+                  <mat-icon matPrefix>badge</mat-icon>
+                  <input matInput formControlName="name" placeholder="Prenume Nume" autocomplete="name">
+                  @if (clientForm.get('name')?.hasError('required') && clientForm.get('name')?.touched) {
+                    <mat-error>Numele este obligatoriu.</mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Telefon *</mat-label>
+                  <mat-icon matPrefix>phone</mat-icon>
+                  <input matInput formControlName="phone" placeholder="07xx xxx xxx" type="tel" autocomplete="tel">
+                  @if (clientForm.get('phone')?.hasError('required') && clientForm.get('phone')?.touched) {
+                    <mat-error>Telefonul este obligatoriu.</mat-error>
+                  }
+                  @if (clientForm.get('phone')?.hasError('pattern') && clientForm.get('phone')?.touched) {
+                    <mat-error>Număr de telefon invalid.</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Email</mat-label>
+                <mat-icon matPrefix>email</mat-icon>
+                <input matInput formControlName="email" placeholder="client@email.com" type="email" autocomplete="email">
+                @if (clientForm.get('email')?.hasError('email') && clientForm.get('email')?.touched) {
+                  <mat-error>Adresă email invalidă.</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Observații</mat-label>
+                <mat-icon matPrefix>notes</mat-icon>
+                <textarea matInput formControlName="note" placeholder="Mențiuni speciale..." rows="2"></textarea>
+              </mat-form-field>
+
+            </form>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- 2. Caută și adaugă produse -->
+        <mat-card appearance="outlined" class="section-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>search</mat-icon>
+            <mat-card-title>Adaugă produse</mat-card-title>
+            @if (productsService.products().length === 0) {
+              <mat-card-subtitle>
+                ⚠️ Niciun produs importat. <a routerLink="/app/settings">Setări →</a>
+              </mat-card-subtitle>
+            }
+          </mat-card-header>
+          <mat-card-content>
+            <div class="search-row">
+              <mat-form-field appearance="outline" class="search-field">
+                <mat-label>Caută produs</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input matInput [(ngModel)]="searchQuery" placeholder="Tastează pentru a căuta..."
+                       (ngModelChange)="$event">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="cat-filter">
+                <mat-label>Categorie</mat-label>
+                <mat-select [value]="categoryFilter()" (selectionChange)="categoryFilter.set($event.value)">
+                  <mat-option value="">Toate</mat-option>
+                  @for (cat of categories(); track cat) {
+                    <mat-option [value]="cat">{{ cat }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Lista sugestii -->
+            @if (suggestions().length > 0) {
+              <div class="suggestions-list">
+                @for (product of suggestions(); track product.nr) {
+                  <div class="suggestion-item" (click)="addProduct(product)" role="button" tabindex="0"
+                       (keydown.enter)="addProduct(product)" (keydown.space)="addProduct(product)">
+                    <div class="suggestion-info">
+                      <span class="suggestion-name">{{ product.name }}</span>
+                      <span class="suggestion-meta">
+                        <span class="cat-chip">{{ product.category }}</span>
+                        Stoc: {{ product.qty }} {{ product.um }}
+                      </span>
+                    </div>
+                    <button mat-icon-button color="primary" (click)="addProduct(product); $event.stopPropagation()"
+                            [matTooltip]="'Adaugă ' + product.name">
+                      <mat-icon>add_circle</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else if (searchQuery.trim() || categoryFilter()) {
+              <div class="no-results">
+                <mat-icon>search_off</mat-icon>
+                <span>Niciun produs găsit. Schimbați filtrele.</span>
+              </div>
+            } @else {
+              <div class="search-hint">
+                <mat-icon>tips_and_updates</mat-icon>
+                <span>Tastați cel puțin un caracter pentru a căuta produse.</span>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+      </div><!-- /left-col -->
+
+      <!-- ── COLOANA DREAPTA: Lista produse selectate + Submit ── -->
+      <div class="right-col">
+        <mat-card appearance="outlined" class="section-card cart-card"
+                  [class.cart-empty]="cart().length === 0">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>shopping_cart</mat-icon>
+            <mat-card-title>
+              Produse selectate
+              @if (cart().length > 0) {
+                <span class="cart-count-badge">{{ cart().length }}</span>
+              }
+            </mat-card-title>
+            @if (cart().length > 0) {
+              <button mat-icon-button (click)="clearCart()" [matTooltip]="'Golește lista'"
+                      class="clear-btn" aria-label="Golește lista">
+                <mat-icon>delete_sweep</mat-icon>
+              </button>
+            }
+          </mat-card-header>
+
+          <mat-card-content>
+            @if (cart().length === 0) {
+              <div class="cart-empty-state">
+                <mat-icon>remove_shopping_cart</mat-icon>
+                <p>Niciun produs selectat.</p>
+                <small>Căutați produse în stânga și adăugați-le în comandă.</small>
+              </div>
+            } @else {
+              <div class="cart-list">
+                @for (item of cart(); track item.product.nr; let i = $index) {
+                  <div class="cart-item">
+                    <div class="cart-item-index">{{ i + 1 }}</div>
+                    <div class="cart-item-info">
+                      <div class="cart-item-name">{{ item.product.name }}</div>
+                      <div class="cart-item-meta">
+                        <span class="cat-chip">{{ item.product.category }}</span>
+                        {{ item.product.um }}
+                      </div>
+                    </div>
+                    <div class="cart-item-qty">
+                      <button mat-icon-button class="qty-btn"
+                              (click)="decrementQty(item.product.nr)" aria-label="Scade">
+                        <mat-icon>remove</mat-icon>
+                      </button>
+                      <input type="number" class="qty-input" [value]="item.qty" min="1"
+                             (change)="updateQty(item.product.nr, $any($event.target).value)"
+                             [attr.aria-label]="'Cantitate pentru ' + item.product.name">
+                      <button mat-icon-button class="qty-btn"
+                              (click)="incrementQty(item.product.nr)" aria-label="Crește">
+                        <mat-icon>add</mat-icon>
+                      </button>
+                    </div>
+                    <button mat-icon-button class="remove-btn"
+                            (click)="removeProduct(item.product.nr)"
+                            [matTooltip]="'Șterge ' + item.product.name"
+                            aria-label="Șterge produs">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                  @if (i < cart().length - 1) { <mat-divider /> }
+                }
+              </div>
+
+              <div class="cart-summary">
+                <span class="summary-text">Total: <strong>{{ cart().length }}</strong> articole</span>
+              </div>
+            }
+          </mat-card-content>
+
+          @if (cart().length > 0) {
+            <mat-card-actions class="card-actions">
+              <button mat-flat-button class="btn-submit" (click)="submit()" [disabled]="submitting">
+                <mat-icon>send</mat-icon>
+                Trimite comanda
+              </button>
+              @if (!clientForm.valid && clientForm.touched) {
+                <small class="form-hint-warn">
+                  <mat-icon>warning</mat-icon>
+                  Completați datele clientului.
+                </small>
+              }
+            </mat-card-actions>
+          }
+        </mat-card>
+      </div><!-- /right-col -->
+
+    </div><!-- /order-layout -->
+  </div><!-- /order-page -->
+
+} @else {
+  <!-- ════ SUCCESS STATE ════ -->
+  <div class="success-page">
+    <mat-card appearance="outlined" class="success-card">
+      <mat-card-content>
+        <div class="success-icon">✅</div>
+        <h2>Comanda a fost trimisă!</h2>
+        <p class="success-sub">
+          Comanda pentru <strong>{{ lastOrder?.client?.name }}</strong> a fost salvată
+          și emailul a fost pregătit în clientul de email.
+        </p>
+
+        <div class="success-actions">
+          <button mat-flat-button class="btn-new-order" (click)="newOrder()">
+            <mat-icon>add_shopping_cart</mat-icon>
+            Comandă nouă
+          </button>
+          <button mat-stroked-button (click)="resendEmail()">
+            <mat-icon>email</mat-icon>
+            Retrimite email
+          </button>
+          <button mat-stroked-button (click)="copyText()">
+            <mat-icon>content_copy</mat-icon>
+            Copiază textul
+          </button>
+        </div>
+
+        @if (lastOrderText) {
+          <mat-expansion-panel class="order-text-panel">
+            <mat-expansion-panel-header>
+              <mat-panel-title>Textul comenzii</mat-panel-title>
+            </mat-expansion-panel-header>
+            <pre class="order-text">{{ lastOrderText }}</pre>
+          </mat-expansion-panel>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

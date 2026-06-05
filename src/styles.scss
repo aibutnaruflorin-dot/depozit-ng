@@ -1,0 +1,126 @@
+@use '@angular/material' as mat;
+@use 'primeicons/primeicons.css';
+
+/* ──────────────────────────────────────
+   Angular Material — culori custom (teal)
+   ────────────────────────────────────── */
+html {
+  height: 100%;
+  @include mat.theme((
+    color: (
+      primary: mat.$cyan-palette,
+      tertiary: mat.$cyan-palette,
+    ),
+    typography: Inter,
+    density: 0,
+  ));
+}
+
+/* ──────────────────────────────────────
+   CSS Variables — paleta noastră
+   ────────────────────────────────────── */
+:root {
+  --color-bg:           #f7f6f2;
+  --color-surface:      #ffffff;
+  --color-surface-2:    #f0ede8;
+  --color-border:       #dcd9d5;
+  --color-text:         #28251d;
+  --color-text-muted:   #7a7974;
+  --color-primary:      #01696f;
+  --color-primary-hover:#0c4e54;
+  --color-primary-light:#e6f4f5;
+  --color-success:      #437a22;
+  --color-success-light:#eef5e8;
+  --color-error:        #a12c7b;
+  --color-error-light:  #fce8f4;
+  --color-warning:      #b06a00;
+}
+
+[data-theme="dark"] {
+  --color-bg:           #1a1917;
+  --color-surface:      #242320;
+  --color-surface-2:    #2e2c29;
+  --color-border:       #3d3a36;
+  --color-text:         #e8e5df;
+  --color-text-muted:   #908d87;
+  --color-primary:      #1d9aa2;
+  --color-primary-hover:#28b5be;
+  --color-primary-light:#0d2a2c;
+  --color-success-light:#1a2e0f;
+  --color-error-light:  #2d0f20;
+}
+
+/* ──────────────────────────────────────
+   Reset & Base
+   ────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  height: 100%;
+  color-scheme: light;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-theme="dark"] body { color-scheme: dark; }
+
+a { color: var(--color-primary); }
+h1, h2, h3, h4 { font-family: 'Inter', system-ui, sans-serif; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+/* ──────────────────────────────────────
+   PrimeNG overrides
+   ────────────────────────────────────── */
+.p-datatable .p-datatable-table thead th {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text-muted) !important;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  border-color: var(--color-border) !important;
+}
+.p-datatable .p-datatable-table tbody tr:hover td {
+  background: var(--color-primary-light) !important;
+}
+.p-datatable .p-datatable-table tbody td {
+  border-color: var(--color-border) !important;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  padding: 0.65rem 1rem !important;
+}
+
+/* ──────────────────────────────────────
+   Snackbar styles
+   ────────────────────────────────────── */
+.snack-success .mdc-snackbar__surface { background: #437a22 !important; }
+.snack-error   .mdc-snackbar__surface { background: #a12c7b !important; }
+.snack-warn    .mdc-snackbar__surface { background: #b06a00 !important; }
+
+/* ──────────────────────────────────────
+   Material overrides (teal theme)
+   ────────────────────────────────────── */
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-flat-button.mat-primary {
+  --mdc-filled-button-container-color: var(--color-primary);
+  --mdc-filled-button-label-text-color: #fff;
+}
+.mat-mdc-chip.mat-mdc-standard-chip.mdc-evolution-chip--selected {
+  background-color: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+/* Angular Material dark mode sync */
+[data-theme="dark"] {
+  color-scheme: dark;
+  .mat-mdc-card { background: var(--color-surface) !important; }
+  .mat-mdc-form-field-input-control { color: var(--color-text) !important; }
+}
