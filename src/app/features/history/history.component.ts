@@ -1,9 +1,37 @@
 import { Component, computed, signal } from '@angular/core';
+import { Order } from '../../core/models/order.model';
+
+function sortByFamily(orders: Order[]): Order[] {
+  const families: Order[][] = [];
+  const visited = new Set<string>();
+  for (const order of orders) {
+    if (visited.has(order.id)) continue;
+    let root = order;
+    for (let i = 0; i < 50; i++) {
+      if (!root.revisedFromId) break;
+      const parent = orders.find(o => o.id === root.revisedFromId);
+      if (!parent) break;
+      root = parent;
+    }
+    if (visited.has(root.id)) continue;
+    const family: Order[] = [];
+    let cur: Order | undefined = root;
+    while (cur && !visited.has(cur.id)) {
+      family.push(cur);
+      visited.add(cur.id);
+      cur = orders.find(o => o.revisedFromId === cur!.id);
+    }
+    families.push(family);
+  }
+  families.sort((a, b) =>
+    b[b.length - 1].timestamp.localeCompare(a[a.length - 1].timestamp)
+  );
+  return families.flat();
+}
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
-import { Order } from '../../core/models/order.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -41,6 +69,8 @@ export class HistoryComponent {
     const id = this.auth.session()?.userId;
     return this.ordersService.orders().filter(o => o.agent?.id === id);
   });
+
+  readonly sortedOrders = computed(() => sortByFamily(this.myOrders()));
 
   formatDate(iso: string): string {
     return new Date(iso).toLocaleString('ro-RO');

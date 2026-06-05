@@ -37,10 +37,9 @@
 </div>
 
 <!-- Table -->
-<p-table [value]="filtered()" [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15,30,50]"
+<p-table [value]="sortedFiltered()" [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15,30,50]"
          styleClass="p-datatable-sm p-datatable-striped"
-         [tableStyle]="{'min-width':'700px'}"
-         sortField="timestamp" [sortOrder]="-1">
+         [tableStyle]="{'min-width':'700px'}">
 
   <ng-template pTemplate="header">
     <tr>

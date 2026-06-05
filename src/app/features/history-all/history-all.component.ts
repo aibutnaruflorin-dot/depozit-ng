@@ -1,10 +1,38 @@
 import { Component, computed, signal } from '@angular/core';
+import { Order } from '../../core/models/order.model';
+
+function sortByFamily(orders: Order[]): Order[] {
+  const families: Order[][] = [];
+  const visited = new Set<string>();
+  for (const order of orders) {
+    if (visited.has(order.id)) continue;
+    let root = order;
+    for (let i = 0; i < 50; i++) {
+      if (!root.revisedFromId) break;
+      const parent = orders.find(o => o.id === root.revisedFromId);
+      if (!parent) break;
+      root = parent;
+    }
+    if (visited.has(root.id)) continue;
+    const family: Order[] = [];
+    let cur: Order | undefined = root;
+    while (cur && !visited.has(cur.id)) {
+      family.push(cur);
+      visited.add(cur.id);
+      cur = orders.find(o => o.revisedFromId === cur!.id);
+    }
+    families.push(family);
+  }
+  families.sort((a, b) =>
+    b[b.length - 1].timestamp.localeCompare(a[a.length - 1].timestamp)
+  );
+  return families.flat();
+}
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
-import { Order } from '../../core/models/order.model';
 import { User } from '../../core/models/user.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -43,6 +71,8 @@ export class HistoryAllComponent {
     const users = this.storage.get<User[]>('app_users') || [];
     return users.map(u => ({ id: String(u.id), name: u.name }));
   });
+
+  readonly sortedFiltered = computed(() => sortByFamily(this.filtered()));
 
   readonly filtered = computed(() => {
     let orders = this.ordersService.orders();

@@ -17,9 +17,8 @@
     </a>
   </div>
 } @else {
-  <p-table [value]="myOrders()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]"
-           [tableStyle]="{'min-width':'640px'}" styleClass="p-datatable-sm p-datatable-striped"
-           sortField="timestamp" [sortOrder]="-1">
+  <p-table [value]="sortedOrders()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]"
+           [tableStyle]="{'min-width':'640px'}" styleClass="p-datatable-sm p-datatable-striped">
 
     <ng-template pTemplate="header">
       <tr>
