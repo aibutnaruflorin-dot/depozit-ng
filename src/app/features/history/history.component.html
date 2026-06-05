@@ -17,38 +17,57 @@
     </a>
   </div>
 } @else {
-  <!-- PrimeNG DataTable -->
   <p-table [value]="myOrders()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]"
            [tableStyle]="{'min-width':'640px'}" styleClass="p-datatable-sm p-datatable-striped"
-           [globalFilterFields]="['client.name','client.phone','id']"
+           dataKey="id" [expandedRowKeys]="expandedRows"
            sortField="timestamp" [sortOrder]="-1">
 
     <ng-template pTemplate="header">
       <tr>
+        <th style="width:3rem"></th>
         <th pSortableColumn="timestamp">Data <p-sortIcon field="timestamp"/></th>
         <th>Client</th>
         <th>Telefon</th>
-        <th pSortableColumn="products.length">Produse</th>
+        <th>Produse</th>
         <th>Status</th>
         <th>Acțiuni</th>
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-order>
-      <tr>
-        <td>{{ formatDate(order.timestamp) }}</td>
-        <td><strong>{{ order.client.name }}</strong></td>
-        <td>{{ order.client.phone }}</td>
-        <td>{{ order.products.length }} articole</td>
+    <ng-template pTemplate="body" let-order let-expanded="expanded">
+      <tr [class.superseded-row]="order.superseded" (click)="toggleExpand(order.id)" style="cursor:pointer">
         <td>
-          <p-tag [value]="order.status" severity="success" />
+          <button mat-icon-button class="expand-btn" (click)="toggleExpand(order.id); $event.stopPropagation()">
+            <mat-icon>{{ expanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+          </button>
         </td>
         <td>
-          <div style="display:flex;gap:0.25rem">
-            <button mat-icon-button (click)="resendEmail(order)" matTooltip="Retrimite email">
+          <span [class.line-through]="order.superseded">{{ formatDate(order.timestamp) }}</span>
+          @if (order.superseded) {
+            <span class="badge badge-superseded">Înlocuit</span>
+          }
+          @if (order.revisedFromId) {
+            <span class="badge badge-revised">Revizuit</span>
+          }
+        </td>
+        <td><strong [class.line-through]="order.superseded">{{ order.client.name }}</strong></td>
+        <td [class.line-through]="order.superseded">{{ order.client.phone }}</td>
+        <td>{{ order.products.length }} art.</td>
+        <td>
+          @if (order.superseded) {
+            <p-tag value="Înlocuit" severity="danger" />
+          } @else if (order.revisedFromId) {
+            <p-tag value="Revizuit" severity="info" />
+          } @else {
+            <p-tag [value]="order.status" severity="success" />
+          }
+        </td>
+        <td>
+          <div class="action-btns" (click)="$event.stopPropagation()">
+            <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Retrimite email">
               <mat-icon>email</mat-icon>
             </button>
-            <button mat-icon-button (click)="copyOrder(order)" matTooltip="Copiază text">
+            <button mat-icon-button (click)="copyOrder(order, $event)" matTooltip="Copiază text">
               <mat-icon>content_copy</mat-icon>
             </button>
           </div>
@@ -56,8 +75,49 @@
       </tr>
     </ng-template>
 
+    <ng-template pTemplate="rowexpansion" let-order>
+      <tr class="expansion-row">
+        <td colspan="7" class="expansion-cell">
+          <div class="expansion-content">
+            <div class="expansion-products">
+              @for (p of order.products; track p.nr; let i = $index) {
+                <div class="exp-product-row" [class.exp-removed]="(editQtyMap()[ekey(order.id, i)] ?? p.qty) === 0">
+                  <span class="exp-product-name">{{ p.name }}</span>
+                  <span class="exp-product-um">{{ p.um }}</span>
+                  <div class="exp-qty-controls" (click)="$event.stopPropagation()">
+                    <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, i, p.qty)">
+                      <mat-icon>remove</mat-icon>
+                    </button>
+                    <input class="eq-input" type="number" min="0"
+                           [value]="editQtyMap()[ekey(order.id, i)] ?? p.qty"
+                           (change)="setEditQty(order.id, i, p.qty, $any($event.target).value)"
+                           (click)="$any($event.target).select()">
+                    <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, i, p.qty)">
+                      <mat-icon>add</mat-icon>
+                    </button>
+                  </div>
+                  @if ((editQtyMap()[ekey(order.id, i)] ?? p.qty) === 0) {
+                    <span class="exp-remove-hint">va fi eliminat</span>
+                  }
+                </div>
+              }
+            </div>
+            <div class="expansion-footer" (click)="$event.stopPropagation()">
+              <button mat-flat-button color="primary" (click)="reviseOrder(order)">
+                <mat-icon>send</mat-icon>
+                Retrimite modificat
+              </button>
+              <button mat-stroked-button (click)="toggleExpand(order.id)">
+                Anulează
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
     <ng-template pTemplate="emptymessage">
-      <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted)">
+      <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted)">
         Nicio comandă găsită.
       </td></tr>
     </ng-template>

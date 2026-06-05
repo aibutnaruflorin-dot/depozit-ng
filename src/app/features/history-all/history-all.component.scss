@@ -13,3 +13,73 @@
 }
 .filter-field { min-width: 160px; }
 .date-picker { height: 56px; }
+
+/* ── Expand button ── */
+.expand-btn { width: 32px; height: 32px; line-height: 32px; }
+
+/* ── Superseded row ── */
+.superseded-row td { opacity: 0.55; }
+.line-through { text-decoration: line-through; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block; font-size: 0.7rem; font-weight: 600;
+  padding: 1px 7px; border-radius: 10px; margin-left: 6px;
+  vertical-align: middle; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.badge-superseded { background: #ffeaea; color: #c62828; }
+.badge-revised    { background: #e3f2fd; color: #1565c0; }
+
+.action-btns { display: flex; gap: 0.2rem; }
+
+/* ── Row expansion ── */
+.expansion-cell { padding: 0 !important; background: var(--color-surface) !important; }
+
+.expansion-content {
+  padding: 1rem 1.5rem 1.25rem;
+  border-left: 3px solid var(--color-primary);
+  margin: 0;
+}
+
+.expansion-products {
+  display: flex; flex-direction: column; gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.exp-product-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.35rem 0.5rem; border-radius: 6px;
+  transition: background 0.15s;
+  &.exp-removed { opacity: 0.4; }
+}
+
+.exp-product-name {
+  flex: 1; font-size: 0.9rem; font-weight: 500;
+}
+.exp-product-um {
+  font-size: 0.8rem; color: var(--color-text-muted); min-width: 36px;
+}
+
+.exp-qty-controls {
+  display: flex; align-items: center; gap: 0.2rem;
+}
+.eq-btn {
+  width: 28px; height: 28px; line-height: 28px;
+  mat-icon { font-size: 16px; line-height: 16px; }
+}
+.eq-input {
+  width: 54px; text-align: center; border: 1px solid var(--color-border);
+  border-radius: 4px; padding: 3px 4px; font-size: 0.9rem;
+  background: var(--color-bg);
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button { -webkit-appearance: none; }
+}
+
+.exp-remove-hint {
+  font-size: 0.72rem; color: #c62828; font-style: italic;
+}
+
+.expansion-footer {
+  display: flex; gap: 0.75rem; align-items: center;
+  border-top: 1px solid var(--color-border); padding-top: 0.75rem;
+}

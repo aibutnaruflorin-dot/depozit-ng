@@ -17,13 +17,25 @@ export class OrdersService {
     this._orders.set(updated);
   }
 
+  reviseOrder(originalId: string, newOrder: Order): void {
+    const updated = this._orders().map(o =>
+      o.id === originalId ? { ...o, superseded: true } : o
+    );
+    const final = [newOrder, ...updated];
+    this.storage.set('app_orders', final);
+    this._orders.set(final);
+  }
+
   generateText(order: Order): string {
     const line = '─'.repeat(50);
     const products = order.products.map((p, i) =>
       `  ${String(i + 1).padStart(3, ' ')}. ${p.name}\n       Cantitate: ${p.qty} ${p.um} | Categorie: ${p.category}`
     ).join('\n');
+    const header = order.revisedFromId
+      ? [`COMANDĂ REVIZUITĂ (înlocuiește: ${order.revisedFromId})`, line]
+      : ['COMANDĂ NOUĂ', line];
     return [
-      'COMANDĂ NOUĂ', line,
+      ...header,
       `Data:       ${new Date(order.timestamp).toLocaleString('ro-RO')}`,
       `ID:         ${order.id}`,
       `Agent:      ${order.agent.name} (${order.agent.username})`,

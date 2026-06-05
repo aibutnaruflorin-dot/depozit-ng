@@ -14,4 +14,6 @@ export interface Order {
   client: { name: string; phone: string; email: string; note: string };
   products: OrderProduct[];
   status: string;
+  revisedFromId?: string;   // this order replaced another
+  superseded?: boolean;     // this order was replaced
 }
