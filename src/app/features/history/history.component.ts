@@ -46,6 +46,21 @@ export class HistoryComponent {
     return new Date(iso).toLocaleString('ro-RO');
   }
 
+  shortDate(iso: string): string {
+    return new Date(iso).toLocaleString('ro-RO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  getOriginalDate(order: Order): string | null {
+    if (!order.revisedFromId) return null;
+    const orig = this.myOrders().find(o => o.id === order.revisedFromId);
+    return orig ? this.shortDate(orig.timestamp) : order.revisedFromId.slice(0, 8);
+  }
+
+  getReplacementDate(order: Order): string | null {
+    const rep = this.myOrders().find(o => o.revisedFromId === order.id);
+    return rep ? this.shortDate(rep.timestamp) : null;
+  }
+
   toggleExpand(orderId: string): void {
     this.expandedRows.update(m =>
       m[orderId] ? Object.fromEntries(Object.entries(m).filter(([k]) => k !== orderId))

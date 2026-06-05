@@ -17,6 +17,13 @@
 .empty-state p { max-width: 320px; margin: 0; }
 .btn-start { background: var(--color-primary) !important; color: #fff !important; }
 
+/* ── Date cell with reference ── */
+.date-cell { display: flex; flex-direction: column; gap: 2px; }
+.order-ref {
+  font-size: 0.72rem; color: #1565c0; font-style: italic; white-space: nowrap;
+}
+.order-ref-sup { color: #c62828; }
+
 /* ── Expand button ── */
 .expand-btn { width: 32px; height: 32px; line-height: 32px; }
 
