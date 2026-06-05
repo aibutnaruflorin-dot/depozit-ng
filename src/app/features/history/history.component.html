@@ -19,7 +19,6 @@
 } @else {
   <p-table [value]="myOrders()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]"
            [tableStyle]="{'min-width':'640px'}" styleClass="p-datatable-sm p-datatable-striped"
-           dataKey="id" [expandedRowKeys]="expandedRows"
            sortField="timestamp" [sortOrder]="-1">
 
     <ng-template pTemplate="header">
@@ -34,21 +33,19 @@
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-order let-expanded="expanded">
-      <tr [class.superseded-row]="order.superseded" (click)="toggleExpand(order.id)" style="cursor:pointer">
+    <ng-template pTemplate="body" let-order>
+      <!-- ── Main row ── -->
+      <tr [class.superseded-row]="order.superseded"
+          (click)="toggleExpand(order.id)" style="cursor:pointer">
         <td>
-          <button mat-icon-button class="expand-btn" (click)="toggleExpand(order.id); $event.stopPropagation()">
-            <mat-icon>{{ expanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+          <button mat-icon-button class="expand-btn" (click)="$event.stopPropagation(); toggleExpand(order.id)">
+            <mat-icon>{{ expandedRows()[order.id] ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
           </button>
         </td>
         <td>
           <span [class.line-through]="order.superseded">{{ formatDate(order.timestamp) }}</span>
-          @if (order.superseded) {
-            <span class="badge badge-superseded">Înlocuit</span>
-          }
-          @if (order.revisedFromId) {
-            <span class="badge badge-revised">Revizuit</span>
-          }
+          @if (order.superseded) { <span class="badge badge-superseded">Înlocuit</span> }
+          @if (order.revisedFromId) { <span class="badge badge-revised">Revizuit</span> }
         </td>
         <td><strong [class.line-through]="order.superseded">{{ order.client.name }}</strong></td>
         <td [class.line-through]="order.superseded">{{ order.client.phone }}</td>
@@ -73,47 +70,49 @@
           </div>
         </td>
       </tr>
-    </ng-template>
 
-    <ng-template pTemplate="rowexpansion" let-order>
-      <tr class="expansion-row">
-        <td colspan="7" class="expansion-cell">
-          <div class="expansion-content">
-            <div class="expansion-products">
-              @for (p of order.products; track p.nr; let i = $index) {
-                <div class="exp-product-row" [class.exp-removed]="(editQtyMap()[ekey(order.id, i)] ?? p.qty) === 0">
-                  <span class="exp-product-name">{{ p.name }}</span>
-                  <span class="exp-product-um">{{ p.um }}</span>
-                  <div class="exp-qty-controls" (click)="$event.stopPropagation()">
-                    <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, i, p.qty)">
-                      <mat-icon>remove</mat-icon>
-                    </button>
-                    <input class="eq-input" type="number" min="0"
-                           [value]="editQtyMap()[ekey(order.id, i)] ?? p.qty"
-                           (change)="setEditQty(order.id, i, p.qty, $any($event.target).value)"
-                           (click)="$any($event.target).select()">
-                    <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, i, p.qty)">
-                      <mat-icon>add</mat-icon>
-                    </button>
+      <!-- ── Expansion row ── -->
+      @if (expandedRows()[order.id]) {
+        <tr class="expansion-row">
+          <td colspan="7" class="expansion-cell">
+            <div class="expansion-content" (click)="$event.stopPropagation()">
+              <div class="expansion-products">
+                @for (p of order.products; track p.nr; let i = $index) {
+                  <div class="exp-product-row"
+                       [class.exp-removed]="(editQtyMap()[ekey(order.id, i)] ?? p.qty) === 0">
+                    <span class="exp-product-name">{{ p.name }}</span>
+                    <span class="exp-product-um">{{ p.um }}</span>
+                    <div class="exp-qty-controls">
+                      <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, i, p.qty)">
+                        <mat-icon>remove</mat-icon>
+                      </button>
+                      <input class="eq-input" type="number" min="0"
+                             [value]="editQtyMap()[ekey(order.id, i)] ?? p.qty"
+                             (change)="setEditQty(order.id, i, p.qty, $any($event.target).value)"
+                             (click)="$any($event.target).select()">
+                      <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, i, p.qty)">
+                        <mat-icon>add</mat-icon>
+                      </button>
+                    </div>
+                    @if ((editQtyMap()[ekey(order.id, i)] ?? p.qty) === 0) {
+                      <span class="exp-remove-hint">va fi eliminat</span>
+                    }
                   </div>
-                  @if ((editQtyMap()[ekey(order.id, i)] ?? p.qty) === 0) {
-                    <span class="exp-remove-hint">va fi eliminat</span>
-                  }
-                </div>
-              }
+                }
+              </div>
+              <div class="expansion-footer">
+                <button mat-flat-button color="primary" (click)="reviseOrder(order)">
+                  <mat-icon>send</mat-icon>
+                  Retrimite modificat
+                </button>
+                <button mat-stroked-button (click)="collapseRow(order.id)">
+                  Anulează
+                </button>
+              </div>
             </div>
-            <div class="expansion-footer" (click)="$event.stopPropagation()">
-              <button mat-flat-button color="primary" (click)="reviseOrder(order)">
-                <mat-icon>send</mat-icon>
-                Retrimite modificat
-              </button>
-              <button mat-stroked-button (click)="toggleExpand(order.id)">
-                Anulează
-              </button>
-            </div>
-          </div>
-        </td>
-      </tr>
+          </td>
+        </tr>
+      }
     </ng-template>
 
     <ng-template pTemplate="emptymessage">

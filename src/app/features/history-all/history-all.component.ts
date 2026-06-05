@@ -35,7 +35,7 @@ export class HistoryAllComponent {
   filterDateFrom: Date | null = null;
   filterDateTo:   Date | null = null;
 
-  expandedRows: Record<string, boolean> = {};
+  expandedRows = signal<Record<string, boolean>>({});
   private _editQty = signal<Record<string, number>>({});
   readonly editQtyMap = this._editQty.asReadonly();
 
@@ -76,12 +76,16 @@ export class HistoryAllComponent {
   }
 
   toggleExpand(orderId: string): void {
-    if (this.expandedRows[orderId]) {
-      delete this.expandedRows[orderId];
-    } else {
-      this.expandedRows[orderId] = true;
-    }
-    this.expandedRows = { ...this.expandedRows };
+    this.expandedRows.update(m =>
+      m[orderId] ? Object.fromEntries(Object.entries(m).filter(([k]) => k !== orderId))
+                 : { ...m, [orderId]: true }
+    );
+  }
+
+  collapseRow(orderId: string): void {
+    this.expandedRows.update(m =>
+      Object.fromEntries(Object.entries(m).filter(([k]) => k !== orderId))
+    );
   }
 
   ekey(orderId: string, idx: number): string { return `${orderId}::${idx}`; }
@@ -129,8 +133,7 @@ export class HistoryAllComponent {
       order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
       return n;
     });
-    delete this.expandedRows[order.id];
-    this.expandedRows = { ...this.expandedRows };
+    this.collapseRow(order.id);
 
     this.snackBar.open('Comanda revizuită a fost trimisă!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
