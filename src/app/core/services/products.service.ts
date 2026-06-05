@@ -37,20 +37,24 @@ export class ProductsService {
           const ws       = wb.Sheets[wb.SheetNames[0]];
           const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
           const products: Product[] = [];
-          for (let i = 8; i < rows.length; i++) {
+          for (let i = 0; i < rows.length; i++) {
             const row  = rows[i];
+            const nr   = row[0];
             const name = String(row[1] || '').trim();
-            if (!name) continue;
+            // Skip rows that aren't product lines (headers, "Gestiune:", empty, etc.)
+            if (!name || isNaN(Number(nr)) || String(nr).trim() === '') continue;
+            const nrNum = Number(nr);
+            if (!Number.isFinite(nrNum) || nrNum <= 0) continue;
             products.push({
-              nr:       row[0] ?? i - 7,
+              nr:       nrNum,
               name,
               um:       String(row[2]  || '').trim(),
-              qty:      parseFloat(row[3]) || 0,
-              category: String(row[13] || 'DIVERSE').trim().toUpperCase()
+              qty:      parseFloat(String(row[3]).replace(',', '.')) || 0,
+              category: String(row[13] || 'DIVERSE').trim().toUpperCase() || 'DIVERSE'
             });
           }
           if (!products.length) {
-            resolve({ ok: false, msg: 'Fișierul nu conține date valide de la rândul 9.' });
+            resolve({ ok: false, msg: 'Fișierul nu conține rânduri valide (col A = număr, col B = denumire).' });
             return;
           }
           this._save(products, 'excel');
