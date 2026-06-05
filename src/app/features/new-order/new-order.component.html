@@ -142,7 +142,12 @@
         <mat-form-field appearance="outline" class="full-w">
           <mat-label>Telefon</mat-label>
           <mat-icon matPrefix>phone</mat-icon>
-          <input matInput [formControl]="phoneCtrl" placeholder="07xx xxx xxx">
+          <input matInput [formControl]="phoneCtrl" placeholder="07xx xxx xxx"
+                 type="tel" inputmode="numeric" maxlength="10"
+                 (input)="phoneCtrl.setValue($any($event.target).value.replace(/\D/g,'').slice(0,10), {emitEvent:false}); $any($event.target).value = phoneCtrl.value">
+          @if (phoneCtrl.value && phoneCtrl.hasError('pattern')) {
+            <mat-error>Introduceți exact 10 cifre.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-w">

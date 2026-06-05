@@ -31,7 +31,7 @@ export interface CartItem { product: Product; qty: number; }
 })
 export class NewOrderComponent implements OnInit {
   nameCtrl  = new FormControl('', Validators.required);
-  phoneCtrl = new FormControl('');
+  phoneCtrl = new FormControl('', [Validators.pattern(/^\d{10}$/)]);
   noteCtrl  = new FormControl('');
 
   searchQuery    = signal('');
