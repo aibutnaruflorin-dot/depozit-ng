@@ -43,14 +43,18 @@
 }
 .family-child td {
   border-left: 3px solid var(--color-primary) !important;
-  background: rgba(21,101,192,0.03) !important;
+  background: rgba(21,101,192,0.05) !important;
+  font-weight: 500;
 }
 
 /* ── Expand button ── */
 .expand-btn { width: 32px; height: 32px; line-height: 32px; }
 
 /* ── Superseded row ── */
-.superseded-row td { opacity: 0.55; }
+.superseded-row td {
+  opacity: 0.38;
+  font-style: italic;
+}
 .line-through { text-decoration: line-through; }
 
 /* ── Badges ── */
