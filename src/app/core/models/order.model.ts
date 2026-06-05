@@ -4,6 +4,7 @@ export interface OrderProduct {
   um: string;
   qty: number;
   category: string;
+  catalogId?: string;
 }
 
 export interface Order {

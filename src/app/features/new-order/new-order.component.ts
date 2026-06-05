@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormControl, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { ProductsService } from '../../core/services/products.service';
+import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { Product } from '../../core/models/product.model';
 import { Order, OrderProduct } from '../../core/models/order.model';
@@ -39,12 +39,12 @@ export class NewOrderComponent implements OnInit {
   noteCtrl  = new FormControl('');
 
   /* ── search / cart state ── */
-  searchQuery    = '';
-  categoryFilter = signal('');
-  cart           = signal<CartItem[]>([]);
-  showCart       = signal(false);
+  searchQuery      = '';
+  categoryFilter   = signal('');
+  selectedCatIds   = signal<string[]>([]);   // empty = all
+  cart             = signal<CartItem[]>([]);
+  showCart         = signal(false);
 
-  // Cantitate selectată în rândul produsului — signal pt reactivity
   private _pendingQty = signal<Record<string, number>>({});
 
   /* ── submit state ── */
@@ -55,7 +55,7 @@ export class NewOrderComponent implements OnInit {
 
   constructor(
     private auth: AuthService,
-    public  productsService: ProductsService,
+    public  catalogsService: CatalogsService,
     private ordersService: OrdersService,
     private snackBar: MatSnackBar,
     private router: Router
@@ -63,13 +63,21 @@ export class NewOrderComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  readonly categories = computed(() => this.productsService.categories());
+  readonly allCatSelected = computed(() => this.selectedCatIds().length === 0);
+  readonly categories     = computed(() => this.catalogsService.categoriesFor(this.selectedCatIds()));
+
+  toggleCatalog(id: string): void {
+    this.selectedCatIds.update(ids =>
+      ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
+    );
+    this.categoryFilter.set('');
+  }
 
   readonly suggestions = computed(() => {
     const q   = this.searchQuery.trim().toLowerCase();
     const cat = this.categoryFilter();
-    if (!q && !cat) return [];
-    return this.productsService.products()
+    if (!q && !cat && this.selectedCatIds().length === 0) return [];
+    return this.catalogsService.productsFor(this.selectedCatIds())
       .filter(p => {
         const matchQ   = !q   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
         const matchCat = !cat || p.category === cat;
@@ -77,6 +85,9 @@ export class NewOrderComponent implements OnInit {
       })
       .slice(0, 80);
   });
+
+  rowBg(catalogId: string): string { return this.catalogsService.bgColor(catalogId, 0.08); }
+  rowBorder(catalogId: string): string { return this.catalogsService.borderColor(catalogId); }
 
   /* ── pending qty helpers (în rândul din listă) ── */
   getPendingQty(nr: NrKey): number {

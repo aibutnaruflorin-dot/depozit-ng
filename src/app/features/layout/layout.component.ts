@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService } from '../../core/services/auth.service';
-import { ProductsService } from '../../core/services/products.service';
+import { CatalogsService } from '../../core/services/catalogs.service';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -49,7 +49,7 @@ export class LayoutComponent implements OnInit {
 
   constructor(
     public auth: AuthService,
-    private products: ProductsService,
+    private catalogs: CatalogsService,
     private router: Router,
     private bp: BreakpointObserver
   ) {}
@@ -72,8 +72,7 @@ export class LayoutComponent implements OnInit {
     this.darkMode.set(dark);
     if (dark) document.documentElement.setAttribute('data-theme', 'dark');
 
-    // Load products from API if configured
-    this.products.loadOnStartup();
+    this.catalogs.loadOnStartup();
   }
 
   get visibleNavItems(): NavItem[] {

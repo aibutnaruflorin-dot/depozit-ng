@@ -11,6 +11,21 @@
   </button>
 </div>
 
+<!-- ══ CATALOG FILTER ══ -->
+<div class="catalog-chips">
+  <button class="cat-chip-btn" [class.active]="allCatSelected()" (click)="selectedCatIds.set([])">
+    Toate
+  </button>
+  @for (cat of catalogsService.catalogs(); track cat.id) {
+    <button class="cat-chip-btn" [class.active]="selectedCatIds().includes(cat.id)"
+            [style.--chip-color]="cat.color"
+            (click)="toggleCatalog(cat.id)">
+      <span class="chip-dot" [style.background]="cat.color"></span>
+      {{ cat.name }}
+    </button>
+  }
+</div>
+
 <!-- ══ SEARCH + CATEGORIE ══ -->
 <div class="search-bar">
   <mat-form-field appearance="outline" class="search-field">
@@ -36,10 +51,10 @@
 </div>
 
 <!-- ══ LISTA PRODUSE ══ -->
-@if (!searchQuery && !categoryFilter()) {
+@if (!searchQuery && !categoryFilter() && allCatSelected()) {
   <div class="hint-text">
     <mat-icon>info_outline</mat-icon>
-    Scrie ceva în căutare sau selectează o categorie.
+    Scrie ceva în căutare, selectează o categorie sau un catalog.
   </div>
 } @else if (suggestions().length === 0) {
   <div class="hint-text">
@@ -49,15 +64,20 @@
 } @else {
   <div class="product-list">
     @for (p of suggestions(); track p.nr) {
-      <div class="product-row">
+      <div class="product-row"
+           [style.background-color]="rowBg(p.catalogId)"
+           [style.border-left-color]="rowBorder(p.catalogId)">
         <div class="product-info">
           <span class="product-name">{{ p.name }}</span>
           <span class="product-meta">
+            @if (catalogsService.getById(p.catalogId); as cat) {
+              <span class="catalog-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
+                {{ cat.name }}
+              </span>
+            }
             <span class="cat-chip">{{ p.category }}</span>
             <span class="um-text">{{ p.um }}</span>
-            @if (p.qty > 0) {
-              <span class="stoc-text">Stoc: {{ p.qty }}</span>
-            }
+            @if (p.qty > 0) { <span class="stoc-text">Stoc: {{ p.qty }}</span> }
           </span>
         </div>
         <div class="row-actions" (click)="$event.stopPropagation()">

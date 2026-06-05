@@ -1,118 +1,87 @@
+<!-- Header -->
 <div class="page-header">
   <div class="page-title-wrap">
-    <h1 class="page-title">
-      <mat-icon>inventory_2</mat-icon>
-      Catalog Produse
-    </h1>
-    @if (meta()) {
-      <span class="meta-badge">
-        {{ meta()!.count }} produse ·
-        {{ meta()!.source === 'api' ? '🌐 API' : '📁 Excel' }} ·
-        {{ formatDate(meta()!.lastUpdate) }}
-      </span>
-    }
+    <h1 class="page-title"><mat-icon>inventory_2</mat-icon> Catalog Produse</h1>
+    <span class="product-count">{{ filtered().length }} produse</span>
   </div>
-  <button mat-flat-button (click)="goToNewOrder()" class="btn-new-order">
-    <mat-icon>add_shopping_cart</mat-icon>
-    Comandă nouă
+  <button mat-flat-button color="primary" (click)="goToNewOrder()">
+    <mat-icon>add_shopping_cart</mat-icon> Comandă nouă
   </button>
 </div>
 
-<!-- Filters -->
-<div class="filters-bar">
-  <mat-form-field appearance="outline" class="search-field">
-    <mat-label>Caută produs</mat-label>
+<!-- Catalog filter chips -->
+<div class="catalog-chips">
+  <button class="cat-chip-btn" [class.active]="allSelected()" (click)="selectedCatIds.set([])">
+    Toate
+  </button>
+  @for (cat of catalogsService.catalogs(); track cat.id) {
+    <button class="cat-chip-btn" [class.active]="selectedCatIds().includes(cat.id)"
+            [style.--chip-color]="cat.color"
+            (click)="toggleCatalog(cat.id)">
+      <span class="chip-dot" [style.background]="cat.color"></span>
+      {{ cat.name }}
+    </button>
+  }
+</div>
+
+<!-- Search + categorie -->
+<div class="filters">
+  <mat-form-field appearance="outline" class="search-f">
+    <mat-label>Caută</mat-label>
     <mat-icon matPrefix>search</mat-icon>
-    <input matInput [value]="search()" (input)="onSearch($any($event.target).value)"
-           placeholder="Nume sau număr...">
+    <input matInput [value]="search()" (input)="onSearch($any($event.target).value)" placeholder="Denumire sau cod…">
     @if (search()) {
-      <button matSuffix mat-icon-button (click)="onSearch('')" aria-label="Șterge">
-        <mat-icon>close</mat-icon>
-      </button>
+      <button matSuffix mat-icon-button (click)="onSearch('')"><mat-icon>close</mat-icon></button>
     }
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="cat-field">
+  <mat-form-field appearance="outline" class="cat-f">
     <mat-label>Categorie</mat-label>
-    <mat-select [value]="category()" (selectionChange)="onCategory($event.value)">
-      <mat-option value="">Toate categoriile</mat-option>
-      @for (cat of categories(); track cat) {
-        <mat-option [value]="cat">{{ cat }}</mat-option>
+    <mat-select [value]="category()" (valueChange)="onCategory($event)">
+      <mat-option value="">Toate</mat-option>
+      @for (c of categories(); track c) {
+        <mat-option [value]="c">{{ c }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
-
-  @if (search() || category()) {
-    <button mat-stroked-button (click)="clearFilters()">
-      <mat-icon>filter_list_off</mat-icon>
-      Resetează
-    </button>
-  }
-
-  <span class="results-count">{{ filtered().length }} produse găsite</span>
 </div>
 
-<!-- Category chips (scroll orizontal) -->
-@if (categories().length > 0) {
-  <div class="chip-row">
-    <mat-chip-set>
-      <mat-chip [highlighted]="!category()" (click)="onCategory('')">Toate</mat-chip>
-      @for (cat of categories(); track cat) {
-        <mat-chip [highlighted]="category() === cat" (click)="onCategory(cat)">
-          {{ cat }}
-        </mat-chip>
-      }
-    </mat-chip-set>
-  </div>
-}
-
-<!-- Empty state -->
-@if (productsService.products().length === 0) {
+<!-- Product list -->
+@if (filtered().length === 0) {
   <div class="empty-state">
-    <mat-icon class="empty-icon">inventory</mat-icon>
-    <h3>Niciun produs în catalog</h3>
-    <p>Importați produse din <a routerLink="/app/settings">Setări</a> (Excel sau API Nexus).</p>
-  </div>
-} @else if (filtered().length === 0) {
-  <div class="empty-state">
-    <mat-icon class="empty-icon">search_off</mat-icon>
-    <h3>Niciun produs găsit</h3>
-    <p>Modificați filtrele de căutare.</p>
-    <button mat-stroked-button (click)="clearFilters()">Resetează filtrele</button>
+    <mat-icon>search_off</mat-icon>
+    <p>Niciun produs găsit.</p>
+    <button mat-stroked-button (click)="clearFilters()">Șterge filtrele</button>
   </div>
 } @else {
-  <!-- Product grid -->
-  <div class="product-grid">
-    @for (product of paged(); track product.nr) {
-      <mat-card class="product-card" appearance="outlined">
-        <mat-card-content>
-          <div class="product-nr">#{{ product.nr }}</div>
-          <div class="product-name" [matTooltip]="product.name">{{ product.name }}</div>
-          <div class="product-meta">
-            <span class="category-badge">{{ product.category }}</span>
-            <span class="qty-info">Stoc: {{ product.qty }} {{ product.um }}</span>
-          </div>
-        </mat-card-content>
-        <mat-card-actions>
-          <button mat-flat-button class="btn-add" (click)="goToNewOrder()"
-                  [matTooltip]="'Adaugă ' + product.name + ' în comandă nouă'">
-            <mat-icon>add_shopping_cart</mat-icon>
-            Adaugă în comandă
-          </button>
-        </mat-card-actions>
-      </mat-card>
+  <div class="product-list">
+    @for (p of paged(); track p.nr) {
+      <div class="product-row"
+           [style.background-color]="rowBg(p.catalogId)"
+           [style.border-left-color]="rowBorder(p.catalogId)">
+        <div class="product-info">
+          <span class="product-name">{{ p.name }}</span>
+          <span class="product-meta">
+            @if (catalogsService.getById(p.catalogId); as cat) {
+              <span class="catalog-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
+                {{ cat.name }}
+              </span>
+            }
+            <span class="cat-chip-sm">{{ p.category }}</span>
+            <span class="um-text">{{ p.um }}</span>
+            @if (p.qty > 0) { <span class="stoc-text">Stoc: {{ p.qty }}</span> }
+          </span>
+        </div>
+        <button mat-stroked-button class="order-btn" (click)="goToNewOrder()" matTooltip="Comandă">
+          <mat-icon>add_shopping_cart</mat-icon>
+        </button>
+      </div>
     }
   </div>
 
-  <!-- Paginator -->
   @if (filtered().length > PAGE_SIZE) {
-    <p-paginator
-      [rows]="PAGE_SIZE"
-      [totalRecords]="filtered().length"
-      [first]="currentPage() * PAGE_SIZE"
-      (onPageChange)="onPageChange($event)"
-      [rowsPerPageOptions]="[48]"
-      styleClass="mt-paginator">
-    </p-paginator>
+    <p-paginator [rows]="PAGE_SIZE" [totalRecords]="filtered().length"
+                 [rowsPerPageOptions]="[]"
+                 (onPageChange)="onPageChange($event)" />
   }
 }

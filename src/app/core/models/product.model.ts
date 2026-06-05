@@ -4,6 +4,7 @@ export interface Product {
   um: string;
   qty: number;
   category: string;
+  catalogId: string;
 }
 
 export interface ProductMeta {

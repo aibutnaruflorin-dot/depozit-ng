@@ -31,10 +31,12 @@ export class StorageService {
         { id: 2, name: 'Agent 1',       username: 'agent1', password: 'agent123', role: 'agent', active: true }
       ] as User[]);
     }
-    if (!this.get('app_orders'))   this.set('app_orders', []);
-    if (!this.get('app_products')) this.set('app_products', []);
-    if (!this.get('app_settings')) {
-      this.set('app_settings', { dataSource: 'excel', apiUrl: '', apiKey: '', apiGestiune: '' });
+    if (!this.get('app_orders')) this.set('app_orders', []);
+    if (!this.get('app_catalogs')) {
+      this.set('app_catalogs', [
+        { id: 'cat1', name: 'Catalog 1', color: '#2196F3', dataSource: 'excel', apiUrl: '', apiKey: '', apiGestiune: '' },
+        { id: 'cat2', name: 'Catalog 2', color: '#4CAF50', dataSource: 'excel', apiUrl: '', apiKey: '', apiGestiune: '' }
+      ]);
     }
   }
 }
