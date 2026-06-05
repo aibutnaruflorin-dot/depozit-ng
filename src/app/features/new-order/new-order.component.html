@@ -58,19 +58,14 @@
 </div>
 
 <!-- ══ LISTA PRODUSE ══ -->
-@if (!searchQuery && !categoryFilter() && allCatSelected()) {
-  <div class="hint-text">
-    <mat-icon>info_outline</mat-icon>
-    Scrie ceva în căutare, selectează o categorie sau un catalog.
-  </div>
-} @else if (suggestions().length === 0) {
+@if (suggestions().length === 0) {
   <div class="hint-text">
     <mat-icon>search_off</mat-icon>
     Niciun produs găsit.
   </div>
 } @else {
   <div class="product-list">
-    @for (p of suggestions(); track p.nr; let i = $index) {
+    @for (p of suggestions(); track (p.catalogId + '::' + p.nr); let i = $index) {
       @if (displayMode() === 'grouped' && (i === 0 || suggestions()[i-1].catalogId !== p.catalogId)) {
         @if (catalogsService.getById(p.catalogId); as cat) {
           <div class="catalog-group-header" [style.border-left-color]="cat.color" [style.color]="cat.color">
@@ -98,16 +93,16 @@
           </span>
         </div>
         <div class="row-actions" (click)="$event.stopPropagation()">
-          <button class="qty-btn" (click)="decPending(p.nr)">−</button>
-          <input class="row-qty" type="number" min="1"
-                 [value]="getPendingQty(p.nr)"
-                 (change)="setPendingQty(p.nr, $any($event.target).value)"
+          <button class="qty-btn" (click)="decPending(p)">−</button>
+          <input class="row-qty" type="number" min="0"
+                 [value]="getPendingQty(p)"
+                 (change)="setPendingQty(p, $any($event.target).value)"
                  (click)="$any($event.target).select()">
-          <button class="qty-btn" (click)="incPending(p.nr)">+</button>
-          <button class="add-btn" [class.in-cart]="isInCart(p.nr)"
+          <button class="qty-btn" (click)="incPending(p)">+</button>
+          <button class="add-btn" [class.in-cart]="isInCart(p)"
                   (click)="addProduct(p)"
-                  [title]="isInCart(p.nr) ? 'Actualizează cantitatea' : 'Adaugă în coș'">
-            <mat-icon>{{ isInCart(p.nr) ? 'check' : 'add_shopping_cart' }}</mat-icon>
+                  [title]="isInCart(p) ? 'Actualizează cantitatea' : 'Adaugă în coș'">
+            <mat-icon>{{ isInCart(p) ? 'check' : 'add_shopping_cart' }}</mat-icon>
           </button>
         </div>
       </div>
@@ -164,7 +159,7 @@
         </div>
       } @else {
         <div class="cart-items">
-          @for (item of cart(); track item.product.nr) {
+          @for (item of cart(); track (item.product.catalogId + '::' + item.product.nr)) {
             <div class="cart-item" [style.border-left-color]="rowBorder(item.product.catalogId)">
               <div class="ci-name">
                 {{ item.product.name }}
@@ -175,15 +170,15 @@
                 }
               </div>
               <div class="ci-controls">
-                <button mat-icon-button (click)="decrementQty(item.product.nr)">
+                <button mat-icon-button (click)="decrementQty(item.product)">
                   <mat-icon>remove</mat-icon>
                 </button>
                 <input class="qty-input" type="number" [value]="item.qty" min="1"
-                       (change)="updateQty(item.product.nr, $any($event.target).value)">
-                <button mat-icon-button (click)="incrementQty(item.product.nr)">
+                       (change)="updateQty(item.product, $any($event.target).value)">
+                <button mat-icon-button (click)="incrementQty(item.product)">
                   <mat-icon>add</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="removeProduct(item.product.nr)">
+                <button mat-icon-button color="warn" (click)="removeProduct(item.product)">
                   <mat-icon>delete_outline</mat-icon>
                 </button>
               </div>

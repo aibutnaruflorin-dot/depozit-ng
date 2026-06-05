@@ -18,9 +18,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface CartItem { product: Product; qty: number; }
 
-// Cantități pending pentru fiecare produs din listă (înainte de adăugare)
-type NrKey = string | number;
-
 @Component({
   selector: 'app-new-order',
   standalone: true,
@@ -33,21 +30,19 @@ type NrKey = string | number;
   styleUrl:    './new-order.component.scss'
 })
 export class NewOrderComponent implements OnInit {
-  /* ── form controls ── */
   nameCtrl  = new FormControl('', Validators.required);
   phoneCtrl = new FormControl('');
   noteCtrl  = new FormControl('');
 
-  /* ── search / cart state ── */
-  searchQuery      = '';
-  categoryFilter   = signal('');
-  selectedCatIds   = signal<string[]>([]);   // empty = all
-  cart             = signal<CartItem[]>([]);
-  showCart         = signal(false);
+  searchQuery    = '';
+  categoryFilter = signal('');
+  selectedCatIds = signal<string[]>([]);
+  cart           = signal<CartItem[]>([]);
+  showCart       = signal(false);
+  displayMode    = signal<'mixed' | 'grouped'>('mixed');
 
   private _pendingQty = signal<Record<string, number>>({});
 
-  /* ── submit state ── */
   submitting = false;
   submitted  = false;
   lastOrder: Order | null = null;
@@ -65,7 +60,6 @@ export class NewOrderComponent implements OnInit {
 
   readonly allCatSelected = computed(() => this.selectedCatIds().length === 0);
   readonly categories     = computed(() => this.catalogsService.categoriesFor(this.selectedCatIds()));
-  displayMode = signal<'mixed' | 'grouped'>('mixed');
 
   toggleCatalog(id: string): void {
     this.selectedCatIds.update(ids =>
@@ -82,78 +76,83 @@ export class NewOrderComponent implements OnInit {
     const q    = this.searchQuery.trim().toLowerCase();
     const cat  = this.categoryFilter();
     const mode = this.displayMode();
-    if (!q && !cat && this.selectedCatIds().length === 0) return [];
     const base = mode === 'grouped'
       ? this.catalogsService.productsForGrouped(this.selectedCatIds())
       : this.catalogsService.productsFor(this.selectedCatIds());
+    if (!q && !cat) return base.slice(0, 200);
     return base.filter(p => {
       const matchQ   = !q   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
       const matchCat = !cat || p.category === cat;
       return matchQ && matchCat;
-    }).slice(0, 80);
+    }).slice(0, 200);
   });
 
-  rowBg(catalogId: string): string { return this.catalogsService.bgColor(catalogId, 0.08); }
+  rowBg(catalogId: string): string     { return this.catalogsService.bgColor(catalogId, 0.08); }
   rowBorder(catalogId: string): string { return this.catalogsService.borderColor(catalogId); }
 
-  /* ── pending qty helpers (în rândul din listă) ── */
-  getPendingQty(nr: NrKey): number {
-    return this._pendingQty()[String(nr)] ?? 1;
-  }
-  setPendingQty(nr: NrKey, val: string | number): void {
-    const qty = Math.max(1, parseInt(String(val)) || 1);
-    this._pendingQty.update(m => ({ ...m, [String(nr)]: qty }));
-  }
-  incPending(nr: NrKey): void { this.setPendingQty(nr, this.getPendingQty(nr) + 1); }
-  decPending(nr: NrKey): void { this.setPendingQty(nr, this.getPendingQty(nr) - 1); }
+  /** Unique key per product across catalogs */
+  pkey(p: Product): string { return `${p.catalogId}::${p.nr}`; }
 
-  /* ── cart helpers ── */
-  isInCart(nr: number | string): boolean {
-    return this.cart().some(i => i.product.nr === nr);
+  /* ── Pending qty (list rows) — default 0, min 0 ── */
+  getPendingQty(p: Product): number {
+    return this._pendingQty()[this.pkey(p)] ?? 0;
+  }
+  setPendingQty(p: Product, val: string | number): void {
+    const qty = Math.max(0, parseInt(String(val)) || 0);
+    this._pendingQty.update(m => ({ ...m, [this.pkey(p)]: qty }));
+  }
+  incPending(p: Product): void { this.setPendingQty(p, this.getPendingQty(p) + 1); }
+  decPending(p: Product): void { this.setPendingQty(p, this.getPendingQty(p) - 1); }
+
+  /* ── Cart helpers ── */
+  isInCart(p: Product): boolean {
+    const key = this.pkey(p);
+    return this.cart().some(i => this.pkey(i.product) === key);
   }
 
   openCart():  void { this.showCart.set(true); }
   closeCart(): void { this.showCart.set(false); }
 
   addProduct(product: Product): void {
-    const qty = this.getPendingQty(product.nr);
-    if (this.isInCart(product.nr)) {
-      // dacă e deja în coș, actualizează cantitatea
-      this.cart.update(c => c.map(i => i.product.nr === product.nr ? { ...i, qty } : i));
-      this.snackBar.open(`✓ Cantitate actualizată: ${qty} ${product.um}`, '', {
-        duration: 1500, panelClass: ['snack-success']
-      });
+    const pending = this.getPendingQty(product);
+    const qty     = pending > 0 ? pending : 1;
+    const key     = this.pkey(product);
+    if (this.isInCart(product)) {
+      this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty } : i));
+      this.snackBar.open(`✓ Cantitate actualizată: ${qty} ${product.um}`, '', { duration: 1500, panelClass: ['snack-success'] });
     } else {
       this.cart.update(c => [...c, { product, qty }]);
-      this.snackBar.open(`✓ ${product.name.slice(0, 40)} adăugat (${qty} ${product.um}).`, '', {
-        duration: 1500, panelClass: ['snack-success']
-      });
+      this.snackBar.open(`✓ ${product.name.slice(0, 40)} adăugat (${qty} ${product.um}).`, '', { duration: 1500, panelClass: ['snack-success'] });
     }
-    this._pendingQty.update(m => { const n = {...m}; delete n[String(product.nr)]; return n; });
+    this._pendingQty.update(m => { const n = { ...m }; delete n[key]; return n; });
   }
 
-  updateQty(nr: number | string, val: string): void {
+  updateQty(product: Product, val: string): void {
     const qty = Math.max(1, parseInt(val) || 1);
-    this.cart.update(c => c.map(i => i.product.nr === nr ? { ...i, qty } : i));
+    const key = this.pkey(product);
+    this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty } : i));
   }
 
-  incrementQty(nr: number | string): void {
-    this.cart.update(c => c.map(i => i.product.nr === nr ? { ...i, qty: i.qty + 1 } : i));
+  incrementQty(product: Product): void {
+    const key = this.pkey(product);
+    this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty: i.qty + 1 } : i));
   }
 
-  decrementQty(nr: number | string): void {
-    this.cart.update(c => c.map(i => i.product.nr === nr ? { ...i, qty: Math.max(1, i.qty - 1) } : i));
+  decrementQty(product: Product): void {
+    const key = this.pkey(product);
+    this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty: Math.max(1, i.qty - 1) } : i));
   }
 
-  removeProduct(nr: number | string): void {
-    this.cart.update(c => c.filter(i => i.product.nr !== nr));
+  removeProduct(product: Product): void {
+    const key = this.pkey(product);
+    this.cart.update(c => c.filter(i => this.pkey(i.product) !== key));
   }
 
   clearCart(): void {
     if (confirm('Ștergi toate produsele din coș?')) this.cart.set([]);
   }
 
-  /* ── submit ── */
+  /* ── Submit ── */
   submit(): void {
     this.nameCtrl.markAsTouched();
     if (this.nameCtrl.invalid) {
@@ -179,11 +178,12 @@ export class NewOrderComponent implements OnInit {
         note:  (this.noteCtrl.value || '').trim()
       },
       products: this.cart().map(i => ({
-        nr:       i.product.nr,
-        name:     i.product.name,
-        um:       i.product.um,
-        qty:      i.qty,
-        category: i.product.category
+        nr:        i.product.nr,
+        name:      i.product.name,
+        um:        i.product.um,
+        qty:       i.qty,
+        category:  i.product.category,
+        catalogId: i.product.catalogId
       } as OrderProduct)),
       status: 'trimis'
     };
@@ -201,16 +201,14 @@ export class NewOrderComponent implements OnInit {
     this.noteCtrl.reset();
     this.submitted = true;
 
-    this.snackBar.open('✅ Comanda a fost salvată!', 'OK', {
-      duration: 4000, panelClass: ['snack-success']
-    });
+    this.snackBar.open('Comanda a fost salvată!', 'OK', { duration: 4000, panelClass: ['snack-success'] });
   }
 
   copyText(): void {
     if (!this.lastOrderText) return;
-    navigator.clipboard.writeText(this.lastOrderText).then(() => {
-      this.snackBar.open('📋 Textul a fost copiat!', '', { duration: 2000, panelClass: ['snack-success'] });
-    }).catch(() => this._fallbackCopy(this.lastOrderText));
+    navigator.clipboard.writeText(this.lastOrderText)
+      .then(() => this.snackBar.open('Textul a fost copiat!', '', { duration: 2000, panelClass: ['snack-success'] }))
+      .catch(() => this._fallbackCopy(this.lastOrderText));
   }
 
   private _fallbackCopy(text: string): void {
@@ -221,7 +219,7 @@ export class NewOrderComponent implements OnInit {
     ta.select();
     document.execCommand('copy');
     ta.remove();
-    this.snackBar.open('📋 Copiat!', '', { duration: 2000 });
+    this.snackBar.open('Copiat!', '', { duration: 2000 });
   }
 
   resendEmail(): void {
