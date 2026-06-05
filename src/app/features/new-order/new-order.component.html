@@ -1,114 +1,119 @@
-<!-- ══ HEADER ══ -->
-<div class="no-header">
-  <h2 class="no-title">Comandă nouă</h2>
-  <button mat-icon-button class="cart-btn" (click)="openCart()" matTooltip="Coș comandă">
-    <span class="cart-badge-wrap">
-      <mat-icon>shopping_cart</mat-icon>
-      @if (cart().length > 0) {
-        <span class="cart-badge">{{ cart().length }}</span>
-      }
-    </span>
-  </button>
-</div>
+<!-- ══ MAIN CONTENT (shifts left when cart open) ══ -->
+<div class="page-content" [class.cart-open]="showCart()">
 
-<!-- ══ CATALOG FILTER ══ -->
-<div class="catalog-chips">
-  <button class="cat-chip-btn" [class.active]="allCatSelected()" (click)="selectedCatIds.set([])">
-    Toate
-  </button>
-  @for (cat of catalogsService.catalogs(); track cat.id) {
-    <button class="cat-chip-btn" [class.active]="selectedCatIds().includes(cat.id)"
-            [style.--chip-color]="cat.color"
-            (click)="toggleCatalog(cat.id)">
-      <span class="chip-dot" [style.background]="cat.color"></span>
-      {{ cat.name }}
+  <!-- HEADER -->
+  <div class="no-header">
+    <h2 class="no-title">Comandă nouă</h2>
+    <button mat-icon-button class="cart-btn" (click)="openCart()" matTooltip="Coș comandă">
+      <span class="cart-badge-wrap">
+        <mat-icon>shopping_cart</mat-icon>
+        @if (cart().length > 0) {
+          <span class="cart-badge">{{ cart().length }}</span>
+        }
+      </span>
     </button>
-  }
-</div>
+  </div>
 
-<!-- ══ SEARCH + CATEGORIE ══ -->
-<div class="search-bar">
-  <mat-form-field appearance="outline" class="search-field">
-    <mat-label>Caută produs</mat-label>
-    <mat-icon matPrefix>search</mat-icon>
-    <input matInput [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Nume sau cod…" autocomplete="off">
-    @if (searchQuery()) {
-      <button matSuffix mat-icon-button (click)="searchQuery.set('')" aria-label="Șterge">
-        <mat-icon>close</mat-icon>
+  <!-- CATALOG FILTER -->
+  <div class="catalog-chips">
+    <button class="cat-chip-btn" [class.active]="allCatSelected()" (click)="selectedCatIds.set([])">
+      Toate
+    </button>
+    @for (cat of catalogsService.catalogs(); track cat.id) {
+      <button class="cat-chip-btn" [class.active]="selectedCatIds().includes(cat.id)"
+              [style.--chip-color]="cat.color"
+              (click)="toggleCatalog(cat.id)">
+        <span class="chip-dot" [style.background]="cat.color"></span>
+        {{ cat.name }}
       </button>
     }
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="cat-field">
-    <mat-label>Categorie</mat-label>
-    <mat-select [value]="categoryFilter()" (valueChange)="categoryFilter.set($event)">
-      <mat-option value="">Toate</mat-option>
-      @for (cat of categories(); track cat) {
-        <mat-option [value]="cat">{{ cat }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-
-  <button class="mode-toggle-btn" [class.active]="displayMode() === 'grouped'"
-          (click)="toggleDisplayMode()"
-          [title]="displayMode() === 'mixed' ? 'Grupat pe cataloage' : 'Amestecat alfabetic'">
-    <mat-icon>{{ displayMode() === 'mixed' ? 'sort' : 'category' }}</mat-icon>
-    <span class="mode-label">{{ displayMode() === 'mixed' ? 'Amestecat' : 'Grupat' }}</span>
-  </button>
-</div>
-
-<!-- ══ LISTA PRODUSE ══ -->
-@if (suggestions().length === 0) {
-  <div class="hint-text">
-    <mat-icon>search_off</mat-icon>
-    Niciun produs găsit.
   </div>
-} @else {
-  <div class="product-list">
-    @for (p of suggestions(); track (p.catalogId + '::' + p.nr); let i = $index) {
-      @if (displayMode() === 'grouped' && (i === 0 || suggestions()[i-1].catalogId !== p.catalogId)) {
-        @if (catalogsService.getById(p.catalogId); as cat) {
-          <div class="catalog-group-header" [style.border-left-color]="cat.color" [style.color]="cat.color">
-            <span class="cgh-dot" [style.background]="cat.color"></span>
-            {{ cat.name }}
-          </div>
+
+  <!-- SEARCH + CATEGORIE -->
+  <div class="search-bar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Caută produs</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Nume sau cod…" autocomplete="off">
+      @if (searchQuery()) {
+        <button matSuffix mat-icon-button (click)="searchQuery.set('')" aria-label="Șterge">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="cat-field">
+      <mat-label>Categorie</mat-label>
+      <mat-select [value]="categoryFilter()" (valueChange)="categoryFilter.set($event)">
+        <mat-option value="">Toate</mat-option>
+        @for (cat of categories(); track cat) {
+          <mat-option [value]="cat">{{ cat }}</mat-option>
         }
-      }
-      <div class="product-row"
-           [style.background-color]="rowBg(p.catalogId)"
-           [style.border-left-color]="rowBorder(p.catalogId)">
-        <div class="product-info">
-          <span class="product-name">{{ p.name }}</span>
-          <span class="product-meta">
-            @if (displayMode() === 'mixed') {
-              @if (catalogsService.getById(p.catalogId); as cat) {
-                <span class="catalog-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
-                  {{ cat.name }}
-                </span>
-              }
-            }
-            <span class="cat-chip">{{ p.category }}</span>
-            <span class="um-text">{{ p.um }}</span>
-            @if (p.qty > 0) { <span class="stoc-text">Stoc: {{ p.qty }}</span> }
-          </span>
-        </div>
-        <div class="row-actions" (click)="$event.stopPropagation()">
-          <button class="qty-btn" (click)="decPending(p)">−</button>
-          <input class="row-qty" type="number" min="0"
-                 [value]="pendingQtyMap()[pkey(p)] ?? 0"
-                 (change)="setPendingQty(p, $any($event.target).value)"
-                 (click)="$any($event.target).select()">
-          <button class="qty-btn" (click)="incPending(p)">+</button>
-          <button class="add-btn" [class.in-cart]="cart().some(i => pkey(i.product) === pkey(p))"
-                  (click)="addProduct(p)"
-                  [title]="cart().some(i => pkey(i.product) === pkey(p)) ? 'Actualizează cantitatea' : 'Adaugă în coș'">
-            <mat-icon>{{ cart().some(i => pkey(i.product) === pkey(p)) ? 'check' : 'add_shopping_cart' }}</mat-icon>
-          </button>
-        </div>
-      </div>
-    }
+      </mat-select>
+    </mat-form-field>
+
+    <button class="mode-toggle-btn" [class.active]="displayMode() === 'grouped'"
+            (click)="toggleDisplayMode()"
+            [title]="displayMode() === 'mixed' ? 'Grupat pe cataloage' : 'Amestecat alfabetic'">
+      <mat-icon>{{ displayMode() === 'mixed' ? 'sort' : 'category' }}</mat-icon>
+      <span class="mode-label">{{ displayMode() === 'mixed' ? 'Amestecat' : 'Grupat' }}</span>
+    </button>
   </div>
-}
+
+  <!-- LISTA PRODUSE -->
+  @if (suggestions().length === 0) {
+    <div class="hint-text">
+      <mat-icon>search_off</mat-icon>
+      Niciun produs găsit.
+    </div>
+  } @else {
+    <div class="product-list">
+      @for (p of suggestions(); track (p.catalogId + '::' + p.nr); let i = $index) {
+        @if (displayMode() === 'grouped' && (i === 0 || suggestions()[i-1].catalogId !== p.catalogId)) {
+          @if (catalogsService.getById(p.catalogId); as cat) {
+            <div class="catalog-group-header" [style.border-left-color]="cat.color" [style.color]="cat.color">
+              <span class="cgh-dot" [style.background]="cat.color"></span>
+              {{ cat.name }}
+            </div>
+          }
+        }
+        <div class="product-row"
+             [style.background-color]="rowBg(p.catalogId)"
+             [style.border-left-color]="rowBorder(p.catalogId)">
+          <div class="product-info">
+            <span class="product-name">{{ p.name }}</span>
+            <span class="product-meta">
+              @if (displayMode() === 'mixed') {
+                @if (catalogsService.getById(p.catalogId); as cat) {
+                  <span class="catalog-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
+                    {{ cat.name }}
+                  </span>
+                }
+              }
+              <span class="cat-chip">{{ p.category }}</span>
+              <span class="um-text">{{ p.um }}</span>
+              @if (p.qty > 0) { <span class="stoc-text">Stoc: {{ p.qty }}</span> }
+            </span>
+          </div>
+          <div class="row-actions" (click)="$event.stopPropagation()">
+            <button class="qty-btn" (click)="decPending(p)">−</button>
+            <input class="row-qty" type="number" min="0"
+                   [value]="pendingQtyMap()[pkey(p)] ?? 0"
+                   (change)="setPendingQty(p, $any($event.target).value)"
+                   (click)="$any($event.target).select()">
+            <button class="qty-btn" (click)="incPending(p)">+</button>
+            <button class="add-btn" [class.in-cart]="cart().some(i => pkey(i.product) === pkey(p))"
+                    (click)="addProduct(p)"
+                    [title]="cart().some(i => pkey(i.product) === pkey(p)) ? 'Adaugă mai mult' : 'Adaugă în coș'">
+              <mat-icon>{{ cart().some(i => pkey(i.product) === pkey(p)) ? 'check' : 'add_shopping_cart' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+</div><!-- end page-content -->
 
 <!-- ══ CART PANEL ══ -->
 @if (showCart()) {
@@ -158,27 +163,40 @@
         <div class="cart-items">
           @for (item of cart(); track (item.product.catalogId + '::' + item.product.nr)) {
             <div class="cart-item" [style.border-left-color]="rowBorder(item.product.catalogId)">
-              <div class="ci-name">
-                {{ item.product.name }}
-                @if (catalogsService.getById(item.product.catalogId); as cat) {
-                  <span class="catalog-badge ci-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
-                    {{ cat.name }}
-                  </span>
-                }
-              </div>
-              <div class="ci-controls">
-                <button mat-icon-button (click)="decrementQty(item.product)">
-                  <mat-icon>remove</mat-icon>
-                </button>
-                <input class="qty-input" type="number" [value]="item.qty" min="1"
-                       (change)="updateQty(item.product, $any($event.target).value)">
-                <button mat-icon-button (click)="incrementQty(item.product)">
-                  <mat-icon>add</mat-icon>
-                </button>
-                <button mat-icon-button color="warn" (click)="removeProduct(item.product)">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
+
+              @if (confirmDeleteKey() === pkey(item.product)) {
+                <!-- CONFIRMARE ȘTERGERE -->
+                <div class="ci-confirm">
+                  <span class="ci-confirm-text">Elimini "{{ item.product.name.slice(0, 28) }}"?</span>
+                  <div class="ci-confirm-btns">
+                    <button mat-flat-button color="warn" (click)="doRemove(item.product)">Da</button>
+                    <button mat-stroked-button (click)="cancelRemove()">Nu</button>
+                  </div>
+                </div>
+              } @else {
+                <div class="ci-name">
+                  {{ item.product.name }}
+                  @if (catalogsService.getById(item.product.catalogId); as cat) {
+                    <span class="catalog-badge ci-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
+                      {{ cat.name }}
+                    </span>
+                  }
+                </div>
+                <div class="ci-controls">
+                  <button mat-icon-button (click)="decrementQty(item.product)">
+                    <mat-icon>remove</mat-icon>
+                  </button>
+                  <input class="qty-input" type="number" [value]="cartQtyOf(item.product)" min="1"
+                         (change)="updateQty(item.product, $any($event.target).value)">
+                  <button mat-icon-button (click)="incrementQty(item.product)">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="confirmRemove(item.product)">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
+              }
+
             </div>
           }
         </div>

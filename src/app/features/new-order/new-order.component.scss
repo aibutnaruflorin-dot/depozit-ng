@@ -1,3 +1,9 @@
+/* ── Page content wrapper — shifts left when cart opens ── */
+.page-content {
+  transition: padding-right 0.2s ease;
+  &.cart-open { padding-right: 430px; }
+}
+
 /* ── Header ── */
 .no-header {
   display: flex;
@@ -356,6 +362,25 @@ $h: 34px;
   font-size: 0.65rem !important;
   padding: 1px 4px !important;
   flex-shrink: 0;
+}
+
+/* Inline delete confirmation */
+.ci-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.ci-confirm-text {
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.ci-confirm-btns {
+  display: flex;
+  gap: 0.5rem;
+
+  button { min-width: 60px; height: 32px; font-size: 0.82rem; line-height: 32px; padding: 0 12px; }
 }
 .ci-controls {
   display: flex;

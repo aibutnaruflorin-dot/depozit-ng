@@ -44,6 +44,8 @@ export class NewOrderComponent implements OnInit {
   private _pendingQty     = signal<Record<string, number>>({});
   readonly pendingQtyMap  = this._pendingQty.asReadonly();
 
+  confirmDeleteKey = signal<string | null>(null);
+
   submitting = false;
   submitted  = false;
   lastOrder: Order | null = null;
@@ -112,7 +114,12 @@ export class NewOrderComponent implements OnInit {
   }
 
   openCart():  void { this.showCart.set(true); }
-  closeCart(): void { this.showCart.set(false); }
+  closeCart(): void { this.showCart.set(false); this.confirmDeleteKey.set(null); }
+
+  /** Read cart qty directly from signal for reactive template binding */
+  cartQtyOf(product: Product): number {
+    return this.cart().find(i => this.pkey(i.product) === this.pkey(product))?.qty ?? 0;
+  }
 
   addProduct(product: Product): void {
     const pending = this.getPendingQty(product);
@@ -146,18 +153,21 @@ export class NewOrderComponent implements OnInit {
     const key  = this.pkey(product);
     const item = this.cart().find(i => this.pkey(i.product) === key);
     if (!item) return;
-    if (item.qty <= 1) { this.removeProduct(product); return; }
+    if (item.qty <= 1) { this.confirmDeleteKey.set(key); return; }
     this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty: i.qty - 1 } : i));
   }
 
-  removeProduct(product: Product): void {
-    const key  = this.pkey(product);
-    const name = product.name.slice(0, 35);
-    const ref  = this.snackBar.open(`Elimini "${name}" din coș?`, 'Da, elimină', { duration: 4000 });
-    ref.onAction().subscribe(() => {
-      this.cart.update(c => c.filter(i => this.pkey(i.product) !== key));
-    });
+  confirmRemove(product: Product): void {
+    this.confirmDeleteKey.set(this.pkey(product));
   }
+
+  doRemove(product: Product): void {
+    const key = this.pkey(product);
+    this.cart.update(c => c.filter(i => this.pkey(i.product) !== key));
+    this.confirmDeleteKey.set(null);
+  }
+
+  cancelRemove(): void { this.confirmDeleteKey.set(null); }
 
   clearCart(): void {
     if (confirm('Ștergi toate produsele din coș?')) this.cart.set([]);
