@@ -10,6 +10,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { PaginatorModule } from 'primeng/paginator';
@@ -20,7 +22,8 @@ import { PaginatorModule } from 'primeng/paginator';
   imports: [
     CommonModule, FormsModule,
     MatInputModule, MatFormFieldModule, MatButtonModule, MatIconModule,
-    MatChipsModule, MatCardModule, MatSelectModule, MatTooltipModule, RouterModule,
+    MatChipsModule, MatCardModule, MatSelectModule, MatCheckboxModule, MatDividerModule,
+    MatTooltipModule, RouterModule,
     PaginatorModule
   ],
   templateUrl: './catalog.component.html',
@@ -29,32 +32,50 @@ import { PaginatorModule } from 'primeng/paginator';
 export class CatalogComponent implements OnInit {
   readonly PAGE_SIZE = 48;
 
-  search          = signal('');
-  category        = signal('');
-  currentPage     = signal(0);
-  selectedCatIds  = signal<string[]>([]);
-  displayMode     = signal<'mixed' | 'grouped'>('mixed');
+  search               = signal('');
+  category             = signal('');
+  codExternFilter      = signal('');
+  furnizorFilter       = signal<string[]>([]);
+  furnizorDropdownOpen = signal(false);
+  furnizorSearch       = signal('');
+  currentPage          = signal(0);
+  selectedCatIds       = signal<string[]>([]);
+  displayMode          = signal<'mixed' | 'grouped'>('mixed');
 
   constructor(public catalogsService: CatalogsService, private router: Router) {}
 
   ngOnInit(): void {}
 
-  // All catalog IDs selected (or empty = all)
   readonly allSelected = computed(() => this.selectedCatIds().length === 0);
 
   readonly categories = computed(() => this.catalogsService.categoriesFor(this.selectedCatIds()));
 
+  readonly furnizors = computed(() => this.catalogsService.furnizorsFor(this.selectedCatIds()));
+
+  readonly filteredFurnizors = computed(() => {
+    const s = this.furnizorSearch().toLowerCase().trim();
+    return s ? this.furnizors().filter(f => f.toLowerCase().includes(s)) : this.furnizors();
+  });
+
+  readonly allFurnizorsSelected = computed(() =>
+    this.furnizors().length > 0 && this.furnizorFilter().length === this.furnizors().length
+  );
+
   readonly filtered = computed(() => {
-    const q    = this.search().toLowerCase();
-    const cat  = this.category();
-    const mode = this.displayMode();
+    const q         = this.search().toLowerCase();
+    const cat       = this.category();
+    const codExtern = this.codExternFilter().trim().toLowerCase();
+    const furnizors = this.furnizorFilter();
+    const mode      = this.displayMode();
     const base = mode === 'grouped'
       ? this.catalogsService.productsForGrouped(this.selectedCatIds())
       : this.catalogsService.productsFor(this.selectedCatIds());
     return base.filter(p => {
-      const matchQ   = !q   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
-      const matchCat = !cat || p.category === cat;
-      return matchQ && matchCat;
+      const matchQ        = !q                   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
+      const matchCat      = !cat                 || p.category === cat;
+      const matchCodExt   = !codExtern           || (p.codExtern ?? '').toLowerCase().includes(codExtern);
+      const matchFurnizor = furnizors.length === 0 || furnizors.includes(p.furnizor ?? '');
+      return matchQ && matchCat && matchCodExt && matchFurnizor;
     });
   });
 
@@ -72,6 +93,9 @@ export class CatalogComponent implements OnInit {
   clearFilters(): void {
     this.search.set('');
     this.category.set('');
+    this.codExternFilter.set('');
+    this.furnizorFilter.set([]);
+    this.furnizorSearch.set('');
     this.currentPage.set(0);
   }
 
@@ -80,6 +104,23 @@ export class CatalogComponent implements OnInit {
       ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
     );
     this.category.set('');
+    this.furnizorFilter.set([]);
+    this.furnizorSearch.set('');
+    this.currentPage.set(0);
+  }
+
+  toggleFurnizorDropdown(): void { this.furnizorDropdownOpen.update(v => !v); }
+  closeFurnizorDropdown(): void  { this.furnizorDropdownOpen.set(false); this.furnizorSearch.set(''); }
+
+  toggleFurnizorItem(f: string): void {
+    this.furnizorFilter.update(arr =>
+      arr.includes(f) ? arr.filter(x => x !== f) : [...arr, f]
+    );
+    this.currentPage.set(0);
+  }
+
+  toggleAllFurnizors(): void {
+    this.furnizorFilter.set(this.allFurnizorsSelected() ? [] : [...this.furnizors()]);
     this.currentPage.set(0);
   }
 

@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Order } from '../../core/models/order.model';
 import { User } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +18,7 @@ import { MatInputModule } from '@angular/material/input';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { BarcodeComponent } from '../../shared/barcode.component';
 
 function sortByFamily(orders: Order[]): Order[] {
   const families: Order[][] = [];
@@ -54,7 +56,7 @@ function sortByFamily(orders: Order[]): Order[] {
     CommonModule, FormsModule, ReactiveFormsModule,
     MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
     MatDatepickerModule, MatFormFieldModule, MatInputModule,
-    TableModule, TagModule
+    TableModule, TagModule, BarcodeComponent
   ],
   templateUrl: './history-all.component.html',
   styleUrl:    './history-all.component.scss'
@@ -132,6 +134,7 @@ export class HistoryAllComponent {
 
   constructor(
     private auth: AuthService,
+    public  catalogsService: CatalogsService,
     private ordersService: OrdersService,
     private storage: StorageService,
     private snackBar: MatSnackBar
@@ -147,6 +150,13 @@ export class HistoryAllComponent {
 
   isPending(order: Order): boolean {
     return order.status === 'trimis' && !order.superseded;
+  }
+
+  getCodExtern(p: import('../../core/models/order.model').OrderProduct): string {
+    if (p.codExtern) return p.codExtern;
+    if (!p.catalogId) return '';
+    const prod = this.catalogsService.productsFor([p.catalogId]).find(cp => String(cp.nr) === String(p.nr));
+    return prod?.codExtern ?? '';
   }
 
   hasQtyChanges(order: Order): boolean {

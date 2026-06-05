@@ -31,7 +31,7 @@
 
   <!-- SEARCH + CATEGORIE -->
   <div class="search-bar">
-    <mat-form-field appearance="outline" class="search-field">
+    <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
       <mat-label>Caută produs</mat-label>
       <mat-icon matPrefix>search</mat-icon>
       <input matInput [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Nume sau cod…" autocomplete="off">
@@ -42,7 +42,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="cat-field">
+    <mat-form-field appearance="outline" class="cat-field" subscriptSizing="dynamic">
       <mat-label>Categorie</mat-label>
       <mat-select [value]="categoryFilter()" (valueChange)="categoryFilter.set($event)">
         <mat-option value="">Toate</mat-option>
@@ -51,6 +51,84 @@
         }
       </mat-select>
     </mat-form-field>
+
+    <mat-form-field appearance="outline" class="cod-extern-field" subscriptSizing="dynamic">
+      <mat-label>Cod extern</mat-label>
+      <mat-icon matPrefix>qr_code</mat-icon>
+      <input matInput [ngModel]="codExternFilter()" (ngModelChange)="codExternFilter.set($event)"
+             placeholder="Caută cod…" autocomplete="off">
+      @if (codExternFilter()) {
+        <button matSuffix mat-icon-button (click)="codExternFilter.set('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+
+    <!-- Furnizor multi-select custom -->
+    <div class="furnizor-wrapper">
+      <div class="furnizor-trigger"
+           [class.furn-open]="furnizorDropdownOpen()"
+           [class.furn-active]="furnizorFilter().length > 0"
+           (click)="toggleFurnizorDropdown()">
+        <span class="furn-label">Furnizor</span>
+        <span class="furn-value">
+          @if (furnizorFilter().length === 0) {
+            <span class="furn-placeholder">Toți</span>
+          } @else if (furnizorFilter().length === 1) {
+            <span class="furn-chip">{{ furnizorFilter()[0] }}</span>
+          } @else {
+            <span class="furn-chip">{{ furnizorFilter().length }} selectați</span>
+          }
+        </span>
+        <mat-icon class="furn-arrow">arrow_drop_down</mat-icon>
+      </div>
+
+      @if (furnizorDropdownOpen()) {
+        <div class="furn-backdrop" (click)="closeFurnizorDropdown()"></div>
+        <div class="furn-panel" (click)="$event.stopPropagation()">
+          <!-- Search -->
+          <div class="furn-search-row">
+            <mat-icon>search</mat-icon>
+            <input class="furn-search-input" type="text" placeholder="Caută furnizor…"
+                   [ngModel]="furnizorSearch()" (ngModelChange)="furnizorSearch.set($event)">
+            @if (furnizorSearch()) {
+              <button class="furn-clear-btn" (click)="furnizorSearch.set('')">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </div>
+          <!-- List -->
+          <div class="furn-list">
+            @if (furnizors().length === 0) {
+              <div class="furn-empty">Niciun furnizor disponibil</div>
+            } @else {
+              <!-- Select all -->
+              <div class="furn-item furn-all">
+                <mat-checkbox
+                  [checked]="allFurnizorsSelected()"
+                  [indeterminate]="furnizorFilter().length > 0 && !allFurnizorsSelected()"
+                  (change)="toggleAllFurnizors()">
+                  <span class="furn-item-label">Toți furnizorii</span>
+                </mat-checkbox>
+              </div>
+              <mat-divider></mat-divider>
+              @for (f of filteredFurnizors(); track f) {
+                <div class="furn-item">
+                  <mat-checkbox
+                    [checked]="furnizorFilter().includes(f)"
+                    (change)="toggleFurnizorItem(f)">
+                    <span class="furn-item-label">{{ f }}</span>
+                  </mat-checkbox>
+                </div>
+              }
+              @if (filteredFurnizors().length === 0 && furnizorSearch()) {
+                <div class="furn-empty">Niciun rezultat pentru "{{ furnizorSearch() }}"</div>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
 
     <button class="mode-toggle-btn" [class.active]="displayMode() === 'grouped'"
             (click)="toggleDisplayMode()"

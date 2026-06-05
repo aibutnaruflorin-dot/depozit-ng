@@ -5,6 +5,8 @@ export interface Product {
   qty: number;
   category: string;
   catalogId: string;
+  furnizor?: string;
+  codExtern?: string;
 }
 
 export interface ProductMeta {

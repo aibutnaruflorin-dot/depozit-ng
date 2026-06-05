@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angul
 import { RouterModule } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/services/auth.service';
+import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { Order } from '../../core/models/order.model';
 import { MatButtonModule } from '@angular/material/button';
@@ -80,6 +81,7 @@ export class HistoryComponent {
 
   constructor(
     public  auth: AuthService,
+    public  catalogsService: CatalogsService,
     private ordersService: OrdersService,
     private snackBar: MatSnackBar
   ) {}

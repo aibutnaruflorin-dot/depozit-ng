@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -24,7 +25,7 @@ export interface CartItem { product: Product; qty: number; }
   imports: [
     CommonModule, ReactiveFormsModule, FormsModule,
     MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule,
-    MatDividerModule, MatSelectModule, MatSnackBarModule, MatTooltipModule
+    MatDividerModule, MatSelectModule, MatCheckboxModule, MatSnackBarModule, MatTooltipModule
   ],
   templateUrl: './new-order.component.html',
   styleUrl:    './new-order.component.scss'
@@ -34,9 +35,11 @@ export class NewOrderComponent implements OnInit {
   phoneCtrl = new FormControl('', [Validators.pattern(/^\d{10}$/)]);
   noteCtrl  = new FormControl('');
 
-  searchQuery    = signal('');
-  categoryFilter = signal('');
-  selectedCatIds = signal<string[]>([]);
+  searchQuery      = signal('');
+  categoryFilter   = signal('');
+  furnizorFilter   = signal<string[]>([]);
+  codExternFilter  = signal('');
+  selectedCatIds   = signal<string[]>([]);
   cart           = signal<CartItem[]>([]);
   showCart       = signal(false);
   displayMode    = signal<'mixed' | 'grouped'>('mixed');
@@ -61,14 +64,45 @@ export class NewOrderComponent implements OnInit {
 
   ngOnInit(): void {}
 
+  furnizorDropdownOpen = signal(false);
+  furnizorSearch       = signal('');
+
   readonly allCatSelected = computed(() => this.selectedCatIds().length === 0);
   readonly categories     = computed(() => this.catalogsService.categoriesFor(this.selectedCatIds()));
+  readonly furnizors      = computed(() => this.catalogsService.furnizorsFor(this.selectedCatIds()));
+
+  readonly filteredFurnizors = computed(() => {
+    const s = this.furnizorSearch().toLowerCase().trim();
+    return s ? this.furnizors().filter(f => f.toLowerCase().includes(s)) : this.furnizors();
+  });
+
+  readonly allFurnizorsSelected = computed(() =>
+    this.furnizors().length > 0 && this.furnizorFilter().length === this.furnizors().length
+  );
+
+  toggleFurnizorDropdown(): void { this.furnizorDropdownOpen.update(v => !v); }
+  closeFurnizorDropdown(): void  { this.furnizorDropdownOpen.set(false); this.furnizorSearch.set(''); }
+
+  toggleFurnizorItem(f: string): void {
+    this.furnizorFilter.update(arr =>
+      arr.includes(f) ? arr.filter(x => x !== f) : [...arr, f]
+    );
+  }
+
+  toggleAllFurnizors(): void {
+    if (this.allFurnizorsSelected()) {
+      this.furnizorFilter.set([]);
+    } else {
+      this.furnizorFilter.set([...this.furnizors()]);
+    }
+  }
 
   toggleCatalog(id: string): void {
     this.selectedCatIds.update(ids =>
       ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
     );
     this.categoryFilter.set('');
+    this.furnizorFilter.set([]);
   }
 
   toggleDisplayMode(): void {
@@ -76,17 +110,21 @@ export class NewOrderComponent implements OnInit {
   }
 
   readonly suggestions = computed(() => {
-    const q    = this.searchQuery().trim().toLowerCase();
-    const cat  = this.categoryFilter();
-    const mode = this.displayMode();
+    const q          = this.searchQuery().trim().toLowerCase();
+    const cat        = this.categoryFilter();
+    const furnizors  = this.furnizorFilter();
+    const codExtern  = this.codExternFilter().trim().toLowerCase();
+    const mode       = this.displayMode();
     const base = mode === 'grouped'
       ? this.catalogsService.productsForGrouped(this.selectedCatIds())
       : this.catalogsService.productsFor(this.selectedCatIds());
-    if (!q && !cat) return base.slice(0, 200);
+    if (!q && !cat && furnizors.length === 0 && !codExtern) return base.slice(0, 200);
     return base.filter(p => {
-      const matchQ   = !q   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
-      const matchCat = !cat || p.category === cat;
-      return matchQ && matchCat;
+      const matchQ        = !q                   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
+      const matchCat      = !cat                 || p.category === cat;
+      const matchFurnizor = furnizors.length === 0 || furnizors.includes(p.furnizor ?? '');
+      const matchCodExt   = !codExtern           || (p.codExtern ?? '').toLowerCase().includes(codExtern);
+      return matchQ && matchCat && matchFurnizor && matchCodExt;
     }).slice(0, 200);
   });
 
@@ -215,7 +253,9 @@ export class NewOrderComponent implements OnInit {
         um:        i.product.um,
         qty:       i.qty,
         category:  i.product.category,
-        catalogId: i.product.catalogId
+        catalogId: i.product.catalogId,
+        furnizor:  i.product.furnizor,
+        codExtern: i.product.codExtern,
       } as OrderProduct)),
       status: 'trimis'
     };

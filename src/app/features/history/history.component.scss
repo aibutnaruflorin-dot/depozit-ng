@@ -134,11 +134,28 @@
   &.exp-removed { opacity: 0.4; }
 }
 
+.exp-product-info {
+  flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
 .exp-product-name {
-  flex: 1; font-size: 0.9rem; font-weight: 500;
+  font-size: 0.9rem; font-weight: 500;
+}
+.exp-product-meta {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
+.exp-cat-badge {
+  border-radius: 4px; padding: 1px 5px; font-size: 0.68rem; font-weight: 600;
+}
+.exp-cat-chip {
+  background: var(--color-surface-2); color: var(--color-text-muted);
+  border-radius: 4px; padding: 1px 5px; font-size: 0.68rem;
+  font-weight: 600; text-transform: uppercase;
+}
+.exp-furnizor {
+  font-size: 0.68rem; color: var(--color-text-muted); font-style: italic;
 }
 .exp-product-um {
-  font-size: 0.8rem; color: var(--color-text-muted); min-width: 36px;
+  font-size: 0.8rem; color: var(--color-text-muted); min-width: 36px; flex-shrink: 0;
 }
 
 .exp-qty-controls {

@@ -24,9 +24,9 @@
   }
 </div>
 
-<!-- Search + categorie -->
+<!-- Search + filtre -->
 <div class="filters">
-  <mat-form-field appearance="outline" class="search-f">
+  <mat-form-field appearance="outline" class="search-f" subscriptSizing="dynamic">
     <mat-label>Caută</mat-label>
     <mat-icon matPrefix>search</mat-icon>
     <input matInput [value]="search()" (input)="onSearch($any($event.target).value)" placeholder="Denumire sau cod…">
@@ -35,7 +35,7 @@
     }
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="cat-f">
+  <mat-form-field appearance="outline" class="cat-f" subscriptSizing="dynamic">
     <mat-label>Categorie</mat-label>
     <mat-select [value]="category()" (valueChange)="onCategory($event)">
       <mat-option value="">Toate</mat-option>
@@ -44,6 +44,78 @@
       }
     </mat-select>
   </mat-form-field>
+
+  <mat-form-field appearance="outline" class="cod-extern-f" subscriptSizing="dynamic">
+    <mat-label>Cod extern</mat-label>
+    <mat-icon matPrefix>qr_code</mat-icon>
+    <input matInput [value]="codExternFilter()" (input)="codExternFilter.set($any($event.target).value); currentPage.set(0)"
+           placeholder="Caută cod…" autocomplete="off">
+    @if (codExternFilter()) {
+      <button matSuffix mat-icon-button (click)="codExternFilter.set(''); currentPage.set(0)">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </mat-form-field>
+
+  <!-- Furnizor multi-select -->
+  <div class="furnizor-wrapper">
+    <div class="furnizor-trigger"
+         [class.furn-open]="furnizorDropdownOpen()"
+         (click)="toggleFurnizorDropdown()">
+      <span class="furn-label">Furnizor</span>
+      <span class="furn-value">
+        @if (furnizorFilter().length === 0) {
+          <span class="furn-placeholder">Toți</span>
+        } @else if (furnizorFilter().length === 1) {
+          <span class="furn-chip">{{ furnizorFilter()[0] }}</span>
+        } @else {
+          <span class="furn-chip">{{ furnizorFilter().length }} selectați</span>
+        }
+      </span>
+      <mat-icon class="furn-arrow">arrow_drop_down</mat-icon>
+    </div>
+
+    @if (furnizorDropdownOpen()) {
+      <div class="furn-backdrop" (click)="closeFurnizorDropdown()"></div>
+      <div class="furn-panel" (click)="$event.stopPropagation()">
+        <div class="furn-search-row">
+          <mat-icon>search</mat-icon>
+          <input class="furn-search-input" type="text" placeholder="Caută furnizor…"
+                 [value]="furnizorSearch()" (input)="furnizorSearch.set($any($event.target).value)">
+          @if (furnizorSearch()) {
+            <button class="furn-clear-btn" (click)="furnizorSearch.set('')">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+        <div class="furn-list">
+          @if (furnizors().length === 0) {
+            <div class="furn-empty">Niciun furnizor disponibil</div>
+          } @else {
+            <div class="furn-item furn-all">
+              <mat-checkbox
+                [checked]="allFurnizorsSelected()"
+                [indeterminate]="furnizorFilter().length > 0 && !allFurnizorsSelected()"
+                (change)="toggleAllFurnizors()">
+                <span class="furn-item-label">Toți furnizorii</span>
+              </mat-checkbox>
+            </div>
+            <mat-divider></mat-divider>
+            @for (f of filteredFurnizors(); track f) {
+              <div class="furn-item">
+                <mat-checkbox [checked]="furnizorFilter().includes(f)" (change)="toggleFurnizorItem(f)">
+                  <span class="furn-item-label">{{ f }}</span>
+                </mat-checkbox>
+              </div>
+            }
+            @if (filteredFurnizors().length === 0 && furnizorSearch()) {
+              <div class="furn-empty">Niciun rezultat pentru "{{ furnizorSearch() }}"</div>
+            }
+          }
+        </div>
+      </div>
+    }
+  </div>
 
   <button class="mode-toggle-btn" [class.active]="displayMode() === 'grouped'"
           (click)="toggleDisplayMode()"

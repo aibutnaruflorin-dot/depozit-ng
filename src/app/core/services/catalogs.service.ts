@@ -51,6 +51,12 @@ export class CatalogsService {
     return [...new Set(this.productsFor(catalogIds).map(p => p.category).filter(Boolean))].sort();
   }
 
+  furnizorsFor(catalogIds: string[]): string[] {
+    return [...new Set(
+      this.productsFor(catalogIds).map(p => p.furnizor).filter((f): f is string => Boolean(f))
+    )].sort();
+  }
+
   getById(id: string): Catalog | undefined {
     return this._catalogs().find(c => c.id === id);
   }
@@ -123,6 +129,24 @@ export class CatalogsService {
           const wb   = XLSX.read(new Uint8Array(e.target!.result as ArrayBuffer), { type: 'array' });
           const ws   = wb.Sheets[wb.SheetNames[0]];
           const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+          // Detect column positions from header row
+          let furnizorCol = 10;
+          let categoryCol = 13;
+          let codExternCol = -1;
+          for (const row of rows) {
+            const cells = (row as any[]).map(c => String(c || '').toLowerCase().trim());
+            const fi = cells.findIndex(c => c.includes('furnizor'));
+            if (fi >= 0) {
+              furnizorCol = fi;
+              const ci = cells.findIndex(c => c.includes('subclas') || c === 'categorie' || c === 'category');
+              if (ci >= 0) categoryCol = ci;
+              const ei = cells.findIndex(c => c.includes('cod extern') || c === 'cod_extern' || c === 'codextern');
+              if (ei >= 0) codExternCol = ei;
+              break;
+            }
+          }
+
           const products: Product[] = [];
           for (const row of rows) {
             const nr   = row[0];
@@ -132,9 +156,11 @@ export class CatalogsService {
             if (!Number.isFinite(nrNum) || nrNum <= 0 || String(nr).trim() === '') continue;
             products.push({
               nr: nrNum, name,
-              um:       String(row[2]  || '').trim(),
-              qty:      parseFloat(String(row[3]).replace(',', '.')) || 0,
-              category: String(row[13] || '').trim().toUpperCase() || 'DIVERSE',
+              um:        String(row[2]  || '').trim(),
+              qty:       parseFloat(String(row[3]).replace(',', '.')) || 0,
+              furnizor:  String(row[furnizorCol] || '').trim() || undefined,
+              codExtern: codExternCol >= 0 ? (String(row[codExternCol] || '').trim() || undefined) : undefined,
+              category:  String(row[categoryCol] || '').trim().toUpperCase() || 'DIVERSE',
               catalogId
             });
           }

@@ -5,6 +5,8 @@ export interface OrderProduct {
   qty: number;
   category: string;
   catalogId?: string;
+  furnizor?: string;
+  codExtern?: string;
 }
 
 export interface Order {

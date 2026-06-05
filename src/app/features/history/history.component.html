@@ -169,7 +169,16 @@
                     <!-- Editabil — comandă în așteptare -->
                     <div class="exp-product-row"
                          [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
-                      <span class="exp-product-name">{{ p.name }}</span>
+                      <div class="exp-product-info">
+                        <span class="exp-product-name">{{ p.name }}</span>
+                        <span class="exp-product-meta">
+                          @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
+                            <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
+                          }
+                          @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
+                          @if (p.furnizor) { <span class="exp-furnizor">{{ p.furnizor }}</span> }
+                        </span>
+                      </div>
                       <span class="exp-product-um">{{ p.um }}</span>
                       <div class="exp-qty-controls">
                         <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
@@ -191,8 +200,17 @@
                     <!-- Read-only — comandă procesată -->
                     <div class="exp-product-row"
                          [class.anulat-row-product]="order.status === 'anulat'">
-                      <span class="exp-product-name"
-                            [class.line-through]="order.status === 'anulat'">{{ p.name }}</span>
+                      <div class="exp-product-info">
+                        <span class="exp-product-name"
+                              [class.line-through]="order.status === 'anulat'">{{ p.name }}</span>
+                        <span class="exp-product-meta">
+                          @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
+                            <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
+                          }
+                          @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
+                          @if (p.furnizor) { <span class="exp-furnizor">{{ p.furnizor }}</span> }
+                        </span>
+                      </div>
                       <span class="exp-product-um">{{ p.um }}</span>
                       <span class="exp-qty-static"
                             [class.line-through]="order.status === 'anulat'">{{ p.qty }}</span>
