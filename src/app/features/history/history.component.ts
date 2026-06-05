@@ -132,28 +132,37 @@ export class HistoryComponent {
   }
 
   exportCsv(): void {
-    const orders = this.sortedOrders();
-    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produse', 'Status'];
-    const rows = orders.map(o => [
-      `#${o.orderNumber ?? '?'}`,
-      this.formatDate(o.timestamp),
-      o.client.name,
-      o.client.phone ?? '',
-      o.products.map(p => `${p.qty}x ${p.name}`).join('; '),
-      o.superseded ? 'Înlocuit' : o.revisedFromId ? 'Revizuit' : o.status
+    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
+    const rows: string[][] = [];
+    for (const o of this.sortedOrders()) {
+      const status = o.superseded ? 'Înlocuit' : o.revisedFromId ? 'Revizuit' : o.status;
+      for (const p of o.products) {
+        rows.push([`#${o.orderNumber ?? '?'}`, this.formatDate(o.timestamp),
+          o.client.name, o.client.phone ?? '', p.name, String(p.qty), p.um, status]);
+      }
+    }
+    this._downloadCsv([headers, ...rows], `comenzi-${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
+  downloadOrderCsv(order: Order, e: Event): void {
+    e.stopPropagation();
+    const status = order.superseded ? 'Înlocuit' : order.revisedFromId ? 'Revizuit' : order.status;
+    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
+    const rows = order.products.map(p => [
+      `#${order.orderNumber ?? '?'}`, this.formatDate(order.timestamp),
+      order.client.name, order.client.phone ?? '', p.name, String(p.qty), p.um, status
     ]);
-    const csv = [headers, ...rows]
-      .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
-      .join('\r\n');
+    this._downloadCsv([headers, ...rows], `comanda-${order.orderNumber ?? order.id.slice(0, 6)}.csv`);
+  }
+
+  private _downloadCsv(rows: string[][], filename: string): void {
+    const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `comenzi-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
   toggleExpand(orderId: string): void {
