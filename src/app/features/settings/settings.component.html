@@ -275,37 +275,39 @@
     </mat-tab>
   }
 
-  <!-- ══ TAB 4: ȘOFERI (admin) ══ -->
+  <!-- ══ TAB 4: FUNCȚII (admin) ══ -->
   @if (auth.isAdmin()) {
-    <mat-tab label="Șoferi">
+    <mat-tab label="Funcții">
       <div class="tab-content">
         <div class="tab-header">
-          <h3>Șoferi</h3>
-          <button mat-stroked-button (click)="openAddDriver()">
-            <mat-icon>add</mat-icon> Adaugă șofer
+          <h3>Funcții angajați</h3>
+          <button mat-stroked-button (click)="openAddFunc()">
+            <mat-icon>add</mat-icon> Adaugă funcție
           </button>
         </div>
+        <p class="wa-hint">
+          <mat-icon class="wa-hint-icon">info</mat-icon>
+          Funcțiile definesc rolul operațional al unui angajat. Utilizatorii cu funcția <strong>Șofer</strong> apar automat în modulul Transport.
+        </p>
 
-        @if (transportService.drivers().length === 0) {
+        @if (jobFunctions().length === 0) {
           <div class="empty-state">
-            <mat-icon>person</mat-icon>
-            <p>Niciun șofer adăugat.</p>
+            <mat-icon>work_outline</mat-icon>
+            <p>Nicio funcție definită.</p>
           </div>
         } @else {
           <div class="fleet-list">
-            @for (d of transportService.drivers(); track d.id) {
+            @for (f of jobFunctions(); track f.id) {
               <div class="fleet-item">
-                <div class="fleet-icon fleet-icon--driver"><mat-icon>person</mat-icon></div>
+                <div class="fleet-icon"><mat-icon>badge</mat-icon></div>
                 <div class="fleet-info">
-                  <span class="fleet-name">{{ d.nume }}</span>
-                  @if (d.telefon) {
-                    <span class="fleet-meta"><mat-icon style="font-size:13px;width:13px;height:13px">phone</mat-icon> {{ d.telefon }}</span>
-                  }
+                  <span class="fleet-name">{{ f.name }}</span>
+                  <span class="fleet-meta"><code>{{ f.id }}</code></span>
                 </div>
-                <button mat-icon-button (click)="openEditDriver(d)" matTooltip="Editează">
+                <button mat-icon-button (click)="openEditFunc(f)" matTooltip="Editează">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteDriver(d)" matTooltip="Șterge">
+                <button mat-icon-button color="warn" (click)="deleteFunc(f)" matTooltip="Șterge">
                   <mat-icon>delete_outline</mat-icon>
                 </button>
               </div>
@@ -316,7 +318,66 @@
     </mat-tab>
   }
 
-  <!-- ══ TAB 5: UTILIZATORI (toți) ══ -->
+  <!-- ══ TAB 5: PERMISIUNI (admin) ══ -->
+  @if (auth.isAdmin()) {
+    <mat-tab label="Permisiuni">
+      <div class="tab-content tab-content--wide">
+        <div class="tab-header">
+          <h3>Niveluri de permisiuni</h3>
+          <button mat-stroked-button (click)="openAddPerm()">
+            <mat-icon>add</mat-icon> Adaugă permisiune
+          </button>
+        </div>
+        <p class="wa-hint">
+          <mat-icon class="wa-hint-icon">info</mat-icon>
+          Fiecare nivel de permisiune definește ce pagini poate accesa un utilizator și în ce mod (complet, citire, niciun).
+        </p>
+
+        @if (permissions().length === 0) {
+          <div class="empty-state">
+            <mat-icon>shield</mat-icon>
+            <p>Nicio permisiune definită.</p>
+          </div>
+        } @else {
+          <div class="perm-list">
+            @for (perm of permissions(); track perm.id) {
+              <div class="perm-item">
+                <div class="perm-item-header">
+                  <div class="perm-item-title">
+                    <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+                    <strong>{{ perm.name }}</strong>
+                    @if (perm.isAdmin) {
+                      <span class="perm-admin-badge">Admin</span>
+                    }
+                  </div>
+                  <div class="perm-item-actions">
+                    <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="deletePerm(perm)" matTooltip="Șterge">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <div class="perm-pages-grid">
+                  @for (page of appPages; track page.id) {
+                    <div class="perm-page-chip" [class.perm-page--full]="perm.pages[page.id]==='full'" [class.perm-page--read]="perm.pages[page.id]==='read'" [class.perm-page--none]="perm.pages[page.id]==='none'||!perm.pages[page.id]">
+                      <mat-icon class="perm-page-icon">
+                        {{ (perm.pages[page.id]==='full') ? 'check_circle' : (perm.pages[page.id]==='read') ? 'visibility' : 'block' }}
+                      </mat-icon>
+                      <span>{{ page.label }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </mat-tab>
+  }
+
+  <!-- ══ TAB 6: UTILIZATORI (toți) ══ -->
   <mat-tab label="Utilizatori">
     <div class="tab-content tab-content--wide">
       <div class="tab-header">
@@ -334,7 +395,9 @@
           <tr>
             <th>Nume</th>
             <th>Username</th>
-            <th>Rol</th>
+            <th>Funcție</th>
+            <th>Permisiuni</th>
+            <th>Telefon</th>
             <th>Status</th>
             @if (auth.isAdmin()) {
               <th style="text-align:right">Acțiuni</th>
@@ -346,8 +409,17 @@
             <td><strong>{{ user.name }}</strong></td>
             <td><code>{{ user.username }}</code></td>
             <td>
-              <p-tag [value]="user.role === 'admin' ? 'Administrator' : 'Agent'"
-                     [severity]="user.role === 'admin' ? 'warn' : 'info'" />
+              @if (user.jobRole) {
+                <p-tag [value]="jobRoleLabel(user.jobRole)" severity="secondary" />
+              } @else { <span style="color:var(--color-text-muted)">—</span> }
+            </td>
+            <td>
+              <p-tag [value]="permLabel(user.role)" [severity]="permSeverity(user.role)" />
+            </td>
+            <td>
+              @if (user.telefon) {
+                <a [href]="'tel:' + user.telefon" style="color:var(--color-primary);text-decoration:none">{{ user.telefon }}</a>
+              } @else { <span style="color:var(--color-text-muted)">—</span> }
             </td>
             <td>
               <p-tag [value]="user.active !== false ? 'Activ' : 'Dezactivat'"
@@ -389,21 +461,42 @@
         <form [formGroup]="userForm" class="modal-form">
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>Nume complet *</mat-label>
+            <mat-icon matPrefix>person</mat-icon>
             <input matInput formControlName="name" placeholder="Prenume Nume">
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>Username *</mat-label>
+            <mat-icon matPrefix>alternate_email</mat-icon>
             <input matInput formControlName="username" placeholder="agent2">
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>{{ editingUserId() !== null ? 'Parolă nouă (gol = nemodificat)' : 'Parolă *' }}</mat-label>
+            <mat-icon matPrefix>lock</mat-icon>
             <input matInput type="password" formControlName="password">
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Rol *</mat-label>
+            <mat-label>Funcție</mat-label>
+            <mat-icon matPrefix>work</mat-icon>
+            <mat-select formControlName="jobRole">
+              <mat-option [value]="null">— Fără funcție specifică —</mat-option>
+              @for (f of jobFunctions(); track f.id) {
+                <mat-option [value]="f.id">{{ f.name }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>Șoferii apar automat în modulul Transport</mat-hint>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Telefon</mat-label>
+            <mat-icon matPrefix>phone</mat-icon>
+            <input matInput formControlName="telefon" placeholder="07xx xxx xxx">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Permisiuni *</mat-label>
+            <mat-icon matPrefix>shield</mat-icon>
             <mat-select formControlName="role">
-              <mat-option value="agent">Agent</mat-option>
-              <mat-option value="admin">Administrator</mat-option>
+              @for (p of permissions(); track p.id) {
+                <mat-option [value]="p.id">{{ p.name }}</mat-option>
+              }
             </mat-select>
           </mat-form-field>
         </form>
@@ -411,6 +504,97 @@
       <mat-card-actions class="modal-actions">
         <button mat-stroked-button (click)="closeUserModal()">Anulează</button>
         <button mat-flat-button color="primary" (click)="saveUser()">Salvează</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
+
+<!-- Modal add/edit funcție -->
+@if (showFuncModal()) {
+  <div class="modal-overlay">
+    <mat-card appearance="outlined" class="modal-card" role="dialog">
+      <mat-card-header>
+        <mat-card-title>{{ editingFuncId() !== null ? 'Editează funcție' : 'Adaugă funcție' }}</mat-card-title>
+        <button mat-icon-button (click)="closeFuncModal()" style="position:absolute;right:8px;top:8px">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="funcForm" class="modal-form">
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Denumire funcție *</mat-label>
+            <mat-icon matPrefix>badge</mat-icon>
+            <input matInput formControlName="name" placeholder="ex: Tehnician depozit">
+            @if (funcForm.get('name')?.hasError('required') && funcForm.get('name')?.touched) {
+              <mat-error>Denumirea este obligatorie.</mat-error>
+            }
+          </mat-form-field>
+          @if (editingFuncId() === null) {
+            <p class="hint" style="margin-top:4px">ID-ul funcției se generează automat din denumire.</p>
+          }
+        </form>
+      </mat-card-content>
+      <mat-card-actions class="modal-actions">
+        <button mat-stroked-button (click)="closeFuncModal()">Anulează</button>
+        <button mat-flat-button color="primary" (click)="saveFunc()">Salvează</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
+
+<!-- Modal add/edit permisiune -->
+@if (showPermModal()) {
+  <div class="modal-overlay">
+    <mat-card appearance="outlined" class="modal-card modal-card--wide" role="dialog">
+      <mat-card-header>
+        <mat-card-title>{{ editingPermId() !== null ? 'Editează permisiune' : 'Adaugă permisiune' }}</mat-card-title>
+        <button mat-icon-button (click)="closePermModal()" style="position:absolute;right:8px;top:8px">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="permForm" class="modal-form">
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Denumire permisiune *</mat-label>
+            <mat-icon matPrefix>shield</mat-icon>
+            <input matInput formControlName="name" placeholder="ex: Supervizor">
+            @if (permForm.get('name')?.hasError('required') && permForm.get('name')?.touched) {
+              <mat-error>Denumirea este obligatorie.</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="perm-admin-toggle">
+            <mat-checkbox formControlName="isAdmin">
+              Permisiune de tip Admin (acces complet la toate setările)
+            </mat-checkbox>
+          </div>
+
+          <div class="perm-pages-section">
+            <h4 class="perm-pages-title">Acces pe pagini</h4>
+            <div class="perm-pages-form-grid">
+              @for (page of appPages; track page.id) {
+                <div class="perm-page-row">
+                  <span class="perm-page-label">{{ page.label }}</span>
+                  <mat-button-toggle-group [(ngModel)]="permPagesAccess[page.id]" [ngModelOptions]="{standalone:true}" class="access-toggle">
+                    <mat-button-toggle value="full" class="toggle-full">
+                      <mat-icon>check_circle</mat-icon> Complet
+                    </mat-button-toggle>
+                    <mat-button-toggle value="read" class="toggle-read">
+                      <mat-icon>visibility</mat-icon> Citire
+                    </mat-button-toggle>
+                    <mat-button-toggle value="none" class="toggle-none">
+                      <mat-icon>block</mat-icon> Niciun
+                    </mat-button-toggle>
+                  </mat-button-toggle-group>
+                </div>
+              }
+            </div>
+          </div>
+        </form>
+      </mat-card-content>
+      <mat-card-actions class="modal-actions">
+        <button mat-stroked-button (click)="closePermModal()">Anulează</button>
+        <button mat-flat-button color="primary" (click)="savePerm()">Salvează</button>
       </mat-card-actions>
     </mat-card>
   </div>
@@ -460,33 +644,3 @@
   </div>
 }
 
-<!-- Modal add/edit șofer -->
-@if (showDriverModal()) {
-  <div class="modal-overlay">
-    <mat-card appearance="outlined" class="modal-card" role="dialog">
-      <mat-card-header>
-        <mat-card-title>{{ editingDriverId() ? 'Editează șofer' : 'Adaugă șofer' }}</mat-card-title>
-        <button mat-icon-button (click)="closeDriverModal()" style="position:absolute;right:8px;top:8px">
-          <mat-icon>close</mat-icon>
-        </button>
-      </mat-card-header>
-      <mat-card-content>
-        <form [formGroup]="driverForm" class="modal-form">
-          <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Nume complet *</mat-label>
-            <input matInput formControlName="nume" placeholder="Ion Popescu">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Telefon</mat-label>
-            <mat-icon matPrefix>phone</mat-icon>
-            <input matInput formControlName="telefon" placeholder="07xx xxx xxx">
-          </mat-form-field>
-        </form>
-      </mat-card-content>
-      <mat-card-actions class="modal-actions">
-        <button mat-stroked-button (click)="closeDriverModal()">Anulează</button>
-        <button mat-flat-button color="primary" (click)="saveDriver()">Salvează</button>
-      </mat-card-actions>
-    </mat-card>
-  </div>
-}

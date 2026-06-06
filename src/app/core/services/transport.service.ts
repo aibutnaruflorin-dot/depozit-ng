@@ -3,16 +3,22 @@ import { StorageService } from './storage.service';
 import { Vehicle } from '../models/vehicle.model';
 import { Driver } from '../models/driver.model';
 import { Transport, TransportStatus } from '../models/transport.model';
+import { User } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class TransportService {
-  private _vehicles  = signal<Vehicle[]>([]);
-  private _drivers   = signal<Driver[]>([]);
+  private _vehicles   = signal<Vehicle[]>([]);
+  private _users      = signal<User[]>([]);
   private _transports = signal<Transport[]>([]);
 
   readonly vehicles   = this._vehicles.asReadonly();
-  readonly drivers    = this._drivers.asReadonly();
   readonly transports = this._transports.asReadonly();
+
+  readonly drivers = computed<Driver[]>(() =>
+    this._users()
+      .filter(u => u.jobRole === 'sofer' && u.active !== false)
+      .map(u => ({ id: String(u.id), nume: u.name, telefon: u.telefon ?? '' }))
+  );
 
   readonly active = computed(() =>
     this._transports().filter(t => t.status !== 'livrat')
@@ -25,7 +31,7 @@ export class TransportService {
 
   constructor(private storage: StorageService) {
     this._vehicles.set(this.storage.get<Vehicle[]>('app_vehicles') ?? []);
-    this._drivers.set(this.storage.get<Driver[]>('app_drivers') ?? []);
+    this._users.set(this.storage.get<User[]>('app_users') ?? []);
     this._transports.set(this.storage.get<Transport[]>('app_transports') ?? []);
   }
 
@@ -48,23 +54,14 @@ export class TransportService {
     return this._vehicles().find(v => v.id === id);
   }
 
-  // ── Drivers ───────────────────────────────────────────────────────────────
+  // ── Drivers (derived from users with jobRole='sofer') ────────────────────
 
-  addDriver(d: Omit<Driver, 'id'>): void {
-    const driver: Driver = { ...d, id: this._uid() };
-    this._save('drivers', [...this._drivers(), driver]);
-  }
-
-  updateDriver(id: string, changes: Partial<Omit<Driver, 'id'>>): void {
-    this._save('drivers', this._drivers().map(d => d.id === id ? { ...d, ...changes } : d));
-  }
-
-  deleteDriver(id: string): void {
-    this._save('drivers', this._drivers().filter(d => d.id !== id));
+  refreshUsers(users: User[]): void {
+    this._users.set(users);
   }
 
   getDriver(id: string): Driver | undefined {
-    return this._drivers().find(d => d.id === id);
+    return this.drivers().find(d => d.id === id);
   }
 
   // ── Transports ────────────────────────────────────────────────────────────
@@ -114,10 +111,9 @@ export class TransportService {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   }
 
-  private _save(key: 'vehicles' | 'drivers' | 'transports', data: any[]): void {
+  private _save(key: 'vehicles' | 'transports', data: any[]): void {
     this.storage.set(`app_${key}`, data);
     if (key === 'vehicles')   this._vehicles.set(data);
-    if (key === 'drivers')    this._drivers.set(data);
     if (key === 'transports') this._transports.set(data);
   }
 }

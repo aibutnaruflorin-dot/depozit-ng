@@ -14,7 +14,10 @@ export class AuthService {
   readonly isAdmin    = computed(() => this._session()?.role === 'admin');
   readonly userName   = computed(() => this._session()?.name ?? '');
   readonly userInitial = computed(() => (this._session()?.name ?? 'U').charAt(0).toUpperCase());
-  readonly roleLabel   = computed(() => this._session()?.role === 'admin' ? 'Administrator' : 'Agent');
+  readonly roleLabel   = computed(() => {
+    const map: Record<string, string> = { admin: 'Administrator', contabilitate: 'Contabilitate', agent: 'Agent', 'sub-agent': 'Sub-agent' };
+    return map[this._session()?.role ?? ''] ?? 'Agent';
+  });
 
   constructor(private storage: StorageService, private router: Router) {
     this._loadSession();
