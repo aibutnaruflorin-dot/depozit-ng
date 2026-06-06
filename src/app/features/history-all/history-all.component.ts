@@ -338,7 +338,11 @@ export class HistoryAllComponent {
 
   saveDeliveryAddress(order: Order, e: Event): void {
     e.stopPropagation();
-    this.ordersService.updateOrderDelivery(order.id, true, this.editAddressVal.trim());
+    if (order.cuLivrare && !this.editAddressVal.trim()) {
+      this.snackBar.open('Adresa de livrare este obligatorie pentru comenzile cu livrare.', 'OK', { duration: 3000, panelClass: ['snack-warn'] });
+      return;
+    }
+    this.ordersService.updateOrderDelivery(order.id, order.cuLivrare ?? false, this.editAddressVal.trim());
     this.editingAddressId.set(null);
   }
 
