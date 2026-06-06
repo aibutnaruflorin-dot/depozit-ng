@@ -235,7 +235,21 @@ export class HistoryComponent {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);
   }
 
+  private _checkDelivery(order: Order): boolean {
+    if (!order.cuLivrare) return true;
+    if (!order.client.phone?.trim()) {
+      this.snackBar.open('Comanda cu livrare necesită un număr de telefon.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
+      return false;
+    }
+    if (!order.client.address?.trim()) {
+      this.snackBar.open('Comanda cu livrare necesită o adresă de livrare.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
+      return false;
+    }
+    return true;
+  }
+
   reviseOrder(order: Order): void {
+    if (!this._checkDelivery(order)) return;
     const newProducts = order.products
       .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
       .filter(p => p.qty > 0);

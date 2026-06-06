@@ -223,7 +223,21 @@ export class HistoryAllComponent {
 
   // ── Admin actions ─────────────────────────────────────────────────────────
 
+  private _checkDelivery(order: Order): boolean {
+    if (!order.cuLivrare) return true;
+    if (!order.client.phone?.trim()) {
+      this.snackBar.open('Comanda cu livrare necesită un număr de telefon.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
+      return false;
+    }
+    if (!order.client.address?.trim()) {
+      this.snackBar.open('Comanda cu livrare necesită o adresă de livrare.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
+      return false;
+    }
+    return true;
+  }
+
   acceptOrder(order: Order): void {
+    if (!this._checkDelivery(order)) return;
     this.ordersService.acceptOrder(order.id);
     this.collapseRow(order.id);
     this.snackBar.open('Comanda acceptată!', 'OK', { duration: 2500, panelClass: ['snack-success'] });
@@ -241,6 +255,7 @@ export class HistoryAllComponent {
   }
 
   finalizeOrder(order: Order): void {
+    if (!this._checkDelivery(order)) return;
     const newProducts = order.products
       .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
       .filter(p => p.qty > 0);
