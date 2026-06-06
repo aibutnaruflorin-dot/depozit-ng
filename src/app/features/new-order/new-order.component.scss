@@ -471,6 +471,17 @@ $h: 34px;
 }
 .full-w { width: 100%; }
 
+.delivery-toggle-row {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0 0.35rem;
+  cursor: pointer;
+}
+
+.delivery-required {
+  --mdc-outlined-text-field-label-text-color: var(--color-primary);
+}
+
 /* Empty cart */
 .cart-empty {
   display: flex;

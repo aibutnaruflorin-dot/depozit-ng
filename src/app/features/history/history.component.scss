@@ -61,6 +61,37 @@
 }
 .order-ref-sup { color: #c62828; }
 
+/* ── Delivery column ── */
+.delivery-toggle-btn {
+  width: 32px; height: 32px; line-height: 32px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; color: var(--color-text-muted); }
+  &.delivery-on mat-icon { color: #2e7d32; }
+}
+.address-cell {
+  display: flex; align-items: center; gap: 4px; cursor: pointer;
+  border-radius: 4px; padding: 2px 4px; transition: background 0.15s;
+  &:hover { background: var(--color-surface); }
+  &:hover .address-edit-icon { opacity: 1; }
+}
+.address-text {
+  font-size: 0.82rem; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  &.address-empty { color: var(--color-text-muted); }
+}
+.address-edit-icon {
+  font-size: 14px; width: 14px; height: 14px;
+  color: var(--color-text-muted); opacity: 0; flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.address-edit-inline {
+  display: flex; align-items: center; gap: 2px;
+}
+.address-input-inline {
+  flex: 1; font-size: 0.82rem; min-width: 0;
+  border: 1px solid var(--color-primary); border-radius: 4px;
+  padding: 3px 7px; outline: none; background: var(--color-bg);
+}
+
 /* ── Order number ── */
 .order-num {
   font-size: 0.8rem; font-weight: 700; color: var(--color-primary);

@@ -91,6 +91,17 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
+  updateOrderDelivery(id: string, cuLivrare: boolean, address?: string): void {
+    this._orders.update(orders =>
+      orders.map(o => {
+        if (o.id !== id) return o;
+        const client = address !== undefined ? { ...o.client, address } : o.client;
+        return { ...o, cuLivrare, client };
+      })
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
   generateText(order: Order): string {
     const line = '─'.repeat(50);
     const products = order.products.map((p, i) =>

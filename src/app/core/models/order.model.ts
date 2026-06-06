@@ -16,6 +16,7 @@ export interface Order {
   agent: { id: number; name: string; username: string };
   client: { name: string; phone: string; email: string; note: string; address?: string };
   helper?: string;
+  cuLivrare?: boolean;
   products: OrderProduct[];
   status: string;
   revisedFromId?: string;

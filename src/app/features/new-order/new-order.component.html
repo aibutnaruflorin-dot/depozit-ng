@@ -222,8 +222,15 @@
           }
         </mat-form-field>
 
+        <!-- Checkbox livrare -->
+        <label class="delivery-toggle-row">
+          <mat-checkbox [checked]="cuLivrare()" (change)="cuLivrare.set($event.checked)" color="primary">
+            Cu livrare la client
+          </mat-checkbox>
+        </label>
+
         <mat-form-field appearance="outline" class="full-w">
-          <mat-label>Telefon</mat-label>
+          <mat-label>Telefon {{ cuLivrare() ? '*' : '' }}</mat-label>
           <mat-icon matPrefix>phone</mat-icon>
           <input matInput [formControl]="phoneCtrl" placeholder="07xx xxx xxx"
                  type="tel" inputmode="numeric" maxlength="10"
@@ -233,16 +240,10 @@
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-w">
-          <mat-label>Adresă livrare</mat-label>
+        <mat-form-field appearance="outline" class="full-w" [class.delivery-required]="cuLivrare()">
+          <mat-label>Adresă livrare {{ cuLivrare() ? '*' : '' }}</mat-label>
           <mat-icon matPrefix>location_on</mat-icon>
           <input matInput [formControl]="addressCtrl" placeholder="Str. Exemplu nr. 1, oraș…">
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="full-w">
-          <mat-label>Persoană ajutor (încărcare)</mat-label>
-          <mat-icon matPrefix>person_add</mat-icon>
-          <input matInput [formControl]="helperCtrl" placeholder="Numele persoanei ajutor">
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-w">

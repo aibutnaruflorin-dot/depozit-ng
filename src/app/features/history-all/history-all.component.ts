@@ -85,6 +85,9 @@ export class HistoryAllComponent {
   private _editQty = signal<Record<string, number | undefined>>({});
   readonly editQtyMap = this._editQty.asReadonly();
 
+  editingAddressId = signal<string | null>(null);
+  editAddressVal   = '';
+
   readonly agents = computed(() => {
     const users = this.storage.get<User[]>('app_users') || [];
     return users.map(u => ({ id: String(u.id), name: u.name }));
@@ -301,6 +304,30 @@ export class HistoryAllComponent {
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click();
     document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
+  // ── Delivery ──────────────────────────────────────────────────────────────
+
+  toggleDelivery(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.ordersService.updateOrderDelivery(order.id, !order.cuLivrare);
+  }
+
+  startEditAddress(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.editingAddressId.set(order.id);
+    this.editAddressVal = order.client.address ?? '';
+  }
+
+  saveDeliveryAddress(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.ordersService.updateOrderDelivery(order.id, true, this.editAddressVal.trim());
+    this.editingAddressId.set(null);
+  }
+
+  cancelEditAddress(e: Event): void {
+    e.stopPropagation();
+    this.editingAddressId.set(null);
   }
 
   // ── Expand / collapse ─────────────────────────────────────────────────────

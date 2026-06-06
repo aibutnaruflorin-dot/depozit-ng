@@ -34,8 +34,8 @@ export class NewOrderComponent implements OnInit {
   nameCtrl    = new FormControl('', Validators.required);
   phoneCtrl   = new FormControl('', [Validators.pattern(/^\d{10}$/)]);
   addressCtrl = new FormControl('');
-  helperCtrl  = new FormControl('');
   noteCtrl    = new FormControl('');
+  cuLivrare   = signal(false);
 
   searchQuery      = signal('');
   categoryFilter   = signal('');
@@ -231,6 +231,16 @@ export class NewOrderComponent implements OnInit {
       this.snackBar.open('Introduceți numele clientului.', '', { duration: 2500, panelClass: ['snack-warn'] });
       return;
     }
+    if (this.cuLivrare()) {
+      if (!this.phoneCtrl.value?.trim()) {
+        this.snackBar.open('Telefonul este obligatoriu pentru comenzile cu livrare.', '', { duration: 3000, panelClass: ['snack-warn'] });
+        return;
+      }
+      if (!this.addressCtrl.value?.trim()) {
+        this.snackBar.open('Adresa de livrare este obligatorie.', '', { duration: 3000, panelClass: ['snack-warn'] });
+        return;
+      }
+    }
     if (this.cart().length === 0) {
       this.snackBar.open('Adaugă cel puțin un produs în coș.', '', { duration: 2500, panelClass: ['snack-warn'] });
       return;
@@ -250,7 +260,7 @@ export class NewOrderComponent implements OnInit {
         note:    (this.noteCtrl.value || '').trim(),
         address: (this.addressCtrl.value || '').trim() || undefined
       },
-      helper: (this.helperCtrl.value || '').trim() || undefined,
+      cuLivrare: this.cuLivrare() || undefined,
       products: this.cart().map(i => ({
         nr:        i.product.nr,
         name:      i.product.name,
@@ -275,8 +285,8 @@ export class NewOrderComponent implements OnInit {
     this.nameCtrl.reset();
     this.phoneCtrl.reset();
     this.addressCtrl.reset();
-    this.helperCtrl.reset();
     this.noteCtrl.reset();
+    this.cuLivrare.set(false);
     this.submitted = true;
 
     this.snackBar.open('Comanda a fost salvată!', 'OK', { duration: 4000, panelClass: ['snack-success'] });

@@ -72,6 +72,9 @@ export class HistoryComponent {
   private _editQty = signal<Record<string, number | undefined>>({});
   readonly editQtyMap = this._editQty.asReadonly();
 
+  editingAddressId = signal<string | null>(null);
+  editAddressVal   = '';
+
   hideSuperseded = signal(true);
   filterNr     = signal('');
   filterClient = signal('');
@@ -264,6 +267,28 @@ export class HistoryComponent {
     });
     this.collapseRow(order.id);
     this.snackBar.open('Comanda revizuită a fost trimisă!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
+  }
+
+  toggleDelivery(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.ordersService.updateOrderDelivery(order.id, !order.cuLivrare);
+  }
+
+  startEditAddress(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.editingAddressId.set(order.id);
+    this.editAddressVal = order.client.address ?? '';
+  }
+
+  saveDeliveryAddress(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.ordersService.updateOrderDelivery(order.id, true, this.editAddressVal.trim());
+    this.editingAddressId.set(null);
+  }
+
+  cancelEditAddress(e: Event): void {
+    e.stopPropagation();
+    this.editingAddressId.set(null);
   }
 
   toggleExpand(orderId: string): void {
