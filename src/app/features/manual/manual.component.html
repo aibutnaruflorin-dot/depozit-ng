@@ -1,0 +1,238 @@
+<div class="manual-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1 class="page-title">
+      <mat-icon>menu_book</mat-icon>
+      Manual
+    </h1>
+  </div>
+
+  <p class="intro">
+    Ghid pas cu pas pentru fluxul unei comenzi în aplicația <strong>D2C</strong> —
+    de la autentificare până la finalizarea comenzii.
+  </p>
+
+  <!-- Swimlane diagram -->
+  <div class="swimlane">
+
+    <!-- Column headers -->
+    <div class="swim-headers">
+      <div class="swim-col swim-col--agent">
+        <mat-icon>person</mat-icon>
+        <span>Agent</span>
+      </div>
+      <div class="swim-col swim-col--system">
+        <mat-icon>settings_suggest</mat-icon>
+        <span>Sistem</span>
+      </div>
+      <div class="swim-col swim-col--admin">
+        <mat-icon>admin_panel_settings</mat-icon>
+        <span>Administrator</span>
+      </div>
+    </div>
+
+    <!-- Step 1 — Login -->
+    <div class="swim-row">
+      <div class="swim-cell swim-cell--active agent">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-icon"><mat-icon>login</mat-icon></div>
+          <div class="step-body">
+            <div class="step-title">Autentificare</div>
+            <div class="step-desc">Agentul se conectează cu username și parolă.</div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--empty"></div>
+    </div>
+
+    <div class="swim-arrow">
+      <div class="arrow-line agent-line"></div>
+    </div>
+
+    <!-- Step 2 — Catalog -->
+    <div class="swim-row">
+      <div class="swim-cell swim-cell--active agent">
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-icon"><mat-icon>inventory_2</mat-icon></div>
+          <div class="step-body">
+            <div class="step-title">Catalog Produse</div>
+            <div class="step-desc">Răsfoiește produsele, filtrează pe catalog, categorie sau furnizor.</div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--empty"></div>
+    </div>
+
+    <div class="swim-arrow">
+      <div class="arrow-line agent-line"></div>
+    </div>
+
+    <!-- Step 3 — Comandă nouă -->
+    <div class="swim-row">
+      <div class="swim-cell swim-cell--active agent">
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-icon"><mat-icon>add_shopping_cart</mat-icon></div>
+          <div class="step-body">
+            <div class="step-title">Comandă nouă</div>
+            <div class="step-desc">Adaugă produse, specifică cantitățile și trimite comanda.</div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--empty"></div>
+    </div>
+
+    <div class="swim-arrow swim-arrow--right">
+      <div class="arrow-line system-line arrow-cross"></div>
+    </div>
+
+    <!-- Step 4 — Notificare sistem -->
+    <div class="swim-row">
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--active system">
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-icon"><mat-icon>mark_email_read</mat-icon></div>
+          <div class="step-body">
+            <div class="step-title">Notificare automată</div>
+            <div class="step-desc">Email generat și trimis automat cu detaliile comenzii. Opțional: WhatsApp.</div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-cell swim-cell--empty"></div>
+    </div>
+
+    <div class="swim-arrow swim-arrow--right2">
+      <div class="arrow-line admin-line arrow-cross2"></div>
+    </div>
+
+    <!-- Step 5 — Toate comenzile -->
+    <div class="swim-row">
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--active admin">
+        <div class="step-card">
+          <div class="step-num">5</div>
+          <div class="step-icon"><mat-icon>bar_chart</mat-icon></div>
+          <div class="step-body">
+            <div class="step-title">Toate comenzile</div>
+            <div class="step-desc">Administratorul vede comanda cu statusul <em>Trimis</em> și poate extinde detaliile.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swim-arrow swim-arrow--col3">
+      <div class="arrow-line admin-line"></div>
+    </div>
+
+    <!-- Step 6 — Procesare -->
+    <div class="swim-row">
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--active admin">
+        <div class="step-card step-card--decision">
+          <div class="step-num">6</div>
+          <div class="step-icon"><mat-icon>task_alt</mat-icon></div>
+          <div class="step-body">
+            <div class="step-title">Procesare comandă</div>
+            <div class="step-desc">
+              Administratorul alege:
+              <div class="decision-chips">
+                <span class="chip chip--success">Acceptă</span>
+                <span class="chip chip--warn">Modifică</span>
+                <span class="chip chip--error">Anulează</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swim-arrow swim-arrow--col3">
+      <div class="arrow-line admin-line"></div>
+    </div>
+
+    <!-- Step 7 — Export / Confirmare -->
+    <div class="swim-row">
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--active admin">
+        <div class="step-card">
+          <div class="step-num">7</div>
+          <div class="step-icon"><mat-icon>share</mat-icon></div>
+          <div class="step-body">
+            <div class="step-title">Export & Notificare</div>
+            <div class="step-desc">
+              Descarcă Excel, printează sau retrimite pe WhatsApp / Email.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swim-arrow swim-arrow--left">
+      <div class="arrow-line agent-line arrow-cross-left"></div>
+    </div>
+
+    <!-- Step 8 — Comenzile mele -->
+    <div class="swim-row">
+      <div class="swim-cell swim-cell--active agent">
+        <div class="step-card">
+          <div class="step-num">8</div>
+          <div class="step-icon"><mat-icon>fact_check</mat-icon></div>
+          <div class="step-body">
+            <div class="step-title">Comenzile mele</div>
+            <div class="step-desc">Agentul vede statusul final: <em>Acceptat</em>, <em>Finalizat</em> sau <em>Anulat</em>.</div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-cell swim-cell--empty"></div>
+      <div class="swim-cell swim-cell--empty"></div>
+    </div>
+
+  </div><!-- /swimlane -->
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <span class="legend-dot agent-dot"></span> Acțiune agent
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot system-dot"></span> Acțiune automată
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot admin-dot"></span> Acțiune administrator
+    </div>
+  </div>
+
+  <!-- Quick reference -->
+  <div class="quick-ref">
+    <h2 class="qr-title"><mat-icon>lightbulb</mat-icon> Statusurile unei comenzi</h2>
+    <div class="status-list">
+      <div class="status-item">
+        <span class="status-badge s-trimis">Trimis</span>
+        <span class="status-info">Comanda a fost trimisă de agent, în așteptare la admin.</span>
+      </div>
+      <div class="status-item">
+        <span class="status-badge s-acceptat">Acceptat</span>
+        <span class="status-info">Administratorul a confirmat comanda.</span>
+      </div>
+      <div class="status-item">
+        <span class="status-badge s-finalizat">Finalizat</span>
+        <span class="status-info">Comanda a fost procesată complet, cu eventuale ajustări.</span>
+      </div>
+      <div class="status-item">
+        <span class="status-badge s-anulat">Anulat</span>
+        <span class="status-info">Comanda a fost anulată. Poate fi redeschisă de admin.</span>
+      </div>
+    </div>
+  </div>
+
+</div>

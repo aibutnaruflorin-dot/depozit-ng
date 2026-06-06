@@ -99,6 +99,24 @@ h1, h2, h3, h4 { font-family: 'Inter', system-ui, sans-serif; }
 }
 
 /* ──────────────────────────────────────
+   Page header — standard global
+   ────────────────────────────────────── */
+.page-header {
+  display: flex; align-items: center; gap: 1rem;
+  flex-wrap: wrap; margin-bottom: 1.5rem;
+}
+.page-actions { margin-left: auto; display: flex; gap: 0.5rem; align-items: center; }
+.page-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1.5rem; font-weight: 700; margin: 0;
+  mat-icon { color: var(--color-primary); font-size: 1.6rem; width: 1.6rem; height: 1.6rem; }
+}
+.count-badge {
+  background: var(--color-primary-light); color: var(--color-primary);
+  padding: 2px 10px; border-radius: 12px; font-size: 0.875rem; font-weight: 600;
+}
+
+/* ──────────────────────────────────────
    Snackbar styles
    ────────────────────────────────────── */
 .snack-success .mdc-snackbar__surface { background: #437a22 !important; }

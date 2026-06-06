@@ -138,3 +138,193 @@ mat-radio-group { display: flex; gap: 1.5rem; }
   margin-top: 1rem;
 }
 h3 { font-size: 1rem; font-weight: 600; margin: 0 0 0.5rem; }
+h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--color-text-muted); }
+
+/* WhatsApp tab */
+.wa-hint {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.85rem; color: var(--color-text-muted);
+  background: var(--color-surface); border-radius: 8px;
+  padding: 0.6rem 0.9rem; margin-bottom: 1.25rem;
+}
+.wa-hint-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+
+.wa-list {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.wa-item {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.6rem 0.75rem; border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+.wa-item-icon { color: #25D366; flex-shrink: 0; }
+.wa-item-info {
+  flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+.wa-item-name { font-weight: 600; font-size: 0.88rem; }
+.wa-item-phone { font-size: 0.78rem; color: var(--color-text-muted); }
+.wa-item-type {
+  font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+  color: var(--color-text-muted); background: var(--color-surface);
+  padding: 2px 7px; border-radius: 10px; flex-shrink: 0;
+}
+.wa-divider { margin: 1rem 0; }
+
+.wa-form { margin-top: 0.5rem; }
+.wa-form-row {
+  display: flex; gap: 0.75rem; align-items: flex-start;
+  flex-wrap: wrap; margin-bottom: 0.25rem;
+}
+.wa-name-field  { flex: 1; min-width: 160px; }
+.wa-type-field  { width: 150px; }
+.wa-phone-field { flex: 1; min-width: 220px; }
+.wa-add-btn     { height: 56px; white-space: nowrap; }
+
+/* Upload row + inline status */
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.status-inline {
+  font-size: 0.83rem;
+  &.ok  { color: var(--color-success); }
+  &.err { color: var(--color-error); }
+}
+
+/* Upload history */
+.upload-history {
+  margin-top: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.upload-history-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+}
+.upload-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--color-surface);
+  opacity: 0.5;
+
+  &:not(:last-child) { border-bottom: 1px solid var(--color-border); }
+
+  &--active { opacity: 1; }
+}
+.upload-icon {
+  font-size: 18px; width: 18px; height: 18px;
+  flex-shrink: 0;
+  color: var(--color-success);
+}
+.upload-icon-placeholder {
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+}
+.upload-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.upload-filename {
+  font-size: 0.83rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upload-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+.upload-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &.badge-active   { background: #e8f5e9; color: #2e7d32; }
+  &.badge-inactive { background: var(--color-bg); color: var(--color-text-muted); }
+}
+
+/* Fleet list (vehicles & drivers) */
+.fleet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fleet-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+.fleet-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: #e3f2fd; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  mat-icon { color: #1565c0; font-size: 20px; width: 20px; height: 20px; }
+  &--driver { background: #e8f5e9;
+    mat-icon { color: #2e7d32; }
+  }
+}
+.fleet-info {
+  flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+.fleet-name { font-weight: 600; font-size: 0.9rem; }
+.fleet-meta {
+  font-size: 0.78rem; color: var(--color-text-muted);
+  display: flex; align-items: center; gap: 0.25rem;
+}
+
+/* Users tab */
+.tab-content--wide { max-width: 900px; }
+
+.user-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+/* User add/edit modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.modal-card {
+  width: 440px; max-width: 95vw;
+  position: relative;
+}
+.modal-form {
+  display: flex; flex-direction: column;
+  gap: 0.25rem; padding-top: 0.5rem;
+}
+.modal-actions {
+  display: flex; justify-content: flex-end;
+  gap: 0.5rem; padding: 0.75rem 1rem 1rem;
+}

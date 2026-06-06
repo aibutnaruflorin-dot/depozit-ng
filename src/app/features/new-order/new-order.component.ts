@@ -31,9 +31,11 @@ export interface CartItem { product: Product; qty: number; }
   styleUrl:    './new-order.component.scss'
 })
 export class NewOrderComponent implements OnInit {
-  nameCtrl  = new FormControl('', Validators.required);
-  phoneCtrl = new FormControl('', [Validators.pattern(/^\d{10}$/)]);
-  noteCtrl  = new FormControl('');
+  nameCtrl    = new FormControl('', Validators.required);
+  phoneCtrl   = new FormControl('', [Validators.pattern(/^\d{10}$/)]);
+  addressCtrl = new FormControl('');
+  helperCtrl  = new FormControl('');
+  noteCtrl    = new FormControl('');
 
   searchQuery      = signal('');
   categoryFilter   = signal('');
@@ -242,11 +244,13 @@ export class NewOrderComponent implements OnInit {
       timestamp: new Date().toISOString(),
       agent:     { id: session.userId, name: session.name, username: session.username },
       client:    {
-        name:  (this.nameCtrl.value || '').trim(),
-        phone: (this.phoneCtrl.value || '').trim(),
-        email: '',
-        note:  (this.noteCtrl.value || '').trim()
+        name:    (this.nameCtrl.value || '').trim(),
+        phone:   (this.phoneCtrl.value || '').trim(),
+        email:   '',
+        note:    (this.noteCtrl.value || '').trim(),
+        address: (this.addressCtrl.value || '').trim() || undefined
       },
+      helper: (this.helperCtrl.value || '').trim() || undefined,
       products: this.cart().map(i => ({
         nr:        i.product.nr,
         name:      i.product.name,
@@ -270,6 +274,8 @@ export class NewOrderComponent implements OnInit {
     this.cart.set([]);
     this.nameCtrl.reset();
     this.phoneCtrl.reset();
+    this.addressCtrl.reset();
+    this.helperCtrl.reset();
     this.noteCtrl.reset();
     this.submitted = true;
 

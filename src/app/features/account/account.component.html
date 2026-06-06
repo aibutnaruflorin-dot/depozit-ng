@@ -1,0 +1,62 @@
+<div class="account-page">
+
+  <div class="page-header">
+    <h1 class="page-title">
+      <mat-icon>manage_accounts</mat-icon>
+      Contul meu
+    </h1>
+  </div>
+
+  <div class="account-card">
+    <!-- Info utilizator -->
+    <div class="user-info-row">
+      <div class="user-avatar-lg">{{ auth.userInitial() }}</div>
+      <div class="user-details">
+        <div class="user-name">{{ auth.userName() }}</div>
+        <div class="user-role">{{ auth.roleLabel() }}</div>
+      </div>
+    </div>
+
+    <mat-divider style="margin: 1.25rem 0"></mat-divider>
+
+    <h3>Schimbă parola</h3>
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="pass-form">
+      <mat-form-field appearance="outline" class="full-w">
+        <mat-label>Parola curentă</mat-label>
+        <mat-icon matPrefix>lock</mat-icon>
+        <input matInput type="password" formControlName="oldPass">
+        @if (form.get('oldPass')?.hasError('required') && form.get('oldPass')?.touched) {
+          <mat-error>Câmp obligatoriu.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-w">
+        <mat-label>Parola nouă</mat-label>
+        <mat-icon matPrefix>lock_reset</mat-icon>
+        <input matInput type="password" formControlName="newPass">
+        @if (form.get('newPass')?.hasError('minlength') && form.get('newPass')?.touched) {
+          <mat-error>Minim 4 caractere.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-w">
+        <mat-label>Confirmă parola nouă</mat-label>
+        <mat-icon matPrefix>lock_reset</mat-icon>
+        <input matInput type="password" formControlName="confirm">
+      </mat-form-field>
+
+      @if (msg) {
+        <p class="status-msg" [class.ok]="msgOk" [class.err]="!msgOk">
+          {{ msgOk ? '✅' : '❌' }} {{ msg }}
+        </p>
+      }
+
+      <button mat-flat-button color="primary" type="submit">
+        <mat-icon>save</mat-icon>
+        Salvează parola
+      </button>
+    </form>
+  </div>
+
+</div>

@@ -1,0 +1,532 @@
+<div class="transport-page">
+
+  <div class="page-header">
+    <h1 class="page-title">
+      <mat-icon>local_shipping</mat-icon>
+      Transport
+      <span class="count-badge">{{ transportService.active().length }}</span>
+    </h1>
+    <div class="page-actions">
+      @if (auth.isAdmin()) {
+        <button mat-stroked-button (click)="openCreate()"
+                [disabled]="transportService.vehicles().length === 0 || transportService.drivers().length === 0">
+          <mat-icon>add</mat-icon> Cursă nouă
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (auth.isAdmin() && (transportService.vehicles().length === 0 || transportService.drivers().length === 0)) {
+    <div class="setup-hint">
+      <mat-icon>info</mat-icon>
+      Adaugă mașini și șoferi în <strong>Setări → Mașini / Șoferi</strong> înainte de a crea o cursă.
+    </div>
+  }
+
+  @if (hasTimelineOverlap()) {
+    <div class="overlap-alert">
+      <mat-icon>warning</mat-icon>
+      <span>Există curse care se suprapun pe aceeași mașină sau șofer. Verifică planificarea vizuală.</span>
+    </div>
+  }
+
+  <div class="transport-body">
+
+    <!-- ══ LEFT: trip cards ══ -->
+    <div class="transport-left">
+      <mat-tab-group>
+
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon style="margin-right:6px">directions_car</mat-icon>
+            Active
+            @if (transportService.active().length) {
+              <span class="tab-badge">{{ transportService.active().length }}</span>
+            }
+          </ng-template>
+
+          <div class="tab-body">
+            @if (transportService.active().length === 0) {
+              <div class="empty-state">
+                <mat-icon>local_shipping</mat-icon>
+                <p>Nicio cursă activă.</p>
+              </div>
+            }
+
+            @for (t of transportService.active(); track t.id) {
+              <div class="trip-card"
+                   [class.trip-active]="t.status === 'in_livrare'"
+                   [class.trip-overlap]="overlapIds().has(t.id)">
+
+                <div class="trip-header">
+                  <div class="trip-status-row">
+                    <span class="trip-status" [class]="statusClass(t.status)">
+                      <mat-icon>{{ t.status === 'planificat' ? 'schedule' : 'local_shipping' }}</mat-icon>
+                      {{ statusLabel(t.status) }}
+                    </span>
+                    @if (overlapIds().has(t.id)) {
+                      <span class="trip-overlap-badge">
+                        <mat-icon>warning</mat-icon> Suprapunere
+                      </span>
+                    }
+                    <span class="trip-times">
+                      <mat-icon>outlined_flag</mat-icon> {{ transportService.formatDateTime(t.oraPlecare) }}
+                      &nbsp;→&nbsp;
+                      <mat-icon>sports_score</mat-icon> {{ transportService.formatDateTime(t.oraSosire) }}
+                    </span>
+                  </div>
+
+                  @if (auth.isAdmin()) {
+                    <div class="trip-actions">
+                      @if (t.status === 'planificat') {
+                        <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează cursa">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Șterge cursa">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="trip-meta">
+                  <div class="trip-meta-item">
+                    <mat-icon>local_shipping</mat-icon>
+                    <span>
+                      @if (transportService.getVehicle(t.vehicleId); as v) {
+                        <strong>{{ v.alias || v.denumire }}</strong> · {{ v.numarInmatriculare }}
+                      } @else { — }
+                    </span>
+                  </div>
+                  <div class="trip-meta-item">
+                    <mat-icon>person</mat-icon>
+                    <span>
+                      @if (transportService.getDriver(t.driverId); as d) {
+                        <strong>{{ d.nume }}</strong>
+                        @if (d.telefon) { · <a [href]="'tel:' + d.telefon">{{ d.telefon }}</a> }
+                      } @else { — }
+                    </span>
+                  </div>
+                  @if (t.helper) {
+                    <div class="trip-meta-item" [class.helper-conflict]="isHelperBusy(t)">
+                      <mat-icon>{{ isHelperBusy(t) ? 'warning' : 'person_add' }}</mat-icon>
+                      <span>Ajutor: <strong>{{ t.helper }}</strong></span>
+                      @if (isHelperBusy(t)) {
+                        <span class="helper-conflict-badge">în cursă!</span>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <mat-divider />
+
+                <div class="trip-orders">
+                  @for (order of ordersForTransport(t); track $index) {
+                    @if (order) {
+                      <div class="order-row">
+                        <div class="order-info">
+                          <span class="order-num">#{{ order.orderNumber ?? '—' }}</span>
+                          <strong class="order-client">{{ order.client.name }}</strong>
+                          @if (order.client.phone) {
+                            <a [href]="'tel:' + order.client.phone" class="order-phone">
+                              <mat-icon>phone</mat-icon>{{ order.client.phone }}
+                            </a>
+                          }
+                          @if (order.client.address) {
+                            <a [href]="mapsLink(order.client.address)" target="_blank" class="order-address">
+                              <mat-icon>location_on</mat-icon>{{ order.client.address }}
+                            </a>
+                          }
+                          @if (order.helper) {
+                            <span class="order-helper">
+                              <mat-icon>person_add</mat-icon>{{ order.helper }}
+                            </span>
+                          }
+                        </div>
+                        <span class="order-products">{{ order.products.length }} produse</span>
+                      </div>
+                    }
+                  }
+                </div>
+
+                <div class="trip-footer">
+                  <div class="status-stepper">
+                    <button class="step-btn"
+                            [class.step--active]="t.status === 'planificat'"
+                            [class.step--done]="t.status === 'in_livrare' || t.status === 'livrat'"
+                            [disabled]="t.status === 'planificat' || t.status === 'livrat'"
+                            (click)="setTripStatus(t, 'planificat')">
+                      <mat-icon>schedule</mat-icon>
+                      <span>Planificat</span>
+                    </button>
+                    <mat-icon class="step-arrow">chevron_right</mat-icon>
+                    <button class="step-btn"
+                            [class.step--active]="t.status === 'in_livrare'"
+                            [class.step--done]="t.status === 'livrat'"
+                            [disabled]="t.status === 'in_livrare'"
+                            (click)="setTripStatus(t, 'in_livrare')">
+                      <mat-icon>local_shipping</mat-icon>
+                      <span>În livrare</span>
+                    </button>
+                    <mat-icon class="step-arrow">chevron_right</mat-icon>
+                    <button class="step-btn"
+                            [class.step--active]="t.status === 'livrat'"
+                            [disabled]="t.status !== 'in_livrare'"
+                            (click)="setTripStatus(t, 'livrat')">
+                      <mat-icon>check_circle</mat-icon>
+                      <span>Livrat</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon style="margin-right:6px">history</mat-icon>
+            Istoric
+            @if (transportService.history().length) {
+              <span class="tab-badge tab-badge--muted">{{ transportService.history().length }}</span>
+            }
+          </ng-template>
+
+          <div class="tab-body">
+            @if (transportService.history().length === 0) {
+              <div class="empty-state">
+                <mat-icon>history</mat-icon>
+                <p>Nicio cursă finalizată.</p>
+              </div>
+            }
+
+            @for (t of transportService.history(); track t.id) {
+              <div class="trip-card trip-card--done">
+                <div class="trip-header">
+                  <div class="trip-status-row">
+                    <span class="trip-status status-done">
+                      <mat-icon>check_circle</mat-icon> Livrat
+                    </span>
+                    <span class="trip-times">
+                      <mat-icon>outlined_flag</mat-icon> {{ transportService.formatDateTime(t.oraPlecare) }}
+                      &nbsp;→&nbsp;
+                      <mat-icon>sports_score</mat-icon> {{ transportService.formatDateTime(t.oraSosire) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="trip-meta">
+                  <div class="trip-meta-item">
+                    <mat-icon>local_shipping</mat-icon>
+                    <span>
+                      @if (transportService.getVehicle(t.vehicleId); as v) {
+                        {{ v.alias || v.denumire }} · {{ v.numarInmatriculare }}
+                      }
+                    </span>
+                  </div>
+                  <div class="trip-meta-item">
+                    <mat-icon>person</mat-icon>
+                    <span>{{ transportService.getDriver(t.driverId)?.nume ?? '—' }}</span>
+                  </div>
+                </div>
+                <mat-divider />
+                <div class="trip-orders">
+                  @for (order of ordersForTransport(t); track $index) {
+                    @if (order) {
+                      <div class="order-row">
+                        <span class="order-num">#{{ order.orderNumber ?? '—' }}</span>
+                        <strong class="order-client">{{ order.client.name }}</strong>
+                        @if (order.client.address) {
+                          <span class="order-address-text">{{ order.client.address }}</span>
+                        }
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+      </mat-tab-group>
+    </div>
+
+    <!-- ══ RIGHT: visual timeline ══ -->
+    <aside class="transport-right">
+      <div class="timeline-panel">
+        <div class="timeline-title">
+          <mat-icon>timeline</mat-icon>
+          Planificare vizuală
+        </div>
+
+        @if (timeline(); as tl) {
+          <div class="tl-chart">
+
+            <!-- Date header row -->
+            <div class="tl-row">
+              <div class="tl-label tl-label--header"></div>
+              <div class="tl-date-track">
+                @for (dt of tl.dateTicks; track dt.label) {
+                  <div class="tl-date-cell" [style.left.%]="dt.left" [style.width.%]="dt.width">
+                    {{ dt.label }}
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Hour axis row -->
+            <div class="tl-row">
+              <div class="tl-label tl-label--header"></div>
+              <div class="tl-track tl-track--axis">
+                @for (tick of tl.ticks; track tick.left) {
+                  <div class="tl-tick" [class.tl-tick--major]="tick.major" [style.left.%]="tick.left">
+                    <span>{{ tick.label }}</span>
+                  </div>
+                }
+                @if (nowLeft() >= 0) {
+                  <div class="tl-now-label" [style.left.%]="nowLeft()">acum</div>
+                }
+              </div>
+            </div>
+
+            <!-- Vehicle rows -->
+            @for (vehicle of tl.vehicles; track vehicle.id) {
+              <div class="tl-row">
+                <div class="tl-label">
+                  <div class="tl-label-name">
+                    <mat-icon>local_shipping</mat-icon>
+                    <span>{{ vehicle.vehicleName }}</span>
+                  </div>
+                  <div class="tl-label-sub">{{ vehicle.plateName }}</div>
+                </div>
+                <div class="tl-track">
+                  @if (nowLeft() >= 0) {
+                    <div class="tl-now-line" [style.left.%]="nowLeft()"></div>
+                  }
+                  @for (bar of vehicle.bars; track bar.id) {
+                    @if (bar.returnWidth > 0) {
+                      <div class="tl-return"
+                           [style.left.%]="bar.returnLeft"
+                           [style.width.%]="bar.returnWidth"
+                           matTooltip="Timp de întoarcere estimat">
+                      </div>
+                    }
+                    <div class="tl-bar"
+                         [class.tl-bar--planificat]="bar.status === 'planificat'"
+                         [class.tl-bar--in-livrare]="bar.status === 'in_livrare'"
+                         [class.tl-bar--overlap]="bar.overlap"
+                         [style.left.%]="bar.left"
+                         [style.width.%]="bar.width"
+                         [matTooltip]="bar.tooltip"
+                         matTooltipClass="tl-tooltip">
+                      <div class="tl-bar-top">
+                        <span class="tl-bar-orders">{{ bar.orders }}</span>
+                        <span class="tl-bar-driver">· {{ bar.driverName }}</span>
+                      </div>
+                      @if (bar.destination) {
+                        <div class="tl-bar-dest">{{ bar.destination }}</div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+          </div>
+
+          <!-- Legend -->
+          <div class="tl-legend">
+            <span class="tl-legend-item"><span class="tl-dot tl-dot--planificat"></span> Planificat</span>
+            <span class="tl-legend-item"><span class="tl-dot tl-dot--in-livrare"></span> În livrare</span>
+            <span class="tl-legend-item"><span class="tl-dot tl-dot--return"></span> Întoarcere</span>
+            @if (hasTimelineOverlap()) {
+              <span class="tl-legend-item"><span class="tl-dot tl-dot--overlap"></span> Suprapunere</span>
+            }
+          </div>
+
+        } @else {
+          <div class="timeline-empty">
+            <mat-icon>event_available</mat-icon>
+            <p>Nicio cursă activă de vizualizat.</p>
+          </div>
+        }
+      </div>
+    </aside>
+
+  </div><!-- /transport-body -->
+</div>
+
+<!-- ══ MODAL cursă nouă / editare ══ -->
+@if (showModal()) {
+  <div class="modal-overlay">
+    <mat-card appearance="outlined" class="modal-card modal-card--wide" role="dialog">
+      <mat-card-header>
+        <mat-card-title>{{ editingId() ? 'Editează cursa' : 'Cursă nouă' }}</mat-card-title>
+        <button mat-icon-button (click)="closeModal()" style="position:absolute;right:8px;top:8px">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="form" class="trip-form">
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half">
+              <mat-label>Mașină *</mat-label>
+              <mat-icon matPrefix>local_shipping</mat-icon>
+              <mat-select formControlName="vehicleId">
+                <mat-select-trigger>
+                  @if (selectedVehicle; as v) {
+                    <span class="select-trigger" [class.select-trigger--busy]="selectedVehicleBusy">
+                      @if (selectedVehicleBusy) { <mat-icon>warning</mat-icon> }
+                      {{ v.alias || v.denumire }} – {{ v.numarInmatriculare }}
+                      @if (selectedVehicleBusy) { <span class="option-busy-tag">· în cursă</span> }
+                    </span>
+                  }
+                </mat-select-trigger>
+                @for (v of transportService.vehicles(); track v.id) {
+                  <mat-option [value]="v.id" [disabled]="busyVehicleIdsInForm.has(v.id)">
+                    <span class="driver-option" [class.driver-option--busy]="busyVehicleIdsInForm.has(v.id)">
+                      <mat-icon>{{ busyVehicleIdsInForm.has(v.id) ? 'warning' : 'local_shipping' }}</mat-icon>
+                      {{ v.alias || v.denumire }} – {{ v.numarInmatriculare }}
+                      @if (busyVehicleIdsInForm.has(v.id)) {
+                        <span class="option-busy-tag">· în cursă</span>
+                      }
+                    </span>
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half">
+              <mat-label>Șofer *</mat-label>
+              <mat-icon matPrefix>person</mat-icon>
+              <mat-select formControlName="driverId">
+                <mat-select-trigger>
+                  @if (selectedDriver; as d) {
+                    <span class="select-trigger" [class.select-trigger--busy]="selectedDriverBusy">
+                      @if (selectedDriverBusy) { <mat-icon>warning</mat-icon> }
+                      {{ d.nume }}
+                      @if (selectedDriverBusy) { <span class="option-busy-tag">· în cursă</span> }
+                    </span>
+                  }
+                </mat-select-trigger>
+                @for (d of transportService.drivers(); track d.id) {
+                  <mat-option [value]="d.id" [disabled]="busyDriverIdsInForm.has(d.id)">
+                    <span class="driver-option" [class.driver-option--busy]="busyDriverIdsInForm.has(d.id)">
+                      <mat-icon>{{ busyDriverIdsInForm.has(d.id) ? 'warning' : 'person' }}</mat-icon>
+                      {{ d.nume }}
+                      @if (busyDriverIdsInForm.has(d.id)) {
+                        <span class="option-busy-tag">· în cursă</span>
+                      }
+                    </span>
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half">
+              <mat-label>Data plecare *</mat-label>
+              <mat-icon matPrefix>outlined_flag</mat-icon>
+              <input matInput [matDatepicker]="dpStart" formControlName="plecareDate" placeholder="zz/ll/aaaa">
+              <mat-datepicker-toggle matIconSuffix [for]="dpStart" />
+              <mat-datepicker #dpStart />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half">
+              <mat-label>Ora plecare *</mat-label>
+              <mat-icon matPrefix>schedule</mat-icon>
+              <input matInput type="time" formControlName="plecareTime">
+            </mat-form-field>
+          </div>
+
+          @if (form.hasError('plecareInPast') && (form.get('plecareDate')?.touched || form.get('plecareTime')?.touched)) {
+            <div class="form-error-banner">
+              <mat-icon>history_toggle_off</mat-icon>
+              Ora de plecare nu poate fi în trecut.
+            </div>
+          }
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half">
+              <mat-label>Data sosire estimată *</mat-label>
+              <mat-icon matPrefix>sports_score</mat-icon>
+              <input matInput [matDatepicker]="dpEnd" formControlName="sosireDate" placeholder="zz/ll/aaaa">
+              <mat-datepicker-toggle matIconSuffix [for]="dpEnd" />
+              <mat-datepicker #dpEnd />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half">
+              <mat-label>Ora sosire estimată *</mat-label>
+              <mat-icon matPrefix>schedule</mat-icon>
+              <input matInput type="time" formControlName="sosireTime">
+            </mat-form-field>
+          </div>
+
+          @if (form.hasError('sosireBeforePlecare') && (form.get('sosireDate')?.touched || form.get('sosireTime')?.touched)) {
+            <div class="form-error-banner">
+              <mat-icon>error_outline</mat-icon>
+              Data și ora de sosire trebuie să fie după data și ora de plecare.
+            </div>
+          }
+
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Comenzi asociate *</mat-label>
+            <mat-icon matPrefix>receipt_long</mat-icon>
+            <mat-select formControlName="orderIds" multiple>
+              @for (o of eligibleForEdit(); track o.id) {
+                <mat-option [value]="o.id">
+                  #{{ o.orderNumber }} – {{ o.client.name }}
+                  @if (o.client.address) { · {{ o.client.address }} }
+                  @if (o.helper) { · <strong>Ajutor: {{ o.helper }}</strong> }
+                </mat-option>
+              }
+            </mat-select>
+            @if (!eligibleForEdit().length) {
+              <mat-hint>Nicio comandă acceptată disponibilă.</mat-hint>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full" [class.field--busy]="selectedHelperBusy">
+            <mat-label>Persoană ajutor la încărcare</mat-label>
+            <mat-icon matPrefix [style.color]="selectedHelperBusy ? '#dc2626' : ''">
+              {{ selectedHelperBusy ? 'warning' : 'person_add' }}
+            </mat-icon>
+            <input matInput formControlName="helper"
+                   placeholder="Selectează sau scrie un nume…"
+                   [matAutocomplete]="helperAC">
+            <mat-autocomplete #helperAC autoActiveFirstOption>
+              @for (d of transportService.drivers(); track d.id) {
+                <mat-option [value]="d.nume" [disabled]="busyDriverNamesInForm.has(d.nume)">
+                  <span class="driver-option" [class.driver-option--busy]="busyDriverNamesInForm.has(d.nume)">
+                    <mat-icon>{{ busyDriverNamesInForm.has(d.nume) ? 'warning' : 'person' }}</mat-icon>
+                    {{ d.nume }}
+                    @if (busyDriverNamesInForm.has(d.nume)) {
+                      <span class="option-busy-tag">· în cursă</span>
+                    }
+                  </span>
+                </mat-option>
+              }
+            </mat-autocomplete>
+            @if (selectedHelperBusy) {
+              <mat-hint class="hint--busy">
+                <mat-icon>warning</mat-icon>
+                {{ form.get('helper')?.value }} · în cursă
+              </mat-hint>
+            } @else {
+              <mat-hint>Opțional — poate fi șoferul sau orice altă persoană</mat-hint>
+            }
+          </mat-form-field>
+
+        </form>
+      </mat-card-content>
+      <mat-card-actions class="modal-actions">
+        <button mat-stroked-button (click)="closeModal()">Anulează</button>
+        <button mat-flat-button color="primary" (click)="save()">
+          {{ editingId() ? 'Salvează' : 'Creează cursa' }}
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}

@@ -8,8 +8,10 @@
 
     <!-- Brand -->
     <div class="sidebar-brand">
-      <span class="brand-icon">📦</span>
-      <span class="brand-name">Depozit</span>
+      <span class="brand-icon-box">
+        <mat-icon>cottage</mat-icon>
+      </span>
+      <span class="brand-name">D2C</span>
       @if (isMobile) {
         <button mat-icon-button class="close-btn" (click)="sidenav.close()" aria-label="Închide">
           <mat-icon>close</mat-icon>
@@ -46,6 +48,11 @@
         <mat-icon>logout</mat-icon>
         Deconectare
       </button>
+    </div>
+
+    <!-- Company logo — apare doar dacă logo.png există -->
+    <div class="sidebar-logo">
+      <img src="logo.png" alt="depozit2 constructii" class="company-logo">
     </div>
   </mat-sidenav>
 

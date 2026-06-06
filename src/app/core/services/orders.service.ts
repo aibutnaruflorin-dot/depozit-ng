@@ -70,6 +70,27 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
+  reopenOrder(id: string): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id === id ? { ...o, status: 'trimis', superseded: false } : o)
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
+  updateOrderStatus(id: string, status: string): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id === id ? { ...o, status } : o)
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
+  updateOrderClient(id: string, client: Partial<Order['client']>): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id === id ? { ...o, client: { ...o.client, ...client } } : o)
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
   generateText(order: Order): string {
     const line = '─'.repeat(50);
     const products = order.products.map((p, i) =>

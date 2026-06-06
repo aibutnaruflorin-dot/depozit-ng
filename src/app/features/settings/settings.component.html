@@ -1,3 +1,10 @@
+<div class="page-header">
+  <h1 class="page-title">
+    <mat-icon>settings</mat-icon>
+    Setări
+  </h1>
+</div>
+
 <mat-tab-group class="settings-tabs">
 
   <!-- ══ TAB 1: CATALOAGE (admin) ══ -->
@@ -58,15 +65,47 @@
               @if (cat.dataSource === 'excel') {
                 <div class="source-panel">
                   @if (catStates[cat.id]?.importing) { <mat-progress-bar mode="indeterminate" /> }
-                  <label class="file-label" [for]="'xls-' + cat.id">
-                    <mat-icon>upload_file</mat-icon> Selectează XLS/XLSX
-                  </label>
-                  <input [id]="'xls-' + cat.id" type="file" accept=".xls,.xlsx"
-                         class="file-input" (change)="onFileSelected(cat, $event)">
-                  @if (catStates[cat.id]?.importMsg) {
-                    <p class="status-msg">{{ catStates[cat.id].importMsg }}</p>
+                  <div class="upload-row">
+                    <label class="file-label" [for]="'xls-' + cat.id">
+                      <mat-icon>upload_file</mat-icon> Selectează XLS/XLSX
+                    </label>
+                    <input [id]="'xls-' + cat.id" type="file" accept=".xls,.xlsx"
+                           class="file-input" (change)="onFileSelected(cat, $event)">
+                    @if (catStates[cat.id]?.importMsg) {
+                      <span class="status-inline"
+                            [class.ok]="!catStates[cat.id].importMsg.startsWith('Fișierul') && !catStates[cat.id].importMsg.startsWith('Niciun') && !catStates[cat.id].importMsg.startsWith('Eroare')"
+                            [class.err]="catStates[cat.id].importMsg.startsWith('Fișierul') || catStates[cat.id].importMsg.startsWith('Niciun') || catStates[cat.id].importMsg.startsWith('Eroare')">
+                        {{ catStates[cat.id].importMsg }}
+                      </span>
+                    }
+                  </div>
+                  <p class="hint">Importă fișierul direct din Nexus, fără modificări. Fișierele cu același nume sunt respinse.</p>
+
+                  <!-- Upload history -->
+                  @if (uploadsFor(cat).length > 0) {
+                    <div class="upload-history">
+                      <div class="upload-history-title">
+                        <mat-icon>history</mat-icon>
+                        Istoric urcări ({{ uploadsFor(cat).length }}/4)
+                      </div>
+                      @for (u of uploadsFor(cat); track u.uploadedAt) {
+                        <div class="upload-item" [class.upload-item--active]="u.active">
+                          @if (u.active) {
+                            <mat-icon class="upload-icon">check_circle</mat-icon>
+                          } @else {
+                            <span class="upload-icon-placeholder"></span>
+                          }
+                          <div class="upload-info">
+                            <span class="upload-filename">{{ u.filename }}</span>
+                            <span class="upload-meta">{{ formatUploadDate(u.uploadedAt) }} · {{ u.productCount }} produse</span>
+                          </div>
+                          <span class="upload-badge" [class.badge-active]="u.active" [class.badge-inactive]="!u.active">
+                            {{ u.active ? 'Activ' : 'Inactiv' }}
+                          </span>
+                        </div>
+                      }
+                    </div>
                   }
-                  <p class="hint">Importă fișierul direct din Nexus, fără modificări.</p>
                 </div>
               }
 
@@ -127,32 +166,327 @@
     </mat-tab>
   }
 
-  <!-- ══ TAB 2: CONTUL MEU ══ -->
-  <mat-tab label="Contul meu">
-    <div class="tab-content">
-      <h3>Schimbă parola</h3>
-      <form [formGroup]="passForm" (ngSubmit)="changePass()" class="pass-form">
-        <mat-form-field appearance="outline" class="full-w">
-          <mat-label>Parola curentă</mat-label>
-          <input matInput type="password" formControlName="oldPass">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-w">
-          <mat-label>Parola nouă</mat-label>
-          <input matInput type="password" formControlName="newPass">
-          @if (passForm.get('newPass')?.hasError('minlength') && passForm.get('newPass')?.touched) {
-            <mat-error>Minim 4 caractere.</mat-error>
-          }
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-w">
-          <mat-label>Confirmă parola nouă</mat-label>
-          <input matInput type="password" formControlName="confirm">
-        </mat-form-field>
-        @if (passMsg) {
-          <p class="status-msg" [class.ok]="passMsgOk" [class.err]="!passMsgOk">{{ passMsg }}</p>
+  <!-- ══ TAB 2: WHATSAPP (admin) ══ -->
+  @if (auth.isAdmin()) {
+    <mat-tab label="WhatsApp">
+      <div class="tab-content">
+        <div class="tab-header">
+          <h3>Destinatari WhatsApp</h3>
+        </div>
+        <p class="wa-hint">
+          <mat-icon class="wa-hint-icon">info</mat-icon>
+          Adaugă numere de telefon sau linkuri de grup WhatsApp. Le vei putea selecta când trimiți o comandă.
+        </p>
+
+        <!-- Lista contacte existente -->
+        @if (whatsappContacts().length > 0) {
+          <div class="wa-list">
+            @for (c of whatsappContacts(); track c.id) {
+              <div class="wa-item">
+                <mat-icon class="wa-item-icon">{{ c.type === 'group' ? 'group' : 'phone' }}</mat-icon>
+                <div class="wa-item-info">
+                  <span class="wa-item-name">{{ c.name }}</span>
+                  <span class="wa-item-phone">{{ c.phone }}</span>
+                </div>
+                <span class="wa-item-type">{{ c.type === 'group' ? 'Grup' : 'Număr' }}</span>
+                <button mat-icon-button color="warn" (click)="removeWhatsappContact(c.id)" matTooltip="Șterge">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+          <mat-divider class="wa-divider" />
         }
-        <button mat-flat-button color="primary" type="submit">Schimbă parola</button>
-      </form>
+
+        <!-- Formular de adăugare -->
+        <div class="wa-form">
+          <h4>Adaugă contact nou</h4>
+          <div class="wa-form-row">
+            <mat-form-field appearance="outline" class="wa-name-field">
+              <mat-label>Nume</mat-label>
+              <input matInput [(ngModel)]="newWaName" placeholder="ex: Depozit central">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="wa-type-field">
+              <mat-label>Tip</mat-label>
+              <mat-select [(ngModel)]="newWaType">
+                <mat-option value="number">Număr telefon</mat-option>
+                <mat-option value="group">Link grup</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="wa-form-row">
+            <mat-form-field appearance="outline" class="wa-phone-field">
+              <mat-label>{{ newWaType === 'group' ? 'Link grup WhatsApp' : 'Număr telefon' }}</mat-label>
+              <mat-icon matPrefix>{{ newWaType === 'group' ? 'link' : 'phone' }}</mat-icon>
+              <input matInput [(ngModel)]="newWaPhone"
+                     [placeholder]="newWaType === 'group' ? 'https://chat.whatsapp.com/…' : '+40712345678 sau 0712345678'">
+            </mat-form-field>
+            <button mat-flat-button color="primary" class="wa-add-btn"
+                    [disabled]="!newWaName.trim() || !newWaPhone.trim()"
+                    (click)="addWhatsappContact()">
+              <mat-icon>add</mat-icon> Adaugă
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  }
+
+  <!-- ══ TAB 3: MAȘINI (admin) ══ -->
+  @if (auth.isAdmin()) {
+    <mat-tab label="Mașini">
+      <div class="tab-content">
+        <div class="tab-header">
+          <h3>Flota de mașini</h3>
+          <button mat-stroked-button (click)="openAddVehicle()">
+            <mat-icon>add</mat-icon> Adaugă mașină
+          </button>
+        </div>
+
+        @if (transportService.vehicles().length === 0) {
+          <div class="empty-state">
+            <mat-icon>local_shipping</mat-icon>
+            <p>Nicio mașină adăugată.</p>
+          </div>
+        } @else {
+          <div class="fleet-list">
+            @for (v of transportService.vehicles(); track v.id) {
+              <div class="fleet-item">
+                <div class="fleet-icon"><mat-icon>local_shipping</mat-icon></div>
+                <div class="fleet-info">
+                  <span class="fleet-name">{{ v.denumire }}</span>
+                  <span class="fleet-meta">
+                    <strong>{{ v.numarInmatriculare }}</strong>
+                    @if (v.marca) { · {{ v.marca }} }
+                    @if (v.alias) { · <em>{{ v.alias }}</em> }
+                  </span>
+                </div>
+                <button mat-icon-button (click)="openEditVehicle(v)" matTooltip="Editează">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteVehicle(v)" matTooltip="Șterge">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </mat-tab>
+  }
+
+  <!-- ══ TAB 4: ȘOFERI (admin) ══ -->
+  @if (auth.isAdmin()) {
+    <mat-tab label="Șoferi">
+      <div class="tab-content">
+        <div class="tab-header">
+          <h3>Șoferi</h3>
+          <button mat-stroked-button (click)="openAddDriver()">
+            <mat-icon>add</mat-icon> Adaugă șofer
+          </button>
+        </div>
+
+        @if (transportService.drivers().length === 0) {
+          <div class="empty-state">
+            <mat-icon>person</mat-icon>
+            <p>Niciun șofer adăugat.</p>
+          </div>
+        } @else {
+          <div class="fleet-list">
+            @for (d of transportService.drivers(); track d.id) {
+              <div class="fleet-item">
+                <div class="fleet-icon fleet-icon--driver"><mat-icon>person</mat-icon></div>
+                <div class="fleet-info">
+                  <span class="fleet-name">{{ d.nume }}</span>
+                  @if (d.telefon) {
+                    <span class="fleet-meta"><mat-icon style="font-size:13px;width:13px;height:13px">phone</mat-icon> {{ d.telefon }}</span>
+                  }
+                </div>
+                <button mat-icon-button (click)="openEditDriver(d)" matTooltip="Editează">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteDriver(d)" matTooltip="Șterge">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </mat-tab>
+  }
+
+  <!-- ══ TAB 5: UTILIZATORI (toți) ══ -->
+  <mat-tab label="Utilizatori">
+    <div class="tab-content tab-content--wide">
+      <div class="tab-header">
+        <h3>Utilizatori</h3>
+        @if (auth.isAdmin()) {
+          <button mat-stroked-button (click)="openAddUser()">
+            <mat-icon>person_add</mat-icon> Adaugă utilizator
+          </button>
+        }
+      </div>
+
+      <p-table [value]="users()" styleClass="p-datatable-sm p-datatable-striped"
+               [tableStyle]="{'min-width':'520px'}">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Nume</th>
+            <th>Username</th>
+            <th>Rol</th>
+            <th>Status</th>
+            @if (auth.isAdmin()) {
+              <th style="text-align:right">Acțiuni</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-user>
+          <tr>
+            <td><strong>{{ user.name }}</strong></td>
+            <td><code>{{ user.username }}</code></td>
+            <td>
+              <p-tag [value]="user.role === 'admin' ? 'Administrator' : 'Agent'"
+                     [severity]="user.role === 'admin' ? 'warn' : 'info'" />
+            </td>
+            <td>
+              <p-tag [value]="user.active !== false ? 'Activ' : 'Dezactivat'"
+                     [severity]="user.active !== false ? 'success' : 'danger'" />
+            </td>
+            @if (auth.isAdmin()) {
+              <td>
+                <div class="user-actions">
+                  <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="toggleUserActive(user)"
+                          [matTooltip]="user.active !== false ? 'Dezactivează' : 'Activează'"
+                          [style.color]="user.active !== false ? 'var(--color-error)' : 'var(--color-success)'">
+                    <mat-icon>{{ user.active !== false ? 'person_off' : 'person' }}</mat-icon>
+                  </button>
+                </div>
+              </td>
+            }
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
   </mat-tab>
 
 </mat-tab-group>
+
+<!-- Modal add/edit utilizator -->
+@if (showUserModal()) {
+  <div class="modal-overlay">
+    <mat-card appearance="outlined" class="modal-card" role="dialog">
+      <mat-card-header>
+        <mat-card-title>{{ editingUserId() !== null ? 'Editează utilizator' : 'Adaugă utilizator' }}</mat-card-title>
+        <button mat-icon-button (click)="closeUserModal()" style="position:absolute;right:8px;top:8px">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="userForm" class="modal-form">
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Nume complet *</mat-label>
+            <input matInput formControlName="name" placeholder="Prenume Nume">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Username *</mat-label>
+            <input matInput formControlName="username" placeholder="agent2">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>{{ editingUserId() !== null ? 'Parolă nouă (gol = nemodificat)' : 'Parolă *' }}</mat-label>
+            <input matInput type="password" formControlName="password">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Rol *</mat-label>
+            <mat-select formControlName="role">
+              <mat-option value="agent">Agent</mat-option>
+              <mat-option value="admin">Administrator</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </form>
+      </mat-card-content>
+      <mat-card-actions class="modal-actions">
+        <button mat-stroked-button (click)="closeUserModal()">Anulează</button>
+        <button mat-flat-button color="primary" (click)="saveUser()">Salvează</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
+
+<!-- Modal add/edit mașină -->
+@if (showVehicleModal()) {
+  <div class="modal-overlay">
+    <mat-card appearance="outlined" class="modal-card" role="dialog">
+      <mat-card-header>
+        <mat-card-title>{{ editingVehicleId() ? 'Editează mașina' : 'Adaugă mașină' }}</mat-card-title>
+        <button mat-icon-button (click)="closeVehicleModal()" style="position:absolute;right:8px;top:8px">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="vehicleForm" class="modal-form">
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Denumire *</mat-label>
+            <input matInput formControlName="denumire" placeholder="ex: Dacia Logan">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Număr înmatriculare *</mat-label>
+            <input matInput formControlName="numarInmatriculare"
+                   placeholder="IS 01 ABC" maxlength="9"
+                   (input)="vehicleForm.get('numarInmatriculare')!.setValue($any($event.target).value.toUpperCase(), {emitEvent:false}); $any($event.target).value = vehicleForm.get('numarInmatriculare')!.value">
+            <mat-hint align="end">max 9 caractere</mat-hint>
+            @if (vehicleForm.get('numarInmatriculare')?.hasError('pattern') && vehicleForm.get('numarInmatriculare')?.touched) {
+              <mat-error>Format invalid — ex: IS 01 ABC sau B 123 ABC</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Marcă</mat-label>
+            <input matInput formControlName="marca" placeholder="Dacia">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Alias (poreclă)</mat-label>
+            <input matInput formControlName="alias" placeholder="ex: Camioneta mică">
+          </mat-form-field>
+        </form>
+      </mat-card-content>
+      <mat-card-actions class="modal-actions">
+        <button mat-stroked-button (click)="closeVehicleModal()">Anulează</button>
+        <button mat-flat-button color="primary" (click)="saveVehicle()">Salvează</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
+
+<!-- Modal add/edit șofer -->
+@if (showDriverModal()) {
+  <div class="modal-overlay">
+    <mat-card appearance="outlined" class="modal-card" role="dialog">
+      <mat-card-header>
+        <mat-card-title>{{ editingDriverId() ? 'Editează șofer' : 'Adaugă șofer' }}</mat-card-title>
+        <button mat-icon-button (click)="closeDriverModal()" style="position:absolute;right:8px;top:8px">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="driverForm" class="modal-form">
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Nume complet *</mat-label>
+            <input matInput formControlName="nume" placeholder="Ion Popescu">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Telefon</mat-label>
+            <mat-icon matPrefix>phone</mat-icon>
+            <input matInput formControlName="telefon" placeholder="07xx xxx xxx">
+          </mat-form-field>
+        </form>
+      </mat-card-content>
+      <mat-card-actions class="modal-actions">
+        <button mat-stroked-button (click)="closeDriverModal()">Anulează</button>
+        <button mat-flat-button color="primary" (click)="saveDriver()">Salvează</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}

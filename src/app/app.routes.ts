@@ -17,8 +17,10 @@ export const routes: Routes = [
       { path: 'new-order',   loadComponent: () => import('./features/new-order/new-order.component').then(m => m.NewOrderComponent) },
       { path: 'history-me',  loadComponent: () => import('./features/history/history.component').then(m => m.HistoryComponent) },
       { path: 'history-all', loadComponent: () => import('./features/history-all/history-all.component').then(m => m.HistoryAllComponent), canActivate: [adminGuard] },
-      { path: 'settings',    loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent) },
-      { path: 'users',       loadComponent: () => import('./features/users/users.component').then(m => m.UsersComponent), canActivate: [adminGuard] },
+      { path: 'settings',    loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent), canActivate: [adminGuard] },
+      { path: 'transport',   loadComponent: () => import('./features/transport/transport.component').then(m => m.TransportComponent) },
+      { path: 'account',     loadComponent: () => import('./features/account/account.component').then(m => m.AccountComponent) },
+      { path: 'manual',      loadComponent: () => import('./features/manual/manual.component').then(m => m.ManualComponent) },
     ]
   },
   { path: '**', redirectTo: '/app/catalog' }

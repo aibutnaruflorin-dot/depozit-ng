@@ -1,3 +1,10 @@
+export interface CatalogUpload {
+  filename: string;
+  uploadedAt: string;   // ISO
+  productCount: number;
+  active: boolean;
+}
+
 export interface Catalog {
   id: string;
   name: string;
@@ -6,6 +13,7 @@ export interface Catalog {
   apiUrl: string;
   apiKey: string;
   apiGestiune: string;
+  uploads: CatalogUpload[];  // last 4 excel uploads, only 1 active at a time
 }
 
 export interface CatalogMeta {

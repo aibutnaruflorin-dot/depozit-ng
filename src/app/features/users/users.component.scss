@@ -1,14 +1,4 @@
 .users-page { max-width: 860px; }
-.page-header {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;
-}
-.page-title {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-size: 1.5rem; font-weight: 700; margin: 0;
-  mat-icon { color: var(--color-primary); }
-}
-.btn-add { background: var(--color-primary) !important; color: #fff !important; }
 .actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
 code { font-size: 0.85rem; background: var(--color-surface-2); padding: 2px 6px; border-radius: 4px; }
 

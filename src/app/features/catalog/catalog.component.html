@@ -1,12 +1,15 @@
 <!-- Header -->
 <div class="page-header">
-  <div class="page-title-wrap">
-    <h1 class="page-title"><mat-icon>inventory_2</mat-icon> Catalog Produse</h1>
-    <span class="product-count">{{ filtered().length }} produse</span>
+  <h1 class="page-title">
+    <mat-icon>inventory_2</mat-icon>
+    Catalog Produse
+    <span class="count-badge">{{ filtered().length }}</span>
+  </h1>
+  <div class="page-actions">
+    <button mat-stroked-button (click)="goToNewOrder()">
+      <mat-icon>add_shopping_cart</mat-icon> Comandă nouă
+    </button>
   </div>
-  <button mat-flat-button color="primary" (click)="goToNewOrder()">
-    <mat-icon>add_shopping_cart</mat-icon> Comandă nouă
-  </button>
 </div>
 
 <!-- Catalog filter chips -->
@@ -161,7 +164,7 @@
             @if (p.qty > 0) { <span class="stoc-text">Stoc: {{ p.qty }}</span> }
           </span>
         </div>
-        <button mat-stroked-button class="order-btn" (click)="goToNewOrder()" matTooltip="Comandă">
+        <button mat-icon-button class="order-btn" color="primary" (click)="goToNewOrder()" matTooltip="Adaugă la comandă">
           <mat-icon>add_shopping_cart</mat-icon>
         </button>
       </div>

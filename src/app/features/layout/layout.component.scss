@@ -20,14 +20,36 @@
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.25rem 1rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-text);
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
 }
-.brand-icon { font-size: 1.5rem; line-height: 1; }
-.close-btn { margin-left: auto; }
+.brand-icon-box {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 7px;
+  background: #2d6a27; flex-shrink: 0;
+  mat-icon { color: #fff; font-size: 20px; width: 20px; height: 20px; }
+}
+.brand-name {
+  font-size: 1.2rem; font-weight: 800;
+  color: var(--color-text); letter-spacing: 0.04em;
+}
+.close-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); }
+
+.sidebar-logo {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 0.6rem 1.5rem;
+  display: flex; justify-content: center;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+.company-logo {
+  max-width: 110px; height: auto;
+  object-fit: contain;
+}
 
 .sidebar-nav {
   flex: 1;
@@ -53,7 +75,7 @@ mat-list-item.active {
 mat-list-item.active mat-icon { color: var(--color-primary); }
 
 .sidebar-footer {
-  padding: 0.75rem;
+  padding: 0.75rem 0.75rem 7rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

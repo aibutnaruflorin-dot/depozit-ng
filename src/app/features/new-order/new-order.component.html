@@ -2,16 +2,21 @@
 <div class="page-content" [class.cart-open]="showCart()">
 
   <!-- HEADER -->
-  <div class="no-header">
-    <h2 class="no-title">Comandă nouă</h2>
-    <button mat-icon-button class="cart-btn" (click)="openCart()" matTooltip="Coș comandă">
-      <span class="cart-badge-wrap">
-        <mat-icon>shopping_cart</mat-icon>
-        @if (cart().length > 0) {
-          <span class="cart-badge">{{ cart().length }}</span>
-        }
-      </span>
-    </button>
+  <div class="page-header no-header">
+    <h1 class="page-title">
+      <mat-icon>add_shopping_cart</mat-icon>
+      Comandă nouă
+    </h1>
+    <div class="page-actions">
+      <button mat-icon-button class="cart-btn" (click)="openCart()" matTooltip="Coș comandă">
+        <span class="cart-badge-wrap">
+          <mat-icon>shopping_cart</mat-icon>
+          @if (cart().length > 0) {
+            <span class="cart-badge">{{ cart().length }}</span>
+          }
+        </span>
+      </button>
+    </div>
   </div>
 
   <!-- CATALOG FILTER -->
@@ -226,6 +231,18 @@
           @if (phoneCtrl.value && phoneCtrl.hasError('pattern')) {
             <mat-error>Introduceți exact 10 cifre.</mat-error>
           }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-w">
+          <mat-label>Adresă livrare</mat-label>
+          <mat-icon matPrefix>location_on</mat-icon>
+          <input matInput [formControl]="addressCtrl" placeholder="Str. Exemplu nr. 1, oraș…">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-w">
+          <mat-label>Persoană ajutor (încărcare)</mat-label>
+          <mat-icon matPrefix>person_add</mat-icon>
+          <input matInput [formControl]="helperCtrl" placeholder="Numele persoanei ajutor">
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-w">

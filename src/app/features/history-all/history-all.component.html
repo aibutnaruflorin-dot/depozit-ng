@@ -90,6 +90,9 @@
             <option value="">Toate</option>
             <option value="În așteptare">În așteptare</option>
             <option value="Acceptată">Acceptată</option>
+            <option value="Planificată">Planificată</option>
+            <option value="În livrare">În livrare</option>
+            <option value="Livrată">Livrată</option>
             <option value="Anulată">Anulată</option>
           </select>
         </div>
@@ -138,6 +141,12 @@
           <p-tag value="Înlocuită" severity="danger" />
         } @else if (order.status === 'anulat') {
           <p-tag value="Anulată" severity="danger" />
+        } @else if (order.status === 'livrat') {
+          <p-tag value="Livrată" severity="info" />
+        } @else if (order.status === 'in_livrare') {
+          <p-tag value="În livrare" severity="warn" />
+        } @else if (order.status === 'planificat') {
+          <p-tag value="Planificată" severity="secondary" />
         } @else if (order.status === 'acceptat') {
           <p-tag value="Acceptată" severity="success" />
         } @else {
@@ -149,7 +158,45 @@
           <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Trimite email">
             <mat-icon>email</mat-icon>
           </button>
-          <button mat-icon-button (click)="downloadOrderCsv(order, $event)" matTooltip="Descarcă comandă">
+          <!-- WhatsApp: meniu dacă există contacte configurate, altfel direct pe numărul clientului -->
+          @if (whatsappContacts().length > 0) {
+            <button mat-icon-button class="wa-btn" [matMenuTriggerFor]="waMenu"
+                    (click)="$event.stopPropagation()" matTooltip="Trimite WhatsApp">
+              <img src="whatsapp.svg" alt="WhatsApp" class="wa-icon" />
+            </button>
+            <mat-menu #waMenu="matMenu">
+              @if (order.client?.phone) {
+                <button mat-menu-item (click)="sendWhatsApp(order, order.client.phone, $event)">
+                  <mat-icon>person</mat-icon>
+                  <span>{{ order.client.name }} ({{ order.client.phone }})</span>
+                </button>
+                <mat-divider />
+              }
+              @for (c of whatsappContacts(); track c.id) {
+                @if (c.type === 'group') {
+                  <button mat-menu-item (click)="sendWhatsAppGroup(order, c.phone, $event)">
+                    <mat-icon>group</mat-icon>
+                    <span>{{ c.name }}</span>
+                  </button>
+                } @else {
+                  <button mat-menu-item (click)="sendWhatsApp(order, c.phone, $event)">
+                    <mat-icon>phone</mat-icon>
+                    <span>{{ c.name }}</span>
+                  </button>
+                }
+              }
+            </mat-menu>
+          } @else if (order.client?.phone) {
+            <button mat-icon-button class="wa-btn"
+                    (click)="sendWhatsApp(order, order.client.phone, $event)"
+                    matTooltip="Trimite WhatsApp clientului">
+              <img src="whatsapp.svg" alt="WhatsApp" class="wa-icon" />
+            </button>
+          }
+          <button mat-icon-button (click)="printOrder(order, $event)" matTooltip="Printează comanda">
+            <mat-icon>print</mat-icon>
+          </button>
+          <button mat-icon-button (click)="downloadOrderCsv(order, $event)" matTooltip="Descarcă Excel/CSV">
             <mat-icon>download</mat-icon>
           </button>
         </div>
@@ -234,9 +281,14 @@
                   <mat-icon>edit_note</mat-icon>
                   Finalizează cu modificări
                 </button>
+              } @else {
+                <button mat-stroked-button class="btn-reopen-order" (click)="reopenOrder(order)">
+                  <mat-icon>lock_open</mat-icon>
+                  Redeschide
+                </button>
               }
-              <button mat-stroked-button (click)="collapseRow(order.id)">
-                Închide
+              <button mat-icon-button class="btn-collapse" (click)="collapseRow(order.id)" matTooltip="Închide">
+                <mat-icon>keyboard_arrow_up</mat-icon>
               </button>
             </div>
           </div>

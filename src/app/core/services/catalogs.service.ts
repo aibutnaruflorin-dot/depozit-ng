@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { StorageService } from './storage.service';
-import { Catalog, CatalogMeta } from '../models/catalog.model';
+import { Catalog, CatalogMeta, CatalogUpload } from '../models/catalog.model';
 import { Product } from '../models/product.model';
 import * as XLSX from 'xlsx';
 
@@ -84,7 +84,7 @@ export class CatalogsService {
   addCatalog(): Catalog {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     const n  = this._catalogs().length + 1;
-    const cat: Catalog = { id, name: `Catalog ${n}`, color: '#2196F3', dataSource: 'excel', apiUrl: '', apiKey: '', apiGestiune: '' };
+    const cat: Catalog = { id, name: `Catalog ${n}`, color: '#2196F3', dataSource: 'excel', apiUrl: '', apiKey: '', apiGestiune: '', uploads: [] };
     const cats = [...this._catalogs(), cat];
     this.storage.set('app_catalogs', cats);
     this._catalogs.set(cats);
@@ -122,6 +122,15 @@ export class CatalogsService {
   }
 
   async importExcel(catalogId: string, file: File): Promise<{ ok: boolean; msg: string }> {
+    const filename = file.name;
+
+    // Duplicate filename check
+    const cat = this.getById(catalogId);
+    const existingUploads = cat?.uploads ?? [];
+    if (existingUploads.some(u => u.filename === filename)) {
+      return { ok: false, msg: `Fișierul "${filename}" a fost deja importat. Redenumește fișierul și încearcă din nou.` };
+    }
+
     return new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = e => {
@@ -164,15 +173,37 @@ export class CatalogsService {
               catalogId
             });
           }
-          if (!products.length) { resolve({ ok: false, msg: 'Niciun rând valid găsit (col A = număr, col B = denumire).' }); return; }
+
+          if (!products.length) {
+            resolve({ ok: false, msg: 'Niciun rând valid găsit (col A = număr, col B = denumire).' });
+            return;
+          }
+
           this._saveProducts(catalogId, products);
-          resolve({ ok: true, msg: `${products.length} produse importate.` });
+          this._recordUpload(catalogId, filename, products.length);
+          resolve({ ok: true, msg: `${products.length} produse importate din "${filename}".` });
         } catch {
           resolve({ ok: false, msg: 'Eroare la citirea fișierului Excel.' });
         }
       };
       reader.readAsArrayBuffer(file);
     });
+  }
+
+  private _recordUpload(catalogId: string, filename: string, productCount: number): void {
+    const newUpload: CatalogUpload = {
+      filename,
+      uploadedAt: new Date().toISOString(),
+      productCount,
+      active: true
+    };
+    const cats = this._catalogs().map(c => {
+      if (c.id !== catalogId) return c;
+      const prev = (c.uploads ?? []).map(u => ({ ...u, active: false }));
+      return { ...c, uploads: [...prev, newUpload].slice(-4) };
+    });
+    this.storage.set('app_catalogs', cats);
+    this._catalogs.set(cats);
   }
 
   async fetchApi(catalogId: string, url: string, key: string, gestiune: string, silent = false): Promise<{ ok: boolean; msg: string; count?: number }> {

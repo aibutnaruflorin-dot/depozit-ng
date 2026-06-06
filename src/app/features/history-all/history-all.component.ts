@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angul
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Order } from '../../core/models/order.model';
 import { User } from '../../core/models/user.model';
+import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
@@ -15,6 +16,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -55,7 +58,7 @@ function sortByFamily(orders: Order[]): Order[] {
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
-    MatDatepickerModule, MatFormFieldModule, MatInputModule,
+    MatDatepickerModule, MatFormFieldModule, MatInputModule, MatMenuModule, MatDividerModule,
     TableModule, TagModule, BarcodeComponent
   ],
   templateUrl: './history-all.component.html',
@@ -101,9 +104,12 @@ export class HistoryAllComponent {
     if (client) orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
     if (phone)  orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
     if (status) orders = orders.filter(o =>
-      status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
-      status === 'Acceptată'    ? o.status === 'acceptat' :
-      status === 'Anulată'      ? o.status === 'anulat'   : true
+      status === 'În așteptare'   ? (o.status === 'trimis' && !o.superseded) :
+      status === 'Acceptată'      ? o.status === 'acceptat' :
+      status === 'Anulată'        ? o.status === 'anulat' :
+      status === 'Planificată'    ? o.status === 'planificat' :
+      status === 'În livrare'     ? o.status === 'in_livrare' :
+      status === 'Livrată'        ? o.status === 'livrat' : true
     );
     if (dateRange.start) {
       const from = this._localDate(dateRange.start);
@@ -131,6 +137,10 @@ export class HistoryAllComponent {
     }
     return sortByFamily(orders);
   });
+
+  readonly whatsappContacts = computed<WhatsAppContact[]>(() =>
+    this.storage.get<WhatsAppContact[]>('app_whatsapp_contacts') ?? []
+  );
 
   constructor(
     private auth: AuthService,
@@ -220,6 +230,11 @@ export class HistoryAllComponent {
     this.ordersService.cancelOrder(order.id);
     this.collapseRow(order.id);
     this.snackBar.open('Comanda anulată.', '', { duration: 2500 });
+  }
+
+  reopenOrder(order: Order): void {
+    this.ordersService.reopenOrder(order.id);
+    this.snackBar.open('Comanda redeschisă.', 'OK', { duration: 2500 });
   }
 
   finalizeOrder(order: Order): void {
@@ -318,9 +333,81 @@ export class HistoryAllComponent {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);
   }
 
+  printOrder(order: Order, e: Event): void {
+    e.stopPropagation();
+    const status = order.superseded ? 'Înlocuită' : order.status === 'anulat' ? 'Anulată' :
+                   order.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
+    const rows = order.products.map((p, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${p.name}</td>
+        <td style="text-align:center">${p.qty}</td>
+        <td>${p.um}</td>
+        <td>${p.category ?? ''}</td>
+        ${p.codExtern ? `<td>${p.codExtern}</td>` : '<td></td>'}
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html lang="ro"><head><meta charset="UTF-8">
+      <title>Comanda #${order.orderNumber ?? order.id.slice(0,6)}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; color: #111; margin: 24px; }
+        h2 { margin: 0 0 4px; font-size: 16px; }
+        .meta { display: flex; gap: 32px; margin-bottom: 16px; color: #444; font-size: 12px; }
+        .meta span { display: flex; flex-direction: column; }
+        .meta strong { color: #111; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th { background: #f0f0f0; text-align: left; padding: 6px 8px; font-size: 12px;
+             border: 1px solid #ccc; text-transform: uppercase; letter-spacing: .04em; }
+        td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .footer { margin-top: 16px; font-size: 11px; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+        @media print { body { margin: 0; } }
+      </style></head><body>
+      <h2>Comanda #${order.orderNumber ?? '—'} &nbsp;·&nbsp; ${status}</h2>
+      <div class="meta">
+        <span><label>Client</label><strong>${order.client.name}</strong></span>
+        ${order.client.phone ? `<span><label>Telefon</label><strong>${order.client.phone}</strong></span>` : ''}
+        <span><label>Agent</label><strong>${order.agent?.name ?? '—'}</strong></span>
+        <span><label>Data</label><strong>${this.formatDate(order.timestamp)}</strong></span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>#</th><th>Produs</th><th>Cantitate</th><th>UM</th><th>Categorie</th><th>Cod extern</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="footer">Generat din Depozit App · ${new Date().toLocaleString('ro-RO')}</div>
+      <script>window.onload = () => { window.print(); }<\/script>
+    </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+
   resendEmail(order: Order, e: Event): void {
     e.stopPropagation();
     const text = this.ordersService.generateText(order);
     window.open(this.ordersService.generateMailto(order, text), '_blank');
+  }
+
+  sendWhatsApp(order: Order, phone: string, e: Event): void {
+    e.stopPropagation();
+    const normalized = this._normalizePhone(phone);
+    const text = this.ordersService.generateText(order);
+    const url = `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+
+  sendWhatsAppGroup(order: Order, link: string, e: Event): void {
+    e.stopPropagation();
+    window.open(link, '_blank');
+  }
+
+  private _normalizePhone(phone: string): string {
+    let p = phone.replace(/[\s\-().]/g, '');
+    if (p.startsWith('00')) p = '+' + p.slice(2);
+    if (p.startsWith('0') && !p.startsWith('00')) p = '+4' + p;
+    if (p.startsWith('40') && !p.startsWith('+')) p = '+' + p;
+    return p;
   }
 }
