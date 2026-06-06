@@ -351,12 +351,16 @@
                     }
                   </div>
                   <div class="perm-item-actions">
-                    <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn" (click)="deletePerm(perm)" matTooltip="Șterge">
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
+                    @if (perm.id !== 'admin') {
+                      <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button color="warn" (click)="deletePerm(perm)" matTooltip="Șterge">
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
+                    } @else {
+                      <mat-icon matTooltip="Permisiunea Admin nu poate fi modificată" style="color:var(--color-text-muted);margin-right:8px">lock</mat-icon>
+                    }
                   </div>
                 </div>
                 <div class="perm-pages-grid">
