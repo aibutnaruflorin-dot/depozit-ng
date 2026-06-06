@@ -15,6 +15,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { DragModalDirective } from '../../shared/drag-modal.directive';
 
 @Component({
   selector: 'app-users',
@@ -23,7 +24,7 @@ import { TagModule } from 'primeng/tag';
     CommonModule, ReactiveFormsModule,
     MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatSnackBarModule, MatCardModule, MatTooltipModule,
-    TableModule, TagModule
+    TableModule, TagModule, DragModalDirective
   ],
   templateUrl: './users.component.html',
   styleUrl:    './users.component.scss'

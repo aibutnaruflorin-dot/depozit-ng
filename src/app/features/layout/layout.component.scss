@@ -136,9 +136,9 @@ mat-list-item.active mat-icon { color: var(--color-primary); }
 /* ── CONTENT ─────────────────── */
 .app-content { background: var(--color-bg); }
 .page-content {
-  padding: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {

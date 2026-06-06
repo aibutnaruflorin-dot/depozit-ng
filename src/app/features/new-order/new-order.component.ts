@@ -14,6 +14,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -22,20 +24,25 @@ export interface CartItem { product: Product; qty: number; }
 @Component({
   selector: 'app-new-order',
   standalone: true,
+  providers: [provideNativeDateAdapter()],
   imports: [
     CommonModule, ReactiveFormsModule, FormsModule,
     MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule,
-    MatDividerModule, MatSelectModule, MatCheckboxModule, MatSnackBarModule, MatTooltipModule
+    MatDividerModule, MatSelectModule, MatCheckboxModule, MatDatepickerModule,
+    MatSnackBarModule, MatTooltipModule
   ],
   templateUrl: './new-order.component.html',
   styleUrl:    './new-order.component.scss'
 })
 export class NewOrderComponent implements OnInit {
-  nameCtrl    = new FormControl('', Validators.required);
-  phoneCtrl   = new FormControl('', [Validators.pattern(/^\d{10}$/)]);
-  addressCtrl = new FormControl('');
-  noteCtrl    = new FormControl('');
-  cuLivrare   = signal(false);
+  readonly today   = new Date();
+  nameCtrl         = new FormControl('', Validators.required);
+  phoneCtrl        = new FormControl('', [Validators.pattern(/^\d{10}$/)]);
+  addressCtrl      = new FormControl('');
+  deliveryDateCtrl = new FormControl<Date | null>(null);
+  deliveryTimeCtrl = new FormControl('');
+  noteCtrl         = new FormControl('');
+  cuLivrare        = signal(false);
 
   searchQuery      = signal('');
   categoryFilter   = signal('');
@@ -240,6 +247,19 @@ export class NewOrderComponent implements OnInit {
         this.snackBar.open('Adresa de livrare este obligatorie.', '', { duration: 3000, panelClass: ['snack-warn'] });
         return;
       }
+      if (!this.deliveryDateCtrl.value) {
+        this.snackBar.open('Data livrării este obligatorie.', '', { duration: 3000, panelClass: ['snack-warn'] });
+        return;
+      }
+      if (!this.deliveryTimeCtrl.value?.trim()) {
+        this.snackBar.open('Ora livrării este obligatorie.', '', { duration: 3000, panelClass: ['snack-warn'] });
+        return;
+      }
+      const deliveryDt = new Date(`${this._localDate(this.deliveryDateCtrl.value!)}T${this.deliveryTimeCtrl.value}`);
+      if (deliveryDt < new Date()) {
+        this.snackBar.open('Data și ora livrării nu pot fi în trecut.', '', { duration: 3000, panelClass: ['snack-warn'] });
+        return;
+      }
     }
     if (this.cart().length === 0) {
       this.snackBar.open('Adaugă cel puțin un produs în coș.', '', { duration: 2500, panelClass: ['snack-warn'] });
@@ -260,7 +280,10 @@ export class NewOrderComponent implements OnInit {
         note:    (this.noteCtrl.value || '').trim(),
         address: (this.addressCtrl.value || '').trim() || undefined
       },
-      cuLivrare: this.cuLivrare() || undefined,
+      cuLivrare:    this.cuLivrare() || undefined,
+      deliveryDate: this.cuLivrare() && this.deliveryDateCtrl.value
+        ? this._localDate(this.deliveryDateCtrl.value) : undefined,
+      deliveryTime: this.cuLivrare() ? (this.deliveryTimeCtrl.value?.trim() || undefined) : undefined,
       products: this.cart().map(i => ({
         nr:        i.product.nr,
         name:      i.product.name,
@@ -285,6 +308,8 @@ export class NewOrderComponent implements OnInit {
     this.nameCtrl.reset();
     this.phoneCtrl.reset();
     this.addressCtrl.reset();
+    this.deliveryDateCtrl.reset();
+    this.deliveryTimeCtrl.reset();
     this.noteCtrl.reset();
     this.cuLivrare.set(false);
     this.submitted = true;
@@ -313,6 +338,10 @@ export class NewOrderComponent implements OnInit {
   resendEmail(): void {
     if (!this.lastOrder) return;
     window.open(this.ordersService.generateMailto(this.lastOrder, this.lastOrderText), '_blank');
+  }
+
+  private _localDate(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   newOrder(): void {

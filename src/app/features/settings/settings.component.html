@@ -460,7 +460,7 @@
 <!-- Modal add/edit utilizator -->
 @if (showUserModal()) {
   <div class="modal-overlay">
-    <mat-card appearance="outlined" class="modal-card" role="dialog">
+    <mat-card appearance="outlined" class="modal-card" role="dialog" appDragModal>
       <mat-card-header>
         <mat-card-title>{{ editingUserId() !== null ? 'Editează utilizator' : 'Adaugă utilizator' }}</mat-card-title>
         <button mat-icon-button (click)="closeUserModal()" style="position:absolute;right:8px;top:8px">
@@ -522,7 +522,7 @@
 <!-- Modal add/edit funcție -->
 @if (showFuncModal()) {
   <div class="modal-overlay">
-    <mat-card appearance="outlined" class="modal-card" role="dialog">
+    <mat-card appearance="outlined" class="modal-card" role="dialog" appDragModal>
       <mat-card-header>
         <mat-card-title>{{ editingFuncId() !== null ? 'Editează funcție' : 'Adaugă funcție' }}</mat-card-title>
         <button mat-icon-button (click)="closeFuncModal()" style="position:absolute;right:8px;top:8px">
@@ -555,7 +555,7 @@
 <!-- Modal add/edit permisiune -->
 @if (showPermModal()) {
   <div class="modal-overlay">
-    <mat-card appearance="outlined" class="modal-card modal-card--wide" role="dialog">
+    <mat-card appearance="outlined" class="modal-card modal-card--wide" role="dialog" appDragModal>
       <mat-card-header>
         <mat-card-title>{{ editingPermId() !== null ? 'Editează permisiune' : 'Adaugă permisiune' }}</mat-card-title>
         <button mat-icon-button (click)="closePermModal()" style="position:absolute;right:8px;top:8px">
@@ -613,7 +613,7 @@
 <!-- Modal add/edit mașină -->
 @if (showVehicleModal()) {
   <div class="modal-overlay">
-    <mat-card appearance="outlined" class="modal-card" role="dialog">
+    <mat-card appearance="outlined" class="modal-card" role="dialog" appDragModal>
       <mat-card-header>
         <mat-card-title>{{ editingVehicleId() ? 'Editează mașina' : 'Adaugă mașină' }}</mat-card-title>
         <button mat-icon-button (click)="closeVehicleModal()" style="position:absolute;right:8px;top:8px">

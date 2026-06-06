@@ -29,6 +29,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { DragModalDirective } from '../../shared/drag-modal.directive';
 
 interface CatState {
   importing: boolean;
@@ -46,7 +47,8 @@ interface CatState {
     MatTabsModule, MatFormFieldModule, MatInputModule, MatButtonModule,
     MatIconModule, MatRadioModule, MatCardModule, MatSnackBarModule,
     MatProgressBarModule, MatExpansionModule, MatDividerModule, MatTooltipModule,
-    MatSelectModule, MatButtonToggleModule, MatCheckboxModule, TableModule, TagModule
+    MatSelectModule, MatButtonToggleModule, MatCheckboxModule, TableModule, TagModule,
+    DragModalDirective
   ],
   templateUrl: './settings.component.html',
   styleUrl:    './settings.component.scss'

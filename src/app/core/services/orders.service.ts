@@ -91,6 +91,29 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
+  updateOrderDeliveryDateTime(id: string, deliveryDate: string, deliveryTime: string): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id !== id ? o : { ...o, deliveryDate: deliveryDate || undefined, deliveryTime: deliveryTime || undefined })
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
+  updateDeliveryState(id: string, deliveredQty: number[]): void {
+    this._orders.update(orders =>
+      orders.map(o => {
+        if (o.id !== id) return o;
+        const total     = o.products.reduce((s, p) => s + p.qty, 0);
+        const delivered = deliveredQty.reduce((s, q) => s + q, 0);
+        const status: string = delivered >= total ? 'livrat'
+          : delivered > 0 ? 'livrat_partial'
+          : o.status === 'livrat' || o.status === 'livrat_partial' ? 'acceptat'
+          : o.status;
+        return { ...o, deliveredQty, status };
+      })
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
   updateOrderDelivery(id: string, cuLivrare: boolean, address?: string): void {
     this._orders.update(orders =>
       orders.map(o => {

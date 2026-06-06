@@ -32,7 +32,13 @@ export class TransportService {
   constructor(private storage: StorageService) {
     this._vehicles.set(this.storage.get<Vehicle[]>('app_vehicles') ?? []);
     this._users.set(this.storage.get<User[]>('app_users') ?? []);
-    this._transports.set(this.storage.get<Transport[]>('app_transports') ?? []);
+    const raw = (this.storage.get<any[]>('app_transports') ?? []).map((t: any) => {
+      if (!t.deliveries && t.orderIds) {
+        return { ...t, deliveries: (t.orderIds as string[]).map(id => ({ orderId: id, items: [] })) };
+      }
+      return t as Transport;
+    });
+    this._transports.set(raw);
   }
 
   // ── Vehicles ──────────────────────────────────────────────────────────────
@@ -94,7 +100,9 @@ export class TransportService {
 
   /** Returns the active transport containing this orderId, if any */
   transportForOrder(orderId: string): Transport | undefined {
-    return this._transports().find(t => t.orderIds.includes(orderId) && t.status !== 'livrat');
+    return this._transports().find(
+      t => t.status !== 'livrat' && t.deliveries.some(d => d.orderId === orderId)
+    );
   }
 
   formatDateTime(dt: string): string {

@@ -17,8 +17,11 @@ export interface Order {
   client: { name: string; phone: string; email: string; note: string; address?: string };
   helper?: string;
   cuLivrare?: boolean;
+  deliveryDate?: string;
+  deliveryTime?: string;
+  deliveredQty?: number[];
   products: OrderProduct[];
-  status: string;
+  status: 'trimis' | 'acceptat' | 'planificat' | 'in_livrare' | 'livrat_partial' | 'livrat' | 'anulat' | string;
   revisedFromId?: string;
   superseded?: boolean;
 }

@@ -91,6 +91,11 @@
   border: 1px solid var(--color-primary); border-radius: 4px;
   padding: 3px 7px; outline: none; background: var(--color-bg);
 }
+.delivery-dt-edit {
+  flex-wrap: wrap;
+  input[type="date"] { flex: 0 0 120px; }
+  input[type="time"] { flex: 0 0 90px; }
+}
 
 /* ── Order number ── */
 .order-num {

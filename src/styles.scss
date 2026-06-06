@@ -142,3 +142,12 @@ h1, h2, h3, h4 { font-family: 'Inter', system-ui, sans-serif; }
   .mat-mdc-card { background: var(--color-surface) !important; }
   .mat-mdc-form-field-input-control { color: var(--color-text) !important; }
 }
+
+/* ── Draggable & resizable modals ─────────────────────────────── */
+.modal-card {
+  resize: both;
+  overflow: auto !important;
+  min-width: 320px;
+  min-height: 120px;
+  box-sizing: border-box;
+}

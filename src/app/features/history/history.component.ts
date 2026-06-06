@@ -72,10 +72,15 @@ export class HistoryComponent {
   private _editQty = signal<Record<string, number | undefined>>({});
   readonly editQtyMap = this._editQty.asReadonly();
 
-  editingAddressId = signal<string | null>(null);
-  editAddressVal   = '';
-  editingPhoneId   = signal<string | null>(null);
-  editPhoneVal     = '';
+  readonly todayStr = new Date().toISOString().slice(0, 10);
+
+  editingAddressId  = signal<string | null>(null);
+  editAddressVal    = '';
+  editingPhoneId    = signal<string | null>(null);
+  editPhoneVal      = '';
+  editingDeliveryId = signal<string | null>(null);
+  editDeliveryDate  = '';
+  editDeliveryTime  = '';
 
   hideSuperseded = signal(true);
   filterNr     = signal('');
@@ -247,7 +252,52 @@ export class HistoryComponent {
       this.snackBar.open('Comanda cu livrare necesită o adresă de livrare.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
       return false;
     }
+    if (!order.deliveryDate) {
+      this.snackBar.open('Comanda cu livrare necesită o dată de livrare.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
+      return false;
+    }
+    if (!order.deliveryTime) {
+      this.snackBar.open('Comanda cu livrare necesită o oră de livrare.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
+      return false;
+    }
     return true;
+  }
+
+  startEditDelivery(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.editingDeliveryId.set(order.id);
+    this.editDeliveryDate = order.deliveryDate ?? '';
+    this.editDeliveryTime = order.deliveryTime ?? '';
+  }
+
+  saveDelivery(order: Order, e: Event): void {
+    e.stopPropagation();
+    if (order.cuLivrare && (!this.editDeliveryDate || !this.editDeliveryTime)) {
+      this.snackBar.open('Data și ora livrării sunt obligatorii pentru comenzile cu livrare.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
+      return;
+    }
+    if (this.editDeliveryDate && this.editDeliveryTime) {
+      const dt = new Date(`${this.editDeliveryDate}T${this.editDeliveryTime}`);
+      if (dt < new Date()) {
+        this.snackBar.open('Data și ora livrării nu pot fi în trecut.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
+        return;
+      }
+    }
+    this.ordersService.updateOrderDeliveryDateTime(order.id, this.editDeliveryDate, this.editDeliveryTime);
+    this.editingDeliveryId.set(null);
+  }
+
+  cancelEditDelivery(e: Event): void {
+    e.stopPropagation();
+    this.editingDeliveryId.set(null);
+  }
+
+  formatDelivery(date?: string, time?: string): string {
+    if (!date && !time) return '';
+    const parts: string[] = [];
+    if (date) parts.push(new Date(date + 'T00:00').toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: '2-digit' }));
+    if (time) parts.push(time);
+    return parts.join(' ');
   }
 
   reviseOrder(order: Order): void {

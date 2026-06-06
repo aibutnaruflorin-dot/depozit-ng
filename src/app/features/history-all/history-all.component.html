@@ -64,6 +64,7 @@
       </th>
       <th style="width:4rem" matTooltip="Comandă cu livrare">Livrare</th>
       <th>Adresă livrare</th>
+      <th>Termen livrare</th>
       <th>
         <div class="col-header">Agent
           <select class="col-filter-select"
@@ -174,6 +175,27 @@
           <div class="address-cell" (click)="startEditAddress(order, $event)">
             <span class="address-text" [class.address-empty]="!order.client.address">
               {{ order.client.address || '—' }}
+            </span>
+            <mat-icon class="address-edit-icon">edit</mat-icon>
+          </div>
+        }
+      </td>
+      <td (click)="$event.stopPropagation()">
+        @if (editingDeliveryId() === order.id) {
+          <div class="address-edit-inline delivery-dt-edit">
+            <input type="date" class="address-input-inline" [(ngModel)]="editDeliveryDate" [min]="todayStr">
+            <input type="time" class="address-input-inline" [(ngModel)]="editDeliveryTime">
+            <button mat-icon-button color="primary" (click)="saveDelivery(order, $event)" matTooltip="Salvează">
+              <mat-icon>check</mat-icon>
+            </button>
+            <button mat-icon-button (click)="cancelEditDelivery($event)" matTooltip="Anulează">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        } @else {
+          <div class="address-cell" (click)="startEditDelivery(order, $event)">
+            <span class="address-text" [class.address-empty]="!order.deliveryDate">
+              {{ formatDelivery(order.deliveryDate, order.deliveryTime) || '—' }}
             </span>
             <mat-icon class="address-edit-icon">edit</mat-icon>
           </div>

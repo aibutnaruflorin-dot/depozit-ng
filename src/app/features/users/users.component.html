@@ -57,7 +57,7 @@
 <!-- Modal add/edit -->
 @if (showModal()) {
   <div class="modal-overlay">
-    <mat-card appearance="outlined" class="modal-card" role="dialog">
+    <mat-card appearance="outlined" class="modal-card" role="dialog" appDragModal>
       <mat-card-header>
         <mat-card-title>{{ editingId() !== null ? 'Editează utilizator' : 'Adaugă utilizator' }}</mat-card-title>
         <button mat-icon-button (click)="closeModal()" style="position:absolute;right:8px;top:8px">

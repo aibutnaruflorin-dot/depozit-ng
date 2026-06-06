@@ -246,6 +246,23 @@
           <input matInput [formControl]="addressCtrl" placeholder="Str. Exemplu nr. 1, oraș…">
         </mat-form-field>
 
+        @if (cuLivrare()) {
+          <div class="delivery-datetime-row">
+            <mat-form-field appearance="outline" class="delivery-date-field">
+              <mat-label>Data livrare **</mat-label>
+              <mat-icon matPrefix>outlined_flag</mat-icon>
+              <input matInput [matDatepicker]="dpDel" [formControl]="deliveryDateCtrl" [min]="today" placeholder="ZZ.LL.AAAA" readonly>
+              <mat-datepicker-toggle matIconSuffix [for]="dpDel"></mat-datepicker-toggle>
+              <mat-datepicker #dpDel></mat-datepicker>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="delivery-time-field">
+              <mat-label>Ora livrare **</mat-label>
+              <mat-icon matPrefix>schedule</mat-icon>
+              <input matInput type="time" [formControl]="deliveryTimeCtrl">
+            </mat-form-field>
+          </div>
+        }
+
         <mat-form-field appearance="outline" class="full-w">
           <mat-label>Observații</mat-label>
           <textarea matInput [formControl]="noteCtrl" rows="2" placeholder="Opțional…"></textarea>
