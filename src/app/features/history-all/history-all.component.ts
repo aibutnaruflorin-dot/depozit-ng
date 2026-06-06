@@ -87,6 +87,8 @@ export class HistoryAllComponent {
 
   editingAddressId = signal<string | null>(null);
   editAddressVal   = '';
+  editingPhoneId   = signal<string | null>(null);
+  editPhoneVal     = '';
 
   readonly agents = computed(() => {
     const users = this.storage.get<User[]>('app_users') || [];
@@ -343,6 +345,28 @@ export class HistoryAllComponent {
   cancelEditAddress(e: Event): void {
     e.stopPropagation();
     this.editingAddressId.set(null);
+  }
+
+  startEditPhone(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.editingPhoneId.set(order.id);
+    this.editPhoneVal = order.client.phone ?? '';
+  }
+
+  savePhone(order: Order, e: Event): void {
+    e.stopPropagation();
+    const phone = this.editPhoneVal.trim().replace(/\D/g, '');
+    if (order.cuLivrare && !phone) {
+      this.snackBar.open('Telefonul este obligatoriu pentru comenzile cu livrare.', 'OK', { duration: 3000, panelClass: ['snack-warn'] });
+      return;
+    }
+    this.ordersService.updateOrderClient(order.id, { phone });
+    this.editingPhoneId.set(null);
+  }
+
+  cancelEditPhone(e: Event): void {
+    e.stopPropagation();
+    this.editingPhoneId.set(null);
   }
 
   // ── Expand / collapse ─────────────────────────────────────────────────────

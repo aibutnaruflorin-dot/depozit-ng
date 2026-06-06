@@ -135,7 +135,22 @@
           </div>
         </td>
         <td><strong [class.line-through]="order.superseded || order.status === 'anulat'">{{ order.client.name }}</strong></td>
-        <td [class.line-through]="order.superseded || order.status === 'anulat'">{{ order.client.phone }}</td>
+        <td (click)="$event.stopPropagation()">
+          @if (editingPhoneId() === order.id) {
+            <div class="address-edit-inline">
+              <input class="address-input-inline" [(ngModel)]="editPhoneVal" placeholder="07xx xxx xxx" type="tel" inputmode="numeric" maxlength="10"
+                     (input)="editPhoneVal = $any($event.target).value.replace(/\D/g,'').slice(0,10); $any($event.target).value = editPhoneVal"
+                     (keydown.enter)="savePhone(order, $event)" (keydown.escape)="cancelEditPhone($event)">
+              <button mat-icon-button color="primary" (click)="savePhone(order, $event)" matTooltip="Salvează"><mat-icon>check</mat-icon></button>
+              <button mat-icon-button (click)="cancelEditPhone($event)" matTooltip="Anulează"><mat-icon>close</mat-icon></button>
+            </div>
+          } @else {
+            <div class="address-cell" [class.line-through]="order.superseded || order.status === 'anulat'" (click)="startEditPhone(order, $event)">
+              <span class="address-text" [class.address-empty]="!order.client.phone">{{ order.client.phone || '—' }}</span>
+              <mat-icon class="address-edit-icon">edit</mat-icon>
+            </div>
+          }
+        </td>
         <td (click)="$event.stopPropagation()">
           <button mat-icon-button class="delivery-toggle-btn"
                   [class.delivery-on]="order.cuLivrare"
