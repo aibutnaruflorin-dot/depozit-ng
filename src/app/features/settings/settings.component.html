@@ -431,16 +431,22 @@
             </td>
             @if (auth.isAdmin()) {
               <td>
-                <div class="user-actions">
-                  <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button mat-icon-button (click)="toggleUserActive(user)"
-                          [matTooltip]="user.active !== false ? 'Dezactivează' : 'Activează'"
-                          [style.color]="user.active !== false ? 'var(--color-error)' : 'var(--color-success)'">
-                    <mat-icon>{{ user.active !== false ? 'person_off' : 'person' }}</mat-icon>
-                  </button>
-                </div>
+                @if (user.role === 'admin') {
+                  <div class="user-actions">
+                    <mat-icon matTooltip="Contul Admin nu poate fi modificat" style="color:var(--color-text-muted)">lock</mat-icon>
+                  </div>
+                } @else {
+                  <div class="user-actions">
+                    <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="toggleUserActive(user)"
+                            [matTooltip]="user.active !== false ? 'Dezactivează' : 'Activează'"
+                            [style.color]="user.active !== false ? 'var(--color-error)' : 'var(--color-success)'">
+                      <mat-icon>{{ user.active !== false ? 'person_off' : 'person' }}</mat-icon>
+                    </button>
+                  </div>
+                }
               </td>
             }
           </tr>
