@@ -333,15 +333,19 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
 
 /* Permissions list */
 .perm-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  display: flex; flex-direction: column; gap: 0.75rem;
+  &--system { margin-bottom: 0.25rem; }
 }
 .perm-item {
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-bg);
   overflow: hidden;
+  &--system {
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+    .perm-icon { color: #7c3aed; }
+  }
 }
 .perm-item-header {
   display: flex;

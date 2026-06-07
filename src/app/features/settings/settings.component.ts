@@ -11,7 +11,7 @@ import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { EmailContact } from '../../core/models/email-contact.model';
 import { User, JOB_ROLE_LABELS, PERMISSION_LABELS, JobRole, Permission } from '../../core/models/user.model';
 import { Vehicle } from '../../core/models/vehicle.model';
-import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, DEFAULT_JOB_FUNCTIONS, SYSTEM_FUNC_IDS } from '../../core/models/app-permission.model';
+import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, DEFAULT_JOB_FUNCTIONS, SYSTEM_FUNC_IDS, SYSTEM_PERM_IDS } from '../../core/models/app-permission.model';
 import { JobFunction } from '../../core/models/job-function.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -149,12 +149,13 @@ export class SettingsComponent implements OnInit {
     this.storage.set('app_job_functions', funcs);
 
     const savedPerms = this.storage.get<AppPermission[]>('app_permissions');
-    if (savedPerms) {
-      this.permissions.set(savedPerms);
-    } else {
-      this.permissions.set(DEFAULT_PERMISSIONS);
-      this.storage.set('app_permissions', DEFAULT_PERMISSIONS);
+    let perms: AppPermission[] = savedPerms ?? DEFAULT_PERMISSIONS;
+    // ensure system permissions always exist (migration for existing installs)
+    for (const sys of DEFAULT_PERMISSIONS.filter(p => this.PROTECTED_PERMS.has(p.id))) {
+      if (!perms.find(p => p.id === sys.id)) perms = [sys, ...perms];
     }
+    this.permissions.set(perms);
+    this.storage.set('app_permissions', perms);
   }
 
   private _initState(id: string): void {
@@ -465,12 +466,20 @@ export class SettingsComponent implements OnInit {
   }
 
   readonly PROTECTED_FUNCS = new Set<string>(SYSTEM_FUNC_IDS);
+  readonly PROTECTED_PERMS = new Set<string>(SYSTEM_PERM_IDS);
 
   get systemFunctions() {
     return this.jobFunctions().filter(f => this.PROTECTED_FUNCS.has(f.id));
   }
   get customFunctions() {
     return this.jobFunctions().filter(f => !this.PROTECTED_FUNCS.has(f.id));
+  }
+
+  get systemPermissions() {
+    return this.permissions().filter(p => this.PROTECTED_PERMS.has(p.id));
+  }
+  get customPermissions() {
+    return this.permissions().filter(p => !this.PROTECTED_PERMS.has(p.id));
   }
 
   deleteFunc(f: JobFunction): void {
@@ -492,6 +501,7 @@ export class SettingsComponent implements OnInit {
   }
 
   openEditPerm(perm: AppPermission): void {
+    if (this.PROTECTED_PERMS.has(perm.id)) return;
     this.editingPermId.set(perm.id);
     this.permForm.patchValue({ name: perm.name, isAdmin: perm.isAdmin });
     this.permPagesAccess = { ...perm.pages };
@@ -525,6 +535,7 @@ export class SettingsComponent implements OnInit {
   }
 
   deletePerm(perm: AppPermission): void {
+    if (this.PROTECTED_PERMS.has(perm.id)) return;
     if (!confirm(`Ștergi permisiunea "${perm.name}"?`)) return;
     const perms = this.permissions().filter(p => p.id !== perm.id);
     this.permissions.set(perms);

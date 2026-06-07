@@ -418,34 +418,63 @@
           Fiecare nivel de permisiune definește ce pagini poate accesa un utilizator și în ce mod (complet, citire, niciun).
         </p>
 
-        @if (permissions().length === 0) {
-          <div class="empty-state">
-            <mat-icon>shield</mat-icon>
-            <p>Nicio permisiune definită.</p>
+        <!-- Permisiuni sistem -->
+        <div class="func-group-label func-group-label--system">
+          <mat-icon>shield</mat-icon> Permisiuni sistem
+        </div>
+        <div class="perm-list perm-list--system">
+          @for (perm of systemPermissions; track perm.id) {
+            <div class="perm-item perm-item--system">
+              <div class="perm-item-header">
+                <div class="perm-item-title">
+                  <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+                  <strong>{{ perm.name }}</strong>
+                  @if (perm.isAdmin) { <span class="perm-admin-badge">Admin</span> }
+                  <span class="func-system-badge">Sistem</span>
+                </div>
+                <div class="perm-item-actions">
+                  <mat-icon matTooltip="Permisiune protejată — nu poate fi modificată"
+                            style="color:var(--color-text-muted);margin-right:8px;font-size:18px">lock</mat-icon>
+                </div>
+              </div>
+              <div class="perm-pages-grid">
+                @for (page of appPages; track page.id) {
+                  <div class="perm-page-chip" [class.perm-page--full]="perm.pages[page.id]==='full'" [class.perm-page--read]="perm.pages[page.id]==='read'" [class.perm-page--none]="perm.pages[page.id]==='none'||!perm.pages[page.id]">
+                    <mat-icon class="perm-page-icon">
+                      {{ (perm.pages[page.id]==='full') ? 'check_circle' : (perm.pages[page.id]==='read') ? 'visibility' : 'block' }}
+                    </mat-icon>
+                    <span>{{ page.label }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Permisiuni personalizate -->
+        <div class="func-group-label">
+          <mat-icon>verified_user</mat-icon> Permisiuni personalizate
+        </div>
+        @if (customPermissions.length === 0) {
+          <div class="empty-state empty-state--sm">
+            <p>Nicio permisiune personalizată. Adaugă una mai sus.</p>
           </div>
         } @else {
           <div class="perm-list">
-            @for (perm of permissions(); track perm.id) {
+            @for (perm of customPermissions; track perm.id) {
               <div class="perm-item">
                 <div class="perm-item-header">
                   <div class="perm-item-title">
-                    <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+                    <mat-icon class="perm-icon">shield</mat-icon>
                     <strong>{{ perm.name }}</strong>
-                    @if (perm.isAdmin) {
-                      <span class="perm-admin-badge">Admin</span>
-                    }
                   </div>
                   <div class="perm-item-actions">
-                    @if (perm.id !== 'admin') {
-                      <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button mat-icon-button color="warn" (click)="deletePerm(perm)" matTooltip="Șterge">
-                        <mat-icon>delete_outline</mat-icon>
-                      </button>
-                    } @else {
-                      <mat-icon matTooltip="Permisiunea Admin nu poate fi modificată" style="color:var(--color-text-muted);margin-right:8px">lock</mat-icon>
-                    }
+                    <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="deletePerm(perm)" matTooltip="Șterge">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
                   </div>
                 </div>
                 <div class="perm-pages-grid">
