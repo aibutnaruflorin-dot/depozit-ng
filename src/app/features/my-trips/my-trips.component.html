@@ -8,8 +8,20 @@
     </h1>
     <span class="driver-chip">
       <mat-icon>person</mat-icon>{{ auth.userName() }}
+      <span class="driver-id-hint">#{{ myDriverId() }}</span>
     </span>
   </div>
+
+  <!-- ── Mesaj dacă userul nu este șofer ── -->
+  @if (isNotDriver()) {
+    <div class="not-driver-state">
+      <mat-icon>info_outline</mat-icon>
+      <div>
+        <strong>Nu ești înregistrat ca șofer.</strong>
+        <p>Această pagină afișează cursele asignate contului tău. Contactează administratorul pentru a fi adăugat ca șofer.</p>
+      </div>
+    </div>
+  }
 
   <!-- ════════════════ CURSE ACTIVE (în livrare) ════════════════ -->
   <div class="section">

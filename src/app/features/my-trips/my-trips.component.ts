@@ -20,25 +20,42 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 export class MyTripsComponent {
   showHistoric = signal(false);
 
-  private myId = computed(() => String(this.auth.session()?.userId ?? ''));
+  /** ID-ul userului curent ca string, pentru a putea fi comparat cu driverId din transport */
+  readonly myDriverId = computed(() => {
+    const uid = this.auth.session()?.userId;
+    return uid != null ? String(uid) : null;
+  });
 
-  readonly planned = computed(() =>
-    this.transportService.transports()
-      .filter(t => t.driverId === this.myId() && t.status === 'planificat')
-      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))
-  );
+  readonly planned = computed(() => {
+    const myId = this.myDriverId();
+    if (!myId) return [];
+    return this.transportService.transports()
+      .filter(t => String(t.driverId) === myId && t.status === 'planificat')
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  });
 
-  readonly active = computed(() =>
-    this.transportService.transports()
-      .filter(t => t.driverId === this.myId() && t.status === 'in_livrare')
-      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))
-  );
+  readonly active = computed(() => {
+    const myId = this.myDriverId();
+    if (!myId) return [];
+    return this.transportService.transports()
+      .filter(t => String(t.driverId) === myId && t.status === 'in_livrare')
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  });
 
-  readonly history = computed(() =>
-    this.transportService.transports()
-      .filter(t => t.driverId === this.myId() && t.status === 'livrat')
-      .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare))
-  );
+  readonly history = computed(() => {
+    const myId = this.myDriverId();
+    if (!myId) return [];
+    return this.transportService.transports()
+      .filter(t => String(t.driverId) === myId && t.status === 'livrat')
+      .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare));
+  });
+
+  /** True dacă userul curent nu are nicio cursă asignată (nu este șofer) */
+  readonly isNotDriver = computed(() => {
+    const myId = this.myDriverId();
+    if (!myId) return true;
+    return !this.transportService.transports().some(t => String(t.driverId) === myId);
+  });
 
   constructor(
     public  auth: AuthService,
