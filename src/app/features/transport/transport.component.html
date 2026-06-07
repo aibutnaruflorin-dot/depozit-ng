@@ -37,7 +37,7 @@
   }
 
   <!-- ════════════════════════════════════════════════════════════
-       LAYOUT 2 — Calendar sus + Comenzi de planificat / Curse în desfășurare jos
+       LAYOUT 2 — Calendar sus + Comenzi de planificat / Status Curse planificate jos
        ════════════════════════════════════════════════════════════ -->
   @if (layoutMode() === 2) {
     <div class="layout-2">
@@ -62,7 +62,7 @@
 
         <div class="l2-active">
           <div class="panel-title">
-            <mat-icon>directions_car</mat-icon> Curse în desfășurare
+            <mat-icon>directions_car</mat-icon> Status Curse planificate
             @if (transportService.active().length) {
               <span class="badge-pill badge-pill--warn">{{ transportService.active().length }}</span>
             }
@@ -93,7 +93,7 @@
 
       <div class="l3-section">
         <div class="panel-title">
-          <mat-icon>directions_car</mat-icon> Curse în desfășurare
+          <mat-icon>directions_car</mat-icon> Status Curse planificate
           @if (transportService.active().length) {
             <span class="badge-pill badge-pill--warn">{{ transportService.active().length }}</span>
           }
@@ -275,12 +275,12 @@
   }
 </ng-template>
 
-<!-- ── Curse în desfășurare – table ── -->
+<!-- ── Status Curse planificate – table ── -->
 <ng-template #activeTableTpl>
   @if (!transportService.active().length) {
     <div class="empty-state">
       <mat-icon>directions_car</mat-icon>
-      <p>Nicio cursă în desfășurare.</p>
+      <p>Nicio cursă planificată.</p>
     </div>
   } @else {
     <table class="delivery-table">
