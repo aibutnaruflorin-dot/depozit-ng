@@ -437,7 +437,7 @@ export class SettingsComponent implements OnInit {
   }
 
   openEditFunc(f: JobFunction): void {
-    if (this.PROTECTED_FUNCS.has(f.id)) return;
+    if (this.LOCKED_FUNCS.has(f.id)) return;
     this.editingFuncId.set(f.id);
     this.funcForm.patchValue({ name: f.name });
     this.showFuncModal.set(true);
@@ -465,8 +465,10 @@ export class SettingsComponent implements OnInit {
     this.snackBar.open('✅ Funcția a fost salvată.', '', { duration: 2200 });
   }
 
-  readonly PROTECTED_FUNCS = new Set<string>(SYSTEM_FUNC_IDS);
-  readonly PROTECTED_PERMS = new Set<string>(SYSTEM_PERM_IDS);
+  readonly PROTECTED_FUNCS = new Set<string>(SYSTEM_FUNC_IDS);   // no delete
+  readonly PROTECTED_PERMS = new Set<string>(SYSTEM_PERM_IDS);   // no delete
+  readonly LOCKED_FUNCS    = new Set(['administrator']);           // no edit + no delete
+  readonly LOCKED_PERMS    = new Set(['admin']);                   // no edit + no delete
 
   get systemFunctions() {
     return this.jobFunctions().filter(f => this.PROTECTED_FUNCS.has(f.id));
@@ -501,7 +503,7 @@ export class SettingsComponent implements OnInit {
   }
 
   openEditPerm(perm: AppPermission): void {
-    if (this.PROTECTED_PERMS.has(perm.id)) return;
+    if (this.LOCKED_PERMS.has(perm.id)) return;
     this.editingPermId.set(perm.id);
     this.permForm.patchValue({ name: perm.name, isAdmin: perm.isAdmin });
     this.permPagesAccess = { ...perm.pages };
