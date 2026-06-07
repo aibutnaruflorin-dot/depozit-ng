@@ -435,6 +435,7 @@ export class SettingsComponent implements OnInit {
   }
 
   openEditFunc(f: JobFunction): void {
+    if (this.PROTECTED_FUNCS.has(f.id)) return;
     this.editingFuncId.set(f.id);
     this.funcForm.patchValue({ name: f.name });
     this.showFuncModal.set(true);

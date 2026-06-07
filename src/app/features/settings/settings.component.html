@@ -369,7 +369,10 @@
                   <span class="fleet-name">{{ f.name }}</span>
                   <span class="fleet-meta"><code>{{ f.id }}</code></span>
                 </div>
-                <button mat-icon-button (click)="openEditFunc(f)" matTooltip="Editează">
+                <button mat-icon-button
+                        [disabled]="PROTECTED_FUNCS.has(f.id)"
+                        [matTooltip]="PROTECTED_FUNCS.has(f.id) ? 'Funcție protejată — nu poate fi editată' : 'Editează'"
+                        (click)="openEditFunc(f)">
                   <mat-icon>edit</mat-icon>
                 </button>
                 <button mat-icon-button color="warn"
