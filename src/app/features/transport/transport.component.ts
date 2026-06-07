@@ -538,6 +538,31 @@ export class TransportComponent implements OnInit {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   }
 
+  // ── Deadline validation ───────────────────────────────────────────────────
+
+  orderDeadlineStatus(order: Order): 'ok' | 'warn' | 'no-deadline' {
+    if (!order.deliveryDate) return 'no-deadline';
+    const v = this.form.value;
+    const from = v.plecareDate && v.plecareTime ? combineDateTime(v.plecareDate, v.plecareTime) : '';
+    const to   = v.sosireDate  && v.sosireTime  ? combineDateTime(v.sosireDate,  v.sosireTime)  : '';
+    if (!from || !to) return 'no-deadline';
+
+    const [y, mo, d] = order.deliveryDate.split('-').map(Number);
+    const deadline = new Date(y, mo - 1, d);
+    if (order.deliveryTime) {
+      const [h, m] = order.deliveryTime.split(':').map(Number);
+      deadline.setHours(h, m, 0, 0);
+    } else {
+      deadline.setHours(23, 59, 0, 0);
+    }
+    const ms = deadline.getTime();
+    return ms >= new Date(from).getTime() && ms <= new Date(to).getTime() ? 'ok' : 'warn';
+  }
+
+  get hasDeadlineConflicts(): boolean {
+    return this.modalOrders().some(o => this.orderDeadlineStatus(o) === 'warn');
+  }
+
   statusLabel(s: string): string {
     return s === 'planificat' ? 'Planificat' : s === 'in_livrare' ? 'În livrare' : 'Livrat';
   }

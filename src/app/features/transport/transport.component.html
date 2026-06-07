@@ -380,7 +380,7 @@
      ════════════════════════════════════════════════════════════════════ -->
 @if (showModal()) {
   <div class="modal-overlay">
-    <mat-card appearance="outlined" class="modal-card modal-card--trip" role="dialog" appDragModal>
+    <mat-card appearance="outlined" class="modal-card modal-card--trip modal-card--wide-trip" role="dialog" appDragModal>
       <mat-card-header>
         <mat-card-title>{{ editingId() ? 'Editează cursa' : 'Cursă nouă' }}</mat-card-title>
         <button mat-icon-button (click)="closeModal()" style="position:absolute;right:8px;top:8px">
@@ -542,6 +542,11 @@
                 <div class="order-quick-item" (click)="addOrderToModal(o)">
                   <span class="order-num-badge">#{{ o.orderNumber }}</span>
                   {{ o.client.name }}
+                  @if (o.deliveryDate) {
+                    <span class="order-deadline-chip">
+                      <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                    </span>
+                  }
                   @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
                   <mat-icon>add</mat-icon>
                 </div>
@@ -556,8 +561,16 @@
             </div>
           }
 
+          @if (hasDeadlineConflicts) {
+            <div class="deadline-conflict-banner">
+              <mat-icon>warning_amber</mat-icon>
+              Atenție: termenul de livrare al unor comenzi este în afara ferestrei de transport.
+            </div>
+          }
+
           @for (order of modalOrders(); track order.id) {
-            <div class="trip-order-block">
+            <div class="trip-order-block"
+                 [class.trip-order-block--warn]="orderDeadlineStatus(order)==='warn'">
               <div class="trip-order-header">
                 <div class="trip-order-title">
                   <span class="order-num-badge">#{{ order.orderNumber }}</span>
@@ -568,6 +581,25 @@
                     </a>
                   }
                   @if (order.status === 'livrat_partial') { <span class="partial-badge">parțial livrat</span> }
+                </div>
+                <!-- Termen livrare + status față de fereastra de transport -->
+                <div class="trip-order-deadline"
+                     [class.deadline--ok]="orderDeadlineStatus(order)==='ok'"
+                     [class.deadline--warn]="orderDeadlineStatus(order)==='warn'"
+                     [class.deadline--none]="orderDeadlineStatus(order)==='no-deadline'">
+                  @if (order.deliveryDate) {
+                    <mat-icon>schedule</mat-icon>
+                    <span>{{ order.deliveryDate | date:'dd.MM.yy' }}{{ order.deliveryTime ? ' ' + order.deliveryTime : '' }}</span>
+                    @if (orderDeadlineStatus(order)==='ok') {
+                      <mat-icon class="deadline-status-icon" matTooltip="Termen în fereastra de transport">check_circle</mat-icon>
+                    }
+                    @if (orderDeadlineStatus(order)==='warn') {
+                      <mat-icon class="deadline-status-icon" matTooltip="Termen în AFARA ferestrei de transport!">warning_amber</mat-icon>
+                    }
+                  } @else {
+                    <mat-icon>event_busy</mat-icon>
+                    <span>Fără termen</span>
+                  }
                 </div>
                 <button mat-icon-button color="warn" (click)="removeOrderFromModal(order.id)" matTooltip="Elimină">
                   <mat-icon>remove_circle_outline</mat-icon>

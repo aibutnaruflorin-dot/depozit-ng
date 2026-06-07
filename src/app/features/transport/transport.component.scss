@@ -448,6 +448,7 @@
 
 /* ── Modal – trip variant ────────────────────────────────────── */
 .modal-card--trip { width: 720px; max-height: 90vh; overflow-y: auto; }
+.modal-card--wide-trip { width: min(960px, 96vw); }
 
 /* ── Calendar grid ───────────────────────────────────────────── */
 .cal-wrapper {
@@ -634,6 +635,11 @@
   mat-icon { font-size: 15px; width: 15px; height: 15px; color: var(--color-primary); }
   &:hover { border-color: var(--color-primary); background: #f0fdf4; }
 }
+.order-deadline-chip {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 0.72rem; color: var(--color-text-muted);
+  mat-icon { font-size: 12px; width: 12px; height: 12px; }
+}
 
 .orders-empty-hint {
   display: flex; align-items: center; gap: 6px;
@@ -642,22 +648,56 @@
   mat-icon { font-size: 16px; width: 16px; height: 16px; }
 }
 
+/* ── Deadline conflict banner ─────────────────────────────────── */
+.deadline-conflict-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0.6rem 0.9rem; border-radius: 8px; margin-bottom: 0.75rem;
+  background: #fff3e0; border: 1px solid #ffb74d;
+  font-size: 0.82rem; font-weight: 600; color: #e65100;
+  mat-icon { color: #f57c00; flex-shrink: 0; }
+}
+
 /* ── Trip order block (per-order articles) ───────────────────── */
 .trip-order-block {
   border: 1px solid var(--color-border); border-radius: 8px;
   margin-bottom: 0.75rem; overflow: hidden;
+  &--warn { border-color: #ffb74d; }
 }
 
 .trip-order-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
 }
 
 .trip-order-title {
   display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
-  font-size: 0.85rem;
+  font-size: 0.85rem; flex: 1; min-width: 0;
+}
+
+/* ── Per-order deadline indicator ────────────────────────────── */
+.trip-order-deadline {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;
+  border: 1px solid var(--color-border); background: var(--color-surface);
+  color: var(--color-text-muted); white-space: nowrap;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  .deadline-status-icon { font-size: 15px; width: 15px; height: 15px; }
+
+  &.deadline--ok {
+    background: #f0fdf4; border-color: #86efac; color: #16a34a;
+    .deadline-status-icon { color: #16a34a; }
+  }
+  &.deadline--warn {
+    background: #fff7ed; border-color: #fdba74; color: #c2410c;
+    mat-icon { color: #c2410c; }
+    .deadline-status-icon { color: #c2410c; }
+  }
+  &.deadline--none {
+    opacity: 0.55;
+  }
 }
 
 .article-table {
