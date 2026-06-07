@@ -150,6 +150,24 @@
   white-space: nowrap;
 }
 
+/* ── Wide table for finalizate ── */
+.trips-table--wide { min-width: 900px; }
+
+/* ── Log tranziții ── */
+.log-cell { vertical-align: top; min-width: 200px; }
+
+.log-entry {
+  display: flex; align-items: center; gap: 6px;
+  padding: 2px 0; font-size: 0.78rem;
+}
+.log-icon {
+  font-size: 15px; width: 15px; height: 15px; flex-shrink: 0;
+  &--done  { color: #9ca3af; }
+  &--final { color: var(--color-primary); }
+}
+.log-label { color: var(--color-text-muted); min-width: 80px; }
+.log-time  { font-weight: 600; color: var(--color-text); }
+
 /* ── Trip stepper ── */
 .stepper-cell { vertical-align: middle; min-width: 280px; }
 

@@ -157,6 +157,11 @@ export class MyTripsComponent {
     return this.transportService.formatDateTime(iso);
   }
 
+  fmtTs(iso: string | undefined): string {
+    if (!iso) return '—';
+    return this.transportService.formatDateTime(iso);
+  }
+
   private _deliveredArr(order: Order): number[] {
     const qty = new Array(order.products.length).fill(0);
     for (const t of this.transportService.transports()) {

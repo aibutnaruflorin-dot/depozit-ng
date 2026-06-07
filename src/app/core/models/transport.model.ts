@@ -20,4 +20,6 @@ export interface Transport {
   helper?: string;
   status: TransportStatus;
   createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
 }

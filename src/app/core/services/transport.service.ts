@@ -87,7 +87,11 @@ export class TransportService {
   }
 
   setStatus(id: string, status: TransportStatus): void {
-    this.updateTransport(id, { status });
+    const now = new Date().toISOString();
+    const changes: Partial<Omit<Transport, 'id' | 'createdAt'>> = { status };
+    if (status === 'in_livrare') changes.startedAt  = now;
+    if (status === 'livrat')     changes.completedAt = now;
+    this.updateTransport(id, changes);
   }
 
   deleteTransport(id: string): void {

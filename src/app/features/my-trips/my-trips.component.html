@@ -187,13 +187,16 @@
      SHARED TEMPLATE — tabel curse
      ════════════════════════════════════════════════════════ -->
 <ng-template #tripTableTpl let-trips="trips">
-  <table class="trips-table">
+  <table class="trips-table" [class.trips-table--wide]="trips[0]?.status === 'livrat'">
     <thead>
       <tr>
         <th>Mașină</th>
         <th>Plecare → Sosire</th>
         <th>Comenzi / Articole</th>
         <th>Progres livrare</th>
+        @if (trips[0]?.status === 'livrat') {
+          <th>Log tranziții</th>
+        }
       </tr>
     </thead>
     <tbody>
@@ -293,6 +296,25 @@
 
             </div>
           </td>
+          @if (t.status === 'livrat') {
+            <td class="log-cell">
+              <div class="log-entry">
+                <mat-icon class="log-icon log-icon--done">check_circle</mat-icon>
+                <span class="log-label">Planificat</span>
+                <span class="log-time">{{ fmtTs(t.createdAt) }}</span>
+              </div>
+              <div class="log-entry">
+                <mat-icon class="log-icon log-icon--done">check_circle</mat-icon>
+                <span class="log-label">Start livrare</span>
+                <span class="log-time">{{ fmtTs(t.startedAt) }}</span>
+              </div>
+              <div class="log-entry">
+                <mat-icon class="log-icon log-icon--final">check_circle</mat-icon>
+                <span class="log-label">Finalizat</span>
+                <span class="log-time">{{ fmtTs(t.completedAt) }}</span>
+              </div>
+            </td>
+          }
         </tr>
       }
     </tbody>
