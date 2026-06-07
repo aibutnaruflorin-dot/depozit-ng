@@ -7,6 +7,8 @@ export interface Product {
   catalogId: string;
   furnizor?: string;
   codExtern?: string;
+  pretFaraTVA?: number;
+  pretCuTVA?: number;
 }
 
 export interface ProductMeta {

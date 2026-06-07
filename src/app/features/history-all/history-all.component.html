@@ -29,14 +29,20 @@
     <tr>
       <th style="width:3rem"></th>
       <th style="width:5rem">
-        <div class="col-header">Nr.
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('nr')">
+            Nr. <mat-icon class="sort-icon" [class.sort-active]="sortField()==='nr'">{{ sortIcon('nr') }}</mat-icon>
+          </div>
           <input class="col-filter-input" type="text"
                  [ngModel]="filterNr()" (ngModelChange)="filterNr.set($event)"
                  placeholder="#…" (click)="$event.stopPropagation()">
         </div>
       </th>
       <th>
-        <div class="col-header">Data
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('data')">
+            Data <mat-icon class="sort-icon" [class.sort-active]="sortField()==='data'">{{ sortIcon('data') }}</mat-icon>
+          </div>
           <mat-form-field appearance="outline" class="date-range-field"
                           subscriptSizing="dynamic" (click)="$event.stopPropagation()">
             <mat-date-range-input [rangePicker]="datePicker" [formGroup]="dateRangeForm" separator="–">
@@ -49,24 +55,70 @@
         </div>
       </th>
       <th>
-        <div class="col-header">Client
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('client')">
+            Client <mat-icon class="sort-icon" [class.sort-active]="sortField()==='client'">{{ sortIcon('client') }}</mat-icon>
+          </div>
           <input class="col-filter-input" type="text"
                  [ngModel]="filterClient()" (ngModelChange)="filterClient.set($event)"
                  placeholder="filtrează…" (click)="$event.stopPropagation()">
         </div>
       </th>
       <th>
-        <div class="col-header">Telefon
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('telefon')">
+            Telefon <mat-icon class="sort-icon" [class.sort-active]="sortField()==='telefon'">{{ sortIcon('telefon') }}</mat-icon>
+          </div>
           <input class="col-filter-input" type="text"
                  [ngModel]="filterPhone()" (ngModelChange)="filterPhone.set($event)"
                  placeholder="filtrează…" (click)="$event.stopPropagation()">
         </div>
       </th>
-      <th style="width:4rem" matTooltip="Comandă cu livrare">Livrare</th>
-      <th>Adresă livrare</th>
-      <th>Termen livrare</th>
       <th>
-        <div class="col-header">Agent
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('livrare')">
+            Livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='livrare'">{{ sortIcon('livrare') }}</mat-icon>
+          </div>
+          <select class="col-filter-select"
+                  [ngModel]="filterLivrare()" (ngModelChange)="filterLivrare.set($event)"
+                  (click)="$event.stopPropagation()">
+            <option value="">Toate</option>
+            <option value="cu">Cu livrare</option>
+            <option value="fara">Fără livrare</option>
+          </select>
+        </div>
+      </th>
+      <th>
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('adresa')">
+            Adresă livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='adresa'">{{ sortIcon('adresa') }}</mat-icon>
+          </div>
+          <input class="col-filter-input" type="text"
+                 [ngModel]="filterAddress()" (ngModelChange)="filterAddress.set($event)"
+                 placeholder="filtrează…" (click)="$event.stopPropagation()">
+        </div>
+      </th>
+      <th>
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('termen')">
+            Termen livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='termen'">{{ sortIcon('termen') }}</mat-icon>
+          </div>
+          <mat-form-field appearance="outline" class="date-range-field"
+                          subscriptSizing="dynamic" (click)="$event.stopPropagation()">
+            <mat-date-range-input [rangePicker]="deliveryPicker" [formGroup]="deliveryRangeForm" separator="–">
+              <input matStartDate formControlName="start" placeholder="De la">
+              <input matEndDate formControlName="end" placeholder="Până la">
+            </mat-date-range-input>
+            <mat-datepicker-toggle matIconSuffix [for]="deliveryPicker"></mat-datepicker-toggle>
+            <mat-date-range-picker #deliveryPicker></mat-date-range-picker>
+          </mat-form-field>
+        </div>
+      </th>
+      <th>
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('agent')">
+            Agent <mat-icon class="sort-icon" [class.sort-active]="sortField()==='agent'">{{ sortIcon('agent') }}</mat-icon>
+          </div>
           <select class="col-filter-select"
                   [ngModel]="filterAgent()" (ngModelChange)="filterAgent.set($event)"
                   (click)="$event.stopPropagation()">
@@ -78,15 +130,25 @@
         </div>
       </th>
       <th>
-        <div class="col-header-sort" (click)="$event.stopPropagation(); cycleSortProduse()">
-          Produse
-          <mat-icon class="sort-icon">
-            {{ sortProduse() === 'asc' ? 'arrow_upward' : sortProduse() === 'desc' ? 'arrow_downward' : 'unfold_more' }}
-          </mat-icon>
+        <div class="col-header-sort" (click)="sort('produse')">
+          Produse <mat-icon class="sort-icon" [class.sort-active]="sortField()==='produse'">{{ sortIcon('produse') }}</mat-icon>
+        </div>
+      </th>
+      <th style="text-align:right">
+        <div class="col-header-sort" style="justify-content:flex-end" (click)="sort('net')">
+          Fără TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='net'">{{ sortIcon('net') }}</mat-icon>
+        </div>
+      </th>
+      <th style="text-align:right">
+        <div class="col-header-sort" style="justify-content:flex-end" (click)="sort('tva')">
+          Cu TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='tva'">{{ sortIcon('tva') }}</mat-icon>
         </div>
       </th>
       <th>
-        <div class="col-header">Status
+        <div class="col-header">
+          <div class="col-sort-label" (click)="sort('status')">
+            Status <mat-icon class="sort-icon" [class.sort-active]="sortField()==='status'">{{ sortIcon('status') }}</mat-icon>
+          </div>
           <select class="col-filter-select"
                   [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"
                   (click)="$event.stopPropagation()">
@@ -203,6 +265,8 @@
       </td>
       <td>{{ order.agent?.name }}</td>
       <td>{{ order.products.length }} art.</td>
+      <td class="td-net-order">{{ orderTotalFaraTVA(order) | number:'1.2-2' }} lei</td>
+      <td class="td-tva-order">{{ orderTotalCuTVA(order) | number:'1.2-2' }} lei</td>
       <td>
         @if (order.superseded) {
           <p-tag value="Înlocuită" severity="danger" />
@@ -273,66 +337,98 @@
     <!-- Expansion — all orders -->
     @if (expandedRows()[order.id]) {
       <tr class="expansion-row">
-        <td colspan="9" class="expansion-cell">
+        <td colspan="11" class="expansion-cell">
           <div class="expansion-content" (click)="$event.stopPropagation()">
             <div class="expansion-products">
+              <!-- Header coloane -->
+              <div class="exp-header-row">
+                <span>Denumire produs</span>
+                <span>Categorie</span>
+                <span>UM</span>
+                <span>Cod extern</span>
+                <span>Furnizor</span>
+                <span class="epc-right">Fără TVA</span>
+                <span class="epc-right">Cu TVA</span>
+                <span class="epc-center">Cantitate</span>
+              </div>
               @for (p of order.products; track p.nr; let j = $index) {
                 @if (isPending(order)) {
                   <div class="exp-product-row"
                        [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
-                    <div class="exp-product-info">
-                      <span class="exp-product-name">{{ p.name }}</span>
-                      <span class="exp-product-meta">
-                        @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
-                          <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
-                        }
-                        @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
-                        @if (p.furnizor) { <span class="exp-furnizor">{{ p.furnizor }}</span> }
-                        @if (getCodExtern(p)) { <span class="exp-cod-extern">{{ getCodExtern(p) }}</span> }
-                      </span>
-                      @if (getCodExtern(p)) {
-                        <div class="exp-barcode"><app-barcode [value]="getCodExtern(p)" /></div>
+                    <div class="epc-name-cell">
+                      <span class="epc-name">{{ p.name }}</span>
+                      @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
+                        <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
                       }
                     </div>
-                    <span class="exp-product-um">{{ p.um }}</span>
-                    <div class="exp-qty-controls">
-                      <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
-                        <mat-icon>remove</mat-icon>
-                      </button>
-                      <input class="eq-input" type="number" min="0"
-                             [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
-                             (change)="setEditQty(order.id, j, p.qty, $any($event.target).value)"
-                             (click)="$any($event.target).select()">
-                      <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)">
-                        <mat-icon>add</mat-icon>
-                      </button>
+                    <span class="epc-cat">
+                      @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
+                    </span>
+                    <span class="epc-um">{{ p.um }}</span>
+                    <span class="epc-cod">{{ getCodExtern(p) || '—' }}</span>
+                    <span class="epc-furn">{{ p.furnizor || '—' }}</span>
+                    <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                    <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                    <div class="epc-qty-cell">
+                      <div class="exp-qty-controls">
+                        <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
+                          <mat-icon>remove</mat-icon>
+                        </button>
+                        <input class="eq-input" type="number" min="0"
+                               [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
+                               (change)="setEditQty(order.id, j, p.qty, $any($event.target).value)"
+                               (click)="$any($event.target).select()">
+                        <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)">
+                          <mat-icon>add</mat-icon>
+                        </button>
+                      </div>
+                      @if ((editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0) {
+                        <span class="exp-remove-hint">va fi eliminat</span>
+                      }
                     </div>
-                    @if ((editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0) {
-                      <span class="exp-remove-hint">va fi eliminat</span>
-                    }
                   </div>
                 } @else {
                   <div class="exp-product-row">
-                    <div class="exp-product-info">
-                      <span class="exp-product-name">{{ p.name }}</span>
-                      <span class="exp-product-meta">
-                        @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
-                          <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
-                        }
-                        @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
-                        @if (p.furnizor) { <span class="exp-furnizor">{{ p.furnizor }}</span> }
-                        @if (getCodExtern(p)) { <span class="exp-cod-extern">{{ getCodExtern(p) }}</span> }
-                      </span>
-                      @if (getCodExtern(p)) {
-                        <div class="exp-barcode"><app-barcode [value]="getCodExtern(p)" /></div>
+                    <div class="epc-name-cell">
+                      <span class="epc-name">{{ p.name }}</span>
+                      @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
+                        <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
                       }
                     </div>
-                    <span class="exp-product-um">{{ p.um }}</span>
-                    <span class="exp-qty-static">{{ p.qty }}</span>
+                    <span class="epc-cat">
+                      @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
+                    </span>
+                    <span class="epc-um">{{ p.um }}</span>
+                    <span class="epc-cod">{{ getCodExtern(p) || '—' }}</span>
+                    <span class="epc-furn">{{ p.furnizor || '—' }}</span>
+                    <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                    <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                    <span class="epc-qty-cell exp-qty-static">{{ p.qty }}</span>
                   </div>
                 }
               }
+              <!-- Total în timp real — aliniat pe grid-ul coloanelor -->
+              <div class="expansion-total">
+                <span class="exp-total-heading">Total</span>
+                <span></span><span></span><span></span><span></span>
+                <span class="exp-total-net">
+                  @if (isPending(order)) {
+                    {{ editTotalFaraTVA(order) | number:'1.2-2' }} lei
+                  } @else {
+                    {{ orderTotalFaraTVA(order) | number:'1.2-2' }} lei
+                  }
+                </span>
+                <span class="exp-total-tva">
+                  @if (isPending(order)) {
+                    {{ editTotalCuTVA(order) | number:'1.2-2' }} lei
+                  } @else {
+                    {{ orderTotalCuTVA(order) | number:'1.2-2' }} lei
+                  }
+                </span>
+                <span></span>
+              </div>
             </div>
+
             <div class="expansion-footer">
               @if (isPending(order)) {
                 <button mat-flat-button class="btn-cancel-order" (click)="cancelOrder(order)">
@@ -365,7 +461,7 @@
   </ng-template>
 
   <ng-template pTemplate="emptymessage">
-    <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--color-text-muted)">
+    <tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--color-text-muted)">
       Nicio comandă pentru filtrele selectate.
     </td></tr>
   </ng-template>

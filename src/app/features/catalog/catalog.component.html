@@ -12,7 +12,7 @@
   </div>
 </div>
 
-<!-- Catalog filter chips -->
+<!-- Catalog filter chips + sort -->
 <div class="catalog-chips">
   <button class="cat-chip-btn" [class.active]="allSelected()" (click)="selectedCatIds.set([])">
     Toate
@@ -25,101 +25,8 @@
       {{ cat.name }}
     </button>
   }
-</div>
-
-<!-- Search + filtre -->
-<div class="filters">
-  <mat-form-field appearance="outline" class="search-f" subscriptSizing="dynamic">
-    <mat-label>Caută</mat-label>
-    <mat-icon matPrefix>search</mat-icon>
-    <input matInput [value]="search()" (input)="onSearch($any($event.target).value)" placeholder="Denumire sau cod…">
-    @if (search()) {
-      <button matSuffix mat-icon-button (click)="onSearch('')"><mat-icon>close</mat-icon></button>
-    }
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="cat-f" subscriptSizing="dynamic">
-    <mat-label>Categorie</mat-label>
-    <mat-select [value]="category()" (valueChange)="onCategory($event)">
-      <mat-option value="">Toate</mat-option>
-      @for (c of categories(); track c) {
-        <mat-option [value]="c">{{ c }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="cod-extern-f" subscriptSizing="dynamic">
-    <mat-label>Cod extern</mat-label>
-    <mat-icon matPrefix>qr_code</mat-icon>
-    <input matInput [value]="codExternFilter()" (input)="codExternFilter.set($any($event.target).value); currentPage.set(0)"
-           placeholder="Caută cod…" autocomplete="off">
-    @if (codExternFilter()) {
-      <button matSuffix mat-icon-button (click)="codExternFilter.set(''); currentPage.set(0)">
-        <mat-icon>close</mat-icon>
-      </button>
-    }
-  </mat-form-field>
-
-  <!-- Furnizor multi-select -->
-  <div class="furnizor-wrapper">
-    <div class="furnizor-trigger"
-         [class.furn-open]="furnizorDropdownOpen()"
-         (click)="toggleFurnizorDropdown()">
-      <span class="furn-label">Furnizor</span>
-      <span class="furn-value">
-        @if (furnizorFilter().length === 0) {
-          <span class="furn-placeholder">Toți</span>
-        } @else if (furnizorFilter().length === 1) {
-          <span class="furn-chip">{{ furnizorFilter()[0] }}</span>
-        } @else {
-          <span class="furn-chip">{{ furnizorFilter().length }} selectați</span>
-        }
-      </span>
-      <mat-icon class="furn-arrow">arrow_drop_down</mat-icon>
-    </div>
-
-    @if (furnizorDropdownOpen()) {
-      <div class="furn-backdrop" (click)="closeFurnizorDropdown()"></div>
-      <div class="furn-panel" (click)="$event.stopPropagation()">
-        <div class="furn-search-row">
-          <mat-icon>search</mat-icon>
-          <input class="furn-search-input" type="text" placeholder="Caută furnizor…"
-                 [value]="furnizorSearch()" (input)="furnizorSearch.set($any($event.target).value)">
-          @if (furnizorSearch()) {
-            <button class="furn-clear-btn" (click)="furnizorSearch.set('')">
-              <mat-icon>close</mat-icon>
-            </button>
-          }
-        </div>
-        <div class="furn-list">
-          @if (furnizors().length === 0) {
-            <div class="furn-empty">Niciun furnizor disponibil</div>
-          } @else {
-            <div class="furn-item furn-all">
-              <mat-checkbox
-                [checked]="allFurnizorsSelected()"
-                [indeterminate]="furnizorFilter().length > 0 && !allFurnizorsSelected()"
-                (change)="toggleAllFurnizors()">
-                <span class="furn-item-label">Toți furnizorii</span>
-              </mat-checkbox>
-            </div>
-            <mat-divider></mat-divider>
-            @for (f of filteredFurnizors(); track f) {
-              <div class="furn-item">
-                <mat-checkbox [checked]="furnizorFilter().includes(f)" (change)="toggleFurnizorItem(f)">
-                  <span class="furn-item-label">{{ f }}</span>
-                </mat-checkbox>
-              </div>
-            }
-            @if (filteredFurnizors().length === 0 && furnizorSearch()) {
-              <div class="furn-empty">Niciun rezultat pentru "{{ furnizorSearch() }}"</div>
-            }
-          }
-        </div>
-      </div>
-    }
-  </div>
-
+  <span class="chips-sep"></span>
+  <span class="sort-label">Sortare:</span>
   <button class="mode-toggle-btn" [class.active]="displayMode() === 'grouped'"
           (click)="toggleDisplayMode()"
           [title]="displayMode() === 'mixed' ? 'Grupat pe cataloage' : 'Amestecat alfabetic'">
@@ -127,6 +34,7 @@
     <span class="mode-label">{{ displayMode() === 'mixed' ? 'Amestecat' : 'Grupat' }}</span>
   </button>
 </div>
+
 
 <!-- Product list -->
 @if (filtered().length === 0) {
@@ -136,40 +44,221 @@
     <button mat-stroked-button (click)="clearFilters()">Șterge filtrele</button>
   </div>
 } @else {
-  <div class="product-list">
-    @for (p of paged(); track p.nr; let i = $index) {
-      @if (displayMode() === 'grouped' && (i === 0 || paged()[i-1].catalogId !== p.catalogId)) {
-        @if (catalogsService.getById(p.catalogId); as cat) {
-          <div class="catalog-group-header" [style.border-left-color]="cat.color" [style.color]="cat.color">
-            <span class="cgh-dot" [style.background]="cat.color"></span>
-            {{ cat.name }}
+  <p-table [value]="paged()" [tableStyle]="{'min-width':'860px'}"
+           styleClass="p-datatable-sm p-datatable-striped">
+
+    <ng-template pTemplate="header">
+      <tr>
+        <!-- Denumire + search -->
+        <th>
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('name')">
+              Denumire produs
+              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='name'">{{ sortIcon('name') }}</mat-icon>
+            </div>
+            <input class="col-filter-input" [value]="search()"
+                   (input)="onSearch($any($event.target).value)" placeholder="Caută…">
           </div>
+        </th>
+
+        <!-- Categorie – custom single-select dropdown -->
+        <th style="width:145px">
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('category')">
+              Categorie
+              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='category'">{{ sortIcon('category') }}</mat-icon>
+            </div>
+            <div class="col-furn-wrap">
+              @if (categoryDropdownOpen()) {
+                <div class="furn-backdrop" (click)="closeCategoryDropdown()"></div>
+              }
+              <div class="phc-furn-trigger"
+                   [class.furn-active]="category()"
+                   [class.furn-open]="categoryDropdownOpen()"
+                   (click)="toggleCategoryDropdown()">
+                <span class="phc-furn-val">
+                  {{ category() || 'Toate' }}
+                </span>
+                <mat-icon class="furn-arrow">expand_more</mat-icon>
+              </div>
+              @if (categoryDropdownOpen()) {
+                <div class="furn-panel">
+                  <div class="furn-search-row">
+                    <mat-icon>search</mat-icon>
+                    <input class="furn-search-input" placeholder="Caută categorie…"
+                           [value]="categorySearch()"
+                           (input)="categorySearch.set($any($event.target).value)"
+                           (click)="$event.stopPropagation()">
+                    @if (categorySearch()) {
+                      <button class="furn-clear-btn" (click)="categorySearch.set(''); $event.stopPropagation()">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                  </div>
+                  <div class="furn-list">
+                    <!-- Toate -->
+                    <div class="furn-item" [class.furn-item-sel]="!category()"
+                         (click)="selectCategory('')">
+                      <span class="furn-item-label">Toate categoriile</span>
+                      @if (!category()) {
+                        <mat-icon class="furn-sel-check">check</mat-icon>
+                      }
+                    </div>
+                    @for (c of filteredCategories(); track c) {
+                      <div class="furn-item" [class.furn-item-sel]="category() === c"
+                           (click)="selectCategory(c)">
+                        <span class="furn-item-label">{{ c }}</span>
+                        @if (category() === c) {
+                          <mat-icon class="furn-sel-check">check</mat-icon>
+                        }
+                      </div>
+                    }
+                    @if (filteredCategories().length === 0) {
+                      <div class="furn-empty">Niciun rezultat</div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </th>
+
+        <th style="width:55px" class="col-sort-th" (click)="sort('um')">
+          <div class="col-sort-label">UM <mat-icon class="sort-icon" [class.sort-active]="sortField()==='um'">{{ sortIcon('um') }}</mat-icon></div>
+        </th>
+        <th style="width:65px" class="col-sort-th" (click)="sort('qty')">
+          <div class="col-sort-label">Stoc <mat-icon class="sort-icon" [class.sort-active]="sortField()==='qty'">{{ sortIcon('qty') }}</mat-icon></div>
+        </th>
+
+        <!-- Cod extern + input -->
+        <th style="width:110px">
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('codExtern')">
+              Cod extern
+              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='codExtern'">{{ sortIcon('codExtern') }}</mat-icon>
+            </div>
+            <input class="col-filter-input" [value]="codExternFilter()"
+                   (input)="codExternFilter.set($any($event.target).value); currentPage.set(0)"
+                   placeholder="Filtrează…">
+          </div>
+        </th>
+
+        <!-- Furnizor – custom multi-select dropdown -->
+        <th style="width:150px">
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('furnizor')">
+              Furnizor
+              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='furnizor'">{{ sortIcon('furnizor') }}</mat-icon>
+            </div>
+            <div class="col-furn-wrap">
+              @if (furnizorDropdownOpen()) {
+                <div class="furn-backdrop" (click)="closeFurnizorDropdown()"></div>
+              }
+              <div class="phc-furn-trigger"
+                   [class.furn-active]="furnizorFilter().length > 0"
+                   [class.furn-open]="furnizorDropdownOpen()"
+                   (click)="toggleFurnizorDropdown()">
+                <span class="phc-furn-val">
+                  @if (furnizorFilter().length === 0) { Toți }
+                  @else if (furnizorFilter().length === 1) { {{ furnizorFilter()[0] }} }
+                  @else { {{ furnizorFilter().length }} furnizori }
+                </span>
+                <mat-icon class="furn-arrow">expand_more</mat-icon>
+              </div>
+              @if (furnizorDropdownOpen()) {
+                <div class="furn-panel">
+                  <div class="furn-search-row">
+                    <mat-icon>search</mat-icon>
+                    <input class="furn-search-input" placeholder="Caută furnizor…"
+                           [value]="furnizorSearch()"
+                           (input)="furnizorSearch.set($any($event.target).value)"
+                           (click)="$event.stopPropagation()">
+                    @if (furnizorSearch()) {
+                      <button class="furn-clear-btn" (click)="furnizorSearch.set(''); $event.stopPropagation()">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                  </div>
+                  <div class="furn-list">
+                    <div class="furn-item furn-all" [class.furn-item-sel]="allFurnizorsSelected()"
+                         (click)="toggleAllFurnizors()">
+                      <span class="furn-item-label">Toți furnizorii</span>
+                      @if (allFurnizorsSelected()) {
+                        <mat-icon class="furn-sel-check">check</mat-icon>
+                      }
+                    </div>
+                    @for (f of filteredFurnizors(); track f) {
+                      <div class="furn-item" [class.furn-item-sel]="furnizorFilter().includes(f)"
+                           (click)="toggleFurnizorItem(f)">
+                        <span class="furn-item-label">{{ f }}</span>
+                        @if (furnizorFilter().includes(f)) {
+                          <mat-icon class="furn-sel-check">check</mat-icon>
+                        }
+                      </div>
+                    }
+                    @if (filteredFurnizors().length === 0) {
+                      <div class="furn-empty">Niciun rezultat</div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </th>
+
+        <th style="width:115px" class="col-sort-th" (click)="sort('pretFaraTVA')">
+          <div class="col-sort-label" style="justify-content:flex-end">
+            Preț fără TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='pretFaraTVA'">{{ sortIcon('pretFaraTVA') }}</mat-icon>
+          </div>
+        </th>
+        <th style="width:115px" class="col-sort-th" (click)="sort('pretCuTVA')">
+          <div class="col-sort-label" style="justify-content:flex-end">
+            Preț cu TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='pretCuTVA'">{{ sortIcon('pretCuTVA') }}</mat-icon>
+          </div>
+        </th>
+        <th style="width:48px"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-p let-rowIndex="rowIndex">
+      @if (displayMode() === 'grouped' && (rowIndex === 0 || paged()[rowIndex - 1]?.catalogId !== p.catalogId)) {
+        @if (catalogsService.getById(p.catalogId); as cat) {
+          <tr class="catalog-group-row">
+            <td colspan="9">
+              <span class="cgh-dot" [style.background]="cat.color"></span>
+              <span class="cgh-name" [style.color]="cat.color">{{ cat.name }}</span>
+            </td>
+          </tr>
         }
       }
-      <div class="product-row"
-           [style.background-color]="rowBg(p.catalogId)"
-           [style.border-left-color]="rowBorder(p.catalogId)">
-        <div class="product-info">
-          <span class="product-name">{{ p.name }}</span>
-          <span class="product-meta">
+      <tr [style.background-color]="rowBg(p.catalogId)"
+          [style.border-left]="'3px solid ' + rowBorder(p.catalogId)">
+        <td>
+          <div class="pc-name-cell">
+            <span class="product-name">{{ p.name }}</span>
             @if (displayMode() === 'mixed') {
               @if (catalogsService.getById(p.catalogId); as cat) {
-                <span class="catalog-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">
-                  {{ cat.name }}
-                </span>
+                <span class="catalog-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
               }
             }
-            <span class="cat-chip-sm">{{ p.category }}</span>
-            <span class="um-text">{{ p.um }}</span>
-            @if (p.qty > 0) { <span class="stoc-text">Stoc: {{ p.qty }}</span> }
-          </span>
-        </div>
-        <button mat-icon-button class="order-btn" color="primary" (click)="goToNewOrder()" matTooltip="Adaugă la comandă">
-          <mat-icon>add_shopping_cart</mat-icon>
-        </button>
-      </div>
-    }
-  </div>
+          </div>
+        </td>
+        <td><span class="cat-chip-sm">{{ p.category }}</span></td>
+        <td class="td-muted">{{ p.um }}</td>
+        <td class="td-stoc">{{ p.qty > 0 ? p.qty : '—' }}</td>
+        <td class="td-mono">{{ p.codExtern || '—' }}</td>
+        <td class="td-furn">{{ p.furnizor || '—' }}</td>
+        <td class="td-net">{{ p.pretFaraTVA != null ? ((p.pretFaraTVA | number:'1.2-2') + ' lei') : '—' }}</td>
+        <td class="td-tva">{{ p.pretCuTVA != null ? ((p.pretCuTVA | number:'1.2-2') + ' lei') : '—' }}</td>
+        <td>
+          <button mat-icon-button class="order-btn" color="primary" (click)="goToNewOrder()" matTooltip="Adaugă la comandă">
+            <mat-icon>add_shopping_cart</mat-icon>
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+
+  </p-table>
 
   @if (filtered().length > PAGE_SIZE) {
     <p-paginator [rows]="PAGE_SIZE" [totalRecords]="filtered().length"

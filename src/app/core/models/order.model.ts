@@ -7,6 +7,8 @@ export interface OrderProduct {
   catalogId?: string;
   furnizor?: string;
   codExtern?: string;
+  pretFaraTVA?: number;
+  pretCuTVA?: number;
 }
 
 export interface Order {

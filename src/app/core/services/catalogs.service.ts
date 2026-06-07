@@ -21,8 +21,16 @@ export class CatalogsService {
     this._catalogs.set(cats);
     const bycat: Record<string, Product[]> = {};
     for (const cat of cats) {
-      const prods = this.storage.get<Product[]>(`app_catalog_${cat.id}_products`) || [];
-      bycat[cat.id] = prods.map(p => ({ ...p, catalogId: cat.id }));
+      let prods = this.storage.get<Product[]>(`app_catalog_${cat.id}_products`) || [];
+      let dirty = false;
+      prods = prods.map(p => {
+        if (p.pretFaraTVA != null) return { ...p, catalogId: cat.id };
+        const net = Math.round((10 + Math.random() * 490) * 100) / 100;
+        dirty = true;
+        return { ...p, catalogId: cat.id, pretFaraTVA: net, pretCuTVA: Math.round(net * 1.19 * 100) / 100 };
+      });
+      if (dirty) this.storage.set(`app_catalog_${cat.id}_products`, prods);
+      bycat[cat.id] = prods;
     }
     this._productsByCat.set(bycat);
   }
@@ -59,6 +67,10 @@ export class CatalogsService {
 
   getById(id: string): Catalog | undefined {
     return this._catalogs().find(c => c.id === id);
+  }
+
+  findProduct(catalogId: string, nr: number | string): import('../models/product.model').Product | undefined {
+    return this._productsByCat()[catalogId]?.find(p => String(p.nr) === String(nr));
   }
 
   getMeta(catalogId: string): CatalogMeta | null {

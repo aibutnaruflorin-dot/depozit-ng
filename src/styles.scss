@@ -143,6 +143,23 @@ h1, h2, h3, h4 { font-family: 'Inter', system-ui, sans-serif; }
   .mat-mdc-form-field-input-control { color: var(--color-text) !important; }
 }
 
+/* ── Prețuri produs ───────────────────────────────────────────── */
+.price-tags {
+  display: inline-flex; gap: 5px; align-items: center; flex-wrap: wrap;
+}
+.price-notva {
+  font-size: 0.72rem; color: var(--color-text-muted);
+  background: var(--color-bg); border: 1px solid var(--color-border);
+  padding: 1px 6px; border-radius: 4px; white-space: nowrap;
+  &::before { content: 'fără TVA: '; opacity: .7; }
+}
+.price-tva {
+  font-size: 0.72rem; font-weight: 700; color: var(--color-primary);
+  background: var(--color-primary-light);
+  padding: 1px 6px; border-radius: 4px; white-space: nowrap;
+  &::before { content: 'cu TVA: '; font-weight: 400; }
+}
+
 /* ── Draggable & resizable modals ─────────────────────────────── */
 .modal-card {
   resize: both;

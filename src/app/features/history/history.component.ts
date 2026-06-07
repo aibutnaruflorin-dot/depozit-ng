@@ -6,7 +6,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
+import { StorageService } from '../../core/services/storage.service';
 import { Order } from '../../core/models/order.model';
+import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -14,6 +16,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -53,7 +57,7 @@ function sortByFamily(orders: Order[]): Order[] {
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule, RouterModule,
     MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
-    MatDatepickerModule, MatFormFieldModule, MatInputModule,
+    MatDatepickerModule, MatFormFieldModule, MatInputModule, MatMenuModule, MatDividerModule,
     TableModule, TagModule
   ],
   templateUrl: './history.component.html',
@@ -66,6 +70,14 @@ export class HistoryComponent {
   });
   private readonly _dateRange = toSignal(this.dateRangeForm.valueChanges, {
     initialValue: this.dateRangeForm.value
+  });
+
+  readonly deliveryRangeForm = new FormGroup({
+    start: new FormControl<Date | null>(null),
+    end:   new FormControl<Date | null>(null),
+  });
+  private readonly _deliveryRange = toSignal(this.deliveryRangeForm.valueChanges, {
+    initialValue: this.deliveryRangeForm.value
   });
 
   expandedRows = signal<Record<string, boolean>>({});
@@ -86,14 +98,22 @@ export class HistoryComponent {
   filterNr     = signal('');
   filterClient = signal('');
   filterPhone  = signal('');
-  filterStatus = signal('');
-  sortProduse  = signal<'' | 'asc' | 'desc'>('');
+  filterStatus  = signal('');
+  filterLivrare = signal<'' | 'cu' | 'fara'>('');
+  filterAddress = signal('');
+  sortField     = signal<string>('');
+  sortOrder     = signal<1|-1>(1);
+
+  readonly whatsappContacts = computed<WhatsAppContact[]>(() =>
+    this.storage.get<WhatsAppContact[]>('app_whatsapp_contacts') ?? []
+  );
 
   constructor(
     public  auth: AuthService,
     public  catalogsService: CatalogsService,
     private ordersService: OrdersService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private storage: StorageService
   ) {}
 
   readonly myOrders = computed(() => {
@@ -102,20 +122,27 @@ export class HistoryComponent {
   });
 
   readonly sortedOrders = computed(() => {
-    const nr        = this.filterNr().trim().replace('#', '');
-    const client    = this.filterClient().trim().toLowerCase();
-    const phone     = this.filterPhone().trim();
-    const status    = this.filterStatus();
-    const dateRange = this._dateRange();
-    const sortDir   = this.sortProduse();
+    const nr          = this.filterNr().trim().replace('#', '');
+    const client      = this.filterClient().trim().toLowerCase();
+    const phone       = this.filterPhone().trim();
+    const status      = this.filterStatus();
+    const livrare     = this.filterLivrare();
+    const address     = this.filterAddress().trim().toLowerCase();
+    const dateRange   = this._dateRange();
+    const delivRange  = this._deliveryRange();
+    const field       = this.sortField();
+    const dir         = this.sortOrder();
 
     let orders = this.hideSuperseded()
       ? this.myOrders().filter(o => !o.superseded)
       : this.myOrders();
 
-    if (nr)     orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
-    if (client) orders = orders.filter(o => o.client.name.toLowerCase().includes(client));
-    if (phone)  orders = orders.filter(o => (o.client.phone ?? '').includes(phone));
+    if (nr)              orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
+    if (client)          orders = orders.filter(o => o.client.name.toLowerCase().includes(client));
+    if (phone)           orders = orders.filter(o => (o.client.phone ?? '').includes(phone));
+    if (livrare === 'cu')   orders = orders.filter(o => !!o.cuLivrare);
+    if (livrare === 'fara') orders = orders.filter(o => !o.cuLivrare);
+    if (address)         orders = orders.filter(o => (o.client.address ?? '').toLowerCase().includes(address));
     if (status) orders = orders.filter(o =>
       status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
       status === 'Acceptată'    ? o.status === 'acceptat' :
@@ -129,12 +156,35 @@ export class HistoryComponent {
       const to = this._localDate(dateRange.end);
       orders = orders.filter(o => this._localDate(new Date(o.timestamp)) <= to);
     }
+    if (delivRange.start) {
+      const from = this._localDate(delivRange.start);
+      orders = orders.filter(o => !!o.deliveryDate && o.deliveryDate >= from);
+    }
+    if (delivRange.end) {
+      const to = this._localDate(delivRange.end);
+      orders = orders.filter(o => !!o.deliveryDate && o.deliveryDate <= to);
+    }
 
-    if (sortDir) {
-      return [...orders].sort((a, b) =>
-        sortDir === 'asc' ? a.products.length - b.products.length
-                          : b.products.length - a.products.length
-      );
+    if (field) {
+      return [...orders].sort((a, b) => {
+        let va: any, vb: any;
+        switch (field) {
+          case 'nr':      va = a.orderNumber ?? 0;        vb = b.orderNumber ?? 0;        break;
+          case 'data':    va = a.timestamp;               vb = b.timestamp;               break;
+          case 'client':  va = a.client.name;             vb = b.client.name;             break;
+          case 'telefon': va = a.client.phone ?? '';      vb = b.client.phone ?? '';      break;
+          case 'livrare': va = a.cuLivrare ? 1 : 0;      vb = b.cuLivrare ? 1 : 0;      break;
+          case 'adresa':  va = a.client.address ?? '';    vb = b.client.address ?? '';    break;
+          case 'termen':  va = a.deliveryDate ?? '';      vb = b.deliveryDate ?? '';      break;
+          case 'produse': va = a.products.length;         vb = b.products.length;         break;
+          case 'net':     va = this.orderTotalFaraTVA(a); vb = this.orderTotalFaraTVA(b); break;
+          case 'tva':     va = this.orderTotalCuTVA(a);   vb = this.orderTotalCuTVA(b);   break;
+          case 'status':  va = a.status;                  vb = b.status;                  break;
+          default: return 0;
+        }
+        if (typeof va === 'string') return dir * va.localeCompare(vb, 'ro');
+        return dir * ((va as number) - (vb as number));
+      });
     }
     return sortByFamily(orders);
   });
@@ -143,18 +193,60 @@ export class HistoryComponent {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  cycleSortProduse(): void {
-    this.sortProduse.update(s => s === '' ? 'asc' : s === 'asc' ? 'desc' : '');
+  sort(field: string): void {
+    if (this.sortField() === field) {
+      this.sortOrder.update(o => (o === 1 ? -1 : 1));
+    } else {
+      this.sortField.set(field);
+      this.sortOrder.set(1);
+    }
+  }
+
+  sortIcon(field: string): string {
+    if (this.sortField() !== field) return 'unfold_more';
+    return this.sortOrder() === 1 ? 'arrow_upward' : 'arrow_downward';
   }
 
   resetFilters(): void {
     this.filterNr.set(''); this.filterClient.set(''); this.filterPhone.set(''); this.filterStatus.set('');
-    this.sortProduse.set('');
+    this.filterLivrare.set(''); this.filterAddress.set('');
+    this.sortField.set(''); this.sortOrder.set(1);
     this.dateRangeForm.reset();
+    this.deliveryRangeForm.reset();
   }
 
   formatDate(iso: string): string {
     return new Date(iso).toLocaleString('ro-RO');
+  }
+
+  pFaraTVA(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): number | null {
+    if (p.pretFaraTVA != null) return p.pretFaraTVA;
+    if (p.catalogId) return this.catalogsService.findProduct(p.catalogId, p.nr)?.pretFaraTVA ?? null;
+    return null;
+  }
+  pCuTVA(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): number | null {
+    if (p.pretCuTVA != null) return p.pretCuTVA;
+    if (p.catalogId) return this.catalogsService.findProduct(p.catalogId, p.nr)?.pretCuTVA ?? null;
+    return null;
+  }
+  orderTotalFaraTVA(order: Order): number {
+    return order.products.reduce((s, p) => s + (this.pFaraTVA(p) ?? 0) * p.qty, 0);
+  }
+  orderTotalCuTVA(order: Order): number {
+    return order.products.reduce((s, p) => s + (this.pCuTVA(p) ?? 0) * p.qty, 0);
+  }
+
+  editTotalFaraTVA(order: Order): number {
+    return order.products.reduce((s, p, j) => {
+      const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
+      return s + (this.pFaraTVA(p) ?? 0) * qty;
+    }, 0);
+  }
+  editTotalCuTVA(order: Order): number {
+    return order.products.reduce((s, p, j) => {
+      const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
+      return s + (this.pCuTVA(p) ?? 0) * qty;
+    }, 0);
   }
 
   shortDate(iso: string): string {
@@ -400,5 +492,77 @@ export class HistoryComponent {
     e.stopPropagation();
     const text = this.ordersService.generateText(order);
     window.open(this.ordersService.generateMailto(order, text), '_blank');
+  }
+
+  printOrder(order: Order, e: Event): void {
+    e.stopPropagation();
+    const status = order.superseded ? 'Înlocuită' : order.status === 'anulat' ? 'Anulată' :
+                   order.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
+    const rows = order.products.map((p, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${p.name}</td>
+        <td style="text-align:center">${p.qty}</td>
+        <td>${p.um}</td>
+        <td>${p.category ?? ''}</td>
+        ${p.codExtern ? `<td>${p.codExtern}</td>` : '<td></td>'}
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html lang="ro"><head><meta charset="UTF-8">
+      <title>Comanda #${order.orderNumber ?? order.id.slice(0,6)}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; color: #111; margin: 24px; }
+        h2 { margin: 0 0 4px; font-size: 16px; }
+        .meta { display: flex; gap: 32px; margin-bottom: 16px; color: #444; font-size: 12px; }
+        .meta span { display: flex; flex-direction: column; }
+        .meta strong { color: #111; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th { background: #f0f0f0; text-align: left; padding: 6px 8px; font-size: 12px;
+             border: 1px solid #ccc; text-transform: uppercase; letter-spacing: .04em; }
+        td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .footer { margin-top: 16px; font-size: 11px; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+        @media print { body { margin: 0; } }
+      </style></head><body>
+      <h2>Comanda #${order.orderNumber ?? '—'} &nbsp;·&nbsp; ${status}</h2>
+      <div class="meta">
+        <span><label>Client</label><strong>${order.client.name}</strong></span>
+        ${order.client.phone ? `<span><label>Telefon</label><strong>${order.client.phone}</strong></span>` : ''}
+        <span><label>Agent</label><strong>${order.agent?.name ?? '—'}</strong></span>
+        <span><label>Data</label><strong>${this.formatDate(order.timestamp)}</strong></span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>#</th><th>Produs</th><th>Cantitate</th><th>UM</th><th>Categorie</th><th>Cod extern</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="footer">Generat din Depozit App · ${new Date().toLocaleString('ro-RO')}</div>
+      <script>window.onload = () => { window.print(); }<\/script>
+    </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+
+  sendWhatsApp(order: Order, phone: string, e: Event): void {
+    e.stopPropagation();
+    const normalized = this._normalizePhone(phone);
+    const text = this.ordersService.generateText(order);
+    const url = `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+
+  sendWhatsAppGroup(order: Order, link: string, e: Event): void {
+    e.stopPropagation();
+    window.open(link, '_blank');
+  }
+
+  private _normalizePhone(phone: string): string {
+    let p = phone.replace(/[\s\-().]/g, '');
+    if (p.startsWith('00')) p = '+' + p.slice(2);
+    if (p.startsWith('0') && !p.startsWith('00')) p = '+4' + p;
+    if (p.startsWith('40') && !p.startsWith('+')) p = '+' + p;
+    return p;
   }
 }

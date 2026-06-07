@@ -712,7 +712,15 @@
                   @for (product of order.products; let i = $index; track i) {
                     @if (getRemainingQtyArr(order)[i] > 0) {
                       <tr>
-                        <td>{{ product.name }} <small class="muted">{{ product.um }}</small></td>
+                        <td>
+                          {{ product.name }} <small class="muted">{{ product.um }}</small>
+                          @if (product.pretFaraTVA != null || product.pretCuTVA != null) {
+                            <div class="price-tags" style="margin-top:2px">
+                              @if (product.pretFaraTVA != null) { <span class="price-notva">{{ product.pretFaraTVA | number:'1.2-2' }} lei</span> }
+                              @if (product.pretCuTVA != null)   { <span class="price-tva">{{ product.pretCuTVA | number:'1.2-2' }} lei</span> }
+                            </div>
+                          }
+                        </td>
                         <td class="num-col">{{ product.qty }}</td>
                         <td class="num-col">{{ getDeliveredQtyArr(order)[i] || 0 }}</td>
                         <td class="num-col remaining-col">{{ getRemainingQtyArr(order)[i] }}</td>

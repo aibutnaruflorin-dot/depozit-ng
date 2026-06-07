@@ -18,6 +18,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TableModule } from 'primeng/table';
 
 export interface CartItem { product: Product; qty: number; }
 
@@ -29,7 +30,8 @@ export interface CartItem { product: Product; qty: number; }
     CommonModule, ReactiveFormsModule, FormsModule,
     MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule,
     MatDividerModule, MatSelectModule, MatCheckboxModule, MatDatepickerModule,
-    MatSnackBarModule, MatTooltipModule
+    MatSnackBarModule, MatTooltipModule,
+    TableModule
   ],
   templateUrl: './new-order.component.html',
   styleUrl:    './new-order.component.scss'
@@ -52,6 +54,8 @@ export class NewOrderComponent implements OnInit {
   cart           = signal<CartItem[]>([]);
   showCart       = signal(false);
   displayMode    = signal<'mixed' | 'grouped'>('mixed');
+  sortField      = signal('');
+  sortOrder      = signal<1 | -1>(1);
 
   private _pendingQty     = signal<Record<string, number | undefined>>({});
   readonly pendingQtyMap  = this._pendingQty.asReadonly();
@@ -75,6 +79,8 @@ export class NewOrderComponent implements OnInit {
 
   furnizorDropdownOpen = signal(false);
   furnizorSearch       = signal('');
+  categoryDropdownOpen = signal(false);
+  categorySearch       = signal('');
 
   readonly allCatSelected = computed(() => this.selectedCatIds().length === 0);
   readonly categories     = computed(() => this.catalogsService.categoriesFor(this.selectedCatIds()));
@@ -85,11 +91,16 @@ export class NewOrderComponent implements OnInit {
     return s ? this.furnizors().filter(f => f.toLowerCase().includes(s)) : this.furnizors();
   });
 
+  readonly filteredCategories = computed(() => {
+    const s = this.categorySearch().toLowerCase().trim();
+    return s ? this.categories().filter(c => c.toLowerCase().includes(s)) : this.categories();
+  });
+
   readonly allFurnizorsSelected = computed(() =>
     this.furnizors().length > 0 && this.furnizorFilter().length === this.furnizors().length
   );
 
-  toggleFurnizorDropdown(): void { this.furnizorDropdownOpen.update(v => !v); }
+  toggleFurnizorDropdown(): void { this.furnizorDropdownOpen.update(v => !v); this.categoryDropdownOpen.set(false); }
   closeFurnizorDropdown(): void  { this.furnizorDropdownOpen.set(false); this.furnizorSearch.set(''); }
 
   toggleFurnizorItem(f: string): void {
@@ -106,6 +117,10 @@ export class NewOrderComponent implements OnInit {
     }
   }
 
+  toggleCategoryDropdown(): void  { this.categoryDropdownOpen.update(v => !v); this.furnizorDropdownOpen.set(false); }
+  closeCategoryDropdown(): void   { this.categoryDropdownOpen.set(false); this.categorySearch.set(''); }
+  selectCategory(c: string): void { this.categoryFilter.set(c); this.closeCategoryDropdown(); }
+
   toggleCatalog(id: string): void {
     this.selectedCatIds.update(ids =>
       ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
@@ -118,24 +133,69 @@ export class NewOrderComponent implements OnInit {
     this.displayMode.update(m => m === 'mixed' ? 'grouped' : 'mixed');
   }
 
+  sort(field: string): void {
+    if (this.sortField() === field) { this.sortOrder.update(o => o === 1 ? -1 : 1); }
+    else { this.sortField.set(field); this.sortOrder.set(1); }
+  }
+  sortIcon(field: string): string {
+    if (this.sortField() !== field) return 'unfold_more';
+    return this.sortOrder() === 1 ? 'arrow_upward' : 'arrow_downward';
+  }
+
   readonly suggestions = computed(() => {
     const q          = this.searchQuery().trim().toLowerCase();
     const cat        = this.categoryFilter();
     const furnizors  = this.furnizorFilter();
     const codExtern  = this.codExternFilter().trim().toLowerCase();
     const mode       = this.displayMode();
+    const field      = this.sortField();
+    const order      = this.sortOrder();
+
     const base = mode === 'grouped'
       ? this.catalogsService.productsForGrouped(this.selectedCatIds())
       : this.catalogsService.productsFor(this.selectedCatIds());
-    if (!q && !cat && furnizors.length === 0 && !codExtern) return base.slice(0, 200);
-    return base.filter(p => {
-      const matchQ        = !q                   || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
-      const matchCat      = !cat                 || p.category === cat;
-      const matchFurnizor = furnizors.length === 0 || furnizors.includes(p.furnizor ?? '');
-      const matchCodExt   = !codExtern           || (p.codExtern ?? '').toLowerCase().includes(codExtern);
-      return matchQ && matchCat && matchFurnizor && matchCodExt;
-    }).slice(0, 200);
+
+    const result = (!q && !cat && furnizors.length === 0 && !codExtern)
+      ? base
+      : base.filter(p => {
+          const matchQ        = !q                    || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
+          const matchCat      = !cat                  || p.category === cat;
+          const matchFurnizor = furnizors.length === 0 || furnizors.includes(p.furnizor ?? '');
+          const matchCodExt   = !codExtern            || (p.codExtern ?? '').toLowerCase().includes(codExtern);
+          return matchQ && matchCat && matchFurnizor && matchCodExt;
+        });
+
+    const cmp = (a: any, b: any) => {
+      let av = a[field] ?? '';
+      let bv = b[field] ?? '';
+      if (typeof av === 'string') av = av.toLowerCase();
+      if (typeof bv === 'string') bv = bv.toLowerCase();
+      return av < bv ? -order : av > bv ? order : 0;
+    };
+
+    if (!field) return result.slice(0, 200);
+
+    if (mode === 'grouped') {
+      const groups = new Map<string, any[]>();
+      const groupOrder: string[] = [];
+      for (const p of result) {
+        if (!groups.has(p.catalogId)) { groups.set(p.catalogId, []); groupOrder.push(p.catalogId); }
+        groups.get(p.catalogId)!.push(p);
+      }
+      const out: any[] = [];
+      for (const id of groupOrder) out.push(...groups.get(id)!.sort(cmp));
+      return out.slice(0, 200);
+    }
+
+    return [...result].sort(cmp).slice(0, 200);
   });
+
+  readonly totalFaraTVA = computed(() =>
+    this.cart().reduce((s, i) => s + (i.product.pretFaraTVA ?? 0) * i.qty, 0)
+  );
+  readonly totalCuTVA = computed(() =>
+    this.cart().reduce((s, i) => s + (i.product.pretCuTVA ?? 0) * i.qty, 0)
+  );
 
   rowBg(catalogId: string): string     { return this.catalogsService.bgColor(catalogId, 0.08); }
   rowBorder(catalogId: string): string { return this.catalogsService.borderColor(catalogId); }
@@ -285,14 +345,16 @@ export class NewOrderComponent implements OnInit {
         ? this._localDate(this.deliveryDateCtrl.value) : undefined,
       deliveryTime: this.cuLivrare() ? (this.deliveryTimeCtrl.value?.trim() || undefined) : undefined,
       products: this.cart().map(i => ({
-        nr:        i.product.nr,
-        name:      i.product.name,
-        um:        i.product.um,
-        qty:       i.qty,
-        category:  i.product.category,
-        catalogId: i.product.catalogId,
-        furnizor:  i.product.furnizor,
-        codExtern: i.product.codExtern,
+        nr:          i.product.nr,
+        name:        i.product.name,
+        um:          i.product.um,
+        qty:         i.qty,
+        category:    i.product.category,
+        catalogId:   i.product.catalogId,
+        furnizor:    i.product.furnizor,
+        codExtern:   i.product.codExtern,
+        pretFaraTVA: i.product.pretFaraTVA ?? undefined,
+        pretCuTVA:   i.product.pretCuTVA ?? undefined,
       } as OrderProduct)),
       status: 'trimis'
     };

@@ -73,12 +73,23 @@ export class HistoryAllComponent {
     initialValue: this.dateRangeForm.value
   });
 
-  filterAgent  = signal('');
-  filterNr     = signal('');
-  filterClient = signal('');
-  filterPhone  = signal('');
-  filterStatus = signal('');
-  sortProduse  = signal<'' | 'asc' | 'desc'>('');
+  readonly deliveryRangeForm = new FormGroup({
+    start: new FormControl<Date | null>(null),
+    end:   new FormControl<Date | null>(null),
+  });
+  private readonly _deliveryRange = toSignal(this.deliveryRangeForm.valueChanges, {
+    initialValue: this.deliveryRangeForm.value
+  });
+
+  filterAgent   = signal('');
+  filterNr      = signal('');
+  filterClient  = signal('');
+  filterPhone   = signal('');
+  filterStatus  = signal('');
+  filterLivrare = signal<'' | 'cu' | 'fara'>('');
+  filterAddress = signal('');
+  sortField     = signal<string>('');
+  sortOrder     = signal<1|-1>(1);
   hideSuperseded = signal(true);
 
   expandedRows = signal<Record<string, boolean>>({});
@@ -101,18 +112,24 @@ export class HistoryAllComponent {
   });
 
   readonly filtered = computed(() => {
-    const agent     = this.filterAgent();
-    const nr        = this.filterNr().trim().replace('#', '');
-    const client    = this.filterClient().trim().toLowerCase();
-    const phone     = this.filterPhone().trim();
-    const status    = this.filterStatus();
-    const dateRange = this._dateRange();
+    const agent      = this.filterAgent();
+    const nr         = this.filterNr().trim().replace('#', '');
+    const client     = this.filterClient().trim().toLowerCase();
+    const phone      = this.filterPhone().trim();
+    const status     = this.filterStatus();
+    const livrare    = this.filterLivrare();
+    const address    = this.filterAddress().trim().toLowerCase();
+    const dateRange  = this._dateRange();
+    const delivRange = this._deliveryRange();
 
     let orders = this.ordersService.orders();
-    if (agent)  orders = orders.filter(o => String(o.agent?.id) === agent);
-    if (nr)     orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
-    if (client) orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
-    if (phone)  orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
+    if (agent)           orders = orders.filter(o => String(o.agent?.id) === agent);
+    if (nr)              orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
+    if (client)          orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
+    if (phone)           orders = orders.filter(o => (o.client?.phone ?? '').includes(phone));
+    if (livrare === 'cu')   orders = orders.filter(o => !!o.cuLivrare);
+    if (livrare === 'fara') orders = orders.filter(o => !o.cuLivrare);
+    if (address)         orders = orders.filter(o => (o.client?.address ?? '').toLowerCase().includes(address));
     if (status) orders = orders.filter(o =>
       status === 'În așteptare'   ? (o.status === 'trimis' && !o.superseded) :
       status === 'Acceptată'      ? o.status === 'acceptat' :
@@ -129,21 +146,45 @@ export class HistoryAllComponent {
       const to = this._localDate(dateRange.end);
       orders = orders.filter(o => this._localDate(new Date(o.timestamp)) <= to);
     }
+    if (delivRange.start) {
+      const from = this._localDate(delivRange.start);
+      orders = orders.filter(o => !!o.deliveryDate && o.deliveryDate >= from);
+    }
+    if (delivRange.end) {
+      const to = this._localDate(delivRange.end);
+      orders = orders.filter(o => !!o.deliveryDate && o.deliveryDate <= to);
+    }
     return orders;
   });
 
   readonly sortedFiltered = computed(() => {
-    const sortDir = this.sortProduse();
+    const field = this.sortField();
+    const dir   = this.sortOrder();
     let orders = this.hideSuperseded()
       ? this.filtered().filter(o => !o.superseded)
       : this.filtered();
 
-    if (sortDir) {
-      return [...orders].sort((a, b) =>
-        sortDir === 'asc'
-          ? a.products.length - b.products.length
-          : b.products.length - a.products.length
-      );
+    if (field) {
+      return [...orders].sort((a, b) => {
+        let va: any, vb: any;
+        switch (field) {
+          case 'nr':      va = a.orderNumber ?? 0;      vb = b.orderNumber ?? 0;      break;
+          case 'data':    va = a.timestamp;             vb = b.timestamp;             break;
+          case 'client':  va = a.client?.name ?? '';    vb = b.client?.name ?? '';    break;
+          case 'telefon': va = a.client?.phone ?? '';   vb = b.client?.phone ?? '';   break;
+          case 'livrare': va = a.cuLivrare ? 1 : 0;    vb = b.cuLivrare ? 1 : 0;    break;
+          case 'adresa':  va = a.client?.address ?? ''; vb = b.client?.address ?? ''; break;
+          case 'termen':  va = a.deliveryDate ?? '';    vb = b.deliveryDate ?? '';    break;
+          case 'agent':   va = a.agent?.name ?? '';     vb = b.agent?.name ?? '';     break;
+          case 'produse': va = a.products.length;            vb = b.products.length;            break;
+          case 'net':     va = this.orderTotalFaraTVA(a); vb = this.orderTotalFaraTVA(b); break;
+          case 'tva':     va = this.orderTotalCuTVA(a);   vb = this.orderTotalCuTVA(b);   break;
+          case 'status':  va = a.status;                  vb = b.status;                  break;
+          default: return 0;
+        }
+        if (typeof va === 'string') return dir * va.localeCompare(vb, 'ro');
+        return dir * ((va as number) - (vb as number));
+      });
     }
     return sortByFamily(orders);
   });
@@ -164,8 +205,18 @@ export class HistoryAllComponent {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  cycleSortProduse(): void {
-    this.sortProduse.update(s => s === '' ? 'asc' : s === 'asc' ? 'desc' : '');
+  sort(field: string): void {
+    if (this.sortField() === field) {
+      this.sortOrder.update(o => (o === 1 ? -1 : 1));
+    } else {
+      this.sortField.set(field);
+      this.sortOrder.set(1);
+    }
+  }
+
+  sortIcon(field: string): string {
+    if (this.sortField() !== field) return 'unfold_more';
+    return this.sortOrder() === 1 ? 'arrow_upward' : 'arrow_downward';
   }
 
   isPending(order: Order): boolean {
@@ -186,11 +237,42 @@ export class HistoryAllComponent {
     });
   }
 
+  pFaraTVA(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): number | null {
+    if (p.pretFaraTVA != null) return p.pretFaraTVA;
+    if (p.catalogId) return this.catalogsService.findProduct(p.catalogId, p.nr)?.pretFaraTVA ?? null;
+    return null;
+  }
+  pCuTVA(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): number | null {
+    if (p.pretCuTVA != null) return p.pretCuTVA;
+    if (p.catalogId) return this.catalogsService.findProduct(p.catalogId, p.nr)?.pretCuTVA ?? null;
+    return null;
+  }
+  orderTotalFaraTVA(order: Order): number {
+    return order.products.reduce((s, p) => s + (this.pFaraTVA(p) ?? 0) * p.qty, 0);
+  }
+  orderTotalCuTVA(order: Order): number {
+    return order.products.reduce((s, p) => s + (this.pCuTVA(p) ?? 0) * p.qty, 0);
+  }
+  editTotalFaraTVA(order: Order): number {
+    return order.products.reduce((s, p, j) => {
+      const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
+      return s + (this.pFaraTVA(p) ?? 0) * qty;
+    }, 0);
+  }
+  editTotalCuTVA(order: Order): number {
+    return order.products.reduce((s, p, j) => {
+      const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
+      return s + (this.pCuTVA(p) ?? 0) * qty;
+    }, 0);
+  }
+
   reset(): void {
     this.filterAgent.set(''); this.filterClient.set('');
     this.filterNr.set(''); this.filterPhone.set(''); this.filterStatus.set('');
-    this.sortProduse.set('');
+    this.filterLivrare.set(''); this.filterAddress.set('');
+    this.sortField.set(''); this.sortOrder.set(1);
     this.dateRangeForm.reset();
+    this.deliveryRangeForm.reset();
   }
 
   formatDate(iso: string): string {
