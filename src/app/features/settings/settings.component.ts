@@ -518,7 +518,7 @@ export class SettingsComponent implements OnInit {
   readonly PROTECTED_FUNCS = new Set<string>(SYSTEM_FUNC_IDS);   // no delete
   readonly PROTECTED_PERMS = new Set<string>(SYSTEM_PERM_IDS);   // no delete
   readonly LOCKED_FUNCS    = new Set(['administrator', 'keyuser']); // no edit + no delete
-  readonly LOCKED_PERMS    = new Set(['admin']);                   // no edit + no delete
+  readonly LOCKED_PERMS    = new Set(['admin', 'keyuser']);        // no edit + no delete
 
   get systemFunctions() {
     const order: string[] = [...SYSTEM_FUNC_IDS];
@@ -531,7 +531,10 @@ export class SettingsComponent implements OnInit {
   }
 
   get systemPermissions() {
-    return this.permissions().filter(p => this.PROTECTED_PERMS.has(p.id));
+    const order: string[] = [...SYSTEM_PERM_IDS];
+    return this.permissions()
+      .filter(p => this.PROTECTED_PERMS.has(p.id))
+      .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   }
   get customPermissions() {
     return this.permissions().filter(p => !this.PROTECTED_PERMS.has(p.id));
