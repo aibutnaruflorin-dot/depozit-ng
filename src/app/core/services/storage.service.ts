@@ -33,7 +33,7 @@ export class StorageService {
     }
     // Cleanup: remove any leftover superadmin users / fix roles
     const users = this.get<User[]>('app_users') ?? [];
-    const validRoles = ['admin', 'agent', 'contabilitate', 'sub-agent'];
+    const validRoles = ['admin', 'keyuser', 'agent', 'contabilitate', 'sub-agent'];
     const fixed = users
       .filter(u => u.username !== 'superadmin')
       .map(u => validRoles.includes(u.role as string) ? u : { ...u, role: 'admin' as any });

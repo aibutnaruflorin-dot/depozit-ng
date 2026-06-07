@@ -558,8 +558,14 @@ export class SettingsComponent implements OnInit {
     this.showPermModal.set(true);
   }
 
+  canEditPerm(perm: AppPermission): boolean {
+    const role = this.auth.session()?.role;
+    if (role === 'keyuser') return perm.id !== 'keyuser'; // keyuser edits all except itself
+    return !this.LOCKED_PERMS.has(perm.id);
+  }
+
   openEditPerm(perm: AppPermission): void {
-    if (this.LOCKED_PERMS.has(perm.id)) return;
+    if (!this.canEditPerm(perm)) return;
     this.editingPermId.set(perm.id);
     this.permForm.patchValue({ name: perm.name, isAdmin: perm.isAdmin });
     this.permPagesAccess = { ...perm.pages };

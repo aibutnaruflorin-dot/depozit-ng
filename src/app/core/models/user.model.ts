@@ -1,5 +1,5 @@
 export type JobRole    = 'sofer' | 'ajutor_manipulant' | 'casa_marcat' | 'contabilitate';
-export type Permission = 'admin' | 'contabilitate' | 'agent' | 'sub-agent';
+export type Permission = 'admin' | 'keyuser' | 'contabilitate' | 'agent' | 'sub-agent';
 
 export const JOB_ROLE_LABELS: Record<JobRole, string> = {
   sofer:             'Șofer',
@@ -10,6 +10,7 @@ export const JOB_ROLE_LABELS: Record<JobRole, string> = {
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   admin:         'Admin',
+  keyuser:       'KeyUser',
   contabilitate: 'Contabilitate',
   agent:         'Agent',
   'sub-agent':   'Sub-agent'

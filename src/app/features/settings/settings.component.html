@@ -443,15 +443,15 @@
                   <span class="func-system-badge">Sistem</span>
                 </div>
                 <div class="perm-item-actions">
-                  @if (LOCKED_PERMS.has(perm.id)) {
-                    <mat-icon matTooltip="Permisiune protejată — nu poate fi modificată"
-                              style="color:var(--color-text-muted);margin-right:8px;font-size:18px">lock</mat-icon>
-                  } @else {
+                  @if (canEditPerm(perm)) {
                     <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
                       <mat-icon>edit</mat-icon>
                     </button>
                     <mat-icon matTooltip="Nu poate fi ștearsă"
                               style="color:var(--color-text-muted);margin:0 4px;font-size:18px">lock</mat-icon>
+                  } @else {
+                    <mat-icon matTooltip="Permisiune protejată — nu poate fi modificată"
+                              style="color:var(--color-text-muted);margin-right:8px;font-size:18px">lock</mat-icon>
                   }
                 </div>
               </div>
