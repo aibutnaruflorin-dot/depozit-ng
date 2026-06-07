@@ -59,8 +59,9 @@
   display: inline-block; padding: 1px 7px; border-radius: 12px;
   font-size: 0.72rem; font-weight: 700;
   background: var(--color-primary); color: #fff;
-  &--warn  { background: #f59e0b; }
-  &--muted { background: var(--color-text-muted); }
+  &--warn    { background: #f59e0b; }
+  &--muted   { background: var(--color-text-muted); }
+  &--overdue { background: #dc2626; }
 }
 
 /* ── Layouts ─────────────────────────────────────────────────── */
@@ -123,6 +124,30 @@
   padding: 1rem;
   overflow-x: auto;
 }
+
+/* ── Curse cu termen depășit ─────────────────────────────────── */
+.overdue-section {
+  margin-top: 1.25rem;
+  background: #fff9f9;
+  border: 1px solid #fca5a5; border-radius: 12px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+.panel-title--overdue {
+  color: #991b1b;
+  mat-icon { color: #dc2626; }
+}
+.badge-pill--overdue {
+  background: #dc2626; color: #fff;
+}
+.row--overdue td { background: #fff5f5; }
+.overdue-time { color: #dc2626; font-weight: 600; }
+.trip-status--overdue {
+  background: #fee2e2; border: 1px solid #fca5a5;
+  color: #991b1b;
+  mat-icon { color: #dc2626; }
+}
+.actions-cell { white-space: nowrap; }
 
 /* ── Sidebar sections ────────────────────────────────────────── */
 .side-section {

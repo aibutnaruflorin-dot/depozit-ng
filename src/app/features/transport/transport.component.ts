@@ -230,6 +230,22 @@ export class TransportComponent implements OnInit {
       );
   });
 
+  readonly activeOnTime = computed(() =>
+    this.transportService.transports()
+      .filter(t => t.status !== 'livrat' && new Date(t.oraSosire).getTime() >= Date.now())
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))
+  );
+
+  readonly activeOverdue = computed(() =>
+    this.transportService.transports()
+      .filter(t => t.status !== 'livrat' && new Date(t.oraSosire).getTime() < Date.now())
+      .sort((a, b) => a.oraSosire.localeCompare(b.oraSosire))
+  );
+
+  isDeleteAllowed(t: Transport): boolean {
+    return new Date(t.oraSosire).getTime() < Date.now() - 24 * 3_600_000;
+  }
+
   overlapIds = computed<Set<string>>(() => {
     const active = this.transportService.active();
     const result = new Set<string>();

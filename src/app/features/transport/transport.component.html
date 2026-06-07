@@ -63,8 +63,8 @@
         <div class="l2-active">
           <div class="panel-title">
             <mat-icon>directions_car</mat-icon> Status Curse planificate
-            @if (transportService.active().length) {
-              <span class="badge-pill badge-pill--warn">{{ transportService.active().length }}</span>
+            @if (activeOnTime().length) {
+              <span class="badge-pill badge-pill--warn">{{ activeOnTime().length }}</span>
             }
           </div>
           <ng-container [ngTemplateOutlet]="activeTableTpl"></ng-container>
@@ -74,6 +74,7 @@
 
     </div><!-- /layout-2 -->
 
+    <ng-container [ngTemplateOutlet]="overdueSection"></ng-container>
     <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
   }
 
@@ -94,8 +95,8 @@
       <div class="l3-section">
         <div class="panel-title">
           <mat-icon>directions_car</mat-icon> Status Curse planificate
-          @if (transportService.active().length) {
-            <span class="badge-pill badge-pill--warn">{{ transportService.active().length }}</span>
+          @if (activeOnTime().length) {
+            <span class="badge-pill badge-pill--warn">{{ activeOnTime().length }}</span>
           }
         </div>
         <ng-container [ngTemplateOutlet]="activeTableTpl"></ng-container>
@@ -114,6 +115,7 @@
 
     </div><!-- /layout-3 -->
 
+    <ng-container [ngTemplateOutlet]="overdueSection"></ng-container>
     <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
   }
 
@@ -277,9 +279,9 @@
   }
 </ng-template>
 
-<!-- ── Status Curse planificate – table ── -->
+<!-- ── Status Curse planificate – table (termen viitor/curent) ── -->
 <ng-template #activeTableTpl>
-  @if (!transportService.active().length) {
+  @if (!activeOnTime().length) {
     <div class="empty-state">
       <mat-icon>directions_car</mat-icon>
       <p>Nicio cursă planificată.</p>
@@ -298,7 +300,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (t of transportService.active(); track t.id) {
+        @for (t of activeOnTime(); track t.id) {
           <tr [class.row--active]="t.status==='in_livrare'" [class.row--overlap]="overlapIds().has(t.id)">
             <td>
               <span class="vehicle-cell">
@@ -319,15 +321,11 @@
             </td>
             <td>
               @for (o of ordersForTransport(t); track o.id) {
-                <div class="order-chip">
+                <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                   <div class="order-chip-top">
                     <span class="order-num-badge">#{{ o.orderNumber }}</span>
                     <span class="order-chip-name">{{ o.client.name }}</span>
-                    @for (d of t.deliveries; track d.orderId) {
-                      @if (d.orderId === o.id) {
-                        <span class="muted small"> · {{ d.items.length }} art.</span>
-                      }
-                    }
+                    <span class="muted small"> · {{ deliveryItems(t, o.id).length }} art.</span>
                     @if (isPartialTripForOrder(t, o)) {
                       <span class="order-partial-tag">livrare parțială</span>
                     }
@@ -372,6 +370,104 @@
         }
       </tbody>
     </table>
+  }
+</ng-template>
+
+<!-- ── Curse cu termen depășit ── -->
+<ng-template #overdueSection>
+  @if (activeOverdue().length) {
+    <div class="overdue-section">
+      <div class="panel-title panel-title--overdue">
+        <mat-icon>warning</mat-icon> Curse cu termen depășit
+        <span class="badge-pill badge-pill--overdue">{{ activeOverdue().length }}</span>
+      </div>
+      <table class="delivery-table">
+        <thead>
+          <tr>
+            <th>Mașină</th>
+            <th>Șofer</th>
+            <th>Plecare → Sosire</th>
+            <th>Comenzi / Articole</th>
+            <th>Valoare</th>
+            <th>Status</th>
+            <th>Acțiuni</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of activeOverdue(); track t.id) {
+            <tr class="row--overdue">
+              <td>
+                <span class="vehicle-cell">
+                  <mat-icon>local_shipping</mat-icon>
+                  <span>
+                    <strong>{{ getVehicleName(t.vehicleId) }}</strong><br>
+                    <small>{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
+                  </span>
+                </span>
+              </td>
+              <td>{{ getDriverName(t.driverId) }}</td>
+              <td>
+                <div class="times-cell">
+                  <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
+                  <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                  <span class="overdue-time">{{ transportService.formatDateTime(t.oraSosire) }}</span>
+                </div>
+              </td>
+              <td>
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
+                    <div class="order-chip-top">
+                      <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                      <span class="order-chip-name">{{ o.client.name }}</span>
+                      <span class="muted small"> · {{ deliveryItems(t, o.id).length }} art.</span>
+                      @if (isPartialTripForOrder(t, o)) {
+                        <span class="order-partial-tag">livrare parțială</span>
+                      }
+                    </div>
+                    @if (o.client.address || o.deliveryDate) {
+                      <div class="order-chip-meta">
+                        @if (o.client.address) {
+                          <span class="order-chip-addr">
+                            <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                          </span>
+                        }
+                        @if (o.deliveryDate) {
+                          <span class="order-chip-deadline">
+                            <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </td>
+              <td class="value-cell">
+                @let ov = tripValue(t);
+                <span class="val-net">{{ ov.net | number:'1.2-2' }} lei</span>
+                <span class="val-tva">{{ ov.tva | number:'1.2-2' }} cu TVA</span>
+              </td>
+              <td>
+                <span class="trip-status-badge trip-status--overdue">
+                  <mat-icon>warning</mat-icon>
+                  {{ t.status === 'in_livrare' ? 'În livrare' : 'Planificat' }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                @if (auth.isAdmin()) {
+                  <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează / reprogramează"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button color="warn"
+                          [disabled]="!isDeleteAllowed(t)"
+                          [matTooltip]="isDeleteAllowed(t) ? 'Șterge cursa' : 'Disponibil după 24h de la termen'"
+                          (click)="deleteTransport(t)">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 </ng-template>
 
