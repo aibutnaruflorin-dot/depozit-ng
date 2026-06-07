@@ -649,7 +649,16 @@
   &--overlap {
     outline: 2px solid #ef4444;
   }
+  &--overdue {
+    background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b;
+    animation: pulse-overdue 1.8s ease-in-out infinite;
+  }
   &:hover { filter: brightness(0.92); }
+}
+
+@keyframes pulse-overdue {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .cal-bar-text {
@@ -666,6 +675,7 @@
   width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
   &--planificat { background: #bfdbfe; border: 1px solid #93c5fd; }
   &--in-livrare { background: #bbf7d0; border: 1px solid #86efac; }
+  &--overdue    { background: #fee2e2; border: 1px solid #fca5a5; }
 }
 
 /* tooltip fix */

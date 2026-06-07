@@ -74,6 +74,7 @@ interface CalBar {
   transport: Transport;
   leftPct: number;
   widthPct: number;
+  overdue?: boolean;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -606,22 +607,31 @@ export class TransportComponent implements OnInit {
   // ── Calendar helpers ──────────────────────────────────────────────────────
 
   tripsForVehicleDay(vehicleId: string, day: CalDay): CalBar[] {
-    const { dayStart, dayEnd } = day;
+    const { dayStart, dayEnd, isToday } = day;
     const duration = dayEnd - dayStart;
     return this.transportService.transports()
       .filter(t => t.vehicleId === vehicleId && t.status !== 'livrat')
       .filter(t => {
         const pT = new Date(t.oraPlecare).getTime();
         const sT = new Date(t.oraSosire).getTime();
-        return pT < dayEnd && sT > dayStart;
+        if (pT < dayEnd && sT > dayStart) return true;
+        // Overdue trips (missed deadline) — show only on today's column
+        return isToday && sT <= dayStart;
       })
       .map(t => {
-        const pT = Math.max(new Date(t.oraPlecare).getTime(), dayStart);
-        const sT = Math.min(new Date(t.oraSosire).getTime(), dayEnd);
+        const pT = new Date(t.oraPlecare).getTime();
+        const sT = new Date(t.oraSosire).getTime();
+        const overdue = sT <= dayStart;
+        if (overdue) {
+          // Pin to left edge of today, fixed 6% width
+          return { transport: t, leftPct: 0, widthPct: 6, overdue: true };
+        }
+        const clampedP = Math.max(pT, dayStart);
+        const clampedS = Math.min(sT, dayEnd);
         return {
           transport: t,
-          leftPct:  Math.max(0, ((pT - dayStart) / duration) * 100),
-          widthPct: Math.max(1, ((sT - pT) / duration) * 100)
+          leftPct:  Math.max(0, ((clampedP - dayStart) / duration) * 100),
+          widthPct: Math.max(1, ((clampedS - clampedP) / duration) * 100)
         };
       });
   }
