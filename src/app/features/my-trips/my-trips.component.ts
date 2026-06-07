@@ -21,6 +21,19 @@ export class MyTripsComponent {
   showHistoric    = signal(false);
   showHistoricMap = signal<Record<string, boolean>>({});
 
+  selectedDelivery = signal<{
+    order: Order;
+    items: { name: string; qty: number; um: string }[];
+  } | null>(null);
+
+  openDelivery(t: Transport, o: Order): void {
+    this.selectedDelivery.set({ order: o, items: this.deliveryItems(t, o.id) });
+  }
+
+  closeDelivery(): void {
+    this.selectedDelivery.set(null);
+  }
+
   /** ID-ul userului curent ca string, pentru a putea fi comparat cu driverId din transport */
   readonly myDriverId = computed(() => {
     const uid = this.auth.session()?.userId;
@@ -138,6 +151,18 @@ export class MyTripsComponent {
 
   articleCount(t: Transport): number {
     return t.deliveries.reduce((s, d) => s + d.items.reduce((a, i) => a + i.qty, 0), 0);
+  }
+
+  deliveryItems(t: Transport, orderId: string): { name: string; qty: number; um: string }[] {
+    const delivery = t.deliveries.find(d => d.orderId === orderId);
+    const order    = this.getOrder(orderId);
+    if (!delivery || !order) return [];
+    return delivery.items
+      .filter(item => item.qty > 0)
+      .map(item => {
+        const p = order.products[item.productIndex];
+        return { name: p?.name ?? '?', qty: item.qty, um: p?.um ?? '' };
+      });
   }
 
   getVehicleName(id: string): string {

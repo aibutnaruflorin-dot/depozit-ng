@@ -120,8 +120,12 @@
 
 /* ── Order chip ── */
 .order-chip {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 4px 0;
+  & + & { border-top: 1px dashed var(--color-border); padding-top: 6px; margin-top: 4px; }
+}
+.order-chip-header {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  padding: 3px 0;
 }
 .order-num-badge {
   display: inline-block; background: var(--color-primary);
@@ -135,7 +139,89 @@
   mat-icon { font-size: 13px; width: 13px; height: 13px; }
   &:hover { color: var(--color-primary); }
 }
-.art-count { font-size: 0.78rem; color: var(--color-text-muted); }
+
+/* ── Clickable chip ── */
+.order-chip--clickable {
+  cursor: pointer; border-radius: 6px;
+  padding: 4px 6px; margin: -4px -6px;
+  transition: background .12s;
+  &:hover { background: rgba(0,0,0,.04); }
+}
+
+/* ── Delivery detail modal ── */
+.dlv-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+.dlv-modal {
+  background: #fff; border-radius: 12px;
+  width: 100%; max-width: 520px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.22);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.dlv-header {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  .dlv-client { flex: 1; font-size: 1rem; }
+  .dlv-close {
+    margin-left: auto; background: none; border: none;
+    cursor: pointer; padding: 4px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--color-text-muted);
+    &:hover { background: var(--color-surface-2); }
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  }
+}
+.order-num-badge--lg {
+  font-size: 0.85rem; padding: 3px 10px;
+}
+.dlv-address {
+  display: flex; align-items: center; gap: 4px;
+  padding: 0.5rem 1.25rem 0;
+  font-size: 0.85rem;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+}
+.dlv-meta {
+  display: flex; align-items: center; gap: 4px;
+  padding: 0.3rem 1.25rem 0;
+  font-size: 0.82rem; color: var(--color-text-muted);
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+.dlv-items-title {
+  padding: 0.75rem 1.25rem 0.4rem;
+  font-size: 0.75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+.dlv-empty {
+  padding: 0.5rem 1.25rem 1rem;
+  font-size: 0.85rem; color: var(--color-text-muted); margin: 0;
+}
+.dlv-items-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.88rem;
+  th {
+    padding: 0.4rem 1.25rem;
+    text-align: left; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+  }
+  td {
+    padding: 0.55rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  tr:last-child td { border-bottom: none; }
+}
+.dlv-qty {
+  font-weight: 700; color: var(--color-primary);
+  white-space: nowrap; text-align: right; width: 90px;
+}
 
 .delivery-deadline {
   display: inline-flex; align-items: center; gap: 2px;

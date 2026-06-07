@@ -184,6 +184,64 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════
+     MODAL — detalii comandă / articole
+     ════════════════════════════════════════════════════════ -->
+@if (selectedDelivery(); as dlv) {
+  <div class="dlv-overlay" (click)="closeDelivery()">
+    <div class="dlv-modal" (click)="$event.stopPropagation()">
+
+      <div class="dlv-header">
+        <span class="order-num-badge order-num-badge--lg">#{{ dlv.order.orderNumber }}</span>
+        <strong class="dlv-client">{{ dlv.order.client.name }}</strong>
+        @if (dlv.order.status === 'livrat_partial') {
+          <span class="partial-badge">livrare parțială</span>
+        }
+        <button class="dlv-close" (click)="closeDelivery()" aria-label="Închide">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      @if (dlv.order.client.address) {
+        <a [href]="mapsLink(dlv.order.client.address)" target="_blank" class="dlv-address addr-link">
+          <mat-icon>location_on</mat-icon>{{ dlv.order.client.address }}
+        </a>
+      }
+
+      @if (dlv.order.deliveryDate) {
+        <div class="dlv-meta">
+          <mat-icon>schedule</mat-icon>
+          Livrare: {{ dlv.order.deliveryDate | date:'dd.MM.yyyy' }}{{ dlv.order.deliveryTime ? ' ' + dlv.order.deliveryTime : '' }}
+        </div>
+      }
+
+      <div class="dlv-items-title">Articole de livrat</div>
+
+      @if (!dlv.items.length) {
+        <p class="dlv-empty">Nicio cantitate înregistrată pe această cursă.</p>
+      } @else {
+        <table class="dlv-items-table">
+          <thead>
+            <tr>
+              <th>Produs</th>
+              <th>Cantitate</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of dlv.items; track item.name) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td class="dlv-qty">{{ item.qty }} {{ item.um }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+    </div>
+  </div>
+}
+
+<!-- ════════════════════════════════════════════════════════
      SHARED TEMPLATE — tabel curse
      ════════════════════════════════════════════════════════ -->
 <ng-template #tripTableTpl let-trips="trips">
@@ -220,23 +278,25 @@
           </td>
           <td>
             @for (o of ordersForTransport(t); track o.id) {
-              <div class="order-chip">
-                <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                <strong>{{ o.client.name }}</strong>
+              <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
+                <div class="order-chip-header">
+                  <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                  <strong>{{ o.client.name }}</strong>
+                  @if (o.status === 'livrat_partial') {
+                    <span class="partial-badge">livrare parțială</span>
+                  }
+                  @if (o.deliveryDate) {
+                    <span class="delivery-deadline">
+                      <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                    </span>
+                  }
+                  <span class="art-count">· {{ deliveryItems(t, o.id).length }} art.</span>
+                </div>
                 @if (o.client.address) {
-                  <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link">
+                  <span class="addr-text">
                     <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                  </a>
-                }
-                @if (o.status === 'livrat_partial') {
-                  <span class="partial-badge">livrare parțială</span>
-                }
-                @if (o.deliveryDate) {
-                  <span class="delivery-deadline">
-                    <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
                   </span>
                 }
-                <span class="art-count">· {{ articleCount(t) }} art.</span>
               </div>
             }
           </td>
