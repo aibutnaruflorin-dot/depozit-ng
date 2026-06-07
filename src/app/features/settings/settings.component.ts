@@ -75,6 +75,12 @@ export class SettingsComponent implements OnInit {
   editingUserId  = signal<number | null>(null);
   userForm: FormGroup;
 
+  showAdminSecModal = signal(false);
+  adminNewPassword  = '';
+  adminConfirmPass  = '';
+  adminRecoveryEmail = '';
+  adminPassError    = '';
+
   // ── Vehicles state ────────────────────────────────────────────────────────
   showVehicleModal = signal(false);
   editingVehicleId = signal<string | null>(null);
@@ -299,6 +305,41 @@ export class SettingsComponent implements OnInit {
   }
 
   // ── Utilizatori ───────────────────────────────────────────────────────────
+
+  openAdminSec(): void {
+    const admin = this.users().find(u => u.role === 'admin');
+    this.adminNewPassword   = '';
+    this.adminConfirmPass   = '';
+    this.adminRecoveryEmail = admin?.recoveryEmail ?? '';
+    this.adminPassError     = '';
+    this.showAdminSecModal.set(true);
+  }
+
+  saveAdminSec(): void {
+    const np = this.adminNewPassword.trim();
+    const cp = this.adminConfirmPass.trim();
+    if (np && np !== cp) {
+      this.adminPassError = 'Parolele nu coincid.';
+      return;
+    }
+    if (np && np.length < 4) {
+      this.adminPassError = 'Parola trebuie să aibă minim 4 caractere.';
+      return;
+    }
+    const updated = this.users().map(u => {
+      if (u.role !== 'admin') return u;
+      return {
+        ...u,
+        ...(np ? { password: np } : {}),
+        recoveryEmail: this.adminRecoveryEmail.trim() || undefined
+      };
+    });
+    this.users.set(updated);
+    this.storage.set('app_users', updated);
+    this.transportService.refreshUsers(updated);
+    this.showAdminSecModal.set(false);
+    this.snackBar.open('Setările contului Admin au fost salvate.', '', { duration: 2500 });
+  }
 
   openAddUser(): void {
     this.editingUserId.set(null);

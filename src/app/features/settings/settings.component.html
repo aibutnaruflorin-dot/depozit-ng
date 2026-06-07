@@ -565,7 +565,9 @@
               <td>
                 @if (user.role === 'admin') {
                   <div class="user-actions">
-                    <mat-icon matTooltip="Contul Admin nu poate fi modificat" style="color:var(--color-text-muted)">lock</mat-icon>
+                    <button mat-icon-button (click)="openAdminSec()" matTooltip="Schimbă parola / email recuperare">
+                      <mat-icon>key</mat-icon>
+                    </button>
                   </div>
                 } @else {
                   <div class="user-actions">
@@ -588,6 +590,55 @@
   </mat-tab>
 
 </mat-tab-group>
+
+<!-- Modal securitate cont Admin -->
+@if (showAdminSecModal()) {
+  <div class="modal-overlay" (click)="showAdminSecModal.set(false)">
+    <mat-card appearance="outlined" class="modal-card" role="dialog" (click)="$event.stopPropagation()">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>key</mat-icon> Securitate cont Administrator
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+
+        <p class="wa-hint" style="margin-bottom:1rem">
+          <mat-icon class="wa-hint-icon">info</mat-icon>
+          Lasă parola goală dacă nu vrei să o schimbi.
+        </p>
+
+        <mat-form-field appearance="outline" style="width:100%">
+          <mat-label>Parolă nouă</mat-label>
+          <mat-icon matPrefix>lock</mat-icon>
+          <input matInput type="password" [(ngModel)]="adminNewPassword" placeholder="Minim 4 caractere">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" style="width:100%">
+          <mat-label>Confirmă parola</mat-label>
+          <mat-icon matPrefix>lock_reset</mat-icon>
+          <input matInput type="password" [(ngModel)]="adminConfirmPass" placeholder="Repetă parola nouă">
+        </mat-form-field>
+
+        @if (adminPassError) {
+          <p style="color:#dc2626;font-size:0.82rem;margin:-0.5rem 0 0.75rem">{{ adminPassError }}</p>
+        }
+
+        <mat-divider style="margin:0.5rem 0 1rem"></mat-divider>
+
+        <mat-form-field appearance="outline" style="width:100%">
+          <mat-label>Email recuperare parolă</mat-label>
+          <mat-icon matPrefix>email</mat-icon>
+          <input matInput type="email" [(ngModel)]="adminRecoveryEmail" placeholder="ex: admin@firma.ro">
+        </mat-form-field>
+
+      </mat-card-content>
+      <mat-card-actions align="end">
+        <button mat-button (click)="showAdminSecModal.set(false)">Anulează</button>
+        <button mat-flat-button color="primary" (click)="saveAdminSec()">Salvează</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
 
 <!-- Modal add/edit utilizator -->
 @if (showUserModal()) {

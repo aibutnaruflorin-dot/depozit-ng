@@ -23,6 +23,7 @@ export interface User {
   role: Permission;
   jobRole?: JobRole;
   telefon?: string;
+  recoveryEmail?: string;
   active: boolean;
 }
 
