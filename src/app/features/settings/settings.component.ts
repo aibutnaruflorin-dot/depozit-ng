@@ -11,7 +11,7 @@ import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { EmailContact } from '../../core/models/email-contact.model';
 import { User, JOB_ROLE_LABELS, PERMISSION_LABELS, JobRole, Permission } from '../../core/models/user.model';
 import { Vehicle } from '../../core/models/vehicle.model';
-import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, DEFAULT_JOB_FUNCTIONS } from '../../core/models/app-permission.model';
+import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, DEFAULT_JOB_FUNCTIONS, SYSTEM_FUNC_IDS } from '../../core/models/app-permission.model';
 import { JobFunction } from '../../core/models/job-function.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -140,12 +140,13 @@ export class SettingsComponent implements OnInit {
     this.transportService.refreshUsers(savedUsers);
 
     const savedFuncs = this.storage.get<JobFunction[]>('app_job_functions');
-    if (savedFuncs) {
-      this.jobFunctions.set(savedFuncs);
-    } else {
-      this.jobFunctions.set(DEFAULT_JOB_FUNCTIONS);
-      this.storage.set('app_job_functions', DEFAULT_JOB_FUNCTIONS);
+    let funcs: JobFunction[] = savedFuncs ?? DEFAULT_JOB_FUNCTIONS;
+    // ensure system functions always exist (migration for existing installs)
+    for (const sys of DEFAULT_JOB_FUNCTIONS.filter(f => this.PROTECTED_FUNCS.has(f.id))) {
+      if (!funcs.find(f => f.id === sys.id)) funcs = [sys, ...funcs];
     }
+    this.jobFunctions.set(funcs);
+    this.storage.set('app_job_functions', funcs);
 
     const savedPerms = this.storage.get<AppPermission[]>('app_permissions');
     if (savedPerms) {
@@ -463,7 +464,14 @@ export class SettingsComponent implements OnInit {
     this.snackBar.open('✅ Funcția a fost salvată.', '', { duration: 2200 });
   }
 
-  readonly PROTECTED_FUNCS = new Set(['sofer', 'ajutor_manipulant']);
+  readonly PROTECTED_FUNCS = new Set<string>(SYSTEM_FUNC_IDS);
+
+  get systemFunctions() {
+    return this.jobFunctions().filter(f => this.PROTECTED_FUNCS.has(f.id));
+  }
+  get customFunctions() {
+    return this.jobFunctions().filter(f => !this.PROTECTED_FUNCS.has(f.id));
+  }
 
   deleteFunc(f: JobFunction): void {
     if (this.PROTECTED_FUNCS.has(f.id)) return;

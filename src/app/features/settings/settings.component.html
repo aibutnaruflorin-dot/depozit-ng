@@ -355,31 +355,45 @@
           Funcțiile definesc rolul operațional al unui angajat. Utilizatorii cu funcția <strong>Șofer</strong> apar automat în modulul Transport.
         </p>
 
-        @if (jobFunctions().length === 0) {
-          <div class="empty-state">
-            <mat-icon>work_outline</mat-icon>
-            <p>Nicio funcție definită.</p>
+        <!-- Funcții sistem (protejate) -->
+        <div class="func-group-label func-group-label--system">
+          <mat-icon>shield</mat-icon> Funcții sistem
+        </div>
+        <div class="fleet-list fleet-list--system">
+          @for (f of systemFunctions; track f.id) {
+            <div class="fleet-item fleet-item--system">
+              <div class="fleet-icon"><mat-icon>lock</mat-icon></div>
+              <div class="fleet-info">
+                <span class="fleet-name">{{ f.name }}</span>
+                <span class="fleet-meta"><code>{{ f.id }}</code></span>
+              </div>
+              <span class="func-system-badge">Sistem</span>
+            </div>
+          }
+        </div>
+
+        <!-- Funcții personalizate -->
+        <div class="func-group-label">
+          <mat-icon>work_outline</mat-icon> Funcții personalizate
+        </div>
+        @if (customFunctions.length === 0) {
+          <div class="empty-state empty-state--sm">
+            <p>Nicio funcție personalizată. Adaugă una mai sus.</p>
           </div>
         } @else {
           <div class="fleet-list">
-            @for (f of jobFunctions(); track f.id) {
+            @for (f of customFunctions; track f.id) {
               <div class="fleet-item">
                 <div class="fleet-icon"><mat-icon>badge</mat-icon></div>
                 <div class="fleet-info">
                   <span class="fleet-name">{{ f.name }}</span>
                   <span class="fleet-meta"><code>{{ f.id }}</code></span>
                 </div>
-                <button mat-icon-button
-                        [disabled]="PROTECTED_FUNCS.has(f.id)"
-                        [matTooltip]="PROTECTED_FUNCS.has(f.id) ? 'Funcție protejată — nu poate fi editată' : 'Editează'"
-                        (click)="openEditFunc(f)">
+                <button mat-icon-button matTooltip="Editează" (click)="openEditFunc(f)">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn"
-                        [disabled]="PROTECTED_FUNCS.has(f.id)"
-                        [matTooltip]="PROTECTED_FUNCS.has(f.id) ? 'Funcție protejată — nu poate fi ștearsă' : 'Șterge'"
-                        (click)="deleteFunc(f)">
-                  <mat-icon>{{ PROTECTED_FUNCS.has(f.id) ? 'lock' : 'delete_outline' }}</mat-icon>
+                <button mat-icon-button color="warn" matTooltip="Șterge" (click)="deleteFunc(f)">
+                  <mat-icon>delete_outline</mat-icon>
                 </button>
               </div>
             }

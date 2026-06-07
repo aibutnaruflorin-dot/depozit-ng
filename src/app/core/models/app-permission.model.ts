@@ -28,8 +28,11 @@ export const DEFAULT_PERMISSIONS: AppPermission[] = [
 ];
 
 export const DEFAULT_JOB_FUNCTIONS = [
+  { id: 'administrator',     name: 'Administrator' },
   { id: 'sofer',             name: 'Șofer' },
   { id: 'ajutor_manipulant', name: 'Ajutor manipulant' },
   { id: 'casa_marcat',       name: 'Casă de marcat' },
   { id: 'contabilitate',     name: 'Contabilitate' },
 ];
+
+export const SYSTEM_FUNC_IDS = ['administrator', 'sofer', 'ajutor_manipulant'] as const;

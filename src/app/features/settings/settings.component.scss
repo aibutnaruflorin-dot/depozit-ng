@@ -268,10 +268,17 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
 }
 
 /* Fleet list (vehicles & drivers) */
+.func-group-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--color-text-muted);
+  margin: 1rem 0 0.4rem;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  &--system { color: #7c3aed; mat-icon { color: #7c3aed; } }
+}
 .fleet-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  &--system { margin-bottom: 0.25rem; }
 }
 .fleet-item {
   display: flex;
@@ -281,6 +288,21 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-bg);
+  &--system {
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+    .fleet-icon { background: #ede9fe; mat-icon { color: #7c3aed; } }
+  }
+}
+.func-system-badge {
+  font-size: 0.68rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #ede9fe; color: #6d28d9;
+  white-space: nowrap;
+}
+.empty-state--sm {
+  padding: 0.75rem 0; font-size: 0.85rem; color: var(--color-text-muted);
+  display: flex; align-items: center;
+  p { margin: 0; }
 }
 .fleet-icon {
   width: 36px; height: 36px; border-radius: 8px;
