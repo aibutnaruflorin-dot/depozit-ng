@@ -327,6 +327,27 @@
   }
 }
 
+/* ── Trip status badge (read-only) ──────────────────────────── */
+.trip-status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 0.78rem; font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+
+  &.trip-status--planificat {
+    background: #e8f0fe; border-color: #90caf9; color: #1565c0;
+    mat-icon { color: #1565c0; }
+  }
+  &.trip-status--in-livrare {
+    background: #f0fdf4; border-color: #86efac; color: #16a34a;
+    mat-icon { color: #16a34a; }
+  }
+}
+
 /* ── Empty state ─────────────────────────────────────────────── */
 .empty-state {
   display: flex; flex-direction: column; align-items: center;

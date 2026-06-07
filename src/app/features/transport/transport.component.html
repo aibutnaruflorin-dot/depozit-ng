@@ -305,22 +305,12 @@
               }
             </td>
             <td>
-              <div class="status-stepper status-stepper--compact">
-                <button class="step-btn"
-                        [class.step--active]="t.status==='planificat'"
-                        [class.step--done]="t.status==='in_livrare'||t.status==='livrat'"
-                        [disabled]="t.status!=='planificat'"
-                        (click)="setTripStatus(t,'in_livrare')">
-                  <mat-icon>play_arrow</mat-icon><span>Pornește</span>
-                </button>
-                <mat-icon class="step-arrow">chevron_right</mat-icon>
-                <button class="step-btn"
-                        [class.step--active]="t.status==='in_livrare'"
-                        [disabled]="t.status!=='in_livrare'"
-                        (click)="setTripStatus(t,'livrat')">
-                  <mat-icon>check_circle</mat-icon><span>Finalizează</span>
-                </button>
-              </div>
+              <span class="trip-status-badge"
+                    [class.trip-status--planificat]="t.status==='planificat'"
+                    [class.trip-status--in-livrare]="t.status==='in_livrare'">
+                <mat-icon>{{ t.status === 'in_livrare' ? 'local_shipping' : 'schedule' }}</mat-icon>
+                {{ t.status === 'in_livrare' ? 'În livrare' : 'Planificat' }}
+              </span>
             </td>
             <td>
               @if (auth.isAdmin() && t.status==='planificat') {
