@@ -39,15 +39,15 @@ export class LayoutComponent implements OnInit {
   activeRoute = '';
 
   readonly navItems: NavItem[] = [
-    { label: 'Catalog',         icon: 'inventory_2',       route: '/app/catalog',     roles: ['admin', 'agent'] },
-    { label: 'Comandă nouă',    icon: 'add_shopping_cart', route: '/app/new-order',   roles: ['admin', 'agent'] },
-    { label: 'Comenzile mele',  icon: 'list_alt',          route: '/app/history-me',  roles: ['admin', 'agent'] },
-    { label: 'Toate comenzile', icon: 'bar_chart',         route: '/app/history-all', roles: ['admin'] },
-    { label: 'Transport',       icon: 'local_shipping',    route: '/app/transport',   roles: ['admin', 'agent'] },
-    { label: 'Cursele mele',   icon: 'drive_eta',         route: '/app/my-trips',    roles: ['admin', 'agent'] },
-    { label: 'Setări',          icon: 'settings',          route: '/app/settings',    roles: ['admin'] },
-    { label: 'Contul meu',      icon: 'manage_accounts',   route: '/app/account',     roles: ['admin', 'agent'] },
-    { label: 'Manual',          icon: 'menu_book',         route: '/app/manual',      roles: ['admin', 'agent'] },
+    { label: 'Catalog',         icon: 'inventory_2',       route: '/app/catalog',     roles: ['admin', 'keyuser', 'agent'] },
+    { label: 'Comandă nouă',    icon: 'add_shopping_cart', route: '/app/new-order',   roles: ['admin', 'keyuser', 'agent'] },
+    { label: 'Comenzile mele',  icon: 'list_alt',          route: '/app/history-me',  roles: ['admin', 'keyuser', 'agent'] },
+    { label: 'Toate comenzile', icon: 'bar_chart',         route: '/app/history-all', roles: ['admin', 'keyuser'] },
+    { label: 'Transport',       icon: 'local_shipping',    route: '/app/transport',   roles: ['admin', 'keyuser', 'agent'] },
+    { label: 'Cursele mele',   icon: 'drive_eta',         route: '/app/my-trips',    roles: ['admin', 'keyuser', 'agent'] },
+    { label: 'Setări',          icon: 'settings',          route: '/app/settings',    roles: ['admin', 'keyuser'] },
+    { label: 'Contul meu',      icon: 'manage_accounts',   route: '/app/account',     roles: ['admin', 'keyuser', 'agent'] },
+    { label: 'Manual',          icon: 'menu_book',         route: '/app/manual',      roles: ['admin', 'keyuser', 'agent'] },
   ];
 
   constructor(
