@@ -375,12 +375,19 @@
 
 <!-- ── Curse cu termen depășit ── -->
 <ng-template #overdueSection>
-  @if (activeOverdue().length) {
-    <div class="overdue-section">
-      <div class="panel-title panel-title--overdue">
-        <mat-icon>warning</mat-icon> Curse cu termen depășit
+  <div class="overdue-section">
+    <div class="panel-title panel-title--overdue">
+      <mat-icon>warning</mat-icon> Curse cu termen depășit
+      @if (activeOverdue().length) {
         <span class="badge-pill badge-pill--overdue">{{ activeOverdue().length }}</span>
+      }
+    </div>
+    @if (!activeOverdue().length) {
+      <div class="empty-state">
+        <mat-icon>check_circle_outline</mat-icon>
+        <p>Nicio cursă cu termen depășit.</p>
       </div>
+    } @else {
       <table class="delivery-table">
         <thead>
           <tr>
@@ -467,8 +474,8 @@
           }
         </tbody>
       </table>
-    </div>
-  }
+    }
+  </div>
 </ng-template>
 
 <!-- ── Istoric (collapsibil) ── -->
