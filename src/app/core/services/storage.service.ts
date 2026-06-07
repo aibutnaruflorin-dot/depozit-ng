@@ -31,6 +31,15 @@ export class StorageService {
         { id: 2, name: 'Agent 1',       username: 'agent1', password: 'agent123', role: 'agent', active: true }
       ] as User[]);
     }
+    // Cleanup: remove any leftover superadmin users / fix roles
+    const users = this.get<User[]>('app_users') ?? [];
+    const validRoles = ['admin', 'agent', 'contabilitate', 'sub-agent'];
+    const fixed = users
+      .filter(u => u.username !== 'superadmin')
+      .map(u => validRoles.includes(u.role as string) ? u : { ...u, role: 'admin' as any });
+    if (fixed.length !== users.length || fixed.some((u, i) => u.role !== users[i]?.role)) {
+      this.set('app_users', fixed);
+    }
     if (!this.get('app_orders')) this.set('app_orders', []);
     if (!this.get('app_catalogs')) {
       this.set('app_catalogs', [

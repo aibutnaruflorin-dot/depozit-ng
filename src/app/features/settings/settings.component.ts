@@ -399,6 +399,15 @@ export class SettingsComponent implements OnInit {
     this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
   }
 
+  deleteUser(user: User): void {
+    if (!confirm(`Ștergi utilizatorul "${user.name}"? Această acțiune nu poate fi anulată.`)) return;
+    const users = this.users().filter(u => u.id !== user.id);
+    this.storage.set('app_users', users);
+    this.users.set(users);
+    this.transportService.refreshUsers(users);
+    this.snackBar.open('Utilizatorul a fost șters.', '', { duration: 2500 });
+  }
+
   // ── Vehicule ──────────────────────────────────────────────────────────────
 
   openAddVehicle(): void {
@@ -508,11 +517,14 @@ export class SettingsComponent implements OnInit {
 
   readonly PROTECTED_FUNCS = new Set<string>(SYSTEM_FUNC_IDS);   // no delete
   readonly PROTECTED_PERMS = new Set<string>(SYSTEM_PERM_IDS);   // no delete
-  readonly LOCKED_FUNCS    = new Set(['administrator']);           // no edit + no delete
+  readonly LOCKED_FUNCS    = new Set(['administrator', 'keyuser']); // no edit + no delete
   readonly LOCKED_PERMS    = new Set(['admin']);                   // no edit + no delete
 
   get systemFunctions() {
-    return this.jobFunctions().filter(f => this.PROTECTED_FUNCS.has(f.id));
+    const order: string[] = [...SYSTEM_FUNC_IDS];
+    return this.jobFunctions()
+      .filter(f => this.PROTECTED_FUNCS.has(f.id))
+      .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   }
   get customFunctions() {
     return this.jobFunctions().filter(f => !this.PROTECTED_FUNCS.has(f.id));
