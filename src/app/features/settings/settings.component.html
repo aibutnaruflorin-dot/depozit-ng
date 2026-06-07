@@ -232,6 +232,71 @@
     </mat-tab>
   }
 
+  <!-- ══ TAB: EMAIL (admin) ══ -->
+  @if (auth.isAdmin()) {
+    <mat-tab label="Email">
+      <div class="tab-content">
+        <div class="tab-header">
+          <h3>Destinatari Email</h3>
+        </div>
+        <p class="wa-hint">
+          <mat-icon class="wa-hint-icon">info</mat-icon>
+          Adaugă adrese de email individuale sau liste de distribuție. Le vei putea selecta când trimiți o comandă.
+        </p>
+
+        @if (emailContacts().length > 0) {
+          <div class="wa-list">
+            @for (c of emailContacts(); track c.id) {
+              <div class="wa-item">
+                <mat-icon class="wa-item-icon">{{ c.type === 'list' ? 'group' : 'person' }}</mat-icon>
+                <div class="wa-item-info">
+                  <span class="wa-item-name">{{ c.name }}</span>
+                  <span class="wa-item-phone">{{ c.email }}</span>
+                </div>
+                <span class="wa-item-type">{{ c.type === 'list' ? 'Listă' : 'Individual' }}</span>
+                <button mat-icon-button color="warn" (click)="removeEmailContact(c.id)" matTooltip="Șterge">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+          <mat-divider class="wa-divider" />
+        }
+
+        <div class="wa-form">
+          <h4>Adaugă adresă nouă</h4>
+          <div class="wa-form-row">
+            <mat-form-field appearance="outline" class="wa-name-field">
+              <mat-label>Nume / Etichetă</mat-label>
+              <input matInput [(ngModel)]="newEmailName" placeholder="ex: Contabilitate">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="wa-type-field">
+              <mat-label>Tip</mat-label>
+              <mat-select [(ngModel)]="newEmailType">
+                <mat-option value="individual">Individual</mat-option>
+                <mat-option value="list">Listă distribuție</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="wa-form-row">
+            <mat-form-field appearance="outline" class="wa-phone-field">
+              <mat-label>Adresă email</mat-label>
+              <mat-icon matPrefix>email</mat-icon>
+              <input matInput [(ngModel)]="newEmailAddr"
+                     type="email"
+                     placeholder="ex: office@firma.ro">
+            </mat-form-field>
+            <button mat-flat-button color="primary" class="wa-add-btn"
+                    [disabled]="!newEmailName.trim() || !newEmailAddr.trim()"
+                    (click)="addEmailContact()">
+              <mat-icon>add</mat-icon> Adaugă
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  }
+
   <!-- ══ TAB 3: MAȘINI (admin) ══ -->
   @if (auth.isAdmin()) {
     <mat-tab label="Mașini">

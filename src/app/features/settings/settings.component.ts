@@ -8,6 +8,7 @@ import { StorageService } from '../../core/services/storage.service';
 import { TransportService } from '../../core/services/transport.service';
 import { Catalog, CatalogMeta, CatalogUpload } from '../../core/models/catalog.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
+import { EmailContact } from '../../core/models/email-contact.model';
 import { User, JOB_ROLE_LABELS, PERMISSION_LABELS, JobRole, Permission } from '../../core/models/user.model';
 import { Vehicle } from '../../core/models/vehicle.model';
 import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, DEFAULT_JOB_FUNCTIONS } from '../../core/models/app-permission.model';
@@ -60,6 +61,11 @@ export class SettingsComponent implements OnInit {
   newWaName  = '';
   newWaPhone = '';
   newWaType: 'number' | 'group' = 'number';
+
+  emailContacts = signal<EmailContact[]>([]);
+  newEmailName  = '';
+  newEmailAddr  = '';
+  newEmailType: 'individual' | 'list' = 'individual';
 
   readonly jobRoleLabels = JOB_ROLE_LABELS;
   readonly permLabels    = PERMISSION_LABELS;
@@ -125,6 +131,9 @@ export class SettingsComponent implements OnInit {
     }
     const savedWa = this.storage.get<WhatsAppContact[]>('app_whatsapp_contacts');
     if (savedWa) this.whatsappContacts.set(savedWa);
+
+    const savedEmail = this.storage.get<EmailContact[]>('app_email_contacts');
+    if (savedEmail) this.emailContacts.set(savedEmail);
 
     const savedUsers = this.storage.get<User[]>('app_users') ?? [];
     this.users.set(savedUsers);
@@ -262,6 +271,29 @@ export class SettingsComponent implements OnInit {
 
   private _saveWa(): void {
     this.storage.set('app_whatsapp_contacts', this.whatsappContacts());
+  }
+
+  // ── Email contacts ────────────────────────────────────────────────────────
+
+  addEmailContact(): void {
+    const name  = this.newEmailName.trim();
+    const email = this.newEmailAddr.trim();
+    if (!name || !email) return;
+    this.emailContacts.update(list => [...list, {
+      id: Date.now().toString(), name, email, type: this.newEmailType
+    }]);
+    this._saveEmail();
+    this.newEmailName = ''; this.newEmailAddr = ''; this.newEmailType = 'individual';
+    this.snackBar.open('Adresă email adăugată.', '', { duration: 2000 });
+  }
+
+  removeEmailContact(id: string): void {
+    this.emailContacts.update(list => list.filter(c => c.id !== id));
+    this._saveEmail();
+  }
+
+  private _saveEmail(): void {
+    this.storage.set('app_email_contacts', this.emailContacts());
   }
 
   // ── Utilizatori ───────────────────────────────────────────────────────────
