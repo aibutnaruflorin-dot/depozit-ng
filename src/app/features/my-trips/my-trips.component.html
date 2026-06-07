@@ -1,0 +1,216 @@
+<div class="my-trips-page">
+
+  <!-- ── Header ── -->
+  <div class="page-header">
+    <h1 class="page-title">
+      <mat-icon>local_shipping</mat-icon>
+      Cursele mele
+    </h1>
+    <span class="driver-chip">
+      <mat-icon>person</mat-icon>{{ auth.userName() }}
+    </span>
+  </div>
+
+  <!-- ════════════════ CURSE ACTIVE (în livrare) ════════════════ -->
+  <div class="section">
+    <div class="section-title">
+      <mat-icon class="sec-icon sec-icon--active">local_shipping</mat-icon>
+      Curse active
+      @if (active().length) {
+        <span class="badge-pill badge-pill--warn">{{ active().length }}</span>
+      }
+    </div>
+
+    @if (!active().length) {
+      <div class="empty-state">
+        <mat-icon>local_shipping</mat-icon>
+        <p>Nicio cursă în desfășurare.</p>
+      </div>
+    } @else {
+      <table class="trips-table">
+        <thead>
+          <tr>
+            <th>Mașină</th>
+            <th>Plecare → Sosire</th>
+            <th>Comenzi / Articole</th>
+            <th>Acțiuni</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of active(); track t.id) {
+            <tr class="row--active">
+              <td>
+                <div class="vehicle-cell">
+                  <mat-icon>local_shipping</mat-icon>
+                  <div>
+                    <strong>{{ getVehicleName(t.vehicleId) }}</strong>
+                    <small>{{ getVehiclePlate(t.vehicleId) }}</small>
+                  </div>
+                </div>
+              </td>
+              <td class="times-cell">
+                <span>{{ fmt(t.oraPlecare) }}</span>
+                <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                <span>{{ fmt(t.oraSosire) }}</span>
+              </td>
+              <td>
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="order-chip">
+                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                    <strong>{{ o.client.name }}</strong>
+                    @if (o.client.address) {
+                      <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link">
+                        <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                      </a>
+                    }
+                    <span class="art-count">· {{ articleCount(t) }} art.</span>
+                  </div>
+                }
+              </td>
+              <td>
+                <button mat-flat-button color="primary" class="action-btn"
+                        (click)="setTripStatus(t, 'livrat')">
+                  <mat-icon>check_circle</mat-icon> Finalizează
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- ════════════════ CURSE PLANIFICATE ════════════════ -->
+  <div class="section">
+    <div class="section-title">
+      <mat-icon class="sec-icon sec-icon--plan">schedule</mat-icon>
+      Curse planificate
+      @if (planned().length) {
+        <span class="badge-pill">{{ planned().length }}</span>
+      }
+    </div>
+
+    @if (!planned().length) {
+      <div class="empty-state">
+        <mat-icon>event_available</mat-icon>
+        <p>Nicio cursă planificată.</p>
+      </div>
+    } @else {
+      <table class="trips-table">
+        <thead>
+          <tr>
+            <th>Mașină</th>
+            <th>Plecare → Sosire</th>
+            <th>Comenzi / Articole</th>
+            <th>Acțiuni</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of planned(); track t.id) {
+            <tr>
+              <td>
+                <div class="vehicle-cell">
+                  <mat-icon>local_shipping</mat-icon>
+                  <div>
+                    <strong>{{ getVehicleName(t.vehicleId) }}</strong>
+                    <small>{{ getVehiclePlate(t.vehicleId) }}</small>
+                  </div>
+                </div>
+              </td>
+              <td class="times-cell">
+                <span>{{ fmt(t.oraPlecare) }}</span>
+                <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                <span>{{ fmt(t.oraSosire) }}</span>
+              </td>
+              <td>
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="order-chip">
+                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                    <strong>{{ o.client.name }}</strong>
+                    @if (o.client.address) {
+                      <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link">
+                        <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                      </a>
+                    }
+                    <span class="art-count">· {{ articleCount(t) }} art.</span>
+                  </div>
+                }
+              </td>
+              <td>
+                <button mat-stroked-button class="action-btn"
+                        (click)="setTripStatus(t, 'in_livrare')">
+                  <mat-icon>play_arrow</mat-icon> Pornește
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- ════════════════ ISTORIC ════════════════ -->
+  <div class="section section--historic">
+    <div class="section-title section-title--toggle" (click)="showHistoric.set(!showHistoric())">
+      <mat-icon class="sec-icon">history</mat-icon>
+      Istoric
+      @if (history().length) {
+        <span class="badge-pill badge-pill--muted">{{ history().length }}</span>
+      }
+      <mat-icon class="toggle-chevron">{{ showHistoric() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+
+    @if (showHistoric()) {
+      @if (!history().length) {
+        <div class="empty-state">
+          <mat-icon>history</mat-icon>
+          <p>Nicio cursă finalizată.</p>
+        </div>
+      } @else {
+        <table class="trips-table">
+          <thead>
+            <tr>
+              <th>Mașină</th>
+              <th>Plecare → Sosire</th>
+              <th>Comenzi livrate</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of history(); track t.id) {
+              <tr class="row--historic">
+                <td>
+                  <div class="vehicle-cell">
+                    <mat-icon>local_shipping</mat-icon>
+                    <div>
+                      <strong>{{ getVehicleName(t.vehicleId) }}</strong>
+                      <small>{{ getVehiclePlate(t.vehicleId) }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td class="times-cell">
+                  <span>{{ fmt(t.oraPlecare) }}</span>
+                  <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                  <span>{{ fmt(t.oraSosire) }}</span>
+                </td>
+                <td>
+                  @for (o of ordersForTransport(t); track o.id) {
+                    <div class="order-chip">
+                      <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                      <strong>{{ o.client.name }}</strong>
+                      @if (o.client.address) {
+                        <span class="addr-text">
+                          <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                        </span>
+                      }
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+  </div>
+
+</div>

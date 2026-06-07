@@ -102,7 +102,7 @@ export class TransportComponent implements OnInit {
   });
   readonly today = new Date();
 
-  layoutMode  = signal<1|2|3>(1);
+  layoutMode  = signal<2|3>(2);
   showHistoric = signal(false);
   showCalendar = signal(false);
 

@@ -1,0 +1,140 @@
+.my-trips-page {
+  padding: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Header ── */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.page-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1.5rem; font-weight: 700; margin: 0;
+  mat-icon { color: var(--color-primary); font-size: 1.6rem; width: 1.6rem; height: 1.6rem; }
+}
+.driver-chip {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 0.85rem; font-weight: 500; color: var(--color-text-muted);
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+
+/* ── Section ── */
+.section {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.section--historic { background: var(--color-surface); }
+
+.section-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.92rem; font-weight: 700;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.section-title--toggle {
+  cursor: pointer; user-select: none;
+  &:hover { background: var(--color-surface-2); }
+  .toggle-chevron { margin-left: auto; color: var(--color-text-muted); }
+}
+
+.sec-icon { font-size: 20px; width: 20px; height: 20px; }
+.sec-icon--active { color: #2e7d32; }
+.sec-icon--plan   { color: var(--color-primary); }
+
+/* ── Badges ── */
+.badge-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 10px; font-size: 0.72rem; font-weight: 700;
+  background: var(--color-primary); color: #fff;
+}
+.badge-pill--warn  { background: #e65100; }
+.badge-pill--muted { background: var(--color-border); color: var(--color-text-muted); }
+
+/* ── Table ── */
+.trips-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.88rem;
+
+  th {
+    padding: 0.6rem 1rem;
+    text-align: left; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+
+  tr.row--active td { background: rgba(46, 125, 50, 0.04); }
+  tr.row--historic td { opacity: 0.75; }
+}
+
+/* ── Vehicle cell ── */
+.vehicle-cell {
+  display: flex; align-items: flex-start; gap: 8px;
+  mat-icon { color: var(--color-text-muted); margin-top: 2px; }
+  div { display: flex; flex-direction: column; gap: 1px; }
+  strong { font-size: 0.9rem; }
+  small { font-size: 0.75rem; color: var(--color-text-muted); }
+}
+
+/* ── Times cell ── */
+.times-cell {
+  display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;
+  font-size: 0.85rem;
+}
+.arrow-icon {
+  font-size: 16px; width: 16px; height: 16px;
+  color: var(--color-text-muted);
+}
+
+/* ── Order chip ── */
+.order-chip {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 3px 0;
+}
+.order-num-badge {
+  display: inline-block; background: var(--color-primary);
+  color: #fff; border-radius: 4px; padding: 1px 6px;
+  font-size: 0.72rem; font-weight: 700; white-space: nowrap;
+}
+.addr-link, .addr-text {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 0.78rem; color: var(--color-text-muted);
+  text-decoration: none;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+  &:hover { color: var(--color-primary); }
+}
+.art-count { font-size: 0.78rem; color: var(--color-text-muted); }
+
+/* ── Action button ── */
+.action-btn {
+  white-space: nowrap;
+  mat-icon { font-size: 18px; }
+}
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  padding: 2.5rem 1rem; text-align: center;
+  color: var(--color-text-muted);
+  mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; opacity: 0.4; }
+  p { margin: 0; font-size: 0.9rem; }
+}

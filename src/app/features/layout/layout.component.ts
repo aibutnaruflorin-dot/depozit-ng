@@ -44,6 +44,7 @@ export class LayoutComponent implements OnInit {
     { label: 'Comenzile mele',  icon: 'list_alt',          route: '/app/history-me',  roles: ['admin', 'agent'] },
     { label: 'Toate comenzile', icon: 'bar_chart',         route: '/app/history-all', roles: ['admin'] },
     { label: 'Transport',       icon: 'local_shipping',    route: '/app/transport',   roles: ['admin', 'agent'] },
+    { label: 'Cursele mele',   icon: 'drive_eta',         route: '/app/my-trips',    roles: ['admin', 'agent'] },
     { label: 'Setări',          icon: 'settings',          route: '/app/settings',    roles: ['admin'] },
     { label: 'Contul meu',      icon: 'manage_accounts',   route: '/app/account',     roles: ['admin', 'agent'] },
     { label: 'Manual',          icon: 'menu_book',         route: '/app/manual',      roles: ['admin', 'agent'] },

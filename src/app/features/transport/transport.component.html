@@ -9,10 +9,6 @@
 
     <!-- Layout switcher -->
     <div class="layout-switcher">
-      <button class="lsw-btn" [class.lsw-btn--on]="layoutMode()===1"
-              (click)="layoutMode.set(1)" matTooltip="Sidebar + Calendar">
-        <mat-icon>view_sidebar</mat-icon><span>Sidebar</span>
-      </button>
       <button class="lsw-btn" [class.lsw-btn--on]="layoutMode()===2"
               (click)="layoutMode.set(2)" matTooltip="Calendar sus + Tabele jos">
         <mat-icon>table_rows</mat-icon><span>Calendar sus</span>
@@ -38,116 +34,6 @@
       <mat-icon>info</mat-icon>
       Adaugă mașini și șoferi în <strong>Setări → Mașini / Șoferi</strong>.
     </div>
-  }
-
-  <!-- ════════════════════════════════════════════════════════════
-       LAYOUT 1 — Sidebar compact + Calendar principal
-       ════════════════════════════════════════════════════════════ -->
-  @if (layoutMode() === 1) {
-    <div class="layout-1">
-
-      <!-- Left sidebar -->
-      <div class="l1-sidebar">
-
-        <!-- De livrat -->
-        <div class="side-section">
-          <div class="side-title">
-            <mat-icon>local_shipping</mat-icon> De livrat
-            @if (deliveryOrders().length) { <span class="badge-pill">{{ deliveryOrders().length }}</span> }
-          </div>
-          @if (!deliveryOrders().length) {
-            <div class="side-empty"><mat-icon>check_circle_outline</mat-icon> Toate livrate</div>
-          }
-          @for (o of deliveryOrders(); track o.id) {
-            <div class="delivery-card">
-              <div class="dc-head">
-                <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                <strong class="dc-name">{{ o.client.name }}</strong>
-                @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
-              </div>
-              @if (o.client.address) {
-                <div class="dc-meta"><mat-icon>location_on</mat-icon>{{ o.client.address }}</div>
-              }
-              @if (o.deliveryDate || o.deliveryTime) {
-                <div class="dc-meta">
-                  <mat-icon>schedule</mat-icon>
-                  {{ o.deliveryDate ? (o.deliveryDate | date:'dd.MM') : '' }} {{ o.deliveryTime ?? '' }}
-                </div>
-              }
-              <div class="dc-footer">
-                <span class="dc-progress">{{ deliveredTotal(o) }}/{{ totalQty(o) }} livrate</span>
-                <button mat-flat-button color="primary" class="dc-plan-btn"
-                        [disabled]="!transportService.vehicles().length"
-                        (click)="openCreateForOrder(o)">
-                  <mat-icon>add_road</mat-icon> Planifică
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-
-        <mat-divider></mat-divider>
-
-        <!-- Curse active -->
-        <div class="side-section">
-          <div class="side-title">
-            <mat-icon>directions_car</mat-icon> Curse active
-            @if (transportService.active().length) {
-              <span class="badge-pill badge-pill--warn">{{ transportService.active().length }}</span>
-            }
-          </div>
-          @if (!transportService.active().length) {
-            <div class="side-empty"><mat-icon>directions_car</mat-icon> Nicio cursă activă</div>
-          }
-          @for (t of transportService.active(); track t.id) {
-            <div class="active-card"
-                 [class.ac--running]="t.status==='in_livrare'"
-                 [class.ac--overlap]="overlapIds().has(t.id)">
-              <div class="ac-head">
-                <mat-icon>{{ t.status === 'in_livrare' ? 'local_shipping' : 'schedule' }}</mat-icon>
-                <strong>{{ getVehicleName(t.vehicleId) }}</strong>
-                <span class="ac-driver">{{ getDriverName(t.driverId) }}</span>
-              </div>
-              <div class="ac-times">{{ formatTime(t.oraPlecare) }} → {{ formatTime(t.oraSosire) }}</div>
-              <div class="ac-orders-row">
-                @for (o of ordersForTransport(t); track o.id) {
-                  <span class="order-num-badge small">#{{ o.orderNumber }}</span>
-                }
-              </div>
-              <div class="ac-btns">
-                @if (t.status === 'planificat') {
-                  <button mat-stroked-button class="ac-btn-sm" (click)="setTripStatus(t, 'in_livrare')">
-                    <mat-icon>play_arrow</mat-icon> Pornește
-                  </button>
-                  @if (auth.isAdmin()) {
-                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
-                    <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Șterge"><mat-icon>delete_outline</mat-icon></button>
-                  }
-                }
-                @if (t.status === 'in_livrare') {
-                  <button mat-flat-button color="primary" class="ac-btn-sm" (click)="setTripStatus(t, 'livrat')">
-                    <mat-icon>check_circle</mat-icon> Finalizează
-                  </button>
-                }
-              </div>
-            </div>
-          }
-        </div>
-
-      </div><!-- /l1-sidebar -->
-
-      <!-- Calendar -->
-      <div class="l1-main">
-        <div class="panel-title">
-          <mat-icon>calendar_month</mat-icon> Planificare
-          <span class="panel-hint">Click pe celulă = cursă nouă</span>
-        </div>
-        <ng-container [ngTemplateOutlet]="calendarTpl"></ng-container>
-      </div>
-
-    </div><!-- /layout-1 -->
-
-    <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
   }
 
   <!-- ════════════════════════════════════════════════════════════
