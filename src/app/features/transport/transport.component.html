@@ -463,8 +463,7 @@
                 @if (auth.isAdmin()) {
                   <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează / reprogramează"><mat-icon>edit</mat-icon></button>
                   <button mat-icon-button color="warn"
-                          [disabled]="!isDeleteAllowed(t)"
-                          [matTooltip]="isDeleteAllowed(t) ? 'Șterge cursa' : 'Disponibil după 24h de la termen'"
+                          matTooltip="Șterge cursa"
                           (click)="deleteTransport(t)">
                     <mat-icon>delete_outline</mat-icon>
                   </button>
