@@ -109,6 +109,36 @@ export class TransportComponent implements OnInit {
   showHistoric = signal(false);
   showCalendar = signal(false);
 
+  selectedDelivery = signal<{
+    order: Order;
+    items: { name: string; qty: number; um: string }[];
+  } | null>(null);
+
+  openDelivery(t: Transport, o: Order): void {
+    this.selectedDelivery.set({ order: o, items: this.deliveryItems(t, o.id) });
+  }
+
+  closeDelivery(): void {
+    this.selectedDelivery.set(null);
+  }
+
+  deliveryItems(t: Transport, orderId: string): { name: string; qty: number; um: string }[] {
+    const delivery = t.deliveries.find(d => d.orderId === orderId);
+    const order    = this.getOrder(orderId);
+    if (!delivery || !order) return [];
+    return delivery.items
+      .filter(item => item.qty > 0)
+      .map(item => {
+        const p = order.products[item.productIndex];
+        return { name: p?.name ?? '?', qty: item.qty, um: p?.um ?? '' };
+      });
+  }
+
+  fmtTs(iso: string | undefined): string {
+    if (!iso) return '—';
+    return this.transportService.formatDateTime(iso);
+  }
+
   showModal = signal(false);
   editingId = signal<string | null>(null);
 

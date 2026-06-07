@@ -387,7 +387,8 @@
       @if (!transportService.history().length) {
         <div class="empty-state"><mat-icon>history</mat-icon><p>Nicio cursă finalizată.</p></div>
       } @else {
-        <table class="delivery-table">
+        <div class="historic-table-wrap">
+        <table class="delivery-table delivery-table--wide">
           <thead>
             <tr>
               <th>Mașină</th>
@@ -395,7 +396,7 @@
               <th>Plecare → Sosire</th>
               <th>Comenzi / Articole</th>
               <th>Valoare</th>
-              <th>Status</th>
+              <th>Log tranziții</th>
             </tr>
           </thead>
           <tbody>
@@ -420,15 +421,14 @@
                 </td>
                 <td>
                   @for (o of ordersForTransport(t); track o.id) {
-                    <div class="order-chip">
+                    <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                       <div class="order-chip-top">
                         <span class="order-num-badge">#{{ o.orderNumber }}</span>
                         <span class="order-chip-name">{{ o.client.name }}</span>
-                        @for (d of t.deliveries; track d.orderId) {
-                          @if (d.orderId === o.id) {
-                            <span class="muted small"> · {{ d.items.length }} art.</span>
-                          }
+                        @if (o.status === 'livrat_partial') {
+                          <span class="partial-badge">parțial</span>
                         }
+                        <span class="muted small"> · {{ deliveryItems(t, o.id).length }} art.</span>
                       </div>
                       @if (o.client.address || o.deliveryDate) {
                         <div class="order-chip-meta">
@@ -452,19 +452,87 @@
                   <span class="val-net">{{ hv.net | number:'1.2-2' }} lei</span>
                   <span class="val-tva">{{ hv.tva | number:'1.2-2' }} cu TVA</span>
                 </td>
-                <td>
-                  <span class="trip-status-badge trip-status--livrat">
-                    <mat-icon>check_circle</mat-icon> Livrat
-                  </span>
+                <td class="log-cell">
+                  <div class="log-entry">
+                    <mat-icon class="log-icon log-icon--done">check_circle</mat-icon>
+                    <span class="log-label">Planificat</span>
+                    <span class="log-time">{{ fmtTs(t.createdAt) }}</span>
+                  </div>
+                  <div class="log-entry">
+                    <mat-icon class="log-icon log-icon--done">check_circle</mat-icon>
+                    <span class="log-label">Start livrare</span>
+                    <span class="log-time">{{ fmtTs(t.startedAt) }}</span>
+                  </div>
+                  <div class="log-entry">
+                    <mat-icon class="log-icon log-icon--final">check_circle</mat-icon>
+                    <span class="log-label">Finalizat</span>
+                    <span class="log-time">{{ fmtTs(t.completedAt) }}</span>
+                  </div>
                 </td>
               </tr>
             }
           </tbody>
         </table>
+        </div>
       }
     }
   </div>
 </ng-template>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     MODAL — detalii comandă / articole (Curse finalizate)
+     ════════════════════════════════════════════════════════════════════ -->
+@if (selectedDelivery(); as dlv) {
+  <div class="dlv-overlay" (click)="closeDelivery()">
+    <div class="dlv-modal" (click)="$event.stopPropagation()">
+
+      <div class="dlv-header">
+        <span class="order-num-badge order-num-badge--lg">#{{ dlv.order.orderNumber }}</span>
+        <strong class="dlv-client">{{ dlv.order.client.name }}</strong>
+        @if (dlv.order.status === 'livrat_partial') {
+          <span class="partial-badge">livrare parțială</span>
+        }
+        <button class="dlv-close" (click)="closeDelivery()" aria-label="Închide">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      @if (dlv.order.client.address) {
+        <a [href]="'https://www.google.com/maps/search/?api=1&query=' + dlv.order.client.address" target="_blank" class="dlv-address">
+          <mat-icon>location_on</mat-icon>{{ dlv.order.client.address }}
+        </a>
+      }
+
+      @if (dlv.order.deliveryDate) {
+        <div class="dlv-meta">
+          <mat-icon>schedule</mat-icon>
+          Livrare: {{ dlv.order.deliveryDate | date:'dd.MM.yyyy' }}{{ dlv.order.deliveryTime ? ' ' + dlv.order.deliveryTime : '' }}
+        </div>
+      }
+
+      <div class="dlv-items-title">Articole de livrat</div>
+
+      @if (!dlv.items.length) {
+        <p class="dlv-empty">Nicio cantitate înregistrată pe această cursă.</p>
+      } @else {
+        <table class="dlv-items-table">
+          <thead>
+            <tr><th>Produs</th><th>Cantitate</th></tr>
+          </thead>
+          <tbody>
+            @for (item of dlv.items; track item.name) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td class="dlv-qty">{{ item.qty }} {{ item.um }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+    </div>
+  </div>
+}
 
 <!-- ════════════════════════════════════════════════════════════════════
      MODAL — Cursă nouă / editare
