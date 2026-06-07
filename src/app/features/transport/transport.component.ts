@@ -18,25 +18,26 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { TransportService } from '../../core/services/transport.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { AuthService } from '../../core/services/auth.service';
+import { CatalogsService } from '../../core/services/catalogs.service';
 import { Transport, TransportStatus, TripDelivery } from '../../core/models/transport.model';
 import { Order } from '../../core/models/order.model';
 import { DragModalDirective } from '../../shared/drag-modal.directive';
+import { AddProductsModalComponent } from '../../shared/add-products-modal/add-products-modal.component';
 
 // ── Validators ────────────────────────────────────────────────────────────────
 
 function plecareNotInPast(g: AbstractControl): ValidationErrors | null {
-  const pd = g.get('plecareDate')?.value as Date | null;
+  const pd = g.get('plecareDate')?.value as string;
   const pt = g.get('plecareTime')?.value as string;
   if (!pd || !pt) return null;
-  const [h, m] = pt.split(':').map(Number);
-  const dt = new Date(pd); dt.setHours(h, m, 0, 0);
+  const dt = new Date(pd + 'T' + pt);
   return dt < new Date() ? { plecareInPast: true } : null;
 }
 
 function sosireAfterPlecare(g: AbstractControl): ValidationErrors | null {
-  const pd = g.get('plecareDate')?.value as Date | null;
+  const pd = g.get('plecareDate')?.value as string;
   const pt = g.get('plecareTime')?.value as string;
-  const sd = g.get('sosireDate')?.value as Date | null;
+  const sd = g.get('sosireDate')?.value as string;
   const st = g.get('sosireTime')?.value as string;
   if (!pd || !pt || !sd || !st) return null;
   const plecare = combineDateTime(pd, pt);
@@ -44,11 +45,12 @@ function sosireAfterPlecare(g: AbstractControl): ValidationErrors | null {
   return sosire && plecare && sosire <= plecare ? { sosireBeforePlecare: true } : null;
 }
 
-function combineDateTime(date: Date | null, time: string): string {
+function combineDateTime(date: Date | string | null, time: string): string {
   if (!date || !time) return '';
+  const d = typeof date === 'string' ? new Date(date + 'T00:00:00') : new Date(date);
   const [h, m] = time.split(':').map(Number);
-  const r = new Date(date); r.setHours(h, m, 0, 0);
-  return r.toISOString();
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
 }
 
 function effectiveEndMs(plecare: number, sosire: number): number {
@@ -87,7 +89,7 @@ interface CalBar {
     MatCardModule, MatDividerModule, MatTooltipModule,
     MatChipsModule, MatSnackBarModule,
     MatDatepickerModule, MatAutocompleteModule,
-    DragModalDirective
+    DragModalDirective, AddProductsModalComponent
   ],
   templateUrl: './transport.component.html',
   styleUrl: './transport.component.scss'
@@ -101,6 +103,7 @@ export class TransportComponent implements OnInit {
     return { hour: h, label: `${h}:00`, pct: (i / (this.CAL_END_HOUR - this.CAL_START_HOUR)) * 100 };
   });
   readonly today = new Date();
+  readonly todayStr = new Date().toISOString().slice(0, 10);
 
   layoutMode  = signal<2|3>(2);
   showHistoric = signal(false);
@@ -110,9 +113,24 @@ export class TransportComponent implements OnInit {
   editingId = signal<string | null>(null);
 
   // ── Modal state (article-level selection) ─────────────────────────────────
-  modalOrders = signal<Order[]>([]);
-  modalQty    = signal<Record<string, Record<number, number>>>({});
-  orderSearch = signal('');
+  modalOrders    = signal<Order[]>([]);
+  modalQty       = signal<Record<string, Record<number, number>>>({});
+  orderSearch    = signal('');
+  singleOrderMode = signal(false);
+
+  // ── Add products modal ────────────────────────────────────────────────────
+  addProductsOrderId = signal<string | null>(null);
+  readonly addProductsOrder = computed(() => {
+    const id = this.addProductsOrderId();
+    return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
+  });
+
+  // ── Inline edit state for order meta fields ────────────────────────────────
+  editingAddressId  = signal<string | null>(null);
+  addressEdit       = signal('');
+  editingDeadlineId = signal<string | null>(null);
+  deadlineDateEdit  = signal('');
+  deadlineTimeEdit  = signal('');
 
   form: FormGroup;
 
@@ -138,24 +156,21 @@ export class TransportComponent implements OnInit {
   });
 
   deliveryOrders = computed<Order[]>(() => {
-    const assignedIds = this._activeAssignedOrderIds();
     return this.ordersService.orders()
       .filter(o => {
         if (!o.cuLivrare || o.superseded) return false;
-        if (!['acceptat', 'livrat_partial'].includes(o.status)) return false;
-        if (assignedIds.has(o.id)) return false;
-        return this._hasRemainingItems(o);
+        if (!['acceptat', 'livrat_partial', 'planificat'].includes(o.status)) return false;
+        return this._hasRemainingItemsExcluding(o);
       })
       .sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp));
   });
 
   eligibleOrders = computed<Order[]>(() => {
-    const assignedIds = this._activeAssignedOrderIds();
+    const editId = this.editingId() ?? undefined;
     return this.ordersService.orders().filter(o => {
       if (!o.cuLivrare || o.superseded) return false;
       if (!['acceptat', 'livrat_partial', 'planificat'].includes(o.status)) return false;
-      if (assignedIds.has(o.id)) return false;
-      return this._hasRemainingItems(o);
+      return this._hasRemainingItemsExcluding(o, editId);
     });
   });
 
@@ -214,14 +229,15 @@ export class TransportComponent implements OnInit {
     public  transportService: TransportService,
     public  ordersService: OrdersService,
     public  auth: AuthService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private catalogsService: CatalogsService
   ) {
     this.form = this.fb.group({
       vehicleId:   ['', Validators.required],
       driverId:    ['', Validators.required],
-      plecareDate: [null as Date | null, Validators.required],
+      plecareDate: ['', Validators.required],
       plecareTime: ['', Validators.required],
-      sosireDate:  [null as Date | null, Validators.required],
+      sosireDate:  ['', Validators.required],
       sosireTime:  ['', Validators.required],
       helper:      ['']
     }, { validators: [plecareNotInPast, sosireAfterPlecare] });
@@ -233,25 +249,31 @@ export class TransportComponent implements OnInit {
 
   openCreate(): void {
     this.editingId.set(null);
+    this.singleOrderMode.set(false);
     this._resetModal();
-    this.form.reset({ vehicleId: '', driverId: '', plecareDate: null, plecareTime: '', sosireDate: null, sosireTime: '', helper: '' });
+    this.form.reset({ vehicleId: '', driverId: '', plecareDate: '', plecareTime: '', sosireDate: '', sosireTime: '', helper: '' });
     this.showModal.set(true);
   }
 
   openCreateForOrder(order: Order): void {
-    this.openCreate();
+    this.editingId.set(null);
+    this.singleOrderMode.set(true);
+    this._resetModal();
+    this.form.reset({ vehicleId: '', driverId: '', plecareDate: '', plecareTime: '', sosireDate: '', sosireTime: '', helper: '' });
     this.addOrderToModal(order);
+    this.showModal.set(true);
   }
 
   openCreateForVehicleDay(vehicleId: string, day: CalDay): void {
     this.editingId.set(null);
+    this.singleOrderMode.set(false);
     this._resetModal();
     this.form.reset({
       vehicleId,
       driverId:    '',
-      plecareDate: day.date,
+      plecareDate: day.date.toISOString().slice(0, 10),
       plecareTime: '08:00',
-      sosireDate:  day.date,
+      sosireDate:  day.date.toISOString().slice(0, 10),
       sosireTime:  '12:00',
       helper: ''
     });
@@ -260,6 +282,7 @@ export class TransportComponent implements OnInit {
 
   openEdit(t: Transport): void {
     this.editingId.set(t.id);
+    this.singleOrderMode.set(false);
     this._resetModal();
 
     const orders = t.deliveries.map(d => this.getOrder(d.orderId)).filter((o): o is Order => !!o);
@@ -275,9 +298,9 @@ export class TransportComponent implements OnInit {
     this.form.patchValue({
       vehicleId:   t.vehicleId,
       driverId:    t.driverId,
-      plecareDate: t.oraPlecare ? new Date(t.oraPlecare) : null,
+      plecareDate: t.oraPlecare ? new Date(t.oraPlecare).toISOString().slice(0, 10) : '',
       plecareTime: t.oraPlecare ? this._extractTime(t.oraPlecare) : '',
-      sosireDate:  t.oraSosire  ? new Date(t.oraSosire)  : null,
+      sosireDate:  t.oraSosire  ? new Date(t.oraSosire).toISOString().slice(0, 10) : '',
       sosireTime:  t.oraSosire  ? this._extractTime(t.oraSosire)  : '',
       helper:      t.helper ?? ''
     });
@@ -291,7 +314,7 @@ export class TransportComponent implements OnInit {
   addOrderToModal(order: Order): void {
     if (this.modalOrders().some(o => o.id === order.id)) return;
     this.modalOrders.update(list => [...list, order]);
-    const remaining = this.getRemainingQtyArr(order);
+    const remaining = this.getRemainingQtyArr(order, this.editingId() ?? undefined);
     this.modalQty.update(m => ({
       ...m,
       [order.id]: Object.fromEntries(remaining.map((q, i) => [i, q]))
@@ -304,6 +327,26 @@ export class TransportComponent implements OnInit {
     this.modalQty.update(m => { const n = { ...m }; delete n[orderId]; return n; });
   }
 
+  moveOrderUp(id: string): void {
+    this.modalOrders.update(list => {
+      const i = list.findIndex(o => o.id === id);
+      if (i <= 0) return list;
+      const next = [...list];
+      [next[i - 1], next[i]] = [next[i], next[i - 1]];
+      return next;
+    });
+  }
+
+  moveOrderDown(id: string): void {
+    this.modalOrders.update(list => {
+      const i = list.findIndex(o => o.id === id);
+      if (i < 0 || i >= list.length - 1) return list;
+      const next = [...list];
+      [next[i], next[i + 1]] = [next[i + 1], next[i]];
+      return next;
+    });
+  }
+
   getModalQty(orderId: string, idx: number): number {
     return this.modalQty()[orderId]?.[idx] ?? 0;
   }
@@ -311,7 +354,7 @@ export class TransportComponent implements OnInit {
   setModalQty(orderId: string, idx: number, val: string | number): void {
     const order = this.modalOrders().find(o => o.id === orderId);
     if (!order) return;
-    const max = this.getRemainingQtyArr(order)[idx] ?? 0;
+    const max = this.getRemainingQtyArr(order, this.editingId() ?? undefined)[idx] ?? 0;
     const qty = Math.min(max, Math.max(0, parseInt(String(val)) || 0));
     this.modalQty.update(m => ({ ...m, [orderId]: { ...(m[orderId] ?? {}), [idx]: qty } }));
   }
@@ -335,9 +378,75 @@ export class TransportComponent implements OnInit {
     return qty;
   }
 
-  getRemainingQtyArr(order: Order): number[] {
-    const del = this.getDeliveredQtyArr(order);
-    return order.products.map((p, i) => Math.max(0, p.qty - (del[i] || 0)));
+  getOnTripQtyArr(order: Order, excludeId?: string): number[] {
+    const qty = new Array(order.products.length).fill(0);
+    for (const t of this.transportService.transports()) {
+      if (t.status === 'livrat' || t.id === excludeId) continue;
+      const d = t.deliveries.find(d => d.orderId === order.id);
+      if (!d) continue;
+      for (const item of d.items) {
+        if (item.productIndex < qty.length) qty[item.productIndex] += item.qty;
+      }
+    }
+    return qty;
+  }
+
+  getRemainingQtyArr(order: Order, excludeId?: string): number[] {
+    const del   = this.getDeliveredQtyArr(order);
+    const onTrip = this.getOnTripQtyArr(order, excludeId);
+    return order.products.map((p, i) => Math.max(0, p.qty - (del[i] || 0) - (onTrip[i] || 0)));
+  }
+
+  isPartiallyOnTrip(order: Order): boolean {
+    return this.transportService.transports()
+      .filter(t => t.status !== 'livrat')
+      .some(t => t.deliveries.some(d => d.orderId === order.id));
+  }
+
+  private productPrice(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): { net: number; tva: number } {
+    let net = p.pretFaraTVA ?? null;
+    let tva = p.pretCuTVA ?? null;
+    if ((net == null || tva == null) && p.catalogId) {
+      const cp = this.catalogsService.findProduct(p.catalogId, p.nr);
+      net = net ?? cp?.pretFaraTVA ?? null;
+      tva = tva ?? cp?.pretCuTVA ?? null;
+    }
+    if (net != null && tva == null) tva = Math.round(net * 1.19 * 100) / 100;
+    if (tva != null && net == null) net = Math.round(tva / 1.19 * 100) / 100;
+    return { net: net ?? 0, tva: tva ?? 0 };
+  }
+
+  orderPendingValue(order: Order): { net: number; tva: number } {
+    const delivered = this.getDeliveredQtyArr(order);
+    return order.products.reduce((s, p, i) => {
+      const rem = Math.max(0, p.qty - (delivered[i] || 0));
+      const price = this.productPrice(p);
+      return { net: s.net + rem * price.net, tva: s.tva + rem * price.tva };
+    }, { net: 0, tva: 0 });
+  }
+
+  tripValue(t: Transport): { net: number; tva: number } {
+    return this.ordersForTransport(t).reduce((s, order) => {
+      const d = t.deliveries.find(del => del.orderId === order.id);
+      if (!d) return s;
+      const sub = d.items.reduce((si, item) => {
+        const p = order.products[item.productIndex];
+        if (!p) return si;
+        const price = this.productPrice(p);
+        return { net: si.net + item.qty * price.net, tva: si.tva + item.qty * price.tva };
+      }, { net: 0, tva: 0 });
+      return { net: s.net + sub.net, tva: s.tva + sub.tva };
+    }, { net: 0, tva: 0 });
+  }
+
+  isPartialTripForOrder(t: { deliveries: { orderId: string; items: { qty: number }[] }[] }, order: Order): boolean {
+    if (order.status === 'livrat_partial') return true;
+    const d = t.deliveries.find(del => del.orderId === order.id);
+    if (!d) return false;
+    const delivered = this.getDeliveredQtyArr(order);
+    const totalRemaining = order.products.reduce((s, p, i) => s + Math.max(0, p.qty - (delivered[i] || 0)), 0);
+    const onThisTrip = d.items.reduce((s, item) => s + item.qty, 0);
+    return onThisTrip < totalRemaining;
   }
 
   totalQty(order: Order): number {
@@ -410,7 +519,11 @@ export class TransportComponent implements OnInit {
     } else {
       this.transportService.createTransport(payload);
       for (const d of deliveries) {
-        this.ordersService.updateOrderStatus(d.orderId, 'planificat');
+        const order = this.getOrder(d.orderId);
+        if (!order) continue;
+        if (!['planificat', 'livrat_partial'].includes(order.status)) {
+          this.ordersService.updateOrderStatus(d.orderId, 'planificat');
+        }
       }
       this.snackBar.open('Cursă planificată.', '', { duration: 2000 });
     }
@@ -538,6 +651,46 @@ export class TransportComponent implements OnInit {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   }
 
+  // ── Inline edit: address ──────────────────────────────────────────────────
+
+  startEditAddress(order: Order): void {
+    this.addressEdit.set(order.client.address ?? '');
+    this.editingAddressId.set(order.id);
+  }
+
+  saveAddress(order: Order): void {
+    const newAddress = this.addressEdit();
+    this.ordersService.updateOrderClient(order.id, { address: newAddress });
+    this.modalOrders.update(list => list.map(o =>
+      o.id === order.id ? { ...o, client: { ...o.client, address: newAddress } } : o
+    ));
+    this.editingAddressId.set(null);
+  }
+
+  cancelEditAddress(): void { this.editingAddressId.set(null); }
+
+  // ── Inline edit: deadline ─────────────────────────────────────────────────
+
+  startEditDeadline(order: Order): void {
+    this.deadlineDateEdit.set(order.deliveryDate ?? '');
+    this.deadlineTimeEdit.set(order.deliveryTime ?? '');
+    this.editingDeadlineId.set(order.id);
+  }
+
+  saveDeadline(order: Order): void {
+    const newDate = this.deadlineDateEdit();
+    const newTime = this.deadlineTimeEdit();
+    this.ordersService.updateOrderDeliveryDateTime(order.id, newDate, newTime);
+    this.modalOrders.update(list => list.map(o =>
+      o.id === order.id
+        ? { ...o, deliveryDate: newDate || undefined, deliveryTime: newTime || undefined }
+        : o
+    ));
+    this.editingDeadlineId.set(null);
+  }
+
+  cancelEditDeadline(): void { this.editingDeadlineId.set(null); }
+
   // ── Deadline validation ───────────────────────────────────────────────────
 
   orderDeadlineStatus(order: Order): 'ok' | 'warn' | 'no-deadline' {
@@ -585,6 +738,25 @@ export class TransportComponent implements OnInit {
       });
   }
 
+  get minPlecareTime(): string {
+    const pd = this.form.get('plecareDate')?.value as string;
+    if (!pd || pd !== this.todayStr) return '';
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+
+  get minSosireDate(): string {
+    return (this.form.get('plecareDate')?.value as string) || this.todayStr;
+  }
+
+  get minSosireTime(): string {
+    const pd = this.form.get('plecareDate')?.value as string;
+    const sd = this.form.get('sosireDate')?.value as string;
+    const pt = this.form.get('plecareTime')?.value as string;
+    if (sd && pd && sd === pd && pt) return pt;
+    return '';
+  }
+
   get busyVehicleIdsInForm(): Set<string> { return this._busyInForm().vehicleIds; }
   get busyDriverIdsInForm():  Set<string> { return this._busyInForm().driverIds; }
   get selectedVehicle()      { const id = this.form.get('vehicleId')?.value; return id ? this.transportService.getVehicle(id) : undefined; }
@@ -607,17 +779,10 @@ export class TransportComponent implements OnInit {
     this.orderSearch.set('');
   }
 
-  private _hasRemainingItems(order: Order): boolean {
-    const del = this.getDeliveredQtyArr(order);
-    return order.products.some((p, i) => p.qty > (del[i] || 0));
-  }
-
-  private _activeAssignedOrderIds(): Set<string> {
-    return new Set(
-      this.transportService.transports()
-        .filter(t => t.status !== 'livrat')
-        .flatMap(t => t.deliveries.map(d => d.orderId))
-    );
+  private _hasRemainingItemsExcluding(order: Order, excludeId?: string): boolean {
+    const del    = this.getDeliveredQtyArr(order);
+    const onTrip = this.getOnTripQtyArr(order, excludeId);
+    return order.products.some((p, i) => p.qty > (del[i] || 0) + (onTrip[i] || 0));
   }
 
   private _extractTime(iso: string): string {
@@ -642,9 +807,9 @@ export class TransportComponent implements OnInit {
   }
 
   private _busyInForm(): { vehicleIds: Set<string>; driverIds: Set<string> } {
-    const pd = this.form.get('plecareDate')?.value as Date | null;
+    const pd = this.form.get('plecareDate')?.value as string;
     const pt = this.form.get('plecareTime')?.value as string;
-    const sd = this.form.get('sosireDate')?.value as Date | null;
+    const sd = this.form.get('sosireDate')?.value as string;
     const st = this.form.get('sosireTime')?.value as string;
     if (!pd || !pt || !sd || !st) return { vehicleIds: new Set(), driverIds: new Set() };
     const plecare = combineDateTime(pd, pt), sosire = combineDateTime(sd, st);

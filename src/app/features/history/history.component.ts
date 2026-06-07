@@ -21,6 +21,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { AddProductsModalComponent } from '../../shared/add-products-modal/add-products-modal.component';
 
 function sortByFamily(orders: Order[]): Order[] {
   const families: Order[][] = [];
@@ -58,7 +59,7 @@ function sortByFamily(orders: Order[]): Order[] {
     CommonModule, FormsModule, ReactiveFormsModule, RouterModule,
     MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule,
     MatDatepickerModule, MatFormFieldModule, MatInputModule, MatMenuModule, MatDividerModule,
-    TableModule, TagModule
+    TableModule, TagModule, AddProductsModalComponent
   ],
   templateUrl: './history.component.html',
   styleUrl:    './history.component.scss'
@@ -93,6 +94,19 @@ export class HistoryComponent {
   editingDeliveryId = signal<string | null>(null);
   editDeliveryDate  = '';
   editDeliveryTime  = '';
+
+  addProductsOrderId = signal<string | null>(null);
+  readonly addProductsOrder = computed(() => {
+    const id = this.addProductsOrderId();
+    return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
+  });
+
+  canAddProducts(order: Order): boolean {
+    const open = ['trimis', 'acceptat', 'planificat', 'livrat_partial'];
+    if (!open.includes(order.status) || order.superseded) return false;
+    const s = this.auth.session();
+    return !!s && (s.role === 'admin' || order.agent.id === s.userId);
+  }
 
   hideSuperseded = signal(true);
   filterNr     = signal('');

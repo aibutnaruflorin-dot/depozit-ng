@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { StorageService } from './storage.service';
-import { Order } from '../models/order.model';
+import { Order, OrderProduct, OrderEvent } from '../models/order.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrdersService {
@@ -109,6 +109,22 @@ export class OrdersService {
           : o.status === 'livrat' || o.status === 'livrat_partial' ? 'acceptat'
           : o.status;
         return { ...o, deliveredQty, status };
+      })
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
+  addProductsToOrder(orderId: string, products: OrderProduct[], event: Omit<OrderEvent, 'id'>): void {
+    this._orders.update(orders =>
+      orders.map(o => {
+        if (o.id !== orderId) return o;
+        const newNr = o.products.reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0);
+        const numbered = products.map((p, i) => ({ ...p, nr: newNr + i + 1 }));
+        return {
+          ...o,
+          products: [...o.products, ...numbered],
+          orderEvents: [...(o.orderEvents ?? []), { ...event, id: generateId() }]
+        };
       })
     );
     this.storage.set('app_orders', this._orders());

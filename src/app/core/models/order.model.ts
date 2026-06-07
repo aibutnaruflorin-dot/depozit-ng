@@ -1,3 +1,13 @@
+export interface OrderEvent {
+  id: string;
+  timestamp: string;
+  userId: number;
+  userName: string;
+  source: 'transport' | 'comenzile-mele' | 'toate-comenzile';
+  type: 'products_added';
+  products: Array<{ name: string; qty: number; um: string }>;
+}
+
 export interface OrderProduct {
   nr: number | string;
   name: string;
@@ -26,4 +36,5 @@ export interface Order {
   status: 'trimis' | 'acceptat' | 'planificat' | 'in_livrare' | 'livrat_partial' | 'livrat' | 'anulat' | string;
   revisedFromId?: string;
   superseded?: boolean;
+  orderEvents?: OrderEvent[];
 }

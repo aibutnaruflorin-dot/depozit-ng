@@ -260,7 +260,14 @@
             </div>
           }
         </td>
-        <td>{{ order.products.length }} art.</td>
+        <td>
+          {{ order.products.length }} art.
+          @if (order.orderEvents?.length) {
+            <span class="events-badge" [matTooltip]="'Modificat: ' + order.orderEvents!.length + ' adăugiri'">
+              <mat-icon>edit_note</mat-icon>
+            </span>
+          }
+        </td>
         <td class="td-net-order">
           {{ orderTotalFaraTVA(order) > 0 ? ((orderTotalFaraTVA(order) | number:'1.2-2') + ' lei') : '—' }}
         </td>
@@ -280,6 +287,12 @@
         </td>
         <td>
           <div class="action-btns" (click)="$event.stopPropagation()">
+            @if (canAddProducts(order)) {
+              <button mat-icon-button (click)="addProductsOrderId.set(order.id)"
+                      matTooltip="Adaugă produse la comandă">
+                <mat-icon>add_shopping_cart</mat-icon>
+              </button>
+            }
             <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Trimite email">
               <mat-icon>email</mat-icon>
             </button>
@@ -426,11 +439,40 @@
                 </div>
               </div>
 
+              @if (order.orderEvents?.length) {
+                <div class="exp-events-journal">
+                  <div class="exp-events-title">
+                    <mat-icon>history</mat-icon> Produse adăugate ulterior
+                  </div>
+                  @for (ev of order.orderEvents!; track ev.id) {
+                    <div class="exp-event-entry">
+                      <div class="exp-event-meta">
+                        <mat-icon>person</mat-icon>
+                        <strong>{{ ev.userName }}</strong>
+                        · {{ ev.source === 'transport' ? 'Transport' : ev.source === 'comenzile-mele' ? 'Comenzile mele' : 'Toate comenzile' }}
+                        · {{ ev.timestamp | date:'dd.MM.yy HH:mm' }}
+                      </div>
+                      <div class="exp-event-chips">
+                        @for (p of ev.products; track p.name) {
+                          <span class="exp-event-chip">+{{ p.qty }} {{ p.name }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
               <div class="expansion-footer">
                 @if (order.status === 'trimis' && !order.superseded) {
                   <button mat-flat-button color="primary" (click)="reviseOrder(order)">
                     <mat-icon>send</mat-icon>
                     Retrimite modificat
+                  </button>
+                }
+                @if (canAddProducts(order)) {
+                  <button mat-stroked-button (click)="addProductsOrderId.set(order.id)">
+                    <mat-icon>add_shopping_cart</mat-icon>
+                    Adaugă produse
                   </button>
                 }
                 <button mat-stroked-button (click)="collapseRow(order.id)">
@@ -450,4 +492,12 @@
       </td></tr>
     </ng-template>
   </p-table>
+}
+
+@if (addProductsOrder()) {
+  <app-add-products-modal
+    [order]="addProductsOrder()!"
+    source="comenzile-mele"
+    (closed)="addProductsOrderId.set(null)">
+  </app-add-products-modal>
 }

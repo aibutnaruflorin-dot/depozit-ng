@@ -37,7 +37,7 @@
   }
 
   <!-- ════════════════════════════════════════════════════════════
-       LAYOUT 2 — Calendar sus + De livrat / Curse active jos
+       LAYOUT 2 — Calendar sus + Comenzi de planificat / Curse în desfășurare jos
        ════════════════════════════════════════════════════════════ -->
   @if (layoutMode() === 2) {
     <div class="layout-2">
@@ -54,7 +54,7 @@
 
         <div class="l2-delivery">
           <div class="panel-title">
-            <mat-icon>local_shipping</mat-icon> De livrat
+            <mat-icon>local_shipping</mat-icon> Comenzi de planificat
             @if (deliveryOrders().length) { <span class="badge-pill">{{ deliveryOrders().length }}</span> }
           </div>
           <ng-container [ngTemplateOutlet]="deliveryTableTpl"></ng-container>
@@ -62,7 +62,7 @@
 
         <div class="l2-active">
           <div class="panel-title">
-            <mat-icon>directions_car</mat-icon> Curse active
+            <mat-icon>directions_car</mat-icon> Curse în desfășurare
             @if (transportService.active().length) {
               <span class="badge-pill badge-pill--warn">{{ transportService.active().length }}</span>
             }
@@ -85,7 +85,7 @@
 
       <div class="l3-section">
         <div class="panel-title">
-          <mat-icon>local_shipping</mat-icon> De livrat
+          <mat-icon>local_shipping</mat-icon> Comenzi de planificat
           @if (deliveryOrders().length) { <span class="badge-pill">{{ deliveryOrders().length }}</span> }
         </div>
         <ng-container [ngTemplateOutlet]="deliveryTableTpl"></ng-container>
@@ -93,7 +93,7 @@
 
       <div class="l3-section">
         <div class="panel-title">
-          <mat-icon>directions_car</mat-icon> Curse active
+          <mat-icon>directions_car</mat-icon> Curse în desfășurare
           @if (transportService.active().length) {
             <span class="badge-pill badge-pill--warn">{{ transportService.active().length }}</span>
           }
@@ -118,6 +118,14 @@
   }
 
 </div><!-- /transport-page -->
+
+@if (addProductsOrder()) {
+  <app-add-products-modal
+    [order]="addProductsOrder()!"
+    source="transport"
+    (closed)="addProductsOrderId.set(null)">
+  </app-add-products-modal>
+}
 
 <!-- ════════════════════════════════════════════════════════════════════
      SHARED TEMPLATES
@@ -188,7 +196,7 @@
   }
 </ng-template>
 
-<!-- ── De livrat – table ── -->
+<!-- ── Comenzi de planificat – table ── -->
 <ng-template #deliveryTableTpl>
   @if (!deliveryOrders().length) {
     <div class="empty-state">
@@ -206,6 +214,7 @@
           <th>Termen dorit</th>
           <th>Produse</th>
           <th>Livrat / Total</th>
+          <th>Valoare</th>
           <th>Acțiuni</th>
         </tr>
       </thead>
@@ -215,7 +224,8 @@
             <td><span class="order-num-badge">#{{ o.orderNumber ?? '?' }}</span></td>
             <td>
               <strong>{{ o.client.name }}</strong>
-              @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
+              @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial livrat</span> }
+              @if (isPartiallyOnTrip(o)) { <span class="partial-badge partial-badge--on-trip">livrare parțială</span> }
             </td>
             <td>
               @if (o.client.phone) {
@@ -240,12 +250,23 @@
             </td>
             <td>{{ o.products.length }} art.</td>
             <td><span class="delivery-progress">{{ deliveredTotal(o) }} / {{ totalQty(o) }}</span></td>
+            <td class="value-cell">
+              @let ov = orderPendingValue(o);
+              <span class="val-net">{{ ov.net | number:'1.2-2' }} lei</span>
+              <span class="val-tva">{{ ov.tva | number:'1.2-2' }} cu TVA</span>
+            </td>
             <td>
-              <button mat-flat-button color="primary" class="plan-btn"
-                      [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
-                      (click)="openCreateForOrder(o)">
-                <mat-icon>add_road</mat-icon> Planifică
-              </button>
+              <div class="delivery-actions">
+                <button mat-flat-button color="primary" class="plan-btn"
+                        [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
+                        (click)="openCreateForOrder(o)">
+                  <mat-icon>add_road</mat-icon> Planifică
+                </button>
+                <button mat-icon-button (click)="addProductsOrderId.set(o.id)"
+                        matTooltip="Adaugă produse la comandă">
+                  <mat-icon>add_shopping_cart</mat-icon>
+                </button>
+              </div>
             </td>
           </tr>
         }
@@ -254,7 +275,7 @@
   }
 </ng-template>
 
-<!-- ── Curse active – table ── -->
+<!-- ── Curse în desfășurare – table ── -->
 <ng-template #activeTableTpl>
   @if (!transportService.active().length) {
     <div class="empty-state">
@@ -269,6 +290,7 @@
           <th>Șofer</th>
           <th>Plecare → Sosire</th>
           <th>Comenzi / Articole</th>
+          <th>Valoare</th>
           <th>Status</th>
           <th>Acțiuni</th>
         </tr>
@@ -286,23 +308,49 @@
               </span>
             </td>
             <td>{{ getDriverName(t.driverId) }}</td>
-            <td class="times-cell">
-              <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
-              <mat-icon class="arrow-icon">arrow_forward</mat-icon>
-              <span>{{ transportService.formatDateTime(t.oraSosire) }}</span>
+            <td>
+              <div class="times-cell">
+                <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
+                <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                <span>{{ transportService.formatDateTime(t.oraSosire) }}</span>
+              </div>
             </td>
             <td>
               @for (o of ordersForTransport(t); track o.id) {
                 <div class="order-chip">
-                  <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                  {{ o.client.name }}
-                  @for (d of t.deliveries; track d.orderId) {
-                    @if (d.orderId === o.id) {
-                      <span class="muted small"> · {{ d.items.length }} art.</span>
+                  <div class="order-chip-top">
+                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                    <span class="order-chip-name">{{ o.client.name }}</span>
+                    @for (d of t.deliveries; track d.orderId) {
+                      @if (d.orderId === o.id) {
+                        <span class="muted small"> · {{ d.items.length }} art.</span>
+                      }
                     }
+                    @if (isPartialTripForOrder(t, o)) {
+                      <span class="order-partial-tag">livrare parțială</span>
+                    }
+                  </div>
+                  @if (o.client.address || o.deliveryDate) {
+                    <div class="order-chip-meta">
+                      @if (o.client.address) {
+                        <span class="order-chip-addr">
+                          <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                        </span>
+                      }
+                      @if (o.deliveryDate) {
+                        <span class="order-chip-deadline">
+                          <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                        </span>
+                      }
+                    </div>
                   }
                 </div>
               }
+            </td>
+            <td class="value-cell">
+              @let tv = tripValue(t);
+              <span class="val-net">{{ tv.net | number:'1.2-2' }} lei</span>
+              <span class="val-tva">{{ tv.tva | number:'1.2-2' }} cu TVA</span>
             </td>
             <td>
               <span class="trip-status-badge"
@@ -329,7 +377,7 @@
 <ng-template #historicSection>
   <div class="historic-section">
     <div class="panel-title panel-title--toggle" (click)="showHistoric.set(!showHistoric())">
-      <mat-icon>history</mat-icon> Istoric
+      <mat-icon>history</mat-icon> Curse finalizate
       @if (transportService.history().length) {
         <span class="badge-pill badge-pill--muted">{{ transportService.history().length }}</span>
       }
@@ -342,29 +390,72 @@
         <table class="delivery-table">
           <thead>
             <tr>
-              <th>Mașină</th><th>Șofer</th><th>Plecare → Sosire</th><th>Comenzi livrate</th>
+              <th>Mașină</th>
+              <th>Șofer</th>
+              <th>Plecare → Sosire</th>
+              <th>Comenzi / Articole</th>
+              <th>Valoare</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             @for (t of transportService.history(); track t.id) {
               <tr>
-                <td><span class="vehicle-cell"><mat-icon>local_shipping</mat-icon> {{ getVehicleName(t.vehicleId) }}</span></td>
+                <td>
+                  <span class="vehicle-cell">
+                    <mat-icon>local_shipping</mat-icon>
+                    <span>
+                      <strong>{{ getVehicleName(t.vehicleId) }}</strong><br>
+                      <small>{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
+                    </span>
+                  </span>
+                </td>
                 <td>{{ getDriverName(t.driverId) }}</td>
-                <td class="times-cell">
-                  <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
-                  <mat-icon class="arrow-icon">arrow_forward</mat-icon>
-                  <span>{{ transportService.formatDateTime(t.oraSosire) }}</span>
+                <td>
+                  <div class="times-cell">
+                    <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
+                    <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                    <span>{{ transportService.formatDateTime(t.oraSosire) }}</span>
+                  </div>
                 </td>
                 <td>
-                  @for (d of t.deliveries; track d.orderId) {
-                    @if (getOrder(d.orderId); as o) {
-                      <div class="order-chip">
+                  @for (o of ordersForTransport(t); track o.id) {
+                    <div class="order-chip">
+                      <div class="order-chip-top">
                         <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                        {{ o.client.name }}
-                        <span class="muted small"> · {{ d.items.length }} art.</span>
+                        <span class="order-chip-name">{{ o.client.name }}</span>
+                        @for (d of t.deliveries; track d.orderId) {
+                          @if (d.orderId === o.id) {
+                            <span class="muted small"> · {{ d.items.length }} art.</span>
+                          }
+                        }
                       </div>
-                    }
+                      @if (o.client.address || o.deliveryDate) {
+                        <div class="order-chip-meta">
+                          @if (o.client.address) {
+                            <span class="order-chip-addr">
+                              <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                            </span>
+                          }
+                          @if (o.deliveryDate) {
+                            <span class="order-chip-deadline">
+                              <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                            </span>
+                          }
+                        </div>
+                      }
+                    </div>
                   }
+                </td>
+                <td class="value-cell">
+                  @let hv = tripValue(t);
+                  <span class="val-net">{{ hv.net | number:'1.2-2' }} lei</span>
+                  <span class="val-tva">{{ hv.tva | number:'1.2-2' }} cu TVA</span>
+                </td>
+                <td>
+                  <span class="trip-status-badge trip-status--livrat">
+                    <mat-icon>check_circle</mat-icon> Livrat
+                  </span>
                 </td>
               </tr>
             }
@@ -441,21 +532,40 @@
             </mat-form-field>
           </div>
 
+          <!-- ── Adrese livrare (din comenzi) ── -->
+          @if (modalOrders().length > 0) {
+            <div class="form-meta-section">
+              @for (order of modalOrders(); track order.id) {
+                <div class="form-meta-row">
+                  <mat-icon class="form-meta-icon">location_on</mat-icon>
+                  <span class="form-meta-label">{{ order.client.name }}</span>
+                  @if (editingAddressId() === order.id) {
+                    <input class="meta-edit-input" [value]="addressEdit()" (input)="addressEdit.set($any($event.target).value)" placeholder="Adresă livrare…">
+                    <button class="meta-ok-btn" (click)="saveAddress(order)">&#10003;</button>
+                    <button class="meta-cancel-btn" (click)="cancelEditAddress()">&#10007;</button>
+                  } @else {
+                    @if (order.client.address) {
+                      <a [href]="mapsLink(order.client.address)" target="_blank" class="meta-addr-link">{{ order.client.address }}</a>
+                    } @else {
+                      <span class="meta-value-empty" (click)="startEditAddress(order)">Adaugă adresă…</span>
+                    }
+                    <button class="meta-edit-icon-btn" (click)="startEditAddress(order)">✎</button>
+                  }
+                </div>
+              }
+            </div>
+          }
+
           <!-- Dates -->
           <div class="form-row">
-            <mat-form-field appearance="outline" class="half">
-              <mat-label>Data plecare *</mat-label>
-              <mat-icon matPrefix>outlined_flag</mat-icon>
-              <input matInput [matDatepicker]="dpStart" formControlName="plecareDate"
-                     [min]="today" placeholder="zz/ll/aaaa" readonly>
-              <mat-datepicker-toggle matIconSuffix [for]="dpStart" />
-              <mat-datepicker #dpStart />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="half">
-              <mat-label>Ora plecare *</mat-label>
-              <mat-icon matPrefix>schedule</mat-icon>
-              <input matInput type="time" formControlName="plecareTime">
-            </mat-form-field>
+            <div class="native-field half" [class.native-field--error]="form.get('plecareDate')?.invalid && form.get('plecareDate')?.touched">
+              <label class="native-field-label"><mat-icon>outlined_flag</mat-icon> Data plecare *</label>
+              <input type="date" class="native-input" formControlName="plecareDate" [min]="todayStr">
+            </div>
+            <div class="native-field half" [class.native-field--error]="form.get('plecareTime')?.invalid && form.get('plecareTime')?.touched">
+              <label class="native-field-label"><mat-icon>schedule</mat-icon> Ora plecare *</label>
+              <input type="time" class="native-input" formControlName="plecareTime" [min]="minPlecareTime">
+            </div>
           </div>
 
           @if (form.hasError('plecareInPast') && (form.get('plecareDate')?.touched || form.get('plecareTime')?.touched)) {
@@ -464,20 +574,47 @@
             </div>
           }
 
+          <!-- ── Termene livrare (din comenzi) ── -->
+          @if (modalOrders().length > 0) {
+            <div class="form-meta-section">
+              @for (order of modalOrders(); track order.id) {
+                <div class="form-meta-row"
+                     [class.form-meta-row--ok]="orderDeadlineStatus(order)==='ok'"
+                     [class.form-meta-row--warn]="orderDeadlineStatus(order)==='warn'">
+                  <mat-icon class="form-meta-icon">schedule</mat-icon>
+                  <span class="form-meta-label">{{ order.client.name }}</span>
+                  @if (editingDeadlineId() === order.id) {
+                    <input type="date" class="meta-edit-input" [value]="deadlineDateEdit()" (input)="deadlineDateEdit.set($any($event.target).value)" [min]="todayStr">
+                    <input type="time" class="meta-edit-input meta-edit-input--time" [value]="deadlineTimeEdit()" (input)="deadlineTimeEdit.set($any($event.target).value)">
+                    <button class="meta-ok-btn" (click)="saveDeadline(order)">&#10003;</button>
+                    <button class="meta-cancel-btn" (click)="cancelEditDeadline()">&#10007;</button>
+                  } @else {
+                    <span class="meta-value" [class.meta-value-empty]="!order.deliveryDate"
+                          (click)="!order.deliveryDate && startEditDeadline(order)">
+                      {{ order.deliveryDate ? (order.deliveryDate | date:'dd.MM.yy') + (order.deliveryTime ? ' ' + order.deliveryTime : '') : 'Adaugă termen…' }}
+                    </span>
+                    @if (orderDeadlineStatus(order)==='ok') {
+                      <mat-icon class="meta-status-icon meta-status-icon--ok" matTooltip="Termen în fereastra de transport">check_circle</mat-icon>
+                    }
+                    @if (orderDeadlineStatus(order)==='warn') {
+                      <mat-icon class="meta-status-icon meta-status-icon--warn" matTooltip="Termen în AFARA ferestrei!">warning_amber</mat-icon>
+                    }
+                    <button class="meta-edit-icon-btn" (click)="startEditDeadline(order)">✎</button>
+                  }
+                </div>
+              }
+            </div>
+          }
+
           <div class="form-row">
-            <mat-form-field appearance="outline" class="half">
-              <mat-label>Data sosire estimată *</mat-label>
-              <mat-icon matPrefix>sports_score</mat-icon>
-              <input matInput [matDatepicker]="dpEnd" formControlName="sosireDate"
-                     [min]="today" placeholder="zz/ll/aaaa" readonly>
-              <mat-datepicker-toggle matIconSuffix [for]="dpEnd" />
-              <mat-datepicker #dpEnd />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="half">
-              <mat-label>Ora sosire estimată *</mat-label>
-              <mat-icon matPrefix>schedule</mat-icon>
-              <input matInput type="time" formControlName="sosireTime">
-            </mat-form-field>
+            <div class="native-field half" [class.native-field--error]="form.get('sosireDate')?.invalid && form.get('sosireDate')?.touched">
+              <label class="native-field-label"><mat-icon>sports_score</mat-icon> Data sosire estimată *</label>
+              <input type="date" class="native-input" formControlName="sosireDate" [min]="minSosireDate">
+            </div>
+            <div class="native-field half" [class.native-field--error]="form.get('sosireTime')?.invalid && form.get('sosireTime')?.touched">
+              <label class="native-field-label"><mat-icon>schedule</mat-icon> Ora sosire estimată *</label>
+              <input type="time" class="native-input" formControlName="sosireTime" [min]="minSosireTime">
+            </div>
           </div>
 
           @if (form.hasError('sosireBeforePlecare') && (form.get('sosireDate')?.touched || form.get('sosireTime')?.touched)) {
@@ -498,7 +635,6 @@
                 </mat-option>
               }
             </mat-autocomplete>
-            <mat-hint>Opțional</mat-hint>
           </mat-form-field>
 
         </form>
@@ -511,54 +647,61 @@
             <span class="orders-count-badge">{{ modalOrders().length }}</span>
           </div>
 
-          <div class="order-search-row">
-            <mat-form-field appearance="outline" class="order-search-field" subscriptSizing="dynamic">
-              <mat-label>Caută și adaugă comandă</mat-label>
-              <mat-icon matPrefix>search</mat-icon>
-              <input matInput [ngModel]="orderSearch()" (ngModelChange)="orderSearch.set($event)"
-                     placeholder="Client, #număr, adresă…">
-            </mat-form-field>
-          </div>
-
-          @if (orderSearch().trim() && filteredEligible().length) {
-            <div class="order-search-results">
-              @for (o of filteredEligible(); track o.id) {
-                <div class="order-search-item" (click)="addOrderToModal(o)">
-                  <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                  <strong>{{ o.client.name }}</strong>
-                  @if (o.client.address) { <span class="muted small"> · {{ o.client.address }}</span> }
-                  @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
-                  <mat-icon class="add-order-icon">add_circle</mat-icon>
-                </div>
-              }
+          @if (!singleOrderMode()) {
+            <!-- Search -->
+            <div class="order-search-row">
+              <mat-form-field appearance="outline" class="order-search-field" subscriptSizing="dynamic">
+                <mat-label>Filtrează comenzi</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input matInput [ngModel]="orderSearch()" (ngModelChange)="orderSearch.set($event)"
+                       placeholder="Client, #număr, adresă…">
+                @if (orderSearch()) {
+                  <button matSuffix mat-icon-button (click)="orderSearch.set('')" style="margin-right:4px">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+              </mat-form-field>
             </div>
-          } @else if (orderSearch().trim() && !filteredEligible().length) {
-            <div class="order-search-empty">Nicio comandă găsită.</div>
-          }
 
-          @if (!orderSearch().trim() && filteredEligible().length) {
-            <div class="order-quick-list">
-              @for (o of filteredEligible(); track o.id) {
-                <div class="order-quick-item" (click)="addOrderToModal(o)">
-                  <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                  {{ o.client.name }}
-                  @if (o.deliveryDate) {
-                    <span class="order-deadline-chip">
-                      <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                    </span>
-                  }
-                  @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
-                  <mat-icon>add</mat-icon>
-                </div>
-              }
-            </div>
-          }
-
-          @if (modalOrders().length === 0) {
-            <div class="orders-empty-hint">
-              <mat-icon>info_outline</mat-icon>
-              Caută și adaugă cel puțin o comandă la această cursă.
-            </div>
+            <!-- Available orders list — always visible -->
+            @if (filteredEligible().length) {
+              <div class="order-pick-list">
+                @for (o of filteredEligible(); track o.id) {
+                  <div class="order-pick-item" (click)="addOrderToModal(o)">
+                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                    <div class="order-pick-info">
+                      <span class="order-pick-name">{{ o.client.name }}</span>
+                      @if (o.client.address) {
+                        <span class="order-pick-addr">
+                          <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                        </span>
+                      }
+                    </div>
+                    <div class="order-pick-meta">
+                      @if (o.deliveryDate) {
+                        <span class="order-deadline-chip">
+                          <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                        </span>
+                      }
+                      @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
+                      <span class="order-pick-count">{{ o.products.length }} art.</span>
+                    </div>
+                    <mat-icon class="add-order-icon">add_circle</mat-icon>
+                  </div>
+                }
+              </div>
+            } @else if (orderSearch().trim()) {
+              <div class="order-search-empty">Nicio comandă găsită.</div>
+            } @else if (modalOrders().length > 0) {
+              <div class="order-search-empty">
+                <mat-icon>check_circle</mat-icon> Toate comenzile disponibile au fost adăugate.
+              </div>
+            } @else {
+              <div class="orders-empty-hint">
+                <mat-icon>info_outline</mat-icon>
+                Nu există comenzi disponibile pentru livrare.
+              </div>
+            }
           }
 
           @if (hasDeadlineConflicts) {
@@ -568,43 +711,30 @@
             </div>
           }
 
-          @for (order of modalOrders(); track order.id) {
+          @for (order of modalOrders(); track order.id; let idx = $index; let total = $count) {
             <div class="trip-order-block"
                  [class.trip-order-block--warn]="orderDeadlineStatus(order)==='warn'">
+              <!-- ── Order header ── -->
               <div class="trip-order-header">
+                <span class="stop-badge">Stop {{ idx + 1 }}</span>
                 <div class="trip-order-title">
                   <span class="order-num-badge">#{{ order.orderNumber }}</span>
                   <strong>{{ order.client.name }}</strong>
-                  @if (order.client.address) {
-                    <a [href]="mapsLink(order.client.address)" target="_blank" class="addr-link small">
-                      <mat-icon>location_on</mat-icon>{{ order.client.address }}
-                    </a>
-                  }
                   @if (order.status === 'livrat_partial') { <span class="partial-badge">parțial livrat</span> }
                 </div>
-                <!-- Termen livrare + status față de fereastra de transport -->
-                <div class="trip-order-deadline"
-                     [class.deadline--ok]="orderDeadlineStatus(order)==='ok'"
-                     [class.deadline--warn]="orderDeadlineStatus(order)==='warn'"
-                     [class.deadline--none]="orderDeadlineStatus(order)==='no-deadline'">
-                  @if (order.deliveryDate) {
-                    <mat-icon>schedule</mat-icon>
-                    <span>{{ order.deliveryDate | date:'dd.MM.yy' }}{{ order.deliveryTime ? ' ' + order.deliveryTime : '' }}</span>
-                    @if (orderDeadlineStatus(order)==='ok') {
-                      <mat-icon class="deadline-status-icon" matTooltip="Termen în fereastra de transport">check_circle</mat-icon>
-                    }
-                    @if (orderDeadlineStatus(order)==='warn') {
-                      <mat-icon class="deadline-status-icon" matTooltip="Termen în AFARA ferestrei de transport!">warning_amber</mat-icon>
-                    }
-                  } @else {
-                    <mat-icon>event_busy</mat-icon>
-                    <span>Fără termen</span>
-                  }
+                <div class="reorder-btns">
+                  <button mat-icon-button (click)="moveOrderUp(order.id)" [disabled]="idx === 0" matTooltip="Mută sus">
+                    <mat-icon>arrow_upward</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="moveOrderDown(order.id)" [disabled]="idx === total - 1" matTooltip="Mută jos">
+                    <mat-icon>arrow_downward</mat-icon>
+                  </button>
                 </div>
                 <button mat-icon-button color="warn" (click)="removeOrderFromModal(order.id)" matTooltip="Elimină">
                   <mat-icon>remove_circle_outline</mat-icon>
                 </button>
               </div>
+
 
               <table class="article-table">
                 <thead>
@@ -618,7 +748,7 @@
                 </thead>
                 <tbody>
                   @for (product of order.products; let i = $index; track i) {
-                    @if (getRemainingQtyArr(order)[i] > 0) {
+                    @if (getRemainingQtyArr(order, editingId() ?? undefined)[i] > 0) {
                       <tr>
                         <td>
                           {{ product.name }} <small class="muted">{{ product.um }}</small>
@@ -631,13 +761,13 @@
                         </td>
                         <td class="num-col">{{ product.qty }}</td>
                         <td class="num-col">{{ getDeliveredQtyArr(order)[i] || 0 }}</td>
-                        <td class="num-col remaining-col">{{ getRemainingQtyArr(order)[i] }}</td>
+                        <td class="num-col remaining-col">{{ getRemainingQtyArr(order, editingId() ?? undefined)[i] }}</td>
                         <td class="num-col">
                           <div class="qty-input-wrap">
                             <button class="qty-btn" (click)="setModalQty(order.id, i, getModalQty(order.id, i) - 1)">−</button>
                             <input type="number" class="qty-input"
                                    [value]="getModalQty(order.id, i)"
-                                   [max]="getRemainingQtyArr(order)[i]" min="0"
+                                   [max]="getRemainingQtyArr(order, editingId() ?? undefined)[i]" min="0"
                                    (change)="setModalQty(order.id, i, $any($event.target).value)">
                             <button class="qty-btn" (click)="setModalQty(order.id, i, getModalQty(order.id, i) + 1)">+</button>
                           </div>

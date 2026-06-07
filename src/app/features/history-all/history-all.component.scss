@@ -3,6 +3,44 @@
   mat-icon { font-size: 18px; width: 18px; height: 18px; }
 }
 
+.events-badge {
+  display: inline-flex; align-items: center; vertical-align: middle;
+  margin-left: 4px; color: #1e40af; cursor: default;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+
+.exp-events-journal {
+  margin: 12px 0 4px; padding: 10px 12px;
+  border: 1px solid var(--color-border, #e0e0e0); border-radius: 8px;
+  background: var(--color-surface-alt, #f9f9f9);
+}
+
+.exp-events-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--color-text-muted, #888); margin-bottom: 8px;
+  mat-icon { font-size: 15px; }
+}
+
+.exp-event-entry {
+  padding: 6px 8px; border-left: 3px solid #93c5fd; margin-bottom: 6px;
+  border-radius: 0 4px 4px 0; background: #eff6ff;
+  &:last-child { margin-bottom: 0; }
+}
+
+.exp-event-meta {
+  display: flex; align-items: center; gap: 5px; font-size: 0.76rem;
+  color: var(--color-text-muted, #888); margin-bottom: 5px;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+}
+
+.exp-event-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.exp-event-chip {
+  display: inline-block; padding: 2px 8px; border-radius: 12px;
+  background: #dbeafe; color: #1e40af; font-size: 0.73rem; font-weight: 600;
+}
+
 .td-net-order {
   font-size: 0.82rem; color: var(--color-text-muted);
   text-align: right; white-space: nowrap;

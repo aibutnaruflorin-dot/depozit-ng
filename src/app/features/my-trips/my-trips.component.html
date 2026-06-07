@@ -6,223 +6,295 @@
       <mat-icon>local_shipping</mat-icon>
       Cursele mele
     </h1>
-    <span class="driver-chip">
-      <mat-icon>person</mat-icon>{{ auth.userName() }}
-      <span class="driver-id-hint">#{{ myDriverId() }}</span>
-    </span>
+    @if (!auth.isAdmin()) {
+      <span class="driver-chip">
+        <mat-icon>person</mat-icon>{{ auth.userName() }}
+        <span class="driver-id-hint">#{{ myDriverId() }}</span>
+      </span>
+    }
   </div>
 
-  <!-- ── Mesaj dacă userul nu este șofer ── -->
-  @if (isNotDriver()) {
-    <div class="not-driver-state">
-      <mat-icon>info_outline</mat-icon>
-      <div>
-        <strong>Nu ești înregistrat ca șofer.</strong>
-        <p>Această pagină afișează cursele asignate contului tău. Contactează administratorul pentru a fi adăugat ca șofer.</p>
+  <!-- ════════════════════════════════════════════════════════
+       VIEW ADMIN — secțiuni pe șoferi
+       ════════════════════════════════════════════════════════ -->
+  @if (auth.isAdmin()) {
+
+    @if (!driverSections().length) {
+      <div class="empty-state empty-state--page">
+        <mat-icon>person_off</mat-icon>
+        <p>Niciun șofer cu curse înregistrate.</p>
       </div>
-    </div>
+    }
+
+    @for (sec of driverSections(); track sec.driver.id) {
+      <div class="driver-section">
+
+        <!-- Driver header -->
+        <div class="driver-section-header">
+          <mat-icon>person</mat-icon>
+          <span class="driver-section-name">{{ sec.driver.nume }}</span>
+          @if (sec.active.length) {
+            <span class="badge-pill badge-pill--warn">{{ sec.active.length }} în livrare</span>
+          }
+          @if (sec.planned.length) {
+            <span class="badge-pill">{{ sec.planned.length }} planificate</span>
+          }
+          @if (sec.history.length) {
+            <span class="badge-pill badge-pill--muted">{{ sec.history.length }} finalizate</span>
+          }
+        </div>
+
+        <!-- Curse în desfășurare -->
+        @if (sec.active.length) {
+          <div class="sub-section">
+            <div class="sub-section-title sub-section-title--active">
+              <mat-icon>local_shipping</mat-icon> Curse în desfășurare
+            </div>
+            <ng-container [ngTemplateOutlet]="tripTableTpl"
+                          [ngTemplateOutletContext]="{ trips: sec.active }">
+            </ng-container>
+          </div>
+        }
+
+        <!-- Curse planificate -->
+        @if (sec.planned.length) {
+          <div class="sub-section">
+            <div class="sub-section-title sub-section-title--plan">
+              <mat-icon>schedule</mat-icon> Curse planificate
+            </div>
+            <ng-container [ngTemplateOutlet]="tripTableTpl"
+                          [ngTemplateOutletContext]="{ trips: sec.planned }">
+            </ng-container>
+          </div>
+        }
+
+        <!-- Curse finalizate (collapsibil) -->
+        @if (sec.history.length) {
+          <div class="sub-section">
+            <div class="sub-section-title sub-section-title--toggle"
+                 (click)="toggleDriverHistoric(sec.driver.id)">
+              <mat-icon>history</mat-icon> Curse finalizate
+              <span class="badge-pill badge-pill--muted">{{ sec.history.length }}</span>
+              <mat-icon class="toggle-chevron">
+                {{ showDriverHistoric(sec.driver.id) ? 'expand_less' : 'expand_more' }}
+              </mat-icon>
+            </div>
+            @if (showDriverHistoric(sec.driver.id)) {
+              <ng-container [ngTemplateOutlet]="tripTableTpl"
+                            [ngTemplateOutletContext]="{ trips: sec.history }">
+              </ng-container>
+            }
+          </div>
+        }
+
+        @if (!sec.active.length && !sec.planned.length && !sec.history.length) {
+          <div class="no-active-hint">
+            <mat-icon>check_circle_outline</mat-icon> Nicio cursă.
+          </div>
+        }
+
+      </div>
+    }
+
   }
 
-  <!-- ════════════════ CURSE ACTIVE (în livrare) ════════════════ -->
-  <div class="section">
-    <div class="section-title">
-      <mat-icon class="sec-icon sec-icon--active">local_shipping</mat-icon>
-      Curse active
-      @if (active().length) {
-        <span class="badge-pill badge-pill--warn">{{ active().length }}</span>
-      }
-    </div>
+  <!-- ════════════════════════════════════════════════════════
+       VIEW ȘOFER — curse personale
+       ════════════════════════════════════════════════════════ -->
+  @if (!auth.isAdmin()) {
 
-    @if (!active().length) {
-      <div class="empty-state">
-        <mat-icon>local_shipping</mat-icon>
-        <p>Nicio cursă în desfășurare.</p>
+    @if (isNotDriver()) {
+      <div class="not-driver-state">
+        <mat-icon>info_outline</mat-icon>
+        <div>
+          <strong>Nu ești înregistrat ca șofer.</strong>
+          <p>Această pagină afișează cursele asignate contului tău. Contactează administratorul pentru a fi adăugat ca șofer.</p>
+        </div>
       </div>
-    } @else {
-      <table class="trips-table">
-        <thead>
-          <tr>
-            <th>Mașină</th>
-            <th>Plecare → Sosire</th>
-            <th>Comenzi / Articole</th>
-            <th>Acțiuni</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (t of active(); track t.id) {
-            <tr class="row--active">
-              <td>
-                <div class="vehicle-cell">
-                  <mat-icon>local_shipping</mat-icon>
-                  <div>
-                    <strong>{{ getVehicleName(t.vehicleId) }}</strong>
-                    <small>{{ getVehiclePlate(t.vehicleId) }}</small>
-                  </div>
-                </div>
-              </td>
-              <td class="times-cell">
-                <span>{{ fmt(t.oraPlecare) }}</span>
-                <mat-icon class="arrow-icon">arrow_forward</mat-icon>
-                <span>{{ fmt(t.oraSosire) }}</span>
-              </td>
-              <td>
-                @for (o of ordersForTransport(t); track o.id) {
-                  <div class="order-chip">
-                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                    <strong>{{ o.client.name }}</strong>
-                    @if (o.client.address) {
-                      <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link">
-                        <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                      </a>
-                    }
-                    <span class="art-count">· {{ articleCount(t) }} art.</span>
-                  </div>
-                }
-              </td>
-              <td>
-                <button mat-flat-button color="primary" class="action-btn"
-                        (click)="setTripStatus(t, 'livrat')">
-                  <mat-icon>check_circle</mat-icon> Finalizează
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
     }
-  </div>
 
-  <!-- ════════════════ CURSE PLANIFICATE ════════════════ -->
-  <div class="section">
-    <div class="section-title">
-      <mat-icon class="sec-icon sec-icon--plan">schedule</mat-icon>
-      Curse planificate
-      @if (planned().length) {
-        <span class="badge-pill">{{ planned().length }}</span>
-      }
-    </div>
-
-    @if (!planned().length) {
-      <div class="empty-state">
-        <mat-icon>event_available</mat-icon>
-        <p>Nicio cursă planificată.</p>
+    <!-- Curse în desfășurare (in_livrare) -->
+    <div class="section">
+      <div class="section-title">
+        <mat-icon class="sec-icon sec-icon--active">local_shipping</mat-icon>
+        Curse în desfășurare
+        @if (active().length) {
+          <span class="badge-pill badge-pill--warn">{{ active().length }}</span>
+        }
       </div>
-    } @else {
-      <table class="trips-table">
-        <thead>
-          <tr>
-            <th>Mașină</th>
-            <th>Plecare → Sosire</th>
-            <th>Comenzi / Articole</th>
-            <th>Acțiuni</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (t of planned(); track t.id) {
-            <tr>
-              <td>
-                <div class="vehicle-cell">
-                  <mat-icon>local_shipping</mat-icon>
-                  <div>
-                    <strong>{{ getVehicleName(t.vehicleId) }}</strong>
-                    <small>{{ getVehiclePlate(t.vehicleId) }}</small>
-                  </div>
-                </div>
-              </td>
-              <td class="times-cell">
-                <span>{{ fmt(t.oraPlecare) }}</span>
-                <mat-icon class="arrow-icon">arrow_forward</mat-icon>
-                <span>{{ fmt(t.oraSosire) }}</span>
-              </td>
-              <td>
-                @for (o of ordersForTransport(t); track o.id) {
-                  <div class="order-chip">
-                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                    <strong>{{ o.client.name }}</strong>
-                    @if (o.client.address) {
-                      <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link">
-                        <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                      </a>
-                    }
-                    <span class="art-count">· {{ articleCount(t) }} art.</span>
-                  </div>
-                }
-              </td>
-              <td>
-                <button mat-stroked-button class="action-btn"
-                        (click)="setTripStatus(t, 'in_livrare')">
-                  <mat-icon>play_arrow</mat-icon> Pornește
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </div>
-
-  <!-- ════════════════ ISTORIC ════════════════ -->
-  <div class="section section--historic">
-    <div class="section-title section-title--toggle" (click)="showHistoric.set(!showHistoric())">
-      <mat-icon class="sec-icon">history</mat-icon>
-      Istoric
-      @if (history().length) {
-        <span class="badge-pill badge-pill--muted">{{ history().length }}</span>
-      }
-      <mat-icon class="toggle-chevron">{{ showHistoric() ? 'expand_less' : 'expand_more' }}</mat-icon>
-    </div>
-
-    @if (showHistoric()) {
-      @if (!history().length) {
+      @if (!active().length) {
         <div class="empty-state">
-          <mat-icon>history</mat-icon>
-          <p>Nicio cursă finalizată.</p>
+          <mat-icon>local_shipping</mat-icon>
+          <p>Nicio cursă în desfășurare.</p>
         </div>
       } @else {
-        <table class="trips-table">
-          <thead>
-            <tr>
-              <th>Mașină</th>
-              <th>Plecare → Sosire</th>
-              <th>Comenzi livrate</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (t of history(); track t.id) {
-              <tr class="row--historic">
-                <td>
-                  <div class="vehicle-cell">
-                    <mat-icon>local_shipping</mat-icon>
-                    <div>
-                      <strong>{{ getVehicleName(t.vehicleId) }}</strong>
-                      <small>{{ getVehiclePlate(t.vehicleId) }}</small>
-                    </div>
-                  </div>
-                </td>
-                <td class="times-cell">
-                  <span>{{ fmt(t.oraPlecare) }}</span>
-                  <mat-icon class="arrow-icon">arrow_forward</mat-icon>
-                  <span>{{ fmt(t.oraSosire) }}</span>
-                </td>
-                <td>
-                  @for (o of ordersForTransport(t); track o.id) {
-                    <div class="order-chip">
-                      <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                      <strong>{{ o.client.name }}</strong>
-                      @if (o.client.address) {
-                        <span class="addr-text">
-                          <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                        </span>
-                      }
-                    </div>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+        <ng-container [ngTemplateOutlet]="tripTableTpl"
+                      [ngTemplateOutletContext]="{ trips: active() }">
+        </ng-container>
       }
-    }
-  </div>
+    </div>
+
+    <!-- Curse planificate -->
+    <div class="section">
+      <div class="section-title">
+        <mat-icon class="sec-icon sec-icon--plan">schedule</mat-icon>
+        Curse planificate
+        @if (planned().length) {
+          <span class="badge-pill">{{ planned().length }}</span>
+        }
+      </div>
+      @if (!planned().length) {
+        <div class="empty-state">
+          <mat-icon>event_available</mat-icon>
+          <p>Nicio cursă planificată.</p>
+        </div>
+      } @else {
+        <ng-container [ngTemplateOutlet]="tripTableTpl"
+                      [ngTemplateOutletContext]="{ trips: planned() }">
+        </ng-container>
+      }
+    </div>
+
+    <!-- Curse finalizate -->
+    <div class="section section--historic">
+      <div class="section-title section-title--toggle" (click)="showHistoric.set(!showHistoric())">
+        <mat-icon class="sec-icon">history</mat-icon>
+        Curse finalizate
+        @if (history().length) {
+          <span class="badge-pill badge-pill--muted">{{ history().length }}</span>
+        }
+        <mat-icon class="toggle-chevron">{{ showHistoric() ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </div>
+      @if (showHistoric()) {
+        @if (!history().length) {
+          <div class="empty-state">
+            <mat-icon>history</mat-icon>
+            <p>Nicio cursă finalizată.</p>
+          </div>
+        } @else {
+          <ng-container [ngTemplateOutlet]="tripTableTpl"
+                        [ngTemplateOutletContext]="{ trips: history() }">
+          </ng-container>
+        }
+      }
+    </div>
+
+  }
 
 </div>
+
+<!-- ════════════════════════════════════════════════════════
+     SHARED TEMPLATE — tabel curse
+     ════════════════════════════════════════════════════════ -->
+<ng-template #tripTableTpl let-trips="trips">
+  <table class="trips-table">
+    <thead>
+      <tr>
+        <th>Mașină</th>
+        <th>Plecare → Sosire</th>
+        <th>Comenzi / Articole</th>
+        <th>Progres livrare</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (t of trips; track t.id) {
+        <tr [class.row--active]="t.status === 'in_livrare'" [class.row--historic]="t.status === 'livrat'">
+          <td>
+            <div class="vehicle-cell">
+              <mat-icon>local_shipping</mat-icon>
+              <div>
+                <strong>{{ getVehicleName(t.vehicleId) }}</strong>
+                <small>{{ getVehiclePlate(t.vehicleId) }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="times-cell">
+              <span>{{ fmt(t.oraPlecare) }}</span>
+              <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+              <span>{{ fmt(t.oraSosire) }}</span>
+            </div>
+          </td>
+          <td>
+            @for (o of ordersForTransport(t); track o.id) {
+              <div class="order-chip">
+                <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                <strong>{{ o.client.name }}</strong>
+                @if (o.client.address) {
+                  <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link">
+                    <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                  </a>
+                }
+                @if (o.status === 'livrat_partial') {
+                  <span class="partial-badge">livrare parțială</span>
+                }
+                @if (o.deliveryDate) {
+                  <span class="delivery-deadline">
+                    <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                  </span>
+                }
+                <span class="art-count">· {{ articleCount(t) }} art.</span>
+              </div>
+            }
+          </td>
+          <td class="stepper-cell">
+            <div class="trip-stepper">
+
+              <!-- Step 1: Start livrare -->
+              <button class="step-item"
+                      [class.step--current]="t.status === 'planificat'"
+                      [class.step--done]="t.status === 'in_livrare' || t.status === 'livrat'"
+                      (click)="setTripStatus(t, 'planificat')"
+                      matTooltip="Setează: Planificat">
+                <div class="step-circle">
+                  @if (t.status === 'in_livrare' || t.status === 'livrat') {
+                    <mat-icon>check</mat-icon>
+                  } @else { <span>1</span> }
+                </div>
+                <span class="step-label">Start livrare</span>
+              </button>
+
+              <div class="step-connector"
+                   [class.step-connector--done]="t.status === 'in_livrare' || t.status === 'livrat'">
+              </div>
+
+              <!-- Step 2: În curs de livrare -->
+              <button class="step-item"
+                      [class.step--current]="t.status === 'in_livrare'"
+                      [class.step--done]="t.status === 'livrat'"
+                      [class.step--future]="t.status === 'planificat'"
+                      (click)="setTripStatus(t, 'in_livrare')"
+                      matTooltip="Setează: În livrare">
+                <div class="step-circle">
+                  @if (t.status === 'livrat') {
+                    <mat-icon>check</mat-icon>
+                  } @else { <span>2</span> }
+                </div>
+                <span class="step-label">În livrare</span>
+              </button>
+
+              <div class="step-connector"
+                   [class.step-connector--done]="t.status === 'livrat'">
+              </div>
+
+              <!-- Step 3: Finalizare -->
+              <button class="step-item"
+                      [class.step--current]="t.status === 'livrat'"
+                      [class.step--future]="t.status === 'planificat' || t.status === 'in_livrare'"
+                      (click)="setTripStatus(t, 'livrat')"
+                      matTooltip="Setează: Finalizat">
+                <div class="step-circle">
+                  @if (t.status === 'livrat') {
+                    <mat-icon>check</mat-icon>
+                  } @else { <span>3</span> }
+                </div>
+                <span class="step-label">Finalizare</span>
+              </button>
+
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</ng-template>
