@@ -563,7 +563,7 @@
             </td>
             @if (auth.isAdmin()) {
               <td>
-                @if (user.role === 'admin') {
+                @if (user.username === 'admin') {
                   <div class="user-actions">
                     <button mat-icon-button (click)="openAdminSec()" matTooltip="Schimbă parola / email recuperare">
                       <mat-icon>key</mat-icon>

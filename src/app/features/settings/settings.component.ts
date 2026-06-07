@@ -307,7 +307,7 @@ export class SettingsComponent implements OnInit {
   // ── Utilizatori ───────────────────────────────────────────────────────────
 
   openAdminSec(): void {
-    const admin = this.users().find(u => u.role === 'admin');
+    const admin = this.users().find(u => u.username === 'admin');
     this.adminNewPassword   = '';
     this.adminConfirmPass   = '';
     this.adminRecoveryEmail = admin?.recoveryEmail ?? '';
@@ -327,7 +327,7 @@ export class SettingsComponent implements OnInit {
       return;
     }
     const updated = this.users().map(u => {
-      if (u.role !== 'admin') return u;
+      if (u.username !== 'admin') return u;
       return {
         ...u,
         ...(np ? { password: np } : {}),
