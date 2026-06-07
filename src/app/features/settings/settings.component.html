@@ -372,8 +372,11 @@
                 <button mat-icon-button (click)="openEditFunc(f)" matTooltip="Editează">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteFunc(f)" matTooltip="Șterge">
-                  <mat-icon>delete_outline</mat-icon>
+                <button mat-icon-button color="warn"
+                        [disabled]="PROTECTED_FUNCS.has(f.id)"
+                        [matTooltip]="PROTECTED_FUNCS.has(f.id) ? 'Funcție protejată — nu poate fi ștearsă' : 'Șterge'"
+                        (click)="deleteFunc(f)">
+                  <mat-icon>{{ PROTECTED_FUNCS.has(f.id) ? 'lock' : 'delete_outline' }}</mat-icon>
                 </button>
               </div>
             }

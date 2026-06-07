@@ -462,7 +462,10 @@ export class SettingsComponent implements OnInit {
     this.snackBar.open('✅ Funcția a fost salvată.', '', { duration: 2200 });
   }
 
+  readonly PROTECTED_FUNCS = new Set(['sofer', 'ajutor_manipulant']);
+
   deleteFunc(f: JobFunction): void {
+    if (this.PROTECTED_FUNCS.has(f.id)) return;
     if (!confirm(`Ștergi funcția "${f.name}"?`)) return;
     const funcs = this.jobFunctions().filter(x => x.id !== f.id);
     this.jobFunctions.set(funcs);
