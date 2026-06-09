@@ -699,7 +699,9 @@
             <mat-icon matPrefix>shield</mat-icon>
             <mat-select formControlName="role">
               @for (p of permissions(); track p.id) {
-                <mat-option [value]="p.id">{{ p.name }}</mat-option>
+                @if (!LOCKED_PERMS.has(p.id)) {
+                  <mat-option [value]="p.id">{{ p.name }}</mat-option>
+                }
               }
             </mat-select>
           </mat-form-field>
