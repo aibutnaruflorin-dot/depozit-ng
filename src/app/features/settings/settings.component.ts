@@ -156,10 +156,14 @@ export class SettingsComponent implements OnInit {
 
     const savedPerms = this.storage.get<AppPermission[]>('app_permissions');
     let perms: AppPermission[] = savedPerms ?? DEFAULT_PERMISSIONS;
-    // ensure system permissions always exist (migration for existing installs)
+    // ensure system permissions always exist + correct isAdmin from defaults
     for (const sys of DEFAULT_PERMISSIONS.filter(p => this.PROTECTED_PERMS.has(p.id))) {
       if (!perms.find(p => p.id === sys.id)) perms = [sys, ...perms];
     }
+    perms = perms.map(p => {
+      const def = DEFAULT_PERMISSIONS.find(d => d.id === p.id);
+      return def && this.PROTECTED_PERMS.has(p.id) ? { ...p, isAdmin: def.isAdmin } : p;
+    });
     this.permissions.set(perms);
     this.storage.set('app_permissions', perms);
   }
