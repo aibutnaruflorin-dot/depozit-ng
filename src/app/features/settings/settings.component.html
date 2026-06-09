@@ -684,7 +684,9 @@
             <mat-select formControlName="jobRole">
               <mat-option [value]="null">— Fără funcție specifică —</mat-option>
               @for (f of jobFunctions(); track f.id) {
-                <mat-option [value]="f.id">{{ f.name }}</mat-option>
+                @if (f.id !== 'administrator' || auth.session()?.role === 'keyuser') {
+                  <mat-option [value]="f.id">{{ f.name }}</mat-option>
+                }
               }
             </mat-select>
             <mat-hint>Șoferii apar automat în modulul Transport</mat-hint>
