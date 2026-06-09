@@ -767,11 +767,13 @@
             }
           </mat-form-field>
 
-          <div class="perm-admin-toggle">
-            <mat-checkbox formControlName="isAdmin">
-              Permisiune de tip Admin (acces complet la toate setările)
-            </mat-checkbox>
-          </div>
+          @if (!PROTECTED_PERMS.has(editingPermId() ?? '')) {
+            <div class="perm-admin-toggle">
+              <mat-checkbox formControlName="isAdmin">
+                Permisiune de tip Admin (acces complet la toate setările)
+              </mat-checkbox>
+            </div>
+          }
 
           <div class="perm-pages-section">
             <h4 class="perm-pages-title">Acces pe pagini</h4>
