@@ -6,6 +6,12 @@
     <span class="count-badge">{{ filtered().length }}</span>
   </h1>
   <div class="page-actions">
+    <button mat-stroked-button (click)="openResetBuf()" color="warn">
+      <mat-icon>restart_alt</mat-icon> Resetare Buffer
+    </button>
+    <button mat-stroked-button (click)="exportExcel()">
+      <mat-icon>download</mat-icon> Export Excel
+    </button>
     <button mat-stroked-button (click)="goToNewOrder()">
       <mat-icon>add_shopping_cart</mat-icon> Comandă nouă
     </button>
@@ -44,7 +50,7 @@
     <button mat-stroked-button (click)="clearFilters()">Șterge filtrele</button>
   </div>
 } @else {
-  <p-table [value]="paged()" [tableStyle]="{'min-width':'860px'}"
+  <p-table [value]="paged()" [tableStyle]="{'min-width':'960px'}"
            styleClass="p-datatable-sm p-datatable-striped">
 
     <ng-template pTemplate="header">
@@ -96,7 +102,6 @@
                     }
                   </div>
                   <div class="furn-list">
-                    <!-- Toate -->
                     <div class="furn-item" [class.furn-item-sel]="!category()"
                          (click)="selectCategory('')">
                       <span class="furn-item-label">Toate categoriile</span>
@@ -126,8 +131,44 @@
         <th style="width:55px" class="col-sort-th" (click)="sort('um')">
           <div class="col-sort-label">UM <mat-icon class="sort-icon" [class.sort-active]="sortField()==='um'">{{ sortIcon('um') }}</mat-icon></div>
         </th>
-        <th style="width:65px" class="col-sort-th" (click)="sort('qty')">
-          <div class="col-sort-label">Stoc <mat-icon class="sort-icon" [class.sort-active]="sortField()==='qty'">{{ sortIcon('qty') }}</mat-icon></div>
+
+        <!-- Stoc Import -->
+        <th style="width:76px" class="col-sort-th" (click)="sort('importedQty')">
+          <div class="col-sort-label">
+            Stoc Import <mat-icon class="sort-icon" [class.sort-active]="sortField()==='importedQty'">{{ sortIcon('importedQty') }}</mat-icon>
+          </div>
+        </th>
+
+        <!-- Stoc Final — red badge when 0 -->
+        <th style="width:72px" class="col-sort-th" (click)="sort('qty')">
+          <div class="col-sort-label">
+            Stoc Final <mat-icon class="sort-icon" [class.sort-active]="sortField()==='qty'">{{ sortIcon('qty') }}</mat-icon>
+          </div>
+        </th>
+
+        <!-- Stoc Buffer (ajustări manuale) -->
+        <th style="width:74px" class="col-sort-th" (click)="sort('buffer')">
+          <div class="col-sort-label">
+            Stoc Buffer <mat-icon class="sort-icon" [class.sort-active]="sortField()==='buffer'">{{ sortIcon('buffer') }}</mat-icon>
+          </div>
+        </th>
+
+        <!-- Ajustare — admin/keyuser only -->
+        @if (canAdjust()) {
+          <th style="width:64px" class="col-center-th">Ajustare</th>
+        }
+
+        <!-- Comentariu + search -->
+        <th style="width:155px">
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('lastComment')">
+              Comentariu
+              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='lastComment'">{{ sortIcon('lastComment') }}</mat-icon>
+            </div>
+            <input class="col-filter-input" [value]="commentFilter()"
+                   (input)="commentFilter.set($any($event.target).value); currentPage.set(0)"
+                   placeholder="Caută…">
+          </div>
         </th>
 
         <!-- Cod extern + input -->
@@ -224,7 +265,7 @@
       @if (displayMode() === 'grouped' && (rowIndex === 0 || paged()[rowIndex - 1]?.catalogId !== p.catalogId)) {
         @if (catalogsService.getById(p.catalogId); as cat) {
           <tr class="catalog-group-row">
-            <td colspan="9">
+            <td [attr.colspan]="colSpan()">
               <span class="cgh-dot" [style.background]="cat.color"></span>
               <span class="cgh-name" [style.color]="cat.color">{{ cat.name }}</span>
             </td>
@@ -245,7 +286,38 @@
         </td>
         <td><span class="cat-chip-sm">{{ p.category }}</span></td>
         <td class="td-muted">{{ p.um }}</td>
-        <td class="td-stoc">{{ p.qty > 0 ? p.qty : '—' }}</td>
+        <!-- Stoc Import — fix, niciodată modificat -->
+        <td class="td-stoc-imp">{{ p.importedQty ?? p.qty }}</td>
+        <!-- Stoc Final — ce folosesc comenzile, badge roșu la 0 -->
+        <td class="td-stoc">
+          @if (p.qty === 0) {
+            <span class="stock-zero-badge">0</span>
+          } @else {
+            {{ p.qty }}
+          }
+        </td>
+        <!-- Stoc Buffer — click pentru istoric ajustări -->
+        @let bufKey = p.catalogId + '|' + p.nr;
+        @let bufVal = bufferMap().get(bufKey) ?? 0;
+        <td class="td-buffer td-buffer-click" [class.td-buf-pos]="bufVal > 0" [class.td-buf-neg]="bufVal < 0"
+            (click)="openHistory(p)" matTooltip="Vezi istoric ajustări">
+          @if (bufVal !== 0) { {{ bufVal > 0 ? '+' : '' }}{{ bufVal }} } @else { — }
+        </td>
+        @if (canAdjust()) {
+          <td class="td-adj">
+            <div class="adj-btns">
+              <button class="adj-btn adj-btn-plus" (click)="openAdj(p, 'add')" matTooltip="Adaugă stoc">
+                <mat-icon>add</mat-icon>
+              </button>
+              <button class="adj-btn adj-btn-minus" (click)="openAdj(p, 'remove')" matTooltip="Elimină stoc">
+                <mat-icon>remove</mat-icon>
+              </button>
+            </div>
+          </td>
+        }
+        <td class="td-comment" [title]="lastCommentMap().get(p.catalogId + '|' + p.nr) || ''">
+          {{ lastCommentMap().get(p.catalogId + '|' + p.nr) || '—' }}
+        </td>
         <td class="td-mono">{{ p.codExtern || '—' }}</td>
         <td class="td-furn">{{ p.furnizor || '—' }}</td>
         <td class="td-net">{{ p.pretFaraTVA != null ? ((p.pretFaraTVA | number:'1.2-2') + ' lei') : '—' }}</td>
@@ -265,4 +337,135 @@
                  [rowsPerPageOptions]="[]"
                  (onPageChange)="onPageChange($event)" />
   }
+}
+
+<!-- Reset buffer confirmation -->
+@if (resetBufConfirm()) {
+  <div class="adj-overlay" (click)="closeResetBuf()">
+    <div class="adj-card" style="max-width:440px" (click)="$event.stopPropagation()">
+      <div class="adj-card-header">
+        <div class="adj-card-title">
+          <mat-icon style="color:#e53935">warning</mat-icon>
+          Resetare Stoc Buffer
+        </div>
+        <button mat-icon-button (click)="closeResetBuf()"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="adj-card-body">
+        <p style="margin:0 0 8px">Această acțiune va șterge <strong>tot istoricul de ajustări manuale</strong>
+          @if (selectedCatIds().length) { pentru catalogele selectate } @else { pentru toate catalogele }.
+        </p>
+        <p style="margin:0;color:var(--color-text-muted);font-size:.85rem">
+          <strong>Stoc Final rămâne nemodificat</strong> — se resetează doar afișajul Stoc Buffer.
+        </p>
+      </div>
+      <div class="adj-card-footer">
+        <button mat-stroked-button (click)="closeResetBuf()">Anulează</button>
+        <button mat-flat-button color="warn" (click)="confirmResetBuf()">
+          <mat-icon>restart_alt</mat-icon> Resetează
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Stock history modal -->
+@if (historyModal(); as p) {
+  <div class="adj-overlay" (click)="closeHistory()">
+    <div class="hist-card" (click)="$event.stopPropagation()">
+      <div class="adj-card-header">
+        <div class="adj-card-title">
+          <mat-icon style="color:var(--color-primary)">history</mat-icon>
+          Istoric ajustări stoc
+        </div>
+        <button mat-icon-button (click)="closeHistory()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="hist-product-name">{{ p.name }}</div>
+
+      <div class="hist-body">
+        @if (productHistory().length === 0) {
+          <div class="hist-empty">
+            <mat-icon>info_outline</mat-icon>
+            Nicio ajustare înregistrată pentru acest produs.
+          </div>
+        } @else {
+          <table class="hist-table">
+            <thead>
+              <tr>
+                <th>Data / Ora</th>
+                <th>Sursă</th>
+                <th>Delta</th>
+                <th>Comentariu</th>
+                <th>Utilizator</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of productHistory(); track e.timestamp) {
+                <tr>
+                  <td class="hist-ts">{{ e.timestamp | date:'dd.MM.yyyy HH:mm' }}</td>
+                  <td><span class="hist-source">{{ SOURCE_LABELS[e.source] ?? e.source }}</span></td>
+                  <td class="hist-delta" [class.hist-pos]="e.delta > 0" [class.hist-neg]="e.delta < 0">
+                    {{ e.delta > 0 ? '+' : '' }}{{ e.delta }}
+                  </td>
+                  <td class="hist-comment">{{ e.comment || '—' }}</td>
+                  <td class="hist-user">{{ e.userName }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Stock adjustment modal -->
+@if (adjModal(); as m) {
+  <div class="adj-overlay">
+    <div class="adj-card">
+      <div class="adj-card-header">
+        <div class="adj-card-title">
+          <mat-icon [class.icon-add]="m.type === 'add'" [class.icon-rm]="m.type === 'remove'">
+            {{ m.type === 'add' ? 'add_circle_outline' : 'remove_circle_outline' }}
+          </mat-icon>
+          {{ m.type === 'add' ? 'Adaugă stoc' : 'Elimină stoc' }}
+        </div>
+        <button mat-icon-button (click)="closeAdj()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="adj-card-body">
+        <div class="adj-prod-name">{{ m.product.name }}</div>
+        <div class="adj-prod-stock">
+          Stoc curent:&nbsp;<strong>{{ adjCurrentStock() }}</strong>&nbsp;{{ m.product.um }}
+        </div>
+
+        <div class="adj-field">
+          <label class="adj-lbl">Cantitate</label>
+          <input type="number" class="adj-input" min="1" [value]="adjQty()"
+                 (input)="setAdjQty($any($event.target).value)">
+        </div>
+
+        <div class="adj-field">
+          <label class="adj-lbl">Comentariu <span class="adj-req">*</span></label>
+          <textarea class="adj-textarea" rows="3"
+                    placeholder="Motivul ajustării (obligatoriu)…"
+                    [value]="adjComment()"
+                    (input)="adjComment.set($any($event.target).value); adjError.set('')"></textarea>
+          @if (adjError()) {
+            <div class="adj-err">{{ adjError() }}</div>
+          }
+        </div>
+      </div>
+
+      <div class="adj-card-footer">
+        <button mat-stroked-button type="button" (click)="closeAdj()">Anulează</button>
+        <button mat-flat-button type="button"
+                [color]="m.type === 'add' ? 'primary' : 'warn'"
+                (click)="saveAdj()">
+          <mat-icon>{{ m.type === 'add' ? 'add' : 'remove' }}</mat-icon>
+          {{ m.type === 'add' ? 'Adaugă' : 'Elimină' }}
+        </button>
+      </div>
+    </div>
+  </div>
 }

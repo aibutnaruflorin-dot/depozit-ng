@@ -46,9 +46,23 @@
         @if (filteredProducts().length) {
           <div class="apm-catalog-results">
             @for (p of filteredProducts(); track p.nr + (p.catalogId ?? '')) {
+              @let cs = catalogsService.getStockThreeCol(p.catalogId, p.nr);
               <div class="apm-catalog-item" (click)="addFromCatalog(p)">
-                <span class="apm-cat-name">{{ p.name }}</span>
-                <span class="apm-cat-meta">{{ p.um }} · {{ p.category }}</span>
+                <div class="apm-cat-info">
+                  <span class="apm-cat-name">{{ p.name }}</span>
+                  <span class="apm-cat-meta">{{ p.um }} · {{ p.category }}</span>
+                </div>
+                <div class="apm-cat-stoc">
+                  <span class="apm-s3-imp">{{ cs.importedQty }}</span>
+                  <span class="apm-s3-sep">·</span>
+                  <span class="apm-s3-final" [class.apm-s3-zero]="cs.finalQty === 0">{{ cs.finalQty }}</span>
+                  @if (cs.bufferQty !== 0) {
+                    <span class="apm-s3-sep">·</span>
+                    <span class="apm-s3-buf" [class.apm-s3-pos]="cs.bufferQty > 0" [class.apm-s3-neg]="cs.bufferQty < 0">
+                      {{ cs.bufferQty > 0 ? '+' : '' }}{{ cs.bufferQty }}
+                    </span>
+                  }
+                </div>
                 <mat-icon class="apm-add-icon">add_circle</mat-icon>
               </div>
             }
@@ -89,8 +103,16 @@
         <div class="apm-section">
           <div class="apm-section-label">Produse de adăugat ({{ staged().length }})</div>
           @for (p of staged(); let i = $index; track i) {
+            @let sw = catalogsService.calcBufferWarning(p.catalogId, p.nr, p.qty);
             <div class="apm-staged-row">
-              <span class="apm-staged-name">{{ p.name }}</span>
+              <div class="apm-staged-info">
+                <span class="apm-staged-name">{{ p.name }}</span>
+                @if (sw.warn) {
+                  <span class="apm-buf-warn-sm" [matTooltip]="sw.bufferUsed + ' buc din Stoc Buffer'">
+                    ⚠ {{ sw.bufferUsed }} buf
+                  </span>
+                }
+              </div>
               <span class="apm-staged-um">{{ p.um }}</span>
               <div class="apm-staged-qty">
                 <button class="qty-btn" (click)="setStagedQty(i, p.qty - 1)">−</button>

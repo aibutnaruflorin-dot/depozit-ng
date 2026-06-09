@@ -3,14 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CatalogsService } from '../../core/services/catalogs.service';
+import { AuthService } from '../../core/services/auth.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterModule } from '@angular/router';
 import { PaginatorModule } from 'primeng/paginator';
 import { TableModule } from 'primeng/table';
+import { Product } from '../../core/models/product.model';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-catalog',
@@ -19,7 +23,7 @@ import { TableModule } from 'primeng/table';
     CommonModule, FormsModule,
     MatButtonModule, MatIconModule, MatCheckboxModule, MatDividerModule,
     MatTooltipModule, RouterModule,
-    PaginatorModule, TableModule
+    PaginatorModule, TableModule, MatSnackBarModule
   ],
   templateUrl: './catalog.component.html',
   styleUrl:    './catalog.component.scss'
@@ -30,6 +34,7 @@ export class CatalogComponent implements OnInit {
   search               = signal('');
   category             = signal('');
   codExternFilter      = signal('');
+  commentFilter        = signal('');
   furnizorFilter       = signal<string[]>([]);
   furnizorDropdownOpen = signal(false);
   furnizorSearch       = signal('');
@@ -41,9 +46,37 @@ export class CatalogComponent implements OnInit {
   sortField            = signal('');
   sortOrder            = signal<1 | -1>(1);
 
-  constructor(public catalogsService: CatalogsService, private router: Router) {}
+  adjModal   = signal<{ product: Product; type: 'add' | 'remove' } | null>(null);
+  adjQty     = signal(1);
+  adjComment = signal('');
+  adjError   = signal('');
+
+  historyModal        = signal<Product | null>(null);
+  resetBufConfirm     = signal(false);
+
+  readonly SOURCE_LABELS: Record<string, string> = {
+    manual:       'Manual',
+    order:        'Comandă',
+    cancel:       'Anulare',
+    revise:       'Revizie',
+    add_products: 'Ad. produse',
+  };
+
+  constructor(
+    public catalogsService: CatalogsService,
+    private auth: AuthService,
+    private snackBar: MatSnackBar,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {}
+
+  readonly canAdjust = computed(() => {
+    const role = this.auth.session()?.role;
+    return role === 'admin' || role === 'keyuser';
+  });
+
+  readonly colSpan = computed(() => this.canAdjust() ? 13 : 12);
 
   readonly allSelected = computed(() => this.selectedCatIds().length === 0);
 
@@ -65,34 +98,83 @@ export class CatalogComponent implements OnInit {
     this.furnizors().length > 0 && this.furnizorFilter().length === this.furnizors().length
   );
 
+  readonly lastCommentMap = computed(() => {
+    const map = new Map<string, string>();
+    for (const entry of this.catalogsService.stockLog()) {
+      const key = `${entry.catalogId}|${String(entry.productNr)}`;
+      if (!map.has(key)) map.set(key, entry.comment);
+    }
+    return map;
+  });
+
+  readonly bufferMap = computed(() => {
+    const map = new Map<string, number>();
+    for (const entry of this.catalogsService.stockLog()) {
+      if (entry.source !== 'manual') continue;
+      const key = `${entry.catalogId}|${String(entry.productNr)}`;
+      map.set(key, (map.get(key) ?? 0) + entry.delta);
+    }
+    return map;
+  });
+
+  readonly productHistory = computed(() => {
+    const p = this.historyModal();
+    if (!p) return [];
+    return this.catalogsService.stockLog().filter(e =>
+      e.catalogId === p.catalogId && String(e.productNr) === String(p.nr)
+    );
+  });
+
+  readonly adjCurrentStock = computed(() => {
+    const m = this.adjModal();
+    if (!m) return null;
+    return this.catalogsService.getStock(m.product.catalogId, m.product.nr);
+  });
+
   readonly filtered = computed(() => {
-    const q         = this.search().toLowerCase();
-    const cat       = this.category();
-    const codExtern = this.codExternFilter().trim().toLowerCase();
-    const furnizors = this.furnizorFilter();
-    const mode      = this.displayMode();
-    const field     = this.sortField();
-    const order     = this.sortOrder();
+    const q          = this.search().toLowerCase();
+    const cat        = this.category();
+    const codExtern  = this.codExternFilter().trim().toLowerCase();
+    const furnizors  = this.furnizorFilter();
+    const commentQ   = this.commentFilter().toLowerCase().trim();
+    const mode       = this.displayMode();
+    const field      = this.sortField();
+    const order      = this.sortOrder();
+    const lastComments = this.lastCommentMap();
+    const bufferMap    = this.bufferMap();
 
     const base = mode === 'grouped'
       ? this.catalogsService.productsForGrouped(this.selectedCatIds())
       : this.catalogsService.productsFor(this.selectedCatIds());
 
     const result = base.filter(p => {
-      const matchQ        = !q                    || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
-      const matchCat      = !cat                  || p.category === cat;
-      const matchCodExt   = !codExtern            || (p.codExtern ?? '').toLowerCase().includes(codExtern);
+      const matchQ        = !q          || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
+      const matchCat      = !cat        || p.category === cat;
+      const matchCodExt   = !codExtern  || (p.codExtern ?? '').toLowerCase().includes(codExtern);
       const matchFurnizor = furnizors.length === 0 || furnizors.includes(p.furnizor ?? '');
-      return matchQ && matchCat && matchCodExt && matchFurnizor;
+      const matchComment  = !commentQ   || (lastComments.get(`${p.catalogId}|${String(p.nr)}`) ?? '').toLowerCase().includes(commentQ);
+      return matchQ && matchCat && matchCodExt && matchFurnizor && matchComment;
     });
 
     if (!field) return result;
 
     const cmp = (a: any, b: any) => {
-      let av = a[field] ?? '';
-      let bv = b[field] ?? '';
-      if (typeof av === 'string') av = av.toLowerCase();
-      if (typeof bv === 'string') bv = bv.toLowerCase();
+      let av: any, bv: any;
+      if (field === 'lastComment') {
+        av = (lastComments.get(`${a.catalogId}|${String(a.nr)}`) ?? '').toLowerCase();
+        bv = (lastComments.get(`${b.catalogId}|${String(b.nr)}`) ?? '').toLowerCase();
+      } else if (field === 'buffer') {
+        av = bufferMap.get(`${a.catalogId}|${String(a.nr)}`) ?? 0;
+        bv = bufferMap.get(`${b.catalogId}|${String(b.nr)}`) ?? 0;
+      } else if (field === 'importedQty') {
+        av = a.importedQty ?? a.qty;
+        bv = b.importedQty ?? b.qty;
+      } else {
+        av = a[field] ?? '';
+        bv = b[field] ?? '';
+        if (typeof av === 'string') av = av.toLowerCase();
+        if (typeof bv === 'string') bv = bv.toLowerCase();
+      }
       return av < bv ? -order : av > bv ? order : 0;
     };
 
@@ -136,6 +218,7 @@ export class CatalogComponent implements OnInit {
     this.search.set('');
     this.category.set('');
     this.codExternFilter.set('');
+    this.commentFilter.set('');
     this.furnizorFilter.set([]);
     this.furnizorSearch.set('');
     this.categorySearch.set('');
@@ -168,7 +251,137 @@ export class CatalogComponent implements OnInit {
   closeCategoryDropdown(): void   { this.categoryDropdownOpen.set(false); this.categorySearch.set(''); }
   selectCategory(c: string): void { this.onCategory(c); this.closeCategoryDropdown(); }
 
-  rowBg(catalogId: string): string    { return this.catalogsService.bgColor(catalogId, 0.08); }
+  rowBg(catalogId: string): string     { return this.catalogsService.bgColor(catalogId, 0.08); }
   rowBorder(catalogId: string): string { return this.catalogsService.borderColor(catalogId); }
   goToNewOrder(): void                 { this.router.navigate(['/app/new-order']); }
+
+  // ── Stock adjustment ──────────────────────────────────────────────────────
+
+  openHistory(product: Product): void  { this.historyModal.set(product); }
+  closeHistory(): void                  { this.historyModal.set(null); }
+
+  openResetBuf(): void { this.resetBufConfirm.set(true); }
+  closeResetBuf(): void { this.resetBufConfirm.set(false); }
+  confirmResetBuf(): void {
+    const ids = this.selectedCatIds().length
+      ? this.selectedCatIds()
+      : this.catalogsService.catalogs().map(c => c.id);
+
+    // Build mailto summary before resetting
+    this._sendBufferEmail(ids);
+
+    this.catalogsService.resetBuffer(ids);
+    this.closeResetBuf();
+    this.snackBar.open('Buffer resetat. Stoc Final rămâne nemodificat.', '', { duration: 3000 });
+  }
+
+  private _sendBufferEmail(ids: string[]): void {
+    const bufMap  = this.bufferMap();
+    const session = this.auth.session();
+    const now     = new Date();
+    const dateStr = now.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    const idSet   = new Set(ids);
+
+    const lines: string[] = [
+      `Resetare Buffer — ${dateStr} ${timeStr}`,
+      `Utilizator: ${session?.name ?? '—'}`,
+      '',
+      'Ajustări manuale acumulate (care se șterg):',
+    ];
+
+    let hasEntries = false;
+    for (const [key, delta] of bufMap) {
+      const [catalogId, ...nrParts] = key.split('|');
+      if (!idSet.has(catalogId)) continue;
+      const nr  = nrParts.join('|');
+      const p   = this.catalogsService.findProduct(catalogId, nr);
+      const cat = this.catalogsService.getById(catalogId);
+      if (p) {
+        lines.push(`• ${p.name} (${cat?.name ?? catalogId}): ${delta > 0 ? '+' : ''}${delta} ${p.um}`);
+        hasEntries = true;
+      }
+    }
+
+    if (!hasEntries) {
+      lines.push('(nicio ajustare manuală înregistrată)');
+    }
+
+    const subject = `Buffer resetat — ${dateStr}`;
+    const body    = lines.join('\n');
+    const email   = this.catalogsService.bufferNotifyEmail();
+    const url     = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(url, '_blank');
+  }
+
+  openAdj(product: Product, type: 'add' | 'remove'): void {
+    this.adjModal.set({ product, type });
+    this.adjQty.set(1);
+    this.adjComment.set('');
+    this.adjError.set('');
+  }
+
+  closeAdj(): void { this.adjModal.set(null); }
+
+  setAdjQty(val: string): void {
+    const n = parseInt(val, 10);
+    this.adjQty.set(isNaN(n) || n < 1 ? 1 : n);
+  }
+
+  saveAdj(): void {
+    const modal = this.adjModal();
+    if (!modal) return;
+    const comment = this.adjComment().trim();
+    if (!comment) { this.adjError.set('Comentariul este obligatoriu.'); return; }
+    const qty   = Math.max(1, this.adjQty());
+    const delta = modal.type === 'add' ? qty : -qty;
+    this.catalogsService.adjustQty(modal.product.catalogId, modal.product.nr, delta);
+    const session = this.auth.session();
+    this.catalogsService.addStockLog({
+      timestamp:   new Date().toISOString(),
+      catalogId:   modal.product.catalogId,
+      productNr:   modal.product.nr,
+      productName: modal.product.name,
+      delta,
+      comment,
+      userName: session?.name ?? '—',
+      source:   'manual'
+    });
+    this.closeAdj();
+    this.snackBar.open(
+      `Stoc actualizat: ${delta > 0 ? '+' : ''}${delta} ${modal.product.um}`,
+      '', { duration: 2500 }
+    );
+  }
+
+  // ── Export Excel ──────────────────────────────────────────────────────────
+
+  exportExcel(): void {
+    const products     = this.filtered();
+    const lastComments = this.lastCommentMap();
+    const bufferMap    = this.bufferMap();
+    const rows = products.map(p => {
+      const cat = this.catalogsService.getById(p.catalogId);
+      const key = `${p.catalogId}|${String(p.nr)}`;
+      return {
+        'Nr':                 p.nr,
+        'Denumire':           p.name,
+        'Depozit':            cat?.name ?? '',
+        'Categorie':          p.category,
+        'UM':                 p.um,
+        'Stoc Import':  p.importedQty ?? p.qty,
+        'Stoc Final':   p.qty,
+        'Stoc Buffer':  bufferMap.get(key) ?? 0,
+        'Cod extern':         p.codExtern ?? '',
+        'Furnizor':           p.furnizor ?? '',
+        'Preț fără TVA':      p.pretFaraTVA ?? '',
+        'Preț cu TVA':        p.pretCuTVA ?? '',
+        'Ultimul comentariu': lastComments.get(key) ?? '',
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Catalog');
+    XLSX.writeFile(wb, `catalog_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
 }

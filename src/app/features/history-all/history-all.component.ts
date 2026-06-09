@@ -416,7 +416,12 @@ export class HistoryAllComponent {
       agent: order.agent, client: order.client,
       products: newProducts, status: 'acceptat', revisedFromId: order.id
     };
-    this.ordersService.reviseOrder(order.id, newOrder);
+    const result = this.ordersService.reviseOrder(order.id, newOrder);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-warn'], verticalPosition: 'top' });
+      return;
+    }
     this._editQty.update(m => {
       const n = { ...m };
       order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);

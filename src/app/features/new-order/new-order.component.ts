@@ -166,10 +166,19 @@ export class NewOrderComponent implements OnInit {
         });
 
     const cmp = (a: any, b: any) => {
-      let av = a[field] ?? '';
-      let bv = b[field] ?? '';
-      if (typeof av === 'string') av = av.toLowerCase();
-      if (typeof bv === 'string') bv = bv.toLowerCase();
+      let av: any, bv: any;
+      if (field === 'importedQty') {
+        av = a.importedQty ?? a.qty;
+        bv = b.importedQty ?? b.qty;
+      } else if (field === 'buffer') {
+        av = (a.qty ?? 0) - (a.importedQty ?? a.qty ?? 0);
+        bv = (b.qty ?? 0) - (b.importedQty ?? b.qty ?? 0);
+      } else {
+        av = a[field] ?? '';
+        bv = b[field] ?? '';
+        if (typeof av === 'string') av = av.toLowerCase();
+        if (typeof bv === 'string') bv = bv.toLowerCase();
+      }
       return av < bv ? -order : av > bv ? order : 0;
     };
 
@@ -208,7 +217,8 @@ export class NewOrderComponent implements OnInit {
     return this._pendingQty()[this.pkey(p)] ?? 0;
   }
   setPendingQty(p: Product, val: string | number): void {
-    const qty = Math.max(0, parseInt(String(val)) || 0);
+    const max = p.qty;
+    const qty = Math.min(max, Math.max(0, parseInt(String(val)) || 0));
     this._pendingQty.update(m => ({ ...m, [this.pkey(p)]: qty }));
   }
   incPending(p: Product): void { this.setPendingQty(p, this.getPendingQty(p) + 1); }
@@ -238,11 +248,12 @@ export class NewOrderComponent implements OnInit {
   }
 
   addProduct(product: Product): void {
+    const max     = this.catalogsService.getStock(product.catalogId, product.nr) ?? product.qty;
     const pending = this.getPendingQty(product);
     const key     = this.pkey(product);
-    const qty     = pending > 0 ? pending : 1;
+    const qty     = Math.min(max, pending > 0 ? pending : 1);
     if (pending === 0) {
-      this._pendingQty.update(m => ({ ...m, [key]: 1 }));
+      this._pendingQty.update(m => ({ ...m, [key]: Math.min(max, 1) }));
     }
     if (this.isInCart(product)) {
       this.cart.update(c => c.map(i =>
@@ -257,14 +268,18 @@ export class NewOrderComponent implements OnInit {
   }
 
   updateQty(product: Product, val: string): void {
-    const qty = Math.max(1, parseInt(val) || 1);
+    const max = this.catalogsService.getStock(product.catalogId, product.nr) ?? Infinity;
+    const qty = Math.min(max, Math.max(1, parseInt(val) || 1));
     const key = this.pkey(product);
     this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty } : i));
   }
 
   incrementQty(product: Product): void {
+    const max = this.catalogsService.getStock(product.catalogId, product.nr) ?? Infinity;
     const key = this.pkey(product);
-    this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty: i.qty + 1 } : i));
+    this.cart.update(c => c.map(i =>
+      this.pkey(i.product) === key ? { ...i, qty: Math.min(max, i.qty + 1) } : i
+    ));
   }
 
   decrementQty(product: Product): void {
@@ -359,7 +374,18 @@ export class NewOrderComponent implements OnInit {
       status: 'trimis'
     };
 
-    this.ordersService.saveOrder(order);
+    const result = this.ordersService.saveOrder(order);
+    if (!result.ok) {
+      const list = result.insufficient.map(i =>
+        `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`
+      ).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', {
+        duration: 6000,
+        panelClass: ['snack-warn'],
+        verticalPosition: 'top'
+      });
+      return;
+    }
     this.lastOrderText = this.ordersService.generateText(order);
     this.lastOrder = order;
 

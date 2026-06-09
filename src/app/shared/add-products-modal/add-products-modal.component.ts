@@ -54,7 +54,7 @@ export class AddProductsModalComponent {
 
   constructor(
     private ordersService: OrdersService,
-    private catalogsService: CatalogsService,
+    public  catalogsService: CatalogsService,
     private auth: AuthService,
     private snackBar: MatSnackBar
   ) {}
@@ -117,7 +117,12 @@ export class AddProductsModalComponent {
       type: 'products_added',
       products: products.map(p => ({ name: p.name, qty: p.qty, um: p.um })),
     };
-    this.ordersService.addProductsToOrder(this.order().id, products, event);
+    const result = this.ordersService.addProductsToOrder(this.order().id, products, event);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-warn'], verticalPosition: 'top' });
+      return;
+    }
     this.snackBar.open(`${products.length} produs(e) adăugate la comanda #${this.order().orderNumber}.`, '', { duration: 3000 });
     this.closed.emit();
   }

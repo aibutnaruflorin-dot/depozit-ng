@@ -9,10 +9,9 @@ import { TransportService } from '../../core/services/transport.service';
 import { Catalog, CatalogMeta, CatalogUpload } from '../../core/models/catalog.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { EmailContact } from '../../core/models/email-contact.model';
-import { User, JOB_ROLE_LABELS, PERMISSION_LABELS, JobRole, Permission } from '../../core/models/user.model';
+import { User, PERMISSION_LABELS, Permission } from '../../core/models/user.model';
 import { Vehicle } from '../../core/models/vehicle.model';
-import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, DEFAULT_JOB_FUNCTIONS, SYSTEM_FUNC_IDS, SYSTEM_PERM_IDS } from '../../core/models/app-permission.model';
-import { JobFunction } from '../../core/models/job-function.model';
+import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, SYSTEM_PERM_IDS } from '../../core/models/app-permission.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -67,7 +66,6 @@ export class SettingsComponent implements OnInit {
   newEmailAddr  = '';
   newEmailType: 'individual' | 'list' = 'individual';
 
-  readonly jobRoleLabels = JOB_ROLE_LABELS;
   readonly permLabels    = PERMISSION_LABELS;
 
   users         = signal<User[]>([]);
@@ -85,12 +83,6 @@ export class SettingsComponent implements OnInit {
   showVehicleModal = signal(false);
   editingVehicleId = signal<string | null>(null);
   vehicleForm: FormGroup;
-
-  // ── Funcții state ─────────────────────────────────────────────────────────
-  jobFunctions   = signal<JobFunction[]>([]);
-  showFuncModal  = signal(false);
-  editingFuncId  = signal<string | null>(null);
-  funcForm: FormGroup;
 
   // ── Permisiuni state ──────────────────────────────────────────────────────
   permissions      = signal<AppPermission[]>([]);
@@ -112,18 +104,15 @@ export class SettingsComponent implements OnInit {
       name:     ['', Validators.required],
       username: ['', Validators.required],
       password: [''],
-      role:     ['agent', Validators.required],
-      jobRole:  [null as JobRole | null],
-      telefon:  ['']
+      role:          ['agent', Validators.required],
+      telefon:       [''],
+      recoveryEmail: ['']
     });
     this.vehicleForm = this.fb.group({
       denumire:            ['', Validators.required],
       numarInmatriculare:  ['', [Validators.required, Validators.pattern(/^[A-Z]{1,2}\s?\d{2,3}\s?[A-Z]{3}$/i)]],
       marca:               [''],
       alias:               ['']
-    });
-    this.funcForm = this.fb.group({
-      name: ['', Validators.required]
     });
     this.permForm = this.fb.group({
       name:    ['', Validators.required],
@@ -141,18 +130,21 @@ export class SettingsComponent implements OnInit {
     const savedEmail = this.storage.get<EmailContact[]>('app_email_contacts');
     if (savedEmail) this.emailContacts.set(savedEmail);
 
-    const savedUsers = this.storage.get<User[]>('app_users') ?? [];
+    let savedUsers = this.storage.get<User[]>('app_users') ?? [];
+    // Migrate legacy jobRole → role (sofer/ajutor_manipulant only)
+    const operationalRoles = new Set(['sofer', 'ajutor_manipulant']);
+    const migratedUsers = savedUsers.map(u => {
+      if (u.jobRole && operationalRoles.has(u.jobRole)) {
+        return { ...u, role: u.jobRole as Permission, jobRole: undefined };
+      }
+      return u.jobRole ? { ...u, jobRole: undefined } : u;
+    });
+    if (migratedUsers.some((u, i) => u.role !== savedUsers[i].role || u.jobRole !== savedUsers[i].jobRole)) {
+      this.storage.set('app_users', migratedUsers);
+      savedUsers = migratedUsers;
+    }
     this.users.set(savedUsers);
     this.transportService.refreshUsers(savedUsers);
-
-    const savedFuncs = this.storage.get<JobFunction[]>('app_job_functions');
-    let funcs: JobFunction[] = savedFuncs ?? DEFAULT_JOB_FUNCTIONS;
-    // ensure system functions always exist (migration for existing installs)
-    for (const sys of DEFAULT_JOB_FUNCTIONS.filter(f => this.PROTECTED_FUNCS.has(f.id))) {
-      if (!funcs.find(f => f.id === sys.id)) funcs = [sys, ...funcs];
-    }
-    this.jobFunctions.set(funcs);
-    this.storage.set('app_job_functions', funcs);
 
     const savedPerms = this.storage.get<AppPermission[]>('app_permissions');
     let perms: AppPermission[] = savedPerms ?? DEFAULT_PERMISSIONS;
@@ -285,6 +277,14 @@ export class SettingsComponent implements OnInit {
     this.storage.set('app_whatsapp_contacts', this.whatsappContacts());
   }
 
+  // ── Buffer notify email ───────────────────────────────────────────────────
+
+  saveBufferEmail(val: string): void {
+    if (!val.trim()) return;
+    this.catalogsService.setBufferNotifyEmail(val.trim());
+    this.snackBar.open('Email notificare buffer salvat.', '', { duration: 2000 });
+  }
+
   // ── Email contacts ────────────────────────────────────────────────────────
 
   addEmailContact(): void {
@@ -347,7 +347,7 @@ export class SettingsComponent implements OnInit {
 
   openAddUser(): void {
     this.editingUserId.set(null);
-    this.userForm.reset({ name: '', username: '', password: '', role: 'agent', jobRole: null, telefon: '' });
+    this.userForm.reset({ name: '', username: '', password: '', role: 'agent', telefon: '', recoveryEmail: '' });
     this.userForm.get('password')?.setValidators(Validators.required);
     this.userForm.get('password')?.updateValueAndValidity();
     this.showUserModal.set(true);
@@ -355,7 +355,7 @@ export class SettingsComponent implements OnInit {
 
   openEditUser(user: User): void {
     this.editingUserId.set(user.id);
-    this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role, jobRole: user.jobRole ?? null, telefon: user.telefon ?? '' });
+    this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role, telefon: user.telefon ?? '', recoveryEmail: user.recoveryEmail ?? '' });
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
     this.showUserModal.set(true);
@@ -365,7 +365,7 @@ export class SettingsComponent implements OnInit {
 
   saveUser(): void {
     if (this.userForm.invalid) { this.userForm.markAllAsTouched(); return; }
-    const { name, username, password, role, jobRole, telefon } = this.userForm.value;
+    const { name, username, password, role, telefon, recoveryEmail } = this.userForm.value;
     let users = [...this.users()];
     const id = this.editingUserId();
 
@@ -373,13 +373,13 @@ export class SettingsComponent implements OnInit {
       const dup = users.find(u => u.username === username.trim().toLowerCase());
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
       const newId = Math.max(0, ...users.map(u => u.id)) + 1;
-      users.push({ id: newId, name: name.trim(), username: username.trim().toLowerCase(), password, role, jobRole: jobRole || undefined, telefon: (telefon || '').trim() || undefined, active: true });
+      users.push({ id: newId, name: name.trim(), username: username.trim().toLowerCase(), password, role, telefon: (telefon || '').trim() || undefined, recoveryEmail: (recoveryEmail || '').trim() || undefined, active: true });
     } else {
       const idx = users.findIndex(u => u.id === id);
       if (idx === -1) return;
       const dup = users.find(u => u.username === username.trim().toLowerCase() && u.id !== id);
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role, jobRole: jobRole || undefined, telefon: (telefon || '').trim() || undefined };
+      users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role, telefon: (telefon || '').trim() || undefined, recoveryEmail: (recoveryEmail || '').trim() || undefined };
       if (password) users[idx].password = password;
     }
 
@@ -446,13 +446,6 @@ export class SettingsComponent implements OnInit {
     this.transportService.deleteVehicle(v.id);
   }
 
-  jobRoleLabel(r?: string): string {
-    if (!r) return '—';
-    const dyn = this.jobFunctions().find(f => f.id === r);
-    if (dyn) return dyn.name;
-    return (JOB_ROLE_LABELS as any)[r] ?? r;
-  }
-
   permLabel(r?: string): string {
     if (!r) return '—';
     const dyn = this.permissions().find(p => p.id === r);
@@ -482,75 +475,32 @@ export class SettingsComponent implements OnInit {
     }).join('  ');
   }
 
-  // ── Funcții CRUD ──────────────────────────────────────────────────────────
+  readonly PROTECTED_PERMS = new Set<string>(SYSTEM_PERM_IDS);
+  readonly LOCKED_PERMS    = new Set(['admin', 'keyuser']);
+  // Ranguri de sistem (nu apar în lista de roluri normale)
+  readonly RANK_IDS        = new Set(['admin', 'keyuser']);
+  // Roluri sistem editabile (Șofer, Ajutor manipulant)
+  readonly SYSTEM_ROLE_IDS = new Set(['sofer', 'ajutor_manipulant']);
 
-  openAddFunc(): void {
-    this.editingFuncId.set(null);
-    this.funcForm.reset({ name: '' });
-    this.showFuncModal.set(true);
-  }
-
-  openEditFunc(f: JobFunction): void {
-    if (this.LOCKED_FUNCS.has(f.id)) return;
-    this.editingFuncId.set(f.id);
-    this.funcForm.patchValue({ name: f.name });
-    this.showFuncModal.set(true);
-  }
-
-  closeFuncModal(): void { this.showFuncModal.set(false); }
-
-  saveFunc(): void {
-    if (this.funcForm.invalid) { this.funcForm.markAllAsTouched(); return; }
-    const { name } = this.funcForm.value;
-    const id = this.editingFuncId();
-    let funcs = [...this.jobFunctions()];
-    if (id === null) {
-      const newId = name.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-      if (funcs.find(f => f.id === newId)) {
-        this.snackBar.open('Funcția există deja.', '', { duration: 2500 }); return;
-      }
-      funcs.push({ id: newId || Date.now().toString(), name: name.trim() });
-    } else {
-      funcs = funcs.map(f => f.id === id ? { ...f, name: name.trim() } : f);
-    }
-    this.jobFunctions.set(funcs);
-    this.storage.set('app_job_functions', funcs);
-    this.showFuncModal.set(false);
-    this.snackBar.open('✅ Funcția a fost salvată.', '', { duration: 2200 });
-  }
-
-  readonly PROTECTED_FUNCS = new Set<string>(SYSTEM_FUNC_IDS);   // no delete
-  readonly PROTECTED_PERMS = new Set<string>(SYSTEM_PERM_IDS);   // no delete
-  readonly LOCKED_FUNCS    = new Set(['administrator', 'keyuser']); // no edit + no delete
-  readonly LOCKED_PERMS    = new Set(['admin', 'keyuser']);        // no edit + no delete
-
-  get systemFunctions() {
-    const order: string[] = [...SYSTEM_FUNC_IDS];
-    return this.jobFunctions()
-      .filter(f => this.PROTECTED_FUNCS.has(f.id))
-      .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-  }
-  get customFunctions() {
-    return this.jobFunctions().filter(f => !this.PROTECTED_FUNCS.has(f.id));
-  }
-
-  get systemPermissions() {
-    const order: string[] = [...SYSTEM_PERM_IDS];
+  // Ranguri de sistem: KeyUser, Admin
+  get systemRanks() {
+    const order = ['keyuser', 'admin'];
     return this.permissions()
-      .filter(p => this.PROTECTED_PERMS.has(p.id))
+      .filter(p => this.RANK_IDS.has(p.id))
       .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   }
-  get customPermissions() {
+  // Roluri sistem editabile: Șofer, Ajutor manipulant
+  get systemRoles() {
+    const order = ['sofer', 'ajutor_manipulant'];
+    return this.permissions()
+      .filter(p => this.SYSTEM_ROLE_IDS.has(p.id))
+      .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  }
+  // Roluri personalizate
+  get customRoles() {
     return this.permissions().filter(p => !this.PROTECTED_PERMS.has(p.id));
   }
 
-  deleteFunc(f: JobFunction): void {
-    if (this.PROTECTED_FUNCS.has(f.id)) return;
-    if (!confirm(`Ștergi funcția "${f.name}"?`)) return;
-    const funcs = this.jobFunctions().filter(x => x.id !== f.id);
-    this.jobFunctions.set(funcs);
-    this.storage.set('app_job_functions', funcs);
-  }
 
   // ── Permisiuni CRUD ───────────────────────────────────────────────────────
 

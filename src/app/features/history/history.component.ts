@@ -428,7 +428,12 @@ export class HistoryComponent {
       revisedFromId: order.id
     };
 
-    this.ordersService.reviseOrder(order.id, newOrder);
+    const result = this.ordersService.reviseOrder(order.id, newOrder);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-warn'], verticalPosition: 'top' });
+      return;
+    }
     const text = this.ordersService.generateText(newOrder);
     window.open(this.ordersService.generateMailto(newOrder, text), '_blank');
 

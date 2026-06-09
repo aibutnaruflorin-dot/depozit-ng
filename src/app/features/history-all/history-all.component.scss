@@ -214,8 +214,32 @@
   margin-bottom: 1rem;
 }
 
-// Columns: Name | Cat | UM | Cod | Furnizor | Net | TVA | Qty
-$_epc-cols: minmax(180px, 1fr) 120px 50px 90px 130px 108px 108px 130px;
+// Columns: Name | Cat | UM | Stoc | Cod | Furnizor | Net | TVA | Qty
+$_epc-cols: minmax(180px, 1fr) 120px 50px 90px 90px 130px 108px 108px 130px;
+
+.stoc3-cell {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  flex-wrap: nowrap;
+}
+.s3-imp   { color: var(--color-text-muted); }
+.s3-sep   { color: var(--color-border); }
+.s3-final { font-weight: 600; color: var(--color-primary); }
+.s3-zero  { color: #e53935 !important; }
+.s3-buf   { font-weight: 600; }
+.s3-pos   { color: #43a047; }
+.s3-neg   { color: #e53935; }
+.exp-buf-warn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.68rem;
+  color: #e65100;
+  font-weight: 600;
+  mat-icon { font-size: 12px; width: 12px; height: 12px; line-height: 12px; }
+}
 
 .exp-header-row,
 .exp-product-row {

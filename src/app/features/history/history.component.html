@@ -351,6 +351,7 @@
                   <span>Denumire produs</span>
                   <span>Categorie</span>
                   <span>UM</span>
+                  <span>Stoc</span>
                   <span>Cod extern</span>
                   <span>Furnizor</span>
                   <span class="epc-right">Fără TVA</span>
@@ -372,6 +373,18 @@
                         @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
                       </span>
                       <span class="epc-um">{{ p.um }}</span>
+                      @let s = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                      <div class="stoc3-cell">
+                        <span class="s3-imp">{{ s.importedQty }}</span>
+                        <span class="s3-sep">·</span>
+                        <span class="s3-final" [class.s3-zero]="s.finalQty === 0">{{ s.finalQty }}</span>
+                        @if (s.bufferQty !== 0) {
+                          <span class="s3-sep">·</span>
+                          <span class="s3-buf" [class.s3-pos]="s.bufferQty > 0" [class.s3-neg]="s.bufferQty < 0">
+                            {{ s.bufferQty > 0 ? '+' : '' }}{{ s.bufferQty }}
+                          </span>
+                        }
+                      </div>
                       <span class="epc-cod">{{ p.codExtern || '—' }}</span>
                       <span class="epc-furn">{{ p.furnizor || '—' }}</span>
                       <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
@@ -389,8 +402,13 @@
                             <mat-icon>add</mat-icon>
                           </button>
                         </div>
+                        @let ew = catalogsService.calcBufferWarning(p.catalogId, p.nr, editQtyMap()[ekey(order.id, j)] ?? p.qty);
                         @if ((editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0) {
                           <span class="exp-remove-hint">va fi eliminat</span>
+                        } @else if (ew.warn) {
+                          <div class="exp-buf-warn">
+                            <mat-icon>warning</mat-icon> {{ ew.bufferUsed }} buf
+                          </div>
                         }
                       </div>
                     </div>
@@ -408,6 +426,18 @@
                         @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
                       </span>
                       <span class="epc-um">{{ p.um }}</span>
+                      @let sr = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                      <div class="stoc3-cell">
+                        <span class="s3-imp">{{ sr.importedQty }}</span>
+                        <span class="s3-sep">·</span>
+                        <span class="s3-final" [class.s3-zero]="sr.finalQty === 0">{{ sr.finalQty }}</span>
+                        @if (sr.bufferQty !== 0) {
+                          <span class="s3-sep">·</span>
+                          <span class="s3-buf" [class.s3-pos]="sr.bufferQty > 0" [class.s3-neg]="sr.bufferQty < 0">
+                            {{ sr.bufferQty > 0 ? '+' : '' }}{{ sr.bufferQty }}
+                          </span>
+                        }
+                      </div>
                       <span class="epc-cod">{{ p.codExtern || '—' }}</span>
                       <span class="epc-furn">{{ p.furnizor || '—' }}</span>
                       <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
@@ -420,7 +450,7 @@
                 <!-- Total în timp real — aliniat pe grid-ul coloanelor -->
                 <div class="expansion-total">
                   <span class="exp-total-heading">Total</span>
-                  <span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span><span></span>
                   <span class="exp-total-net">
                     @if (order.status === 'trimis' && !order.superseded) {
                       {{ editTotalFaraTVA(order) | number:'1.2-2' }} lei

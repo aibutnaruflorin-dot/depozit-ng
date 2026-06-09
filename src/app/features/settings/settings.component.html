@@ -239,6 +239,36 @@
         <div class="tab-header">
           <h3>Destinatari Email</h3>
         </div>
+
+        <!-- Notificare resetare buffer -->
+        <div class="buf-email-section">
+          <div class="buf-email-label">
+            <mat-icon>notifications_active</mat-icon>
+            Email notificare resetare buffer
+          </div>
+          <p class="buf-email-hint">
+            Înainte de fiecare resetare buffer se deschide clientul de email cu un rezumat al ajustărilor.
+            Câmpul nu poate fi lăsat gol.
+          </p>
+          <div class="buf-email-row">
+            <mat-form-field appearance="outline" class="buf-email-field">
+              <mat-label>Adresă email</mat-label>
+              <mat-icon matPrefix>email</mat-icon>
+              <input matInput type="email"
+                     [value]="catalogsService.bufferNotifyEmail()"
+                     #bufEmailInput
+                     placeholder="ex: office@firma.ro">
+            </mat-form-field>
+            <button mat-flat-button color="primary"
+                    [disabled]="!bufEmailInput.value.trim()"
+                    (click)="saveBufferEmail(bufEmailInput.value)">
+              <mat-icon>save</mat-icon> Salvează
+            </button>
+          </div>
+        </div>
+
+        <mat-divider style="margin: 12px 0 16px"></mat-divider>
+
         <p class="wa-hint">
           <mat-icon class="wa-hint-icon">info</mat-icon>
           Adaugă adrese de email individuale sau liste de distribuție. Le vei putea selecta când trimiți o comandă.
@@ -340,126 +370,75 @@
     </mat-tab>
   }
 
-  <!-- ══ TAB 4: FUNCȚII (admin) ══ -->
+  <!-- ══ TAB 4: ROLURI (admin) ══ -->
   @if (auth.isAdmin()) {
-    <mat-tab label="Funcții">
-      <div class="tab-content">
-        <div class="tab-header">
-          <h3>Funcții angajați</h3>
-          <button mat-stroked-button (click)="openAddFunc()">
-            <mat-icon>add</mat-icon> Adaugă funcție
-          </button>
-        </div>
-        <p class="wa-hint">
-          <mat-icon class="wa-hint-icon">info</mat-icon>
-          Funcțiile definesc rolul operațional al unui angajat. Utilizatorii cu funcția <strong>Șofer</strong> apar automat în modulul Transport.
-        </p>
-
-        <!-- Funcții sistem (protejate) -->
-        <div class="func-group-label func-group-label--system">
-          <mat-icon>shield</mat-icon> Funcții sistem
-        </div>
-        <div class="fleet-list fleet-list--system">
-          @for (f of systemFunctions; track f.id) {
-            <div class="fleet-item fleet-item--system">
-              <div class="fleet-icon"><mat-icon>lock</mat-icon></div>
-              <div class="fleet-info">
-                <span class="fleet-name">{{ f.name }}</span>
-                <span class="fleet-meta"><code>{{ f.id }}</code></span>
-              </div>
-              <span class="func-system-badge">Sistem</span>
-              @if (LOCKED_FUNCS.has(f.id)) {
-                <mat-icon matTooltip="Funcție protejată — nu poate fi modificată"
-                          style="color:var(--color-text-muted);font-size:18px">lock</mat-icon>
-              } @else {
-                <button mat-icon-button matTooltip="Editează" (click)="openEditFunc(f)">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <mat-icon matTooltip="Nu poate fi ștearsă"
-                          style="color:var(--color-text-muted);font-size:18px">lock</mat-icon>
-              }
-            </div>
-          }
-        </div>
-
-        <!-- Funcții personalizate -->
-        <div class="func-group-label">
-          <mat-icon>work_outline</mat-icon> Funcții personalizate
-        </div>
-        @if (customFunctions.length === 0) {
-          <div class="empty-state empty-state--sm">
-            <p>Nicio funcție personalizată. Adaugă una mai sus.</p>
-          </div>
-        } @else {
-          <div class="fleet-list">
-            @for (f of customFunctions; track f.id) {
-              <div class="fleet-item">
-                <div class="fleet-icon"><mat-icon>badge</mat-icon></div>
-                <div class="fleet-info">
-                  <span class="fleet-name">{{ f.name }}</span>
-                  <span class="fleet-meta"><code>{{ f.id }}</code></span>
-                </div>
-                <button mat-icon-button matTooltip="Editează" (click)="openEditFunc(f)">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button color="warn" matTooltip="Șterge" (click)="deleteFunc(f)">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
-            }
-          </div>
-        }
-      </div>
-    </mat-tab>
-  }
-
-  <!-- ══ TAB 5: PERMISIUNI (admin) ══ -->
-  @if (auth.isAdmin()) {
-    <mat-tab label="Permisiuni">
+    <mat-tab label="Roluri">
       <div class="tab-content tab-content--wide">
         <div class="tab-header">
-          <h3>Niveluri de permisiuni</h3>
+          <h3>Roluri utilizatori</h3>
           <button mat-stroked-button (click)="openAddPerm()">
-            <mat-icon>add</mat-icon> Adaugă permisiune
+            <mat-icon>add</mat-icon> Adaugă rol
           </button>
         </div>
         <p class="wa-hint">
           <mat-icon class="wa-hint-icon">info</mat-icon>
-          Fiecare nivel de permisiune definește ce pagini poate accesa un utilizator și în ce mod (complet, citire, niciun).
+          Rolul definește ce pagini poate accesa un utilizator și cu ce nivel de acces (complet, citire, niciun).
         </p>
 
-        <!-- Permisiuni sistem -->
+        <!-- Ranguri de sistem: KeyUser, Admin -->
         <div class="func-group-label func-group-label--system">
-          <mat-icon>shield</mat-icon> Permisiuni sistem
+          <mat-icon>military_tech</mat-icon> Ranguri de sistem
         </div>
         <div class="perm-list perm-list--system">
-          @for (perm of systemPermissions; track perm.id) {
+          @for (perm of systemRanks; track perm.id) {
             <div class="perm-item perm-item--system">
               <div class="perm-item-header">
                 <div class="perm-item-title">
                   @if (perm.id === 'keyuser') {
-                    <mat-icon class="perm-icon perm-icon--keyuser" matTooltip="Permisiune unică">star</mat-icon>
+                    <mat-icon class="perm-icon perm-icon--keyuser" matTooltip="Rang unic în sistem">star</mat-icon>
                   } @else {
-                    <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+                    <mat-icon class="perm-icon">admin_panel_settings</mat-icon>
                   }
                   <strong>{{ perm.name }}</strong>
                   @if (perm.id === 'keyuser') {
-                    <span class="perm-keyuser-badge" matTooltip="Rol unic în sistem">Unic</span>
+                    <span class="perm-keyuser-badge">Unic</span>
                   }
-                  @if (perm.isAdmin) { <span class="perm-admin-badge">Admin</span> }
-                  <span class="func-system-badge">Sistem</span>
+                  <span class="perm-admin-badge">Admin</span>
+                  <span class="func-system-badge">Rang</span>
                 </div>
                 <div class="perm-item-actions">
                   @if (canEditPerm(perm)) {
                     <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <mat-icon matTooltip="Nu poate fi ștearsă"
-                              style="color:var(--color-text-muted);margin:0 4px;font-size:18px">lock</mat-icon>
-                  } @else {
-                    <mat-icon matTooltip="Permisiune protejată — nu poate fi modificată"
-                              style="color:var(--color-text-muted);margin-right:8px;font-size:18px">lock</mat-icon>
                   }
+                  <mat-icon matTooltip="Rang protejat — nu poate fi șters"
+                            style="color:var(--color-text-muted);margin:0 4px;font-size:18px">lock</mat-icon>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Roluri sistem: Șofer, Ajutor manipulant -->
+        <div class="func-group-label func-group-label--system">
+          <mat-icon>shield</mat-icon> Roluri sistem
+        </div>
+        <div class="perm-list perm-list--system">
+          @for (perm of systemRoles; track perm.id) {
+            <div class="perm-item perm-item--system">
+              <div class="perm-item-header">
+                <div class="perm-item-title">
+                  <mat-icon class="perm-icon">shield</mat-icon>
+                  <strong>{{ perm.name }}</strong>
+                  <span class="func-system-badge">Sistem</span>
+                </div>
+                <div class="perm-item-actions">
+                  <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează pagini">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <mat-icon matTooltip="Nu poate fi șters"
+                            style="color:var(--color-text-muted);margin:0 4px;font-size:18px">lock</mat-icon>
                 </div>
               </div>
               <div class="perm-pages-grid">
@@ -476,22 +455,23 @@
           }
         </div>
 
-        <!-- Permisiuni personalizate -->
+        <!-- Roluri personalizate -->
         <div class="func-group-label">
-          <mat-icon>verified_user</mat-icon> Permisiuni personalizate
+          <mat-icon>verified_user</mat-icon> Roluri personalizate
         </div>
-        @if (customPermissions.length === 0) {
+        @if (customRoles.length === 0) {
           <div class="empty-state empty-state--sm">
-            <p>Nicio permisiune personalizată. Adaugă una mai sus.</p>
+            <p>Niciun rol personalizat. Adaugă unul mai sus.</p>
           </div>
         } @else {
           <div class="perm-list">
-            @for (perm of customPermissions; track perm.id) {
+            @for (perm of customRoles; track perm.id) {
               <div class="perm-item">
                 <div class="perm-item-header">
                   <div class="perm-item-title">
-                    <mat-icon class="perm-icon">shield</mat-icon>
+                    <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
                     <strong>{{ perm.name }}</strong>
+                    @if (perm.isAdmin) { <span class="perm-admin-badge">Admin</span> }
                   </div>
                   <div class="perm-item-actions">
                     <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
@@ -538,8 +518,7 @@
           <tr>
             <th>Nume</th>
             <th>Username</th>
-            <th>Funcție</th>
-            <th>Permisiuni</th>
+            <th>Rol</th>
             <th>Telefon</th>
             <th>Status</th>
             @if (auth.isAdmin()) {
@@ -551,11 +530,6 @@
           <tr>
             <td><strong>{{ user.name }}</strong></td>
             <td><code>{{ user.username }}</code></td>
-            <td>
-              @if (user.jobRole) {
-                <p-tag [value]="jobRoleLabel(user.jobRole)" severity="secondary" />
-              } @else { <span style="color:var(--color-text-muted)">—</span> }
-            </td>
             <td>
               <p-tag [value]="permLabel(user.role)" [severity]="permSeverity(user.role)" />
             </td>
@@ -679,25 +653,18 @@
             <input matInput type="password" formControlName="password">
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Funcție</mat-label>
-            <mat-icon matPrefix>work</mat-icon>
-            <mat-select formControlName="jobRole">
-              <mat-option [value]="null">— Fără funcție specifică —</mat-option>
-              @for (f of jobFunctions(); track f.id) {
-                @if (f.id !== 'keyuser' && (f.id !== 'administrator' || auth.session()?.role === 'keyuser')) {
-                  <mat-option [value]="f.id">{{ f.name }}</mat-option>
-                }
-              }
-            </mat-select>
-            <mat-hint>Șoferii apar automat în modulul Transport</mat-hint>
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-w">
             <mat-label>Telefon</mat-label>
             <mat-icon matPrefix>phone</mat-icon>
             <input matInput formControlName="telefon" placeholder="07xx xxx xxx">
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Permisiuni *</mat-label>
+            <mat-label>Email recuperare parolă</mat-label>
+            <mat-icon matPrefix>mail_outline</mat-icon>
+            <input matInput type="email" formControlName="recoveryEmail" placeholder="ex: angajat@firma.ro">
+            <mat-hint>Folosit pentru recuperarea parolei</mat-hint>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-w">
+            <mat-label>Rol *</mat-label>
             <mat-icon matPrefix>shield</mat-icon>
             <mat-select formControlName="role">
               @for (p of permissions(); track p.id) {
@@ -717,45 +684,12 @@
   </div>
 }
 
-<!-- Modal add/edit funcție -->
-@if (showFuncModal()) {
-  <div class="modal-overlay">
-    <mat-card appearance="outlined" class="modal-card" role="dialog" appDragModal>
-      <mat-card-header>
-        <mat-card-title>{{ editingFuncId() !== null ? 'Editează funcție' : 'Adaugă funcție' }}</mat-card-title>
-        <button mat-icon-button (click)="closeFuncModal()" style="position:absolute;right:8px;top:8px">
-          <mat-icon>close</mat-icon>
-        </button>
-      </mat-card-header>
-      <mat-card-content>
-        <form [formGroup]="funcForm" class="modal-form">
-          <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Denumire funcție *</mat-label>
-            <mat-icon matPrefix>badge</mat-icon>
-            <input matInput formControlName="name" placeholder="ex: Tehnician depozit">
-            @if (funcForm.get('name')?.hasError('required') && funcForm.get('name')?.touched) {
-              <mat-error>Denumirea este obligatorie.</mat-error>
-            }
-          </mat-form-field>
-          @if (editingFuncId() === null) {
-            <p class="hint" style="margin-top:4px">ID-ul funcției se generează automat din denumire.</p>
-          }
-        </form>
-      </mat-card-content>
-      <mat-card-actions class="modal-actions">
-        <button mat-stroked-button (click)="closeFuncModal()">Anulează</button>
-        <button mat-flat-button color="primary" (click)="saveFunc()">Salvează</button>
-      </mat-card-actions>
-    </mat-card>
-  </div>
-}
-
-<!-- Modal add/edit permisiune -->
+<!-- Modal add/edit rol -->
 @if (showPermModal()) {
   <div class="modal-overlay">
     <mat-card appearance="outlined" class="modal-card modal-card--wide" role="dialog" appDragModal>
       <mat-card-header>
-        <mat-card-title>{{ editingPermId() !== null ? 'Editează permisiune' : 'Adaugă permisiune' }}</mat-card-title>
+        <mat-card-title>{{ editingPermId() !== null ? 'Editează rol' : 'Adaugă rol' }}</mat-card-title>
         <button mat-icon-button (click)="closePermModal()" style="position:absolute;right:8px;top:8px">
           <mat-icon>close</mat-icon>
         </button>
@@ -763,7 +697,7 @@
       <mat-card-content>
         <form [formGroup]="permForm" class="modal-form">
           <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Denumire permisiune *</mat-label>
+            <mat-label>Denumire rol *</mat-label>
             <mat-icon matPrefix>shield</mat-icon>
             <input matInput formControlName="name" placeholder="ex: Supervizor">
             @if (permForm.get('name')?.hasError('required') && permForm.get('name')?.touched) {
@@ -774,7 +708,7 @@
           @if (!PROTECTED_PERMS.has(editingPermId() ?? '')) {
             <div class="perm-admin-toggle">
               <mat-checkbox formControlName="isAdmin">
-                Permisiune de tip Admin (acces complet la toate setările)
+                Rol de tip Admin (acces complet la toate setările)
               </mat-checkbox>
             </div>
           }
@@ -784,7 +718,7 @@
             @if (LOCKED_PERMS.has(editingPermId() ?? '')) {
               <div class="perm-pages-locked-note">
                 <mat-icon>lock</mat-icon>
-                Permisiune de tip Admin — acces complet la toate paginile (fix, nu poate fi modificat).
+                Rang de sistem — acces complet la toate paginile (fix, nu poate fi modificat).
               </div>
             } @else {
               <div class="perm-pages-form-grid">

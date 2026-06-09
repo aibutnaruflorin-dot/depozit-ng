@@ -1,19 +1,34 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { StorageService } from './storage.service';
 import { Catalog, CatalogMeta, CatalogUpload } from '../models/catalog.model';
-import { Product } from '../models/product.model';
+import { Product, StockLogEntry } from '../models/product.model';
 import * as XLSX from 'xlsx';
+
+const BUFFER_EMAIL_KEY     = 'app_buffer_notify_email';
+const BUFFER_EMAIL_DEFAULT = 'ai.butnaru.florin@gmail.com';
 
 @Injectable({ providedIn: 'root' })
 export class CatalogsService {
   private _catalogs        = signal<Catalog[]>([]);
   private _productsByCat   = signal<Record<string, Product[]>>({});
+  private _stockLog        = signal<StockLogEntry[]>([]);
+  private _bufferEmail     = signal<string>(BUFFER_EMAIL_DEFAULT);
 
-  readonly catalogs    = this._catalogs.asReadonly();
-  readonly allProducts = computed(() => Object.values(this._productsByCat()).flat());
+  readonly catalogs          = this._catalogs.asReadonly();
+  readonly allProducts       = computed(() => Object.values(this._productsByCat()).flat());
+  readonly stockLog          = this._stockLog.asReadonly();
+  readonly bufferNotifyEmail = this._bufferEmail.asReadonly();
 
   constructor(private storage: StorageService) {
     this._load();
+    this._stockLog.set(this.storage.get<StockLogEntry[]>('app_stock_log') ?? []);
+    this._bufferEmail.set(this.storage.get<string>(BUFFER_EMAIL_KEY) ?? BUFFER_EMAIL_DEFAULT);
+  }
+
+  setBufferNotifyEmail(email: string): void {
+    const val = email.trim() || BUFFER_EMAIL_DEFAULT;
+    this._bufferEmail.set(val);
+    this.storage.set(BUFFER_EMAIL_KEY, val);
   }
 
   private _load(): void {
@@ -24,10 +39,15 @@ export class CatalogsService {
       let prods = this.storage.get<Product[]>(`app_catalog_${cat.id}_products`) || [];
       let dirty = false;
       prods = prods.map(p => {
-        if (p.pretFaraTVA != null) return { ...p, catalogId: cat.id };
+        let migrated = { ...p, catalogId: cat.id };
+        if (migrated.importedQty == null) {
+          migrated = { ...migrated, importedQty: migrated.qty };
+          dirty = true;
+        }
+        if (migrated.pretFaraTVA != null) return migrated;
         const net = Math.round((10 + Math.random() * 490) * 100) / 100;
         dirty = true;
-        return { ...p, catalogId: cat.id, pretFaraTVA: net, pretCuTVA: Math.round(net * 1.19 * 100) / 100 };
+        return { ...migrated, pretFaraTVA: net, pretCuTVA: Math.round(net * 1.19 * 100) / 100 };
       });
       if (dirty) this.storage.set(`app_catalog_${cat.id}_products`, prods);
       bycat[cat.id] = prods;
@@ -175,13 +195,15 @@ export class CatalogsService {
             if (!name) continue;
             const nrNum = Number(nr);
             if (!Number.isFinite(nrNum) || nrNum <= 0 || String(nr).trim() === '') continue;
+            const qty = parseFloat(String(row[3]).replace(',', '.')) || 0;
             products.push({
               nr: nrNum, name,
-              um:        String(row[2]  || '').trim(),
-              qty:       parseFloat(String(row[3]).replace(',', '.')) || 0,
-              furnizor:  String(row[furnizorCol] || '').trim() || undefined,
-              codExtern: codExternCol >= 0 ? (String(row[codExternCol] || '').trim() || undefined) : undefined,
-              category:  String(row[categoryCol] || '').trim().toUpperCase() || 'DIVERSE',
+              um:          String(row[2]  || '').trim(),
+              qty,
+              importedQty: qty,
+              furnizor:    String(row[furnizorCol] || '').trim() || undefined,
+              codExtern:   codExternCol >= 0 ? (String(row[codExternCol] || '').trim() || undefined) : undefined,
+              category:    String(row[categoryCol] || '').trim().toUpperCase() || 'DIVERSE',
               catalogId
             });
           }
@@ -225,14 +247,18 @@ export class CatalogsService {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const raw  = Array.isArray(json) ? json : (json.data || json.stocuri || []);
-      const products: Product[] = (raw as any[]).map((item, i) => ({
-        nr:       item.nr || item.id || (i + 1),
-        name:     String(item.denumire || item.name || '').trim(),
-        um:       String(item.um || '').trim(),
-        qty:      parseFloat(item.cantitate ?? item.stoc ?? 0),
-        category: String(item.subclasa || item.categorie || 'DIVERSE').trim().toUpperCase(),
-        catalogId
-      })).filter(p => p.name);
+      const products: Product[] = (raw as any[]).map((item, i) => {
+        const qty = parseFloat(item.cantitate ?? item.stoc ?? 0);
+        return {
+          nr:          item.nr || item.id || (i + 1),
+          name:        String(item.denumire || item.name || '').trim(),
+          um:          String(item.um || '').trim(),
+          qty,
+          importedQty: qty,
+          category:    String(item.subclasa || item.categorie || 'DIVERSE').trim().toUpperCase(),
+          catalogId
+        };
+      }).filter(p => p.name);
       this._saveProducts(catalogId, products);
       return { ok: true, msg: `${products.length} produse sincronizate.`, count: products.length };
     } catch (err: any) {
@@ -257,5 +283,63 @@ export class CatalogsService {
         await this.fetchApi(cat.id, cat.apiUrl, cat.apiKey, cat.apiGestiune, true);
       }
     }
+  }
+
+  // ── Stoc ───────────────────────────────────────────────────────────────────
+
+  /** Adjusts qty for a product. Positive delta = add stock, negative = remove. */
+  adjustQty(catalogId: string, productNr: string | number, delta: number): void {
+    const prods = this._productsByCat()[catalogId];
+    if (!prods) return;
+    const updated = prods.map(p =>
+      String(p.nr) === String(productNr) ? { ...p, qty: p.qty + delta } : p
+    );
+    this._saveProducts(catalogId, updated);
+  }
+
+  /** Returns remaining stock for a product, or null if product not found. */
+  getStock(catalogId: string, productNr: string | number): number | null {
+    const p = this._productsByCat()[catalogId]?.find(p => String(p.nr) === String(productNr));
+    return p != null ? p.qty : null;
+  }
+
+  /** Returns the 3-column stock breakdown for display. */
+  getStockThreeCol(catalogId: string | undefined, productNr: string | number): { importedQty: number; finalQty: number; bufferQty: number; importAvailable: number } {
+    if (!catalogId) return { importedQty: 0, finalQty: 0, bufferQty: 0, importAvailable: 0 };
+    const p = this._productsByCat()[catalogId]?.find(p => String(p.nr) === String(productNr));
+    if (!p) return { importedQty: 0, finalQty: 0, bufferQty: 0, importAvailable: 0 };
+    const importedQty = p.importedQty ?? p.qty;
+    const finalQty    = p.qty;
+    return {
+      importedQty,
+      finalQty,
+      bufferQty:       finalQty - importedQty,
+      importAvailable: Math.min(finalQty, importedQty),
+    };
+  }
+
+  /** Returns warning data when an order uses buffer stock. */
+  calcBufferWarning(catalogId: string | undefined, productNr: string | number, orderedQty: number): { warn: boolean; bufferUsed: number } {
+    const s = this.getStockThreeCol(catalogId, productNr);
+    const bufferUsed = Math.max(0, orderedQty - s.importAvailable);
+    return { warn: bufferUsed > 0, bufferUsed };
+  }
+
+  /** Clears manual stock-log entries for the given catalog IDs. Stoc Final stays unchanged. */
+  resetBuffer(catalogIds: string[]): void {
+    const idSet = new Set(catalogIds);
+    const next  = this._stockLog().filter(e => !(e.source === 'manual' && idSet.has(e.catalogId)));
+    this._stockLog.set(next);
+    this.storage.set('app_stock_log', next);
+  }
+
+  addStockLog(entry: StockLogEntry): void {
+    const next = [entry, ...this._stockLog()].slice(0, 2000);
+    this._stockLog.set(next);
+    this.storage.set('app_stock_log', next);
+  }
+
+  getStockLog(): StockLogEntry[] {
+    return this._stockLog();
   }
 }

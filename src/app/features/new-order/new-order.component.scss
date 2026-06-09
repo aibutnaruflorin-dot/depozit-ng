@@ -261,7 +261,13 @@
   font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
 }
 .pc-um  { font-size: 0.78rem; color: var(--color-text-muted); }
-.pc-stoc { font-size: 0.75rem; color: var(--color-primary); font-weight: 500; }
+.pc-stoc-imp  { font-size: 0.82rem; color: var(--color-text-muted); text-align: center; }
+.pc-stoc-final {
+  font-size: 0.82rem; font-weight: 700; color: var(--color-primary); text-align: center;
+  &.pc-stoc-zero { color: #e53935; }
+}
+.pc-stoc-buf  { font-size: 0.82rem; font-weight: 600; text-align: center; }
+.s3-zero-buf  { color: var(--color-text-muted); font-weight: 400; }
 .pc-cod {
   font-size: 0.75rem; color: var(--color-text-muted); font-family: monospace;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -575,6 +581,55 @@ $cih: 20px;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+}
+
+/* 3-column stock display */
+.stoc3-legend {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+.stoc3-cell {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  flex-wrap: nowrap;
+}
+.s3-imp   { color: var(--color-text-muted); }
+.s3-sep   { color: var(--color-border); }
+.s3-final { font-weight: 600; color: var(--color-primary); }
+.s3-zero  { color: #e53935 !important; }
+.s3-buf   { font-weight: 600; }
+.s3-pos   { color: #43a047; }
+.s3-neg   { color: #e53935; }
+
+/* Row qty wrap + buffer warning */
+.row-qty-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.buf-warn-sm {
+  font-size: 0.7rem;
+  color: #e65100;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 0 3px;
+}
+
+/* Cart item buffer warning */
+.ci-buf-warn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: #e65100;
+  font-weight: 600;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; line-height: 13px; }
 }
 
 /* Success state */
