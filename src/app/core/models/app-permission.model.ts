@@ -36,7 +36,7 @@ export const DEFAULT_PERMISSIONS: AppPermission[] = [
     pages: { comenzi_noi: 'full', comenzi: 'none', catalog: 'read', transport: 'none', cursele_mele: 'none', istoric: 'none', contul_meu: 'full', manual: 'full', setari: 'none' } },
 ];
 
-export const SYSTEM_PERM_IDS = ['admin', 'keyuser', 'sofer', 'ajutor_manipulant'] as const;
+export const SYSTEM_PERM_IDS = ['keyuser', 'admin', 'sofer', 'ajutor_manipulant'] as const;
 
 export const DEFAULT_JOB_FUNCTIONS = [
   { id: 'keyuser',           name: 'KeyUser' },

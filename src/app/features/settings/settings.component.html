@@ -437,8 +437,15 @@
             <div class="perm-item perm-item--system">
               <div class="perm-item-header">
                 <div class="perm-item-title">
-                  <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+                  @if (perm.id === 'keyuser') {
+                    <mat-icon class="perm-icon perm-icon--keyuser" matTooltip="Permisiune unică">star</mat-icon>
+                  } @else {
+                    <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+                  }
                   <strong>{{ perm.name }}</strong>
+                  @if (perm.id === 'keyuser') {
+                    <span class="perm-keyuser-badge" matTooltip="Rol unic în sistem">Unic</span>
+                  }
                   @if (perm.isAdmin) { <span class="perm-admin-badge">Admin</span> }
                   <span class="func-system-badge">Sistem</span>
                 </div>
