@@ -684,7 +684,7 @@
             <mat-select formControlName="jobRole">
               <mat-option [value]="null">— Fără funcție specifică —</mat-option>
               @for (f of jobFunctions(); track f.id) {
-                @if (f.id !== 'administrator' || auth.session()?.role === 'keyuser') {
+                @if (f.id !== 'keyuser' && (f.id !== 'administrator' || auth.session()?.role === 'keyuser')) {
                   <mat-option [value]="f.id">{{ f.name }}</mat-option>
                 }
               }
