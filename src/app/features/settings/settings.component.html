@@ -777,24 +777,31 @@
 
           <div class="perm-pages-section">
             <h4 class="perm-pages-title">Acces pe pagini</h4>
-            <div class="perm-pages-form-grid">
-              @for (page of appPages; track page.id) {
-                <div class="perm-page-row">
-                  <span class="perm-page-label">{{ page.label }}</span>
-                  <mat-button-toggle-group [(ngModel)]="permPagesAccess[page.id]" [ngModelOptions]="{standalone:true}" class="access-toggle">
-                    <mat-button-toggle value="full" class="toggle-full">
-                      <mat-icon>check_circle</mat-icon> Complet
-                    </mat-button-toggle>
-                    <mat-button-toggle value="read" class="toggle-read">
-                      <mat-icon>visibility</mat-icon> Citire
-                    </mat-button-toggle>
-                    <mat-button-toggle value="none" class="toggle-none">
-                      <mat-icon>block</mat-icon> Niciun
-                    </mat-button-toggle>
-                  </mat-button-toggle-group>
-                </div>
-              }
-            </div>
+            @if (LOCKED_PERMS.has(editingPermId() ?? '')) {
+              <div class="perm-pages-locked-note">
+                <mat-icon>lock</mat-icon>
+                Permisiune de tip Admin — acces complet la toate paginile (fix, nu poate fi modificat).
+              </div>
+            } @else {
+              <div class="perm-pages-form-grid">
+                @for (page of appPages; track page.id) {
+                  <div class="perm-page-row">
+                    <span class="perm-page-label">{{ page.label }}</span>
+                    <mat-button-toggle-group [(ngModel)]="permPagesAccess[page.id]" [ngModelOptions]="{standalone:true}" class="access-toggle">
+                      <mat-button-toggle value="full" class="toggle-full">
+                        <mat-icon>check_circle</mat-icon> Complet
+                      </mat-button-toggle>
+                      <mat-button-toggle value="read" class="toggle-read">
+                        <mat-icon>visibility</mat-icon> Citire
+                      </mat-button-toggle>
+                      <mat-button-toggle value="none" class="toggle-none">
+                        <mat-icon>block</mat-icon> Niciun
+                      </mat-button-toggle>
+                    </mat-button-toggle-group>
+                  </div>
+                }
+              </div>
+            }
           </div>
         </form>
       </mat-card-content>

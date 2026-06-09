@@ -413,6 +413,13 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
   padding: 0.25rem 0 0.75rem;
 }
 .perm-pages-section { margin-top: 0.25rem; }
+.perm-pages-locked-note {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 8px;
+  background: #f5f3ff; color: #6d28d9;
+  font-size: 0.85rem;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
 .perm-pages-title {
   font-size: 0.88rem;
   font-weight: 600;
