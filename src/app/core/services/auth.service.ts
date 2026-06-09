@@ -25,7 +25,7 @@ export class AuthService {
 
   private _loadSession(): void {
     const s = this.storage.get<Session>('app_session');
-    const validRoles = ['admin', 'keyuser', 'agent', 'contabilitate', 'sub-agent'];
+    const validRoles = ['admin', 'keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
     if (s && Date.now() - s.loginTime <= SESSION_DURATION && validRoles.includes(s.role as string)) {
       s.loginTime = Date.now();
       this.storage.set('app_session', s);
@@ -58,7 +58,7 @@ export class AuthService {
 
   refreshSession(): Session | null {
     const s = this.storage.get<Session>('app_session');
-    const validRoles = ['admin', 'keyuser', 'agent', 'contabilitate', 'sub-agent'];
+    const validRoles = ['admin', 'keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
     if (!s || Date.now() - s.loginTime > SESSION_DURATION || !validRoles.includes(s.role as string)) {
       this.storage.remove('app_session');
       this._session.set(null);

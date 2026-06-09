@@ -1,19 +1,13 @@
-export type JobRole    = 'sofer' | 'ajutor_manipulant' | 'casa_marcat' | 'contabilitate';
-export type Permission = 'admin' | 'keyuser' | 'contabilitate' | 'agent' | 'sub-agent';
-
-export const JOB_ROLE_LABELS: Record<JobRole, string> = {
-  sofer:             'Șofer',
-  ajutor_manipulant: 'Ajutor manipulant',
-  casa_marcat:       'Casă de marcat',
-  contabilitate:     'Contabilitate'
-};
+export type Permission = 'admin' | 'keyuser' | 'sofer' | 'ajutor_manipulant' | 'contabilitate' | 'agent' | 'sub-agent';
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
-  admin:         'Admin',
-  keyuser:       'KeyUser',
-  contabilitate: 'Contabilitate',
-  agent:         'Agent',
-  'sub-agent':   'Sub-agent'
+  admin:             'Admin',
+  keyuser:           'KeyUser',
+  sofer:             'Șofer',
+  ajutor_manipulant: 'Ajutor manipulant',
+  contabilitate:     'Contabilitate',
+  agent:             'Agent',
+  'sub-agent':       'Sub-agent'
 };
 
 export interface User {
@@ -22,7 +16,7 @@ export interface User {
   username: string;
   password: string;
   role: Permission;
-  jobRole?: JobRole;
+  jobRole?: string; // legacy — migrated to role on load
   telefon?: string;
   recoveryEmail?: string;
   active: boolean;

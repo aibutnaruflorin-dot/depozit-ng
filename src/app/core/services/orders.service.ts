@@ -1,13 +1,19 @@
 import { Injectable, signal } from '@angular/core';
 import { StorageService } from './storage.service';
+import { CatalogsService } from './catalogs.service';
 import { Order, OrderProduct, OrderEvent } from '../models/order.model';
+
+export interface StockCheckResult {
+  ok: boolean;
+  insufficient: { name: string; available: number; requested: number }[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class OrdersService {
   private _orders = signal<Order[]>([]);
   readonly orders = this._orders.asReadonly();
 
-  constructor(private storage: StorageService) {
+  constructor(private storage: StorageService, private catalogs: CatalogsService) {
     let orders = this.storage.get<Order[]>('app_orders') || [];
     if (orders.some(o => !o.orderNumber)) {
       orders = this._assignMissingNumbers(orders);
@@ -39,14 +45,27 @@ export class OrdersService {
     return this._orders().reduce((m, o) => Math.max(m, o.orderNumber ?? 0), 0) + 1;
   }
 
-  saveOrder(order: Order): void {
+  saveOrder(order: Order): StockCheckResult {
+    const insufficient = this._checkStock(order.products);
+    if (insufficient.length) return { ok: false, insufficient };
+    this._decrementStock(order.products, 'order');
     order.orderNumber = this.nextOrderNumber();
     const updated = [order, ...this._orders()];
     this.storage.set('app_orders', updated);
     this._orders.set(updated);
+    return { ok: true, insufficient: [] };
   }
 
-  reviseOrder(originalId: string, newOrder: Order): void {
+  reviseOrder(originalId: string, newOrder: Order): StockCheckResult {
+    const original = this._orders().find(o => o.id === originalId);
+    if (original) this._incrementStock(original.products, 'revise');
+    const insufficient = this._checkStock(newOrder.products);
+    if (insufficient.length) {
+      // Rollback: restore original stock
+      if (original) this._decrementStock(original.products, 'revise');
+      return { ok: false, insufficient };
+    }
+    this._decrementStock(newOrder.products, 'revise');
     newOrder.orderNumber = this.nextOrderNumber();
     const updated = this._orders().map(o =>
       o.id === originalId ? { ...o, superseded: true } : o
@@ -54,6 +73,7 @@ export class OrdersService {
     const final = [newOrder, ...updated];
     this.storage.set('app_orders', final);
     this._orders.set(final);
+    return { ok: true, insufficient: [] };
   }
 
   acceptOrder(id: string): void {
@@ -64,6 +84,10 @@ export class OrdersService {
   }
 
   cancelOrder(id: string): void {
+    const order = this._orders().find(o => o.id === id);
+    if (order && order.status !== 'anulat' && !order.superseded) {
+      this._incrementStock(order.products, 'cancel');
+    }
     this._orders.update(orders =>
       orders.map(o => o.id === id ? { ...o, status: 'anulat' } : o)
     );
@@ -114,7 +138,10 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
-  addProductsToOrder(orderId: string, products: OrderProduct[], event: Omit<OrderEvent, 'id'>): void {
+  addProductsToOrder(orderId: string, products: OrderProduct[], event: Omit<OrderEvent, 'id'>): StockCheckResult {
+    const insufficient = this._checkStock(products);
+    if (insufficient.length) return { ok: false, insufficient };
+    this._decrementStock(products, 'add_products');
     this._orders.update(orders =>
       orders.map(o => {
         if (o.id !== orderId) return o;
@@ -128,6 +155,7 @@ export class OrdersService {
       })
     );
     this.storage.set('app_orders', this._orders());
+    return { ok: true, insufficient: [] };
   }
 
   updateOrderDelivery(id: string, cuLivrare: boolean, address?: string): void {
@@ -164,6 +192,52 @@ export class OrdersService {
       products, line,
       `Total: ${order.products.length} articole`
     ].join('\n');
+  }
+
+  private _checkStock(products: OrderProduct[]): { name: string; available: number; requested: number }[] {
+    const out: { name: string; available: number; requested: number }[] = [];
+    for (const p of products) {
+      if (!p.catalogId) continue;
+      const stock = this.catalogs.getStock(p.catalogId, p.nr);
+      if (stock !== null && stock < p.qty) {
+        out.push({ name: p.name, available: stock, requested: p.qty });
+      }
+    }
+    return out;
+  }
+
+  private _decrementStock(products: OrderProduct[], source: 'order' | 'revise' | 'add_products'): void {
+    for (const p of products) {
+      if (!p.catalogId) continue;
+      this.catalogs.adjustQty(p.catalogId, p.nr, -p.qty);
+      this.catalogs.addStockLog({
+        timestamp: new Date().toISOString(),
+        catalogId: p.catalogId,
+        productNr: p.nr,
+        productName: p.name,
+        delta: -p.qty,
+        comment: source === 'order' ? 'Comandă nouă' : source === 'revise' ? 'Revizuire comandă' : 'Produse adăugate la comandă',
+        userName: 'sistem',
+        source
+      });
+    }
+  }
+
+  private _incrementStock(products: OrderProduct[], source: 'cancel' | 'revise'): void {
+    for (const p of products) {
+      if (!p.catalogId) continue;
+      this.catalogs.adjustQty(p.catalogId, p.nr, p.qty);
+      this.catalogs.addStockLog({
+        timestamp: new Date().toISOString(),
+        catalogId: p.catalogId,
+        productNr: p.nr,
+        productName: p.name,
+        delta: p.qty,
+        comment: source === 'cancel' ? 'Comandă anulată' : 'Revizuire — restituire stoc',
+        userName: 'sistem',
+        source
+      });
+    }
   }
 
   generateMailto(order: Order, text: string): string {

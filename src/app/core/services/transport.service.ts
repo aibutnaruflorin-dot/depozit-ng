@@ -16,7 +16,7 @@ export class TransportService {
 
   readonly drivers = computed<Driver[]>(() =>
     this._users()
-      .filter(u => u.jobRole === 'sofer' && u.active !== false)
+      .filter(u => (u.role === 'sofer' || u.jobRole === 'sofer') && u.active !== false)
       .map(u => ({ id: String(u.id), nume: u.name, telefon: u.telefon ?? '' }))
   );
 

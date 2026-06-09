@@ -10,13 +10,13 @@ export interface AppPermission {
 export const APP_PAGES: { id: string; label: string }[] = [
   { id: 'catalog',      label: 'Catalog' },
   { id: 'comenzi_noi',  label: 'Comandă nouă' },
-  { id: 'comenzi',      label: 'Comenzi' },
-  { id: 'istoric',      label: 'Toate comenzile' },
-  { id: 'transport',    label: 'Transport' },
-  { id: 'cursele_mele', label: 'Cursele mele' },
-  { id: 'setari',       label: 'Setări' },
-  { id: 'contul_meu',   label: 'Contul meu' },
-  { id: 'manual',       label: 'Manual' },
+  { id: 'comenzi',          label: 'Comenzi' },
+  { id: 'istoric',          label: 'Toate comenzile' },
+  { id: 'transport',        label: 'Transport' },
+  { id: 'cursele_mele',     label: 'Cursele mele' },
+  { id: 'setari',           label: 'Setări' },
+  { id: 'contul_meu',       label: 'Contul meu' },
+  { id: 'manual',           label: 'Manual' },
 ];
 
 export const DEFAULT_PERMISSIONS: AppPermission[] = [
