@@ -273,8 +273,14 @@
             <div class="times-cell">
               <span>{{ fmt(t.oraPlecare) }}</span>
               <mat-icon class="arrow-icon">arrow_forward</mat-icon>
-              <span>{{ fmt(t.oraSosire) }}</span>
+              <span [class.time--overdue]="isOverdue(t)">{{ fmt(t.oraSosire) }}</span>
             </div>
+            @if (isOverdue(t)) {
+              <div class="overdue-badge" matTooltip="Cursă cu termen depășit">
+                <mat-icon>warning</mat-icon>
+                Termen depășit
+              </div>
+            }
           </td>
           <td>
             @for (o of ordersForTransport(t); track o.id) {

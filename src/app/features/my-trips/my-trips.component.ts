@@ -178,6 +178,10 @@ export class MyTripsComponent {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   }
 
+  isOverdue(t: Transport): boolean {
+    return t.status !== 'livrat' && new Date(t.oraSosire).getTime() < Date.now();
+  }
+
   fmt(iso: string): string {
     return this.transportService.formatDateTime(iso);
   }
