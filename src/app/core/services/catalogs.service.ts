@@ -19,6 +19,24 @@ export class CatalogsService {
   readonly stockLog          = this._stockLog.asReadonly();
   readonly bufferNotifyEmail = this._bufferEmail.asReadonly();
 
+  /** O(1) lookup: `${catalogId}_${nr}` → Product. Recomputed only when catalog data changes. */
+  private readonly _productMap = computed(() => {
+    const m = new Map<string, Product>();
+    for (const [catId, prods] of Object.entries(this._productsByCat())) {
+      for (const p of prods) m.set(`${catId}_${String(p.nr)}`, p);
+    }
+    return m;
+  });
+
+  /** Pre-sorted products per catalog (A-Z). Recomputed only when catalog data changes. */
+  private readonly _sortedByCat = computed(() => {
+    const result: Record<string, Product[]> = {};
+    for (const [catId, prods] of Object.entries(this._productsByCat())) {
+      result[catId] = prods.slice().sort((a, b) => a.name.localeCompare(b.name, 'ro'));
+    }
+    return result;
+  });
+
   constructor(private storage: StorageService) {
     this._load();
     this._stockLog.set(this.storage.get<StockLogEntry[]>('app_stock_log') ?? []);
@@ -58,21 +76,19 @@ export class CatalogsService {
   // ── Query ──────────────────────────────────────────────────────────────────
 
   productsFor(catalogIds: string[]): Product[] {
-    const bycat = this._productsByCat();
-    const cats  = catalogIds.length ? this._catalogs().filter(c => catalogIds.includes(c.id))
-                                    : this._catalogs();
-    return cats.flatMap(c => bycat[c.id] || [])
+    const sorted = this._sortedByCat();
+    const cats   = catalogIds.length ? this._catalogs().filter(c => catalogIds.includes(c.id))
+                                     : this._catalogs();
+    return cats.flatMap(c => sorted[c.id] || [])
                .sort((a, b) => a.name.localeCompare(b.name, 'ro'));
   }
 
-  /** Products grouped by catalog order, each group sorted A-Z */
+  /** Products grouped by catalog order, each group sorted A-Z (uses pre-sorted cache). */
   productsForGrouped(catalogIds: string[]): Product[] {
-    const bycat = this._productsByCat();
-    const cats  = catalogIds.length ? this._catalogs().filter(c => catalogIds.includes(c.id))
-                                    : this._catalogs();
-    return cats.flatMap(c =>
-      (bycat[c.id] || []).slice().sort((a, b) => a.name.localeCompare(b.name, 'ro'))
-    );
+    const sorted = this._sortedByCat();
+    const cats   = catalogIds.length ? this._catalogs().filter(c => catalogIds.includes(c.id))
+                                     : this._catalogs();
+    return cats.flatMap(c => sorted[c.id] || []);
   }
 
   categoriesFor(catalogIds: string[]): string[] {
@@ -89,8 +105,8 @@ export class CatalogsService {
     return this._catalogs().find(c => c.id === id);
   }
 
-  findProduct(catalogId: string, nr: number | string): import('../models/product.model').Product | undefined {
-    return this._productsByCat()[catalogId]?.find(p => String(p.nr) === String(nr));
+  findProduct(catalogId: string, nr: number | string): Product | undefined {
+    return this._productMap().get(`${catalogId}_${String(nr)}`);
   }
 
   getMeta(catalogId: string): CatalogMeta | null {
@@ -325,14 +341,14 @@ export class CatalogsService {
 
   /** Returns remaining stock for a product, or null if product not found. */
   getStock(catalogId: string, productNr: string | number): number | null {
-    const p = this._productsByCat()[catalogId]?.find(p => String(p.nr) === String(productNr));
+    const p = this._productMap().get(`${catalogId}_${String(productNr)}`);
     return p != null ? p.qty : null;
   }
 
   /** Returns the 3-column stock breakdown for display. */
   getStockThreeCol(catalogId: string | undefined, productNr: string | number): { importedQty: number; finalQty: number; bufferQty: number; importAvailable: number } {
     if (!catalogId) return { importedQty: 0, finalQty: 0, bufferQty: 0, importAvailable: 0 };
-    const p = this._productsByCat()[catalogId]?.find(p => String(p.nr) === String(productNr));
+    const p = this._productMap().get(`${catalogId}_${String(productNr)}`);
     if (!p) return { importedQty: 0, finalQty: 0, bufferQty: 0, importAvailable: 0 };
     const importedQty = p.importedQty ?? p.qty;
     const finalQty    = p.qty;

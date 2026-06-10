@@ -1,4 +1,4 @@
-import { Component, input, output, signal, computed } from '@angular/core';
+import { Component, OnInit, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ScrollingModule } from '@angular/cdk/scrolling';
@@ -43,7 +43,7 @@ const SOURCE_LABELS: Record<string, string> = {
   templateUrl: './add-products-modal.component.html',
   styleUrl: './add-products-modal.component.scss'
 })
-export class AddProductsModalComponent {
+export class AddProductsModalComponent implements OnInit {
   readonly order  = input.required<Order>();
   readonly source = input.required<'transport' | 'comenzile-mele' | 'toate-comenzile'>();
   readonly closed = output<void>();
@@ -142,6 +142,16 @@ export class AddProductsModalComponent {
     private auth: AuthService,
     private snackBar: MatSnackBar
   ) {}
+
+  ngOnInit(): void {
+    // Default to the catalog with most products in this order
+    const counts: Record<string, number> = {};
+    for (const p of this.order().products) {
+      if (p.catalogId) counts[p.catalogId] = (counts[p.catalogId] ?? 0) + 1;
+    }
+    const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    if (dominant) this.selectedCatalogId.set(dominant);
+  }
 
   stagingKey(p: { catalogId?: string; nr: number | string }): string {
     return p.catalogId ? `${p.catalogId}_${p.nr}` : `m_${p.nr}`;
