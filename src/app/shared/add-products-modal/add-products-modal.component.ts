@@ -1,15 +1,34 @@
 import { Component, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { OrdersService, generateId } from '../../core/services/orders.service';
+import { OrdersService } from '../../core/services/orders.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Order, OrderProduct, OrderEvent } from '../../core/models/order.model';
 import { Product } from '../../core/models/product.model';
+
+interface ProductRow {
+  p: Product;
+  importedQty: number;
+  finalQty: number;
+  bufferQty: number;
+  importAvailable: number;
+}
+
+function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
+  try {
+    const raw = localStorage.getItem(lsKey);
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return new Set(a); }
+  } catch {}
+  return new Set(defaults);
+}
+
+const LS_COLS = 'depot.add-products-modal.visibleCols';
 
 const SOURCE_LABELS: Record<string, string> = {
   'transport': 'Transport',
@@ -20,7 +39,7 @@ const SOURCE_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-add-products-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, MatTooltipModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, ScrollingModule, MatIconModule, MatButtonModule, MatTooltipModule, MatSnackBarModule],
   templateUrl: './add-products-modal.component.html',
   styleUrl: './add-products-modal.component.scss'
 })
@@ -29,28 +48,93 @@ export class AddProductsModalComponent {
   readonly source = input.required<'transport' | 'comenzile-mele' | 'toate-comenzile'>();
   readonly closed = output<void>();
 
-  searchQ          = signal('');
+  readonly MODAL_COLS = [
+    { key: 'categorie',   label: 'Categorie' },
+    { key: 'um',          label: 'UM' },
+    { key: 'masaNeta',    label: 'Masă (kg)' },
+    { key: 'stocImport',  label: 'Stoc Import' },
+    { key: 'stocFinal',   label: 'Stoc Final' },
+    { key: 'stocBuffer',  label: 'Stoc Buffer' },
+    { key: 'codExtern',   label: 'Cod extern' },
+    { key: 'furnizor',    label: 'Furnizor' },
+    { key: 'pretFaraTVA', label: 'Preț f. TVA' },
+    { key: 'pretCuTVA',   label: 'Preț c. TVA' },
+  ];
+
+  colsDropdownOpen = signal(false);
+  readonly visibleCols = signal<Set<string>>(
+    loadVisibleCols(LS_COLS, this.MODAL_COLS.map(c => c.key))
+  );
+
+  colVisible(key: string): boolean { return this.visibleCols().has(key); }
+  allColsVisible(): boolean { return this.MODAL_COLS.every(c => this.visibleCols().has(c.key)); }
+  toggleCol(key: string): void {
+    const s = new Set(this.visibleCols());
+    s.has(key) ? s.delete(key) : s.add(key);
+    this.visibleCols.set(s);
+    localStorage.setItem(LS_COLS, JSON.stringify([...s]));
+  }
+  toggleAllCols(): void {
+    const next = this.allColsVisible() ? new Set<string>() : new Set(this.MODAL_COLS.map(c => c.key));
+    this.visibleCols.set(next);
+    localStorage.setItem(LS_COLS, JSON.stringify([...next]));
+  }
+
+  readonly gridTemplate = computed(() => {
+    const cols = ['minmax(180px,1fr)'];
+    if (this.colVisible('categorie'))   cols.push('100px');
+    if (this.colVisible('um'))          cols.push('55px');
+    if (this.colVisible('masaNeta'))    cols.push('82px');
+    if (this.colVisible('stocImport'))  cols.push('80px');
+    if (this.colVisible('stocFinal'))   cols.push('80px');
+    if (this.colVisible('stocBuffer'))  cols.push('80px');
+    if (this.colVisible('codExtern'))   cols.push('120px');
+    if (this.colVisible('furnizor'))    cols.push('140px');
+    if (this.colVisible('pretFaraTVA')) cols.push('100px');
+    if (this.colVisible('pretCuTVA'))   cols.push('100px');
+    cols.push('116px');
+    return cols.join(' ');
+  });
+
+  searchQ           = signal('');
   selectedCatalogId = signal<string | null>(null);
-  staged           = signal<OrderProduct[]>([]);
-  manualName       = signal('');
-  manualQty        = signal(1);
-  manualUm         = signal('BUC');
-  manualPret       = signal<number | null>(null);
-  showJournal      = signal(false);
+  staged            = signal<OrderProduct[]>([]);
+  showManual        = signal(false);
+  showJournal       = signal(false);
+  manualName        = signal('');
+  manualQty         = signal(1);
+  manualUm          = signal('BUC');
+  manualPret        = signal<number | null>(null);
 
   readonly sourceLabel = (s: string) => SOURCE_LABELS[s] ?? s;
-
   readonly catalogs = computed(() => this.catalogsService.catalogs());
 
-  readonly filteredProducts = computed(() => {
-    const q   = this.searchQ().toLowerCase().trim();
-    const cat = this.selectedCatalogId();
-    const pool = cat
-      ? this.catalogsService.allProducts().filter(p => p.catalogId === cat)
-      : this.catalogsService.allProducts();
-    if (!q) return pool.slice(0, 40);
-    return pool.filter(p => p.name.toLowerCase().includes(q)).slice(0, 40);
+  readonly productRows = computed((): ProductRow[] => {
+    const q     = this.searchQ().toLowerCase().trim();
+    const catId = this.selectedCatalogId();
+    const pool  = this.catalogsService.productsForGrouped(catId ? [catId] : []);
+    const filtered = q
+      ? pool.filter(p => p.name.toLowerCase().includes(q) || (p.codExtern ?? '').toLowerCase().includes(q))
+      : pool;
+    return filtered.map(p => {
+      const s = this.catalogsService.getStockThreeCol(p.catalogId, p.nr);
+      return { p, ...s };
+    });
   });
+
+  trackRow(_: number, row: ProductRow): string {
+    return (row.p.catalogId ?? '') + '_' + String(row.p.nr);
+  }
+
+  readonly stagedMap = computed(() => {
+    const m: Record<string, number> = {};
+    for (const p of this.staged()) m[this.stagingKey(p)] = p.qty;
+    return m;
+  });
+
+  readonly stagedTotalMasa = computed(() =>
+    this.staged().reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0)
+  );
 
   constructor(
     private ordersService: OrdersService,
@@ -59,19 +143,35 @@ export class AddProductsModalComponent {
     private snackBar: MatSnackBar
   ) {}
 
-  addFromCatalog(p: Product): void {
-    const idx = this.staged().findIndex(s => s.name === p.name);
-    if (idx >= 0) {
-      this.staged.update(list => list.map((s, i) => i === idx ? { ...s, qty: s.qty + 1 } : s));
+  stagingKey(p: { catalogId?: string; nr: number | string }): string {
+    return p.catalogId ? `${p.catalogId}_${p.nr}` : `m_${p.nr}`;
+  }
+
+  getQty(p: Product): number {
+    return this.stagedMap()[this.stagingKey(p)] ?? 0;
+  }
+
+  setQty(p: Product, val: number | string): void {
+    const qty = Math.max(0, parseInt(String(val)) || 0);
+    const key = this.stagingKey(p);
+    if (qty === 0) {
+      this.staged.update(list => list.filter(s => this.stagingKey(s) !== key));
+    } else if (this.staged().some(s => this.stagingKey(s) === key)) {
+      this.staged.update(list => list.map(s => this.stagingKey(s) === key ? { ...s, qty } : s));
     } else {
-      const product: OrderProduct = {
-        nr: p.nr, name: p.name, um: p.um, qty: 1, category: p.category,
+      this.staged.update(list => [...list, {
+        nr: p.nr, name: p.name, um: p.um, qty, category: p.category,
         catalogId: p.catalogId, furnizor: p.furnizor, codExtern: p.codExtern,
-        pretFaraTVA: p.pretFaraTVA, pretCuTVA: p.pretCuTVA,
-      };
-      this.staged.update(list => [...list, product]);
+        pretFaraTVA: p.pretFaraTVA, pretCuTVA: p.pretCuTVA, masaNeta: p.masaNeta,
+      }]);
     }
-    this.searchQ.set('');
+  }
+
+  incQty(p: Product): void { this.setQty(p, this.getQty(p) + 1); }
+  decQty(p: Product): void { this.setQty(p, this.getQty(p) - 1); }
+
+  removeStaged(idx: number): void {
+    this.staged.update(list => list.filter((_, i) => i !== idx));
   }
 
   addManual(): void {
@@ -91,18 +191,9 @@ export class AddProductsModalComponent {
     this.manualPret.set(null);
   }
 
-  setStagedQty(idx: number, val: string | number): void {
-    const qty = Math.max(1, parseInt(String(val)) || 1);
-    this.staged.update(list => list.map((s, i) => i === idx ? { ...s, qty } : s));
-  }
-
   onPretKeydown(e: KeyboardEvent): void {
     const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
     if (!allowed.includes(e.key) && (e.key < '0' || e.key > '9')) e.preventDefault();
-  }
-
-  removeStaged(idx: number): void {
-    this.staged.update(list => list.filter((_, i) => i !== idx));
   }
 
   confirm(): void {

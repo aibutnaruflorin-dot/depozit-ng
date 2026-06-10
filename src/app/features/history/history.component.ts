@@ -1,4 +1,12 @@
 import { Component, computed, signal } from '@angular/core';
+
+function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
+  try {
+    const raw = localStorage.getItem(lsKey);
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return new Set(a); }
+  } catch {}
+  return new Set(defaults);
+}
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -65,6 +73,45 @@ function sortByFamily(orders: Order[]): Order[] {
   styleUrl:    './history.component.scss'
 })
 export class HistoryComponent {
+  readonly HISTORY_COLS = [
+    { key: 'data',     label: 'Data' },
+    { key: 'telefon',  label: 'Telefon' },
+    { key: 'livrare',  label: 'Livrare' },
+    { key: 'adresa',   label: 'Adresă livrare' },
+    { key: 'termen',   label: 'Termen livrare' },
+    { key: 'produse',  label: 'Produse' },
+    { key: 'faraTVA',  label: 'Fără TVA' },
+    { key: 'cuTVA',      label: 'Cu TVA' },
+    { key: 'masaTotala', label: 'Masă totală' },
+    { key: 'status',     label: 'Status' },
+  ];
+  private readonly LS_COLS = 'depot.history.visibleCols';
+
+  colsDropdownOpen = signal(false);
+  readonly visibleCols = signal<Set<string>>(
+    loadVisibleCols('depot.history.visibleCols', this.HISTORY_COLS.map(c => c.key))
+  );
+
+  colVisible(key: string): boolean { return this.visibleCols().has(key); }
+  allColsVisible(): boolean { return this.HISTORY_COLS.every(c => this.visibleCols().has(c.key)); }
+  toggleCol(key: string): void {
+    const s = new Set(this.visibleCols());
+    s.has(key) ? s.delete(key) : s.add(key);
+    this.visibleCols.set(s);
+    localStorage.setItem(this.LS_COLS, JSON.stringify([...s]));
+  }
+  toggleAllCols(): void {
+    const next = this.allColsVisible() ? new Set<string>() : new Set(this.HISTORY_COLS.map(c => c.key));
+    this.visibleCols.set(next);
+    localStorage.setItem(this.LS_COLS, JSON.stringify([...next]));
+  }
+
+  readonly expansionColSpan = computed(() => {
+    // always: expand(1) + Nr(1) + Client(1) + Acțiuni(1) = 4
+    const vis = this.HISTORY_COLS.filter(c => this.visibleCols().has(c.key)).length;
+    return 4 + vis;
+  });
+
   readonly dateRangeForm = new FormGroup({
     start: new FormControl<Date | null>(null),
     end:   new FormControl<Date | null>(null),
@@ -263,6 +310,24 @@ export class HistoryComponent {
     }, 0);
   }
 
+  pMasa(p: { masaNeta?: number; catalogId?: string; nr: number | string }): number {
+    if (p.masaNeta != null) return p.masaNeta;
+    if (p.catalogId) return this.catalogsService.findProduct(p.catalogId, p.nr)?.masaNeta ?? 0;
+    return 0;
+  }
+  orderTotalMasa(order: Order): number {
+    return order.products.reduce((s, p) => s + this.pMasa(p) * p.qty, 0);
+  }
+  editTotalMasa(order: Order): number {
+    return order.products.reduce((s, p, j) => {
+      const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
+      return s + this.pMasa(p) * qty;
+    }, 0);
+  }
+  formatMasa(kg: number): string {
+    if (kg <= 0) return '—';
+    return (Math.round(kg * 10) / 10).toLocaleString('ro-RO') + ' kg';
+  }
   shortDate(iso: string): string {
     return new Date(iso).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   }

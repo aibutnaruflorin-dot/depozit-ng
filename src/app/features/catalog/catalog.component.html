@@ -18,6 +18,35 @@
   </div>
 </div>
 
+<!-- Column visibility bar -->
+<div class="cols-vis-bar">
+  <div class="cols-vis-wrap">
+    @if (colsDropdownOpen()) {
+      <div class="cv-backdrop" (click)="colsDropdownOpen.set(false)"></div>
+    }
+    <button class="cv-btn" [class.cv-open]="colsDropdownOpen()" (click)="colsDropdownOpen.update(v=>!v)">
+      <mat-icon class="cv-icon">view_column</mat-icon>
+      Coloane vizibile
+      <mat-icon class="cv-arrow">expand_more</mat-icon>
+    </button>
+    @if (colsDropdownOpen()) {
+      <div class="cv-panel">
+        <label class="cv-item cv-item-all" (click)="$event.preventDefault(); toggleAllCols()">
+          <input type="checkbox" [checked]="allColsVisible()" [indeterminate]="!allColsVisible() && CATALOG_COLS.some(c=>colVisible(c.key))" (change)="toggleAllCols()">
+          <strong>{{ allColsVisible() ? 'Deselectează toate' : 'Selectează toate' }}</strong>
+        </label>
+        <div class="cv-divider"></div>
+        @for (col of CATALOG_COLS; track col.key) {
+          <label class="cv-item">
+            <input type="checkbox" [checked]="colVisible(col.key)" (change)="toggleCol(col.key)">
+            {{ col.label }}
+          </label>
+        }
+      </div>
+    }
+  </div>
+</div>
+
 <!-- Catalog filter chips + sort -->
 <div class="catalog-chips">
   <button class="cat-chip-btn" [class.active]="allSelected()" (click)="selectedCatIds.set([])">
@@ -68,201 +97,217 @@
         </th>
 
         <!-- Categorie – custom single-select dropdown -->
-        <th style="width:145px">
-          <div class="col-header">
-            <div class="col-sort-label" (click)="sort('category')">
-              Categorie
-              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='category'">{{ sortIcon('category') }}</mat-icon>
-            </div>
-            <div class="col-furn-wrap">
-              @if (categoryDropdownOpen()) {
-                <div class="furn-backdrop" (click)="closeCategoryDropdown()"></div>
-              }
-              <div class="phc-furn-trigger"
-                   [class.furn-active]="category()"
-                   [class.furn-open]="categoryDropdownOpen()"
-                   (click)="toggleCategoryDropdown()">
-                <span class="phc-furn-val">
-                  {{ category() || 'Toate' }}
-                </span>
-                <mat-icon class="furn-arrow">expand_more</mat-icon>
+        @if (colVisible('categorie')) {
+          <th style="width:145px">
+            <div class="col-header">
+              <div class="col-sort-label" (click)="sort('category')">
+                Categorie
+                <mat-icon class="sort-icon" [class.sort-active]="sortField()==='category'">{{ sortIcon('category') }}</mat-icon>
               </div>
-              @if (categoryDropdownOpen()) {
-                <div class="furn-panel">
-                  <div class="furn-search-row">
-                    <mat-icon>search</mat-icon>
-                    <input class="furn-search-input" placeholder="Caută categorie…"
-                           [value]="categorySearch()"
-                           (input)="categorySearch.set($any($event.target).value)"
-                           (click)="$event.stopPropagation()">
-                    @if (categorySearch()) {
-                      <button class="furn-clear-btn" (click)="categorySearch.set(''); $event.stopPropagation()">
-                        <mat-icon>close</mat-icon>
-                      </button>
-                    }
-                  </div>
-                  <div class="furn-list">
-                    <div class="furn-item" [class.furn-item-sel]="!category()"
-                         (click)="selectCategory('')">
-                      <span class="furn-item-label">Toate categoriile</span>
-                      @if (!category()) {
-                        <mat-icon class="furn-sel-check">check</mat-icon>
+              <div class="col-furn-wrap">
+                @if (categoryDropdownOpen()) {
+                  <div class="furn-backdrop" (click)="closeCategoryDropdown()"></div>
+                }
+                <div class="phc-furn-trigger"
+                     [class.furn-active]="category()"
+                     [class.furn-open]="categoryDropdownOpen()"
+                     (click)="toggleCategoryDropdown()">
+                  <span class="phc-furn-val">
+                    {{ category() || 'Toate' }}
+                  </span>
+                  <mat-icon class="furn-arrow">expand_more</mat-icon>
+                </div>
+                @if (categoryDropdownOpen()) {
+                  <div class="furn-panel">
+                    <div class="furn-search-row">
+                      <mat-icon>search</mat-icon>
+                      <input class="furn-search-input" placeholder="Caută categorie…"
+                             [value]="categorySearch()"
+                             (input)="categorySearch.set($any($event.target).value)"
+                             (click)="$event.stopPropagation()">
+                      @if (categorySearch()) {
+                        <button class="furn-clear-btn" (click)="categorySearch.set(''); $event.stopPropagation()">
+                          <mat-icon>close</mat-icon>
+                        </button>
                       }
                     </div>
-                    @for (c of filteredCategories(); track c) {
-                      <div class="furn-item" [class.furn-item-sel]="category() === c"
-                           (click)="selectCategory(c)">
-                        <span class="furn-item-label">{{ c }}</span>
-                        @if (category() === c) {
+                    <div class="furn-list">
+                      <div class="furn-item" [class.furn-item-sel]="!category()"
+                           (click)="selectCategory('')">
+                        <span class="furn-item-label">Toate categoriile</span>
+                        @if (!category()) {
                           <mat-icon class="furn-sel-check">check</mat-icon>
                         }
                       </div>
-                    }
-                    @if (filteredCategories().length === 0) {
-                      <div class="furn-empty">Niciun rezultat</div>
-                    }
+                      @for (c of filteredCategories(); track c) {
+                        <div class="furn-item" [class.furn-item-sel]="category() === c"
+                             (click)="selectCategory(c)">
+                          <span class="furn-item-label">{{ c }}</span>
+                          @if (category() === c) {
+                            <mat-icon class="furn-sel-check">check</mat-icon>
+                          }
+                        </div>
+                      }
+                      @if (filteredCategories().length === 0) {
+                        <div class="furn-empty">Niciun rezultat</div>
+                      }
+                    </div>
                   </div>
-                </div>
-              }
+                }
+              </div>
             </div>
-          </div>
-        </th>
+          </th>
+        }
 
-        <th style="width:55px" class="col-sort-th" (click)="sort('um')">
-          <div class="col-sort-label">UM <mat-icon class="sort-icon" [class.sort-active]="sortField()==='um'">{{ sortIcon('um') }}</mat-icon></div>
-        </th>
+        @if (colVisible('um')) {
+          <th style="width:55px" class="col-sort-th" (click)="sort('um')">
+            <div class="col-sort-label">UM <mat-icon class="sort-icon" [class.sort-active]="sortField()==='um'">{{ sortIcon('um') }}</mat-icon></div>
+          </th>
+        }
 
-        <th style="width:72px" class="col-sort-th" (click)="sort('masaNeta')">
-          <div class="col-sort-label">
-            Masă (kg) <mat-icon class="sort-icon" [class.sort-active]="sortField()==='masaNeta'">{{ sortIcon('masaNeta') }}</mat-icon>
-          </div>
-        </th>
+        @if (colVisible('masaNeta')) {
+          <th style="width:50px" class="col-sort-th col-sort-th--wrap" (click)="sort('masaNeta')">
+            <div class="col-sort-label">
+              Masă (kg) <mat-icon class="sort-icon" [class.sort-active]="sortField()==='masaNeta'">{{ sortIcon('masaNeta') }}</mat-icon>
+            </div>
+          </th>
+        }
 
-        <!-- Stoc Import -->
-        <th style="width:76px" class="col-sort-th" (click)="sort('importedQty')">
-          <div class="col-sort-label">
-            Stoc Import <mat-icon class="sort-icon" [class.sort-active]="sortField()==='importedQty'">{{ sortIcon('importedQty') }}</mat-icon>
-          </div>
-        </th>
+        @if (colVisible('stocImport')) {
+          <th style="width:50px" class="col-sort-th col-sort-th--wrap" (click)="sort('importedQty')">
+            <div class="col-sort-label">
+              Stoc Import <mat-icon class="sort-icon" [class.sort-active]="sortField()==='importedQty'">{{ sortIcon('importedQty') }}</mat-icon>
+            </div>
+          </th>
+        }
 
-        <!-- Stoc Final — red badge when 0 -->
-        <th style="width:72px" class="col-sort-th" (click)="sort('qty')">
-          <div class="col-sort-label">
-            Stoc Final <mat-icon class="sort-icon" [class.sort-active]="sortField()==='qty'">{{ sortIcon('qty') }}</mat-icon>
-          </div>
-        </th>
+        @if (colVisible('stocFinal')) {
+          <th style="width:50px" class="col-sort-th col-sort-th--wrap" (click)="sort('qty')">
+            <div class="col-sort-label">
+              Stoc Final <mat-icon class="sort-icon" [class.sort-active]="sortField()==='qty'">{{ sortIcon('qty') }}</mat-icon>
+            </div>
+          </th>
+        }
 
-        <!-- Stoc Buffer (ajustări manuale) -->
-        <th style="width:74px" class="col-sort-th" (click)="sort('buffer')">
-          <div class="col-sort-label">
-            Stoc Buffer <mat-icon class="sort-icon" [class.sort-active]="sortField()==='buffer'">{{ sortIcon('buffer') }}</mat-icon>
-          </div>
-        </th>
+        @if (colVisible('stocBuffer')) {
+          <th style="width:50px" class="col-sort-th col-sort-th--wrap" (click)="sort('buffer')">
+            <div class="col-sort-label">
+              Stoc Buffer <mat-icon class="sort-icon" [class.sort-active]="sortField()==='buffer'">{{ sortIcon('buffer') }}</mat-icon>
+            </div>
+          </th>
+        }
 
-        <!-- Ajustare — admin/keyuser only -->
+        <!-- Ajustare — admin/keyuser only, always visible when permitted -->
         @if (canAdjust()) {
           <th style="width:64px" class="col-center-th">Ajustare</th>
         }
 
-        <!-- Comentariu + search -->
-        <th style="width:155px">
-          <div class="col-header">
-            <div class="col-sort-label" (click)="sort('lastComment')">
-              Comentariu
-              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='lastComment'">{{ sortIcon('lastComment') }}</mat-icon>
-            </div>
-            <input class="col-filter-input" [value]="commentFilter()"
-                   (input)="commentFilter.set($any($event.target).value); currentPage.set(0)"
-                   placeholder="Caută…">
-          </div>
-        </th>
-
-        <!-- Cod extern + input -->
-        <th style="width:110px">
-          <div class="col-header">
-            <div class="col-sort-label" (click)="sort('codExtern')">
-              Cod extern
-              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='codExtern'">{{ sortIcon('codExtern') }}</mat-icon>
-            </div>
-            <input class="col-filter-input" [value]="codExternFilter()"
-                   (input)="codExternFilter.set($any($event.target).value); currentPage.set(0)"
-                   placeholder="Filtrează…">
-          </div>
-        </th>
-
-        <!-- Furnizor – custom multi-select dropdown -->
-        <th style="width:150px">
-          <div class="col-header">
-            <div class="col-sort-label" (click)="sort('furnizor')">
-              Furnizor
-              <mat-icon class="sort-icon" [class.sort-active]="sortField()==='furnizor'">{{ sortIcon('furnizor') }}</mat-icon>
-            </div>
-            <div class="col-furn-wrap">
-              @if (furnizorDropdownOpen()) {
-                <div class="furn-backdrop" (click)="closeFurnizorDropdown()"></div>
-              }
-              <div class="phc-furn-trigger"
-                   [class.furn-active]="furnizorFilter().length > 0"
-                   [class.furn-open]="furnizorDropdownOpen()"
-                   (click)="toggleFurnizorDropdown()">
-                <span class="phc-furn-val">
-                  @if (furnizorFilter().length === 0) { Toți }
-                  @else if (furnizorFilter().length === 1) { {{ furnizorFilter()[0] }} }
-                  @else { {{ furnizorFilter().length }} furnizori }
-                </span>
-                <mat-icon class="furn-arrow">expand_more</mat-icon>
+        @if (colVisible('comentariu')) {
+          <th style="width:155px">
+            <div class="col-header">
+              <div class="col-sort-label" (click)="sort('lastComment')">
+                Comentariu
+                <mat-icon class="sort-icon" [class.sort-active]="sortField()==='lastComment'">{{ sortIcon('lastComment') }}</mat-icon>
               </div>
-              @if (furnizorDropdownOpen()) {
-                <div class="furn-panel">
-                  <div class="furn-search-row">
-                    <mat-icon>search</mat-icon>
-                    <input class="furn-search-input" placeholder="Caută furnizor…"
-                           [value]="furnizorSearch()"
-                           (input)="furnizorSearch.set($any($event.target).value)"
-                           (click)="$event.stopPropagation()">
-                    @if (furnizorSearch()) {
-                      <button class="furn-clear-btn" (click)="furnizorSearch.set(''); $event.stopPropagation()">
-                        <mat-icon>close</mat-icon>
-                      </button>
-                    }
-                  </div>
-                  <div class="furn-list">
-                    <div class="furn-item furn-all" [class.furn-item-sel]="allFurnizorsSelected()"
-                         (click)="toggleAllFurnizors()">
-                      <span class="furn-item-label">Toți furnizorii</span>
-                      @if (allFurnizorsSelected()) {
-                        <mat-icon class="furn-sel-check">check</mat-icon>
+              <input class="col-filter-input" [value]="commentFilter()"
+                     (input)="commentFilter.set($any($event.target).value); currentPage.set(0)"
+                     placeholder="Caută…">
+            </div>
+          </th>
+        }
+
+        @if (colVisible('codExtern')) {
+          <th style="width:110px">
+            <div class="col-header">
+              <div class="col-sort-label" (click)="sort('codExtern')">
+                Cod extern
+                <mat-icon class="sort-icon" [class.sort-active]="sortField()==='codExtern'">{{ sortIcon('codExtern') }}</mat-icon>
+              </div>
+              <input class="col-filter-input" [value]="codExternFilter()"
+                     (input)="codExternFilter.set($any($event.target).value); currentPage.set(0)"
+                     placeholder="Filtrează…">
+            </div>
+          </th>
+        }
+
+        @if (colVisible('furnizor')) {
+          <th style="width:150px">
+            <div class="col-header">
+              <div class="col-sort-label" (click)="sort('furnizor')">
+                Furnizor
+                <mat-icon class="sort-icon" [class.sort-active]="sortField()==='furnizor'">{{ sortIcon('furnizor') }}</mat-icon>
+              </div>
+              <div class="col-furn-wrap">
+                @if (furnizorDropdownOpen()) {
+                  <div class="furn-backdrop" (click)="closeFurnizorDropdown()"></div>
+                }
+                <div class="phc-furn-trigger"
+                     [class.furn-active]="furnizorFilter().length > 0"
+                     [class.furn-open]="furnizorDropdownOpen()"
+                     (click)="toggleFurnizorDropdown()">
+                  <span class="phc-furn-val">
+                    @if (furnizorFilter().length === 0) { Toți }
+                    @else if (furnizorFilter().length === 1) { {{ furnizorFilter()[0] }} }
+                    @else { {{ furnizorFilter().length }} furnizori }
+                  </span>
+                  <mat-icon class="furn-arrow">expand_more</mat-icon>
+                </div>
+                @if (furnizorDropdownOpen()) {
+                  <div class="furn-panel">
+                    <div class="furn-search-row">
+                      <mat-icon>search</mat-icon>
+                      <input class="furn-search-input" placeholder="Caută furnizor…"
+                             [value]="furnizorSearch()"
+                             (input)="furnizorSearch.set($any($event.target).value)"
+                             (click)="$event.stopPropagation()">
+                      @if (furnizorSearch()) {
+                        <button class="furn-clear-btn" (click)="furnizorSearch.set(''); $event.stopPropagation()">
+                          <mat-icon>close</mat-icon>
+                        </button>
                       }
                     </div>
-                    @for (f of filteredFurnizors(); track f) {
-                      <div class="furn-item" [class.furn-item-sel]="furnizorFilter().includes(f)"
-                           (click)="toggleFurnizorItem(f)">
-                        <span class="furn-item-label">{{ f }}</span>
-                        @if (furnizorFilter().includes(f)) {
+                    <div class="furn-list">
+                      <div class="furn-item furn-all" [class.furn-item-sel]="allFurnizorsSelected()"
+                           (click)="toggleAllFurnizors()">
+                        <span class="furn-item-label">Toți furnizorii</span>
+                        @if (allFurnizorsSelected()) {
                           <mat-icon class="furn-sel-check">check</mat-icon>
                         }
                       </div>
-                    }
-                    @if (filteredFurnizors().length === 0) {
-                      <div class="furn-empty">Niciun rezultat</div>
-                    }
+                      @for (f of filteredFurnizors(); track f) {
+                        <div class="furn-item" [class.furn-item-sel]="furnizorFilter().includes(f)"
+                             (click)="toggleFurnizorItem(f)">
+                          <span class="furn-item-label">{{ f }}</span>
+                          @if (furnizorFilter().includes(f)) {
+                            <mat-icon class="furn-sel-check">check</mat-icon>
+                          }
+                        </div>
+                      }
+                      @if (filteredFurnizors().length === 0) {
+                        <div class="furn-empty">Niciun rezultat</div>
+                      }
+                    </div>
                   </div>
-                </div>
-              }
+                }
+              </div>
             </div>
-          </div>
-        </th>
+          </th>
+        }
 
-        <th style="width:115px" class="col-sort-th" (click)="sort('pretFaraTVA')">
-          <div class="col-sort-label" style="justify-content:flex-end">
-            Preț fără TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='pretFaraTVA'">{{ sortIcon('pretFaraTVA') }}</mat-icon>
-          </div>
-        </th>
-        <th style="width:115px" class="col-sort-th" (click)="sort('pretCuTVA')">
-          <div class="col-sort-label" style="justify-content:flex-end">
-            Preț cu TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='pretCuTVA'">{{ sortIcon('pretCuTVA') }}</mat-icon>
-          </div>
-        </th>
+        @if (colVisible('pretFaraTVA')) {
+          <th style="width:115px" class="col-sort-th" (click)="sort('pretFaraTVA')">
+            <div class="col-sort-label" style="justify-content:flex-end">
+              Preț fără TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='pretFaraTVA'">{{ sortIcon('pretFaraTVA') }}</mat-icon>
+            </div>
+          </th>
+        }
+        @if (colVisible('pretCuTVA')) {
+          <th style="width:115px" class="col-sort-th" (click)="sort('pretCuTVA')">
+            <div class="col-sort-label" style="justify-content:flex-end">
+              Preț cu TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='pretCuTVA'">{{ sortIcon('pretCuTVA') }}</mat-icon>
+            </div>
+          </th>
+        }
         <th style="width:48px"></th>
       </tr>
     </ng-template>
@@ -290,26 +335,35 @@
             }
           </div>
         </td>
-        <td><span class="cat-chip-sm">{{ p.category }}</span></td>
-        <td class="td-muted">{{ p.um }}</td>
-        <td class="td-masa">{{ p.masaNeta != null ? p.masaNeta : '—' }}</td>
-        <!-- Stoc Import — fix, niciodată modificat -->
-        <td class="td-stoc-imp">{{ p.importedQty ?? p.qty }}</td>
-        <!-- Stoc Final — ce folosesc comenzile, badge roșu la 0 -->
-        <td class="td-stoc">
-          @if (p.qty === 0) {
-            <span class="stock-zero-badge">0</span>
-          } @else {
-            {{ p.qty }}
-          }
-        </td>
-        <!-- Stoc Buffer — click pentru istoric ajustări -->
+        @if (colVisible('categorie')) {
+          <td><span class="cat-chip-sm">{{ p.category }}</span></td>
+        }
+        @if (colVisible('um')) {
+          <td class="td-muted">{{ p.um }}</td>
+        }
+        @if (colVisible('masaNeta')) {
+          <td class="td-masa">{{ p.masaNeta != null ? p.masaNeta : '—' }}</td>
+        }
+        @if (colVisible('stocImport')) {
+          <td class="td-stoc-imp">{{ p.importedQty ?? p.qty }}</td>
+        }
+        @if (colVisible('stocFinal')) {
+          <td class="td-stoc">
+            @if (p.qty === 0) {
+              <span class="stock-zero-badge">0</span>
+            } @else {
+              {{ p.qty }}
+            }
+          </td>
+        }
         @let bufKey = p.catalogId + '|' + p.nr;
         @let bufVal = bufferMap().get(bufKey) ?? 0;
-        <td class="td-buffer td-buffer-click" [class.td-buf-pos]="bufVal > 0" [class.td-buf-neg]="bufVal < 0"
-            (click)="openHistory(p)" matTooltip="Vezi istoric ajustări">
-          @if (bufVal !== 0) { {{ bufVal > 0 ? '+' : '' }}{{ bufVal }} } @else { — }
-        </td>
+        @if (colVisible('stocBuffer')) {
+          <td class="td-buffer td-buffer-click" [class.td-buf-pos]="bufVal > 0" [class.td-buf-neg]="bufVal < 0"
+              (click)="openHistory(p)" matTooltip="Vezi istoric ajustări">
+            @if (bufVal !== 0) { {{ bufVal > 0 ? '+' : '' }}{{ bufVal }} } @else { — }
+          </td>
+        }
         @if (canAdjust()) {
           <td class="td-adj">
             <div class="adj-btns">
@@ -322,13 +376,23 @@
             </div>
           </td>
         }
-        <td class="td-comment" [title]="lastCommentMap().get(p.catalogId + '|' + p.nr) || ''">
-          {{ lastCommentMap().get(p.catalogId + '|' + p.nr) || '—' }}
-        </td>
-        <td class="td-mono">{{ p.codExtern || '—' }}</td>
-        <td class="td-furn">{{ p.furnizor || '—' }}</td>
-        <td class="td-net">{{ p.pretFaraTVA != null ? ((p.pretFaraTVA | number:'1.2-2') + ' lei') : '—' }}</td>
-        <td class="td-tva">{{ p.pretCuTVA != null ? ((p.pretCuTVA | number:'1.2-2') + ' lei') : '—' }}</td>
+        @if (colVisible('comentariu')) {
+          <td class="td-comment" [title]="lastCommentMap().get(p.catalogId + '|' + p.nr) || ''">
+            {{ lastCommentMap().get(p.catalogId + '|' + p.nr) || '—' }}
+          </td>
+        }
+        @if (colVisible('codExtern')) {
+          <td class="td-mono">{{ p.codExtern || '—' }}</td>
+        }
+        @if (colVisible('furnizor')) {
+          <td class="td-furn">{{ p.furnizor || '—' }}</td>
+        }
+        @if (colVisible('pretFaraTVA')) {
+          <td class="td-net">{{ p.pretFaraTVA != null ? ((p.pretFaraTVA | number:'1.2-2') + ' lei') : '—' }}</td>
+        }
+        @if (colVisible('pretCuTVA')) {
+          <td class="td-tva">{{ p.pretCuTVA != null ? ((p.pretCuTVA | number:'1.2-2') + ' lei') : '—' }}</td>
+        }
         <td>
           <button mat-icon-button class="order-btn" color="primary" (click)="goToNewOrder()" matTooltip="Adaugă la comandă">
             <mat-icon>add_shopping_cart</mat-icon>

@@ -1,4 +1,12 @@
 import { Component, computed, signal, OnInit } from '@angular/core';
+
+function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
+  try {
+    const raw = localStorage.getItem(lsKey);
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return new Set(a); }
+  } catch {}
+  return new Set(defaults);
+}
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -30,6 +38,40 @@ import * as XLSX from 'xlsx';
 })
 export class CatalogComponent implements OnInit {
   readonly PAGE_SIZE = 48;
+
+  readonly CATALOG_COLS = [
+    { key: 'categorie',   label: 'Categorie' },
+    { key: 'um',          label: 'UM' },
+    { key: 'masaNeta',    label: 'Masă (kg)' },
+    { key: 'stocImport',  label: 'Stoc Import' },
+    { key: 'stocFinal',   label: 'Stoc Final' },
+    { key: 'stocBuffer',  label: 'Stoc Buffer' },
+    { key: 'comentariu',  label: 'Comentariu' },
+    { key: 'codExtern',   label: 'Cod extern' },
+    { key: 'furnizor',    label: 'Furnizor' },
+    { key: 'pretFaraTVA', label: 'Preț fără TVA' },
+    { key: 'pretCuTVA',   label: 'Preț cu TVA' },
+  ];
+  private readonly LS_COLS = 'depot.catalog.visibleCols';
+
+  colsDropdownOpen = signal(false);
+  readonly visibleCols = signal<Set<string>>(
+    loadVisibleCols('depot.catalog.visibleCols', this.CATALOG_COLS.map(c => c.key))
+  );
+
+  colVisible(key: string): boolean { return this.visibleCols().has(key); }
+  allColsVisible(): boolean { return this.CATALOG_COLS.every(c => this.visibleCols().has(c.key)); }
+  toggleCol(key: string): void {
+    const s = new Set(this.visibleCols());
+    s.has(key) ? s.delete(key) : s.add(key);
+    this.visibleCols.set(s);
+    localStorage.setItem(this.LS_COLS, JSON.stringify([...s]));
+  }
+  toggleAllCols(): void {
+    const next = this.allColsVisible() ? new Set<string>() : new Set(this.CATALOG_COLS.map(c => c.key));
+    this.visibleCols.set(next);
+    localStorage.setItem(this.LS_COLS, JSON.stringify([...next]));
+  }
 
   search               = signal('');
   category             = signal('');
@@ -76,7 +118,10 @@ export class CatalogComponent implements OnInit {
     return role === 'admin' || role === 'keyuser';
   });
 
-  readonly colSpan = computed(() => this.canAdjust() ? 13 : 12);
+  readonly colSpan = computed(() => {
+    const vis = this.CATALOG_COLS.filter(c => this.visibleCols().has(c.key)).length;
+    return 2 + vis + (this.canAdjust() ? 1 : 0);
+  });
 
   readonly allSelected = computed(() => this.selectedCatIds().length === 0);
 

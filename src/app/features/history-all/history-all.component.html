@@ -21,6 +21,35 @@
   </div>
 </div>
 
+<!-- Column visibility bar -->
+<div class="cols-vis-bar">
+  <div class="cols-vis-wrap">
+    @if (colsDropdownOpen()) {
+      <div class="cv-backdrop" (click)="colsDropdownOpen.set(false)"></div>
+    }
+    <button class="cv-btn" [class.cv-open]="colsDropdownOpen()" (click)="colsDropdownOpen.update(v=>!v)">
+      <mat-icon class="cv-icon">view_column</mat-icon>
+      Coloane vizibile
+      <mat-icon class="cv-arrow">expand_more</mat-icon>
+    </button>
+    @if (colsDropdownOpen()) {
+      <div class="cv-panel">
+        <label class="cv-item cv-item-all" (click)="$event.preventDefault(); toggleAllCols()">
+          <input type="checkbox" [checked]="allColsVisible()" [indeterminate]="!allColsVisible() && HISTORY_ALL_COLS.some(c=>colVisible(c.key))" (change)="toggleAllCols()">
+          <strong>{{ allColsVisible() ? 'Deselectează toate' : 'Selectează toate' }}</strong>
+        </label>
+        <div class="cv-divider"></div>
+        @for (col of HISTORY_ALL_COLS; track col.key) {
+          <label class="cv-item">
+            <input type="checkbox" [checked]="colVisible(col.key)" (change)="toggleCol(col.key)">
+            {{ col.label }}
+          </label>
+        }
+      </div>
+    }
+  </div>
+</div>
+
 <p-table [value]="sortedFiltered()" [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15,30,50]"
          styleClass="p-datatable-sm p-datatable-striped"
          [tableStyle]="{'min-width':'700px'}">
@@ -38,22 +67,24 @@
                  placeholder="#…" (click)="$event.stopPropagation()">
         </div>
       </th>
-      <th>
-        <div class="col-header">
-          <div class="col-sort-label" (click)="sort('data')">
-            Data <mat-icon class="sort-icon" [class.sort-active]="sortField()==='data'">{{ sortIcon('data') }}</mat-icon>
+      @if (colVisible('data')) {
+        <th>
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('data')">
+              Data <mat-icon class="sort-icon" [class.sort-active]="sortField()==='data'">{{ sortIcon('data') }}</mat-icon>
+            </div>
+            <mat-form-field appearance="outline" class="date-range-field"
+                            subscriptSizing="dynamic" (click)="$event.stopPropagation()">
+              <mat-date-range-input [rangePicker]="datePicker" [formGroup]="dateRangeForm" separator="–">
+                <input matStartDate formControlName="start" placeholder="De la">
+                <input matEndDate formControlName="end" placeholder="Până la">
+              </mat-date-range-input>
+              <mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
+              <mat-date-range-picker #datePicker></mat-date-range-picker>
+            </mat-form-field>
           </div>
-          <mat-form-field appearance="outline" class="date-range-field"
-                          subscriptSizing="dynamic" (click)="$event.stopPropagation()">
-            <mat-date-range-input [rangePicker]="datePicker" [formGroup]="dateRangeForm" separator="–">
-              <input matStartDate formControlName="start" placeholder="De la">
-              <input matEndDate formControlName="end" placeholder="Până la">
-            </mat-date-range-input>
-            <mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
-            <mat-date-range-picker #datePicker></mat-date-range-picker>
-          </mat-form-field>
-        </div>
-      </th>
+        </th>
+      }
       <th>
         <div class="col-header">
           <div class="col-sort-label" (click)="sort('client')">
@@ -64,104 +95,129 @@
                  placeholder="filtrează…" (click)="$event.stopPropagation()">
         </div>
       </th>
-      <th>
-        <div class="col-header">
-          <div class="col-sort-label" (click)="sort('telefon')">
-            Telefon <mat-icon class="sort-icon" [class.sort-active]="sortField()==='telefon'">{{ sortIcon('telefon') }}</mat-icon>
+      @if (colVisible('telefon')) {
+        <th>
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('telefon')">
+              Telefon <mat-icon class="sort-icon" [class.sort-active]="sortField()==='telefon'">{{ sortIcon('telefon') }}</mat-icon>
+            </div>
+            <input class="col-filter-input" type="text"
+                   [ngModel]="filterPhone()" (ngModelChange)="filterPhone.set($event)"
+                   placeholder="filtrează…" (click)="$event.stopPropagation()">
           </div>
-          <input class="col-filter-input" type="text"
-                 [ngModel]="filterPhone()" (ngModelChange)="filterPhone.set($event)"
-                 placeholder="filtrează…" (click)="$event.stopPropagation()">
-        </div>
-      </th>
-      <th>
-        <div class="col-header">
-          <div class="col-sort-label" (click)="sort('livrare')">
-            Livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='livrare'">{{ sortIcon('livrare') }}</mat-icon>
+        </th>
+      }
+      @if (colVisible('livrare')) {
+        <th>
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('livrare')">
+              Livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='livrare'">{{ sortIcon('livrare') }}</mat-icon>
+            </div>
+            <select class="col-filter-select"
+                    [ngModel]="filterLivrare()" (ngModelChange)="filterLivrare.set($event)"
+                    (click)="$event.stopPropagation()">
+              <option value="">Toate</option>
+              <option value="cu">Cu livrare</option>
+              <option value="fara">Fără livrare</option>
+            </select>
           </div>
-          <select class="col-filter-select"
-                  [ngModel]="filterLivrare()" (ngModelChange)="filterLivrare.set($event)"
-                  (click)="$event.stopPropagation()">
-            <option value="">Toate</option>
-            <option value="cu">Cu livrare</option>
-            <option value="fara">Fără livrare</option>
-          </select>
-        </div>
-      </th>
-      <th>
-        <div class="col-header">
-          <div class="col-sort-label" (click)="sort('adresa')">
-            Adresă livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='adresa'">{{ sortIcon('adresa') }}</mat-icon>
+        </th>
+      }
+      @if (colVisible('adresa')) {
+        <th>
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('adresa')">
+              Adresă livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='adresa'">{{ sortIcon('adresa') }}</mat-icon>
+            </div>
+            <input class="col-filter-input" type="text"
+                   [ngModel]="filterAddress()" (ngModelChange)="filterAddress.set($event)"
+                   placeholder="filtrează…" (click)="$event.stopPropagation()">
           </div>
-          <input class="col-filter-input" type="text"
-                 [ngModel]="filterAddress()" (ngModelChange)="filterAddress.set($event)"
-                 placeholder="filtrează…" (click)="$event.stopPropagation()">
-        </div>
-      </th>
-      <th>
-        <div class="col-header">
-          <div class="col-sort-label" (click)="sort('termen')">
-            Termen livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='termen'">{{ sortIcon('termen') }}</mat-icon>
+        </th>
+      }
+      @if (colVisible('termen')) {
+        <th>
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('termen')">
+              Termen livrare <mat-icon class="sort-icon" [class.sort-active]="sortField()==='termen'">{{ sortIcon('termen') }}</mat-icon>
+            </div>
+            <mat-form-field appearance="outline" class="date-range-field"
+                            subscriptSizing="dynamic" (click)="$event.stopPropagation()">
+              <mat-date-range-input [rangePicker]="deliveryPicker" [formGroup]="deliveryRangeForm" separator="–">
+                <input matStartDate formControlName="start" placeholder="De la">
+                <input matEndDate formControlName="end" placeholder="Până la">
+              </mat-date-range-input>
+              <mat-datepicker-toggle matIconSuffix [for]="deliveryPicker"></mat-datepicker-toggle>
+              <mat-date-range-picker #deliveryPicker></mat-date-range-picker>
+            </mat-form-field>
           </div>
-          <mat-form-field appearance="outline" class="date-range-field"
-                          subscriptSizing="dynamic" (click)="$event.stopPropagation()">
-            <mat-date-range-input [rangePicker]="deliveryPicker" [formGroup]="deliveryRangeForm" separator="–">
-              <input matStartDate formControlName="start" placeholder="De la">
-              <input matEndDate formControlName="end" placeholder="Până la">
-            </mat-date-range-input>
-            <mat-datepicker-toggle matIconSuffix [for]="deliveryPicker"></mat-datepicker-toggle>
-            <mat-date-range-picker #deliveryPicker></mat-date-range-picker>
-          </mat-form-field>
-        </div>
-      </th>
-      <th>
-        <div class="col-header">
-          <div class="col-sort-label" (click)="sort('agent')">
-            Agent <mat-icon class="sort-icon" [class.sort-active]="sortField()==='agent'">{{ sortIcon('agent') }}</mat-icon>
+        </th>
+      }
+      @if (colVisible('agent')) {
+        <th>
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('agent')">
+              Agent <mat-icon class="sort-icon" [class.sort-active]="sortField()==='agent'">{{ sortIcon('agent') }}</mat-icon>
+            </div>
+            <select class="col-filter-select"
+                    [ngModel]="filterAgent()" (ngModelChange)="filterAgent.set($event)"
+                    (click)="$event.stopPropagation()">
+              <option value="">Toți</option>
+              @for (a of agents(); track a.id) {
+                <option [value]="a.id">{{ a.name }}</option>
+              }
+            </select>
           </div>
-          <select class="col-filter-select"
-                  [ngModel]="filterAgent()" (ngModelChange)="filterAgent.set($event)"
-                  (click)="$event.stopPropagation()">
-            <option value="">Toți</option>
-            @for (a of agents(); track a.id) {
-              <option [value]="a.id">{{ a.name }}</option>
-            }
-          </select>
-        </div>
-      </th>
-      <th>
-        <div class="col-header-sort" (click)="sort('produse')">
-          Produse <mat-icon class="sort-icon" [class.sort-active]="sortField()==='produse'">{{ sortIcon('produse') }}</mat-icon>
-        </div>
-      </th>
-      <th style="text-align:right">
-        <div class="col-header-sort" style="justify-content:flex-end" (click)="sort('net')">
-          Fără TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='net'">{{ sortIcon('net') }}</mat-icon>
-        </div>
-      </th>
-      <th style="text-align:right">
-        <div class="col-header-sort" style="justify-content:flex-end" (click)="sort('tva')">
-          Cu TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='tva'">{{ sortIcon('tva') }}</mat-icon>
-        </div>
-      </th>
-      <th>
-        <div class="col-header">
-          <div class="col-sort-label" (click)="sort('status')">
-            Status <mat-icon class="sort-icon" [class.sort-active]="sortField()==='status'">{{ sortIcon('status') }}</mat-icon>
+        </th>
+      }
+      @if (colVisible('produse')) {
+        <th>
+          <div class="col-header-sort" (click)="sort('produse')">
+            Produse <mat-icon class="sort-icon" [class.sort-active]="sortField()==='produse'">{{ sortIcon('produse') }}</mat-icon>
           </div>
-          <select class="col-filter-select"
-                  [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"
-                  (click)="$event.stopPropagation()">
-            <option value="">Toate</option>
-            <option value="În așteptare">În așteptare</option>
-            <option value="Acceptată">Acceptată</option>
-            <option value="Planificată">Planificată</option>
-            <option value="În livrare">În livrare</option>
-            <option value="Livrată">Livrată</option>
-            <option value="Anulată">Anulată</option>
-          </select>
-        </div>
-      </th>
+        </th>
+      }
+      @if (colVisible('faraTVA')) {
+        <th style="text-align:right">
+          <div class="col-header-sort" style="justify-content:flex-end" (click)="sort('net')">
+            Fără TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='net'">{{ sortIcon('net') }}</mat-icon>
+          </div>
+        </th>
+      }
+      @if (colVisible('cuTVA')) {
+        <th style="text-align:right">
+          <div class="col-header-sort" style="justify-content:flex-end" (click)="sort('tva')">
+            Cu TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='tva'">{{ sortIcon('tva') }}</mat-icon>
+          </div>
+        </th>
+      }
+      @if (colVisible('masaTotala')) {
+        <th style="text-align:right">
+          <div class="col-header-sort" style="justify-content:flex-end">
+            Masă totală
+          </div>
+        </th>
+      }
+      @if (colVisible('status')) {
+        <th>
+          <div class="col-header">
+            <div class="col-sort-label" (click)="sort('status')">
+              Status <mat-icon class="sort-icon" [class.sort-active]="sortField()==='status'">{{ sortIcon('status') }}</mat-icon>
+            </div>
+            <select class="col-filter-select"
+                    [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"
+                    (click)="$event.stopPropagation()">
+              <option value="">Toate</option>
+              <option value="În așteptare">În așteptare</option>
+              <option value="Acceptată">Acceptată</option>
+              <option value="Planificată">Planificată</option>
+              <option value="În livrare">În livrare</option>
+              <option value="Livrată">Livrată</option>
+              <option value="Anulată">Anulată</option>
+            </select>
+          </div>
+        </th>
+      }
       <th>Acțiuni</th>
     </tr>
   </ng-template>
@@ -183,114 +239,139 @@
           #{{ order.orderNumber ?? '?' }}
         </span>
       </td>
-      <td>
-        <div class="date-cell">
-          <span [class.line-through]="order.superseded || order.status === 'anulat'">{{ formatDate(order.timestamp) }}</span>
-          @if (order.revisedFromId && order.status === 'trimis') {
-            <div class="order-ref">↳ înlocuiește: {{ getAncestorChain(order) }}</div>
-          }
-          @if (order.status === 'acceptat' && order.revisedFromId) {
-            <div class="order-ref order-ref-accept">↳ modificat din: {{ getAncestorChain(order) }}</div>
-          }
-          @if (order.superseded) {
-            <div class="order-ref order-ref-sup">↳ înlocuit de: {{ getDescendantChain(order) }}</div>
-          }
-        </div>
-      </td>
+      @if (colVisible('data')) {
+        <td>
+          <div class="date-cell">
+            <span [class.line-through]="order.superseded || order.status === 'anulat'">{{ formatDate(order.timestamp) }}</span>
+            @if (order.revisedFromId && order.status === 'trimis') {
+              <div class="order-ref">↳ înlocuiește: {{ getAncestorChain(order) }}</div>
+            }
+            @if (order.status === 'acceptat' && order.revisedFromId) {
+              <div class="order-ref order-ref-accept">↳ modificat din: {{ getAncestorChain(order) }}</div>
+            }
+            @if (order.superseded) {
+              <div class="order-ref order-ref-sup">↳ înlocuit de: {{ getDescendantChain(order) }}</div>
+            }
+          </div>
+        </td>
+      }
       <td><strong [class.line-through]="order.superseded || order.status === 'anulat'">{{ order.client.name }}</strong></td>
-      <td (click)="$event.stopPropagation()">
-        @if (editingPhoneId() === order.id) {
-          <div class="address-edit-inline">
-            <input class="address-input-inline" [(ngModel)]="editPhoneVal" placeholder="07xx xxx xxx" type="tel" inputmode="numeric" maxlength="10"
-                   (input)="editPhoneVal = $any($event.target).value.replace(/\D/g,'').slice(0,10); $any($event.target).value = editPhoneVal"
-                   (keydown.enter)="savePhone(order, $event)" (keydown.escape)="cancelEditPhone($event)">
-            <button mat-icon-button color="primary" (click)="savePhone(order, $event)" matTooltip="Salvează"><mat-icon>check</mat-icon></button>
-            <button mat-icon-button (click)="cancelEditPhone($event)" matTooltip="Anulează"><mat-icon>close</mat-icon></button>
-          </div>
-        } @else {
-          <div class="address-cell" [class.line-through]="order.superseded || order.status === 'anulat'" (click)="startEditPhone(order, $event)">
-            <span class="address-text" [class.address-empty]="!order.client.phone">{{ order.client.phone || '—' }}</span>
-            <mat-icon class="address-edit-icon">edit</mat-icon>
-          </div>
-        }
-      </td>
-      <td (click)="$event.stopPropagation()">
-        <button mat-icon-button class="delivery-toggle-btn"
-                [class.delivery-on]="order.cuLivrare"
-                (click)="toggleDelivery(order, $event)"
-                [matTooltip]="order.cuLivrare ? 'Cu livrare – click pentru a scoate' : 'Fără livrare – click pentru a activa'">
-          <mat-icon>{{ order.cuLivrare ? 'local_shipping' : 'remove' }}</mat-icon>
-        </button>
-      </td>
-      <td (click)="$event.stopPropagation()">
-        @if (editingAddressId() === order.id) {
-          <div class="address-edit-inline">
-            <input class="address-input-inline" [(ngModel)]="editAddressVal" placeholder="Adresă livrare…" (keydown.enter)="saveDeliveryAddress(order, $event)" (keydown.escape)="cancelEditAddress($event)">
-            <button mat-icon-button color="primary" (click)="saveDeliveryAddress(order, $event)" matTooltip="Salvează">
-              <mat-icon>check</mat-icon>
-            </button>
-            <button mat-icon-button (click)="cancelEditAddress($event)" matTooltip="Anulează">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
-        } @else {
-          <div class="address-cell" (click)="startEditAddress(order, $event)">
-            <span class="address-text" [class.address-empty]="!order.client.address">
-              {{ order.client.address || '—' }}
+      @if (colVisible('telefon')) {
+        <td (click)="$event.stopPropagation()">
+          @if (editingPhoneId() === order.id) {
+            <div class="address-edit-inline">
+              <input class="address-input-inline" [(ngModel)]="editPhoneVal" placeholder="07xx xxx xxx" type="tel" inputmode="numeric" maxlength="10"
+                     (input)="editPhoneVal = $any($event.target).value.replace(/\D/g,'').slice(0,10); $any($event.target).value = editPhoneVal"
+                     (keydown.enter)="savePhone(order, $event)" (keydown.escape)="cancelEditPhone($event)">
+              <button mat-icon-button color="primary" (click)="savePhone(order, $event)" matTooltip="Salvează"><mat-icon>check</mat-icon></button>
+              <button mat-icon-button (click)="cancelEditPhone($event)" matTooltip="Anulează"><mat-icon>close</mat-icon></button>
+            </div>
+          } @else {
+            <div class="address-cell" [class.line-through]="order.superseded || order.status === 'anulat'" (click)="startEditPhone(order, $event)">
+              <span class="address-text" [class.address-empty]="!order.client.phone">{{ order.client.phone || '—' }}</span>
+              <mat-icon class="address-edit-icon">edit</mat-icon>
+            </div>
+          }
+        </td>
+      }
+      @if (colVisible('livrare')) {
+        <td (click)="$event.stopPropagation()">
+          <button mat-icon-button class="delivery-toggle-btn"
+                  [class.delivery-on]="order.cuLivrare"
+                  (click)="toggleDelivery(order, $event)"
+                  [matTooltip]="order.cuLivrare ? 'Cu livrare – click pentru a scoate' : 'Fără livrare – click pentru a activa'">
+            <mat-icon>{{ order.cuLivrare ? 'local_shipping' : 'remove' }}</mat-icon>
+          </button>
+        </td>
+      }
+      @if (colVisible('adresa')) {
+        <td (click)="$event.stopPropagation()">
+          @if (editingAddressId() === order.id) {
+            <div class="address-edit-inline">
+              <input class="address-input-inline" [(ngModel)]="editAddressVal" placeholder="Adresă livrare…" (keydown.enter)="saveDeliveryAddress(order, $event)" (keydown.escape)="cancelEditAddress($event)">
+              <button mat-icon-button color="primary" (click)="saveDeliveryAddress(order, $event)" matTooltip="Salvează">
+                <mat-icon>check</mat-icon>
+              </button>
+              <button mat-icon-button (click)="cancelEditAddress($event)" matTooltip="Anulează">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          } @else {
+            <div class="address-cell" (click)="startEditAddress(order, $event)">
+              <span class="address-text" [class.address-empty]="!order.client.address">
+                {{ order.client.address || '—' }}
+              </span>
+              <mat-icon class="address-edit-icon">edit</mat-icon>
+            </div>
+          }
+        </td>
+      }
+      @if (colVisible('termen')) {
+        <td (click)="$event.stopPropagation()">
+          @if (editingDeliveryId() === order.id) {
+            <div class="address-edit-inline delivery-dt-edit">
+              <input type="date" class="address-input-inline" [(ngModel)]="editDeliveryDate" [min]="todayStr">
+              <input type="time" class="address-input-inline" [(ngModel)]="editDeliveryTime">
+              <button mat-icon-button color="primary" (click)="saveDelivery(order, $event)" matTooltip="Salvează">
+                <mat-icon>check</mat-icon>
+              </button>
+              <button mat-icon-button (click)="cancelEditDelivery($event)" matTooltip="Anulează">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          } @else {
+            <div class="address-cell" (click)="startEditDelivery(order, $event)">
+              <span class="address-text" [class.address-empty]="!order.deliveryDate">
+                {{ formatDelivery(order.deliveryDate, order.deliveryTime) || '—' }}
+              </span>
+              <mat-icon class="address-edit-icon">edit</mat-icon>
+            </div>
+          }
+        </td>
+      }
+      @if (colVisible('agent')) {
+        <td>{{ order.agent?.name }}</td>
+      }
+      @if (colVisible('produse')) {
+        <td>
+          {{ order.products.length }} art.
+          @if (order.orderEvents?.length) {
+            <span class="events-badge" [matTooltip]="'Modificat: ' + order.orderEvents!.length + ' adăugiri'">
+              <mat-icon>edit_note</mat-icon>
             </span>
-            <mat-icon class="address-edit-icon">edit</mat-icon>
-          </div>
-        }
-      </td>
-      <td (click)="$event.stopPropagation()">
-        @if (editingDeliveryId() === order.id) {
-          <div class="address-edit-inline delivery-dt-edit">
-            <input type="date" class="address-input-inline" [(ngModel)]="editDeliveryDate" [min]="todayStr">
-            <input type="time" class="address-input-inline" [(ngModel)]="editDeliveryTime">
-            <button mat-icon-button color="primary" (click)="saveDelivery(order, $event)" matTooltip="Salvează">
-              <mat-icon>check</mat-icon>
-            </button>
-            <button mat-icon-button (click)="cancelEditDelivery($event)" matTooltip="Anulează">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
-        } @else {
-          <div class="address-cell" (click)="startEditDelivery(order, $event)">
-            <span class="address-text" [class.address-empty]="!order.deliveryDate">
-              {{ formatDelivery(order.deliveryDate, order.deliveryTime) || '—' }}
-            </span>
-            <mat-icon class="address-edit-icon">edit</mat-icon>
-          </div>
-        }
-      </td>
-      <td>{{ order.agent?.name }}</td>
-      <td>
-        {{ order.products.length }} art.
-        @if (order.orderEvents?.length) {
-          <span class="events-badge" [matTooltip]="'Modificat: ' + order.orderEvents!.length + ' adăugiri'">
-            <mat-icon>edit_note</mat-icon>
-          </span>
-        }
-      </td>
-      <td class="td-net-order">{{ orderTotalFaraTVA(order) | number:'1.2-2' }} lei</td>
-      <td class="td-tva-order">{{ orderTotalCuTVA(order) | number:'1.2-2' }} lei</td>
-      <td>
-        @if (order.superseded) {
-          <p-tag value="Înlocuită" severity="danger" />
-        } @else if (order.status === 'anulat') {
-          <p-tag value="Anulată" severity="danger" />
-        } @else if (order.status === 'livrat') {
-          <p-tag value="Livrată" severity="info" />
-        } @else if (order.status === 'in_livrare') {
-          <p-tag value="În livrare" severity="warn" />
-        } @else if (order.status === 'planificat') {
-          <p-tag value="Planificată" severity="secondary" />
-        } @else if (order.status === 'acceptat') {
-          <p-tag value="Acceptată" severity="success" />
-        } @else {
-          <p-tag value="În așteptare" severity="warn" />
-        }
-      </td>
+          }
+        </td>
+      }
+      @if (colVisible('faraTVA')) {
+        <td class="td-net-order">{{ orderTotalFaraTVA(order) | number:'1.2-2' }} lei</td>
+      }
+      @if (colVisible('cuTVA')) {
+        <td class="td-tva-order">{{ orderTotalCuTVA(order) | number:'1.2-2' }} lei</td>
+      }
+      @if (colVisible('masaTotala')) {
+        <td class="td-masa-order">
+          {{ orderTotalMasa(order) > 0 ? formatMasa(orderTotalMasa(order)) : '—' }}
+        </td>
+      }
+      @if (colVisible('status')) {
+        <td>
+          @if (order.superseded) {
+            <p-tag value="Înlocuită" severity="danger" />
+          } @else if (order.status === 'anulat') {
+            <p-tag value="Anulată" severity="danger" />
+          } @else if (order.status === 'livrat') {
+            <p-tag value="Livrată" severity="info" />
+          } @else if (order.status === 'in_livrare') {
+            <p-tag value="În livrare" severity="warn" />
+          } @else if (order.status === 'planificat') {
+            <p-tag value="Planificată" severity="secondary" />
+          } @else if (order.status === 'acceptat') {
+            <p-tag value="Acceptată" severity="success" />
+          } @else {
+            <p-tag value="În așteptare" severity="warn" />
+          }
+        </td>
+      }
       <td>
         <div class="action-btns" (click)="$event.stopPropagation()">
           @if (canAddProducts(order)) {
@@ -298,6 +379,8 @@
                     matTooltip="Adaugă produse la comandă">
               <mat-icon>add_shopping_cart</mat-icon>
             </button>
+          } @else {
+            <span class="action-placeholder"></span>
           }
           <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Trimite email">
             <mat-icon>email</mat-icon>
@@ -350,7 +433,7 @@
     <!-- Expansion — all orders -->
     @if (expandedRows()[order.id]) {
       <tr class="expansion-row">
-        <td colspan="11" class="expansion-cell">
+        <td [attr.colspan]="expansionColSpan()" class="expansion-cell">
           <div class="expansion-content" (click)="$event.stopPropagation()">
             <div class="expansion-products">
               <!-- Header coloane -->
@@ -363,6 +446,7 @@
                 <span>Furnizor</span>
                 <span class="epc-right">Fără TVA</span>
                 <span class="epc-right">Cu TVA</span>
+                <span class="epc-right">Masă (kg)</span>
                 <span class="epc-center">Cantitate</span>
               </div>
               @for (p of order.products; track p.nr; let j = $index) {
@@ -373,6 +457,9 @@
                       <span class="epc-name">{{ p.name }}</span>
                       @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
                         <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
+                      }
+                      @if (getCodExtern(p)) {
+                        <app-barcode [value]="getCodExtern(p)" class="epc-barcode"></app-barcode>
                       }
                     </div>
                     <span class="epc-cat">
@@ -395,6 +482,8 @@
                     <span class="epc-furn">{{ p.furnizor || '—' }}</span>
                     <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
                     <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                    @let masaE = pMasa(p) * (editQtyMap()[ekey(order.id, j)] ?? p.qty);
+                    <span class="epc-masa">{{ masaE > 0 ? formatMasa(masaE) : '—' }}</span>
                     <div class="epc-qty-cell">
                       <div class="exp-qty-controls">
                         <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
@@ -425,6 +514,9 @@
                       @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
                         <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
                       }
+                      @if (getCodExtern(p)) {
+                        <app-barcode [value]="getCodExtern(p)" class="epc-barcode"></app-barcode>
+                      }
                     </div>
                     <span class="epc-cat">
                       @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
@@ -446,6 +538,8 @@
                     <span class="epc-furn">{{ p.furnizor || '—' }}</span>
                     <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
                     <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                    @let masaR = pMasa(p) * p.qty;
+                    <span class="epc-masa">{{ masaR > 0 ? formatMasa(masaR) : '—' }}</span>
                     <span class="epc-qty-cell exp-qty-static">{{ p.qty }}</span>
                   </div>
                 }
@@ -466,6 +560,13 @@
                     {{ editTotalCuTVA(order) | number:'1.2-2' }} lei
                   } @else {
                     {{ orderTotalCuTVA(order) | number:'1.2-2' }} lei
+                  }
+                </span>
+                <span class="exp-total-masa">
+                  @if (isPending(order)) {
+                    {{ formatMasa(editTotalMasa(order)) }}
+                  } @else {
+                    {{ formatMasa(orderTotalMasa(order)) }}
                   }
                 </span>
                 <span></span>

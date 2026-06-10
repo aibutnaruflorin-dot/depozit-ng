@@ -1,4 +1,12 @@
 import { Component, signal, computed, OnInit } from '@angular/core';
+
+function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
+  try {
+    const raw = localStorage.getItem(lsKey);
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return new Set(a); }
+  } catch {}
+  return new Set(defaults);
+}
 import { CommonModule } from '@angular/common';
 import { FormControl, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -38,6 +46,39 @@ export interface CartItem { product: Product; qty: number; }
 })
 export class NewOrderComponent implements OnInit {
   readonly today   = new Date();
+
+  readonly NEW_ORDER_COLS = [
+    { key: 'categorie',   label: 'Categorie' },
+    { key: 'um',          label: 'UM' },
+    { key: 'masaNeta',    label: 'Masă (kg)' },
+    { key: 'stocImport',  label: 'Stoc Import' },
+    { key: 'stocFinal',   label: 'Stoc Final' },
+    { key: 'stocBuffer',  label: 'Stoc Buffer' },
+    { key: 'codExtern',   label: 'Cod extern' },
+    { key: 'furnizor',    label: 'Furnizor' },
+    { key: 'pretFaraTVA', label: 'Fără TVA' },
+    { key: 'pretCuTVA',   label: 'Cu TVA' },
+  ];
+  private readonly LS_COLS = 'depot.new-order.visibleCols';
+
+  colsDropdownOpen = signal(false);
+  readonly visibleCols = signal<Set<string>>(
+    loadVisibleCols('depot.new-order.visibleCols', this.NEW_ORDER_COLS.map(c => c.key))
+  );
+
+  colVisible(key: string): boolean { return this.visibleCols().has(key); }
+  allColsVisible(): boolean { return this.NEW_ORDER_COLS.every(c => this.visibleCols().has(c.key)); }
+  toggleCol(key: string): void {
+    const s = new Set(this.visibleCols());
+    s.has(key) ? s.delete(key) : s.add(key);
+    this.visibleCols.set(s);
+    localStorage.setItem(this.LS_COLS, JSON.stringify([...s]));
+  }
+  toggleAllCols(): void {
+    const next = this.allColsVisible() ? new Set<string>() : new Set(this.NEW_ORDER_COLS.map(c => c.key));
+    this.visibleCols.set(next);
+    localStorage.setItem(this.LS_COLS, JSON.stringify([...next]));
+  }
   nameCtrl         = new FormControl('', Validators.required);
   phoneCtrl        = new FormControl('', [Validators.pattern(/^\d{10}$/)]);
   addressCtrl      = new FormControl('');

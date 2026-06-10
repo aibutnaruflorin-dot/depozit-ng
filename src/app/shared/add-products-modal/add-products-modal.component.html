@@ -10,131 +10,139 @@
       <button mat-icon-button (click)="closed.emit()"><mat-icon>close</mat-icon></button>
     </div>
 
-    <div class="apm-body">
-
-      <!-- Catalog search -->
-      <div class="apm-section">
-        <div class="apm-section-label">Caută în catalog</div>
-
-        @if (catalogs().length > 1) {
-          <div class="apm-cat-chips">
-            <button class="apm-cat-chip" [class.apm-cat-chip--active]="selectedCatalogId() === null"
-                    (click)="selectedCatalogId.set(null)">
-              Toate
-            </button>
-            @for (c of catalogs(); track c.id) {
-              <button class="apm-cat-chip" [class.apm-cat-chip--active]="selectedCatalogId() === c.id"
-                      [style.--chip-color]="c.color"
-                      (click)="selectedCatalogId.set(c.id)">
-                <span class="apm-cat-dot" [style.background]="c.color"></span>
-                {{ c.name }}
-              </button>
-            }
-          </div>
-        }
-
-        <div class="apm-search-row">
-          <mat-icon>search</mat-icon>
-          <input class="apm-search-input"
-                 [ngModel]="searchQ()" (ngModelChange)="searchQ.set($event)"
-                 placeholder="Denumire produs…">
-          @if (searchQ()) {
-            <button mat-icon-button class="apm-clear-btn" (click)="searchQ.set('')"><mat-icon>close</mat-icon></button>
-          }
-        </div>
-
-        @if (filteredProducts().length) {
-          <div class="apm-catalog-results">
-            @for (p of filteredProducts(); track p.nr + (p.catalogId ?? '')) {
-              @let cs = catalogsService.getStockThreeCol(p.catalogId, p.nr);
-              <div class="apm-catalog-item" (click)="addFromCatalog(p)">
-                <div class="apm-cat-info">
-                  <span class="apm-cat-name">{{ p.name }}</span>
-                  <span class="apm-cat-meta">{{ p.um }} · {{ p.category }}</span>
-                </div>
-                <div class="apm-cat-stoc">
-                  <span class="apm-s3-imp">{{ cs.importedQty }}</span>
-                  <span class="apm-s3-sep">·</span>
-                  <span class="apm-s3-final" [class.apm-s3-zero]="cs.finalQty === 0">{{ cs.finalQty }}</span>
-                  @if (cs.bufferQty !== 0) {
-                    <span class="apm-s3-sep">·</span>
-                    <span class="apm-s3-buf" [class.apm-s3-pos]="cs.bufferQty > 0" [class.apm-s3-neg]="cs.bufferQty < 0">
-                      {{ cs.bufferQty > 0 ? '+' : '' }}{{ cs.bufferQty }}
-                    </span>
-                  }
-                </div>
-                <mat-icon class="apm-add-icon">add_circle</mat-icon>
-              </div>
-            }
-          </div>
-        } @else if (searchQ().trim()) {
-          <div class="apm-search-empty">Niciun produs găsit în catalog.</div>
-        } @else if (!searchQ().trim() && catalogs().length === 0) {
-          <div class="apm-search-empty">Niciun catalog configurat.</div>
-        }
-      </div>
-
-      <!-- Manual entry -->
-      <div class="apm-section">
-        <div class="apm-section-label">Adaugă manual</div>
-        <div class="apm-manual-row">
-          <input class="apm-manual-name"
-                 [ngModel]="manualName()" (ngModelChange)="manualName.set($event)"
-                 placeholder="Denumire produs…"
-                 (keydown.enter)="addManual()">
-          <input class="apm-manual-qty" type="number" min="1"
-                 [ngModel]="manualQty()" (ngModelChange)="manualQty.set(+$event)"
-                 placeholder="Cant.">
-          <input class="apm-manual-um"
-                 [ngModel]="manualUm()" (ngModelChange)="manualUm.set($event)"
-                 placeholder="UM">
-          <input class="apm-manual-pret" type="text" inputmode="numeric"
-                 [ngModel]="manualPret() ?? ''" (ngModelChange)="manualPret.set($event ? +$event : null)"
-                 (keydown)="onPretKeydown($event)"
-                 placeholder="Preț lei">
-          <button mat-stroked-button (click)="addManual()">
-            <mat-icon>add</mat-icon> Adaugă
+    <!-- Toolbar -->
+    <div class="apm-toolbar">
+      <!-- Catalog chips -->
+      <div class="apm-cat-chips">
+        <button class="apm-cat-chip" [class.apm-cat-chip--active]="selectedCatalogId() === null"
+                (click)="selectedCatalogId.set(null)">Toate</button>
+        @for (c of catalogs(); track c.id) {
+          <button class="apm-cat-chip" [class.apm-cat-chip--active]="selectedCatalogId() === c.id"
+                  (click)="selectedCatalogId.set(c.id)">
+            <span class="apm-cat-dot" [style.background]="c.color"></span>
+            {{ c.name }}
           </button>
-        </div>
+        }
       </div>
 
-      <!-- Staged products -->
-      @if (staged().length) {
-        <div class="apm-section">
-          <div class="apm-section-label">Produse de adăugat ({{ staged().length }})</div>
-          @for (p of staged(); let i = $index; track i) {
-            @let sw = catalogsService.calcBufferWarning(p.catalogId, p.nr, p.qty);
-            <div class="apm-staged-row">
-              <div class="apm-staged-info">
-                <span class="apm-staged-name">{{ p.name }}</span>
-                @if (sw.warn) {
-                  <span class="apm-buf-warn-sm" [matTooltip]="sw.bufferUsed + ' buc din Stoc Buffer'">
-                    ⚠ {{ sw.bufferUsed }} buf
-                  </span>
-                }
-              </div>
-              <span class="apm-staged-um">{{ p.um }}</span>
-              <div class="apm-staged-qty">
-                <button class="qty-btn" (click)="setStagedQty(i, p.qty - 1)">−</button>
-                <input type="number" class="qty-input" [value]="p.qty" min="1"
-                       (change)="setStagedQty(i, $any($event.target).value)">
-                <button class="qty-btn" (click)="setStagedQty(i, p.qty + 1)">+</button>
-              </div>
-              <button mat-icon-button color="warn" (click)="removeStaged(i)" matTooltip="Elimină">
-                <mat-icon>remove_circle_outline</mat-icon>
-              </button>
-            </div>
-          }
-        </div>
-      } @else {
-        <div class="apm-staged-empty">
-          <mat-icon>info_outline</mat-icon>
-          Caută din catalog sau adaugă manual produsele dorite.
-        </div>
-      }
+      <!-- Search -->
+      <div class="apm-search-row">
+        <mat-icon class="apm-search-icon">search</mat-icon>
+        <input class="apm-search-input" [ngModel]="searchQ()" (ngModelChange)="searchQ.set($event)"
+               placeholder="Caută produs sau cod extern…">
+        @if (searchQ()) {
+          <button mat-icon-button class="apm-clear-btn" (click)="searchQ.set('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </div>
 
-      <!-- Existing events journal -->
-      @if (order().orderEvents?.length) {
+      <!-- Column visibility -->
+      <div class="apm-cols-wrap">
+        @if (colsDropdownOpen()) {
+          <div class="cv-backdrop" (click)="colsDropdownOpen.set(false)"></div>
+        }
+        <button class="cv-btn" [class.cv-open]="colsDropdownOpen()" (click)="colsDropdownOpen.update(v=>!v)">
+          <mat-icon class="cv-icon">view_column</mat-icon>
+          Coloane
+          <mat-icon class="cv-arrow">expand_more</mat-icon>
+        </button>
+        @if (colsDropdownOpen()) {
+          <div class="cv-panel">
+            <label class="cv-item cv-item-all" (click)="$event.preventDefault(); toggleAllCols()">
+              <input type="checkbox" [checked]="allColsVisible()"
+                     [indeterminate]="!allColsVisible() && MODAL_COLS.some(c=>colVisible(c.key))"
+                     (change)="toggleAllCols()">
+              <strong>{{ allColsVisible() ? 'Deselectează toate' : 'Selectează toate' }}</strong>
+            </label>
+            <div class="cv-divider"></div>
+            @for (col of MODAL_COLS; track col.key) {
+              <label class="cv-item">
+                <input type="checkbox" [checked]="colVisible(col.key)" (change)="toggleCol(col.key)">
+                {{ col.label }}
+              </label>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Catalog area: header + virtual scroll -->
+    <div class="apm-catalog-area" [style.--apm-grid]="gridTemplate()">
+
+      <!-- Table header (always visible, outside the scrolling viewport) -->
+      <div class="apm-table-header">
+        <span class="apm-th">Denumire produs</span>
+        @if (colVisible('categorie'))   { <span class="apm-th">Categorie</span> }
+        @if (colVisible('um'))          { <span class="apm-th apm-tc">UM</span> }
+        @if (colVisible('masaNeta'))    { <span class="apm-th apm-tr">Masă (kg)</span> }
+        @if (colVisible('stocImport'))  { <span class="apm-th apm-tr">Stoc imp.</span> }
+        @if (colVisible('stocFinal'))   { <span class="apm-th apm-tr">Stoc fin.</span> }
+        @if (colVisible('stocBuffer'))  { <span class="apm-th apm-tr">Buffer</span> }
+        @if (colVisible('codExtern'))   { <span class="apm-th">Cod extern</span> }
+        @if (colVisible('furnizor'))    { <span class="apm-th">Furnizor</span> }
+        @if (colVisible('pretFaraTVA')) { <span class="apm-th apm-tr">F. TVA</span> }
+        @if (colVisible('pretCuTVA'))   { <span class="apm-th apm-tr">C. TVA</span> }
+        <span class="apm-th apm-tc">Cantitate</span>
+      </div>
+
+      <!-- Virtual scroll viewport: only ~20 rows in DOM at a time -->
+      <cdk-virtual-scroll-viewport itemSize="48" class="apm-virtual-viewport">
+
+        <div *cdkVirtualFor="let row of productRows(); trackBy: trackRow"
+             class="apm-table-row" [class.apm-row-selected]="getQty(row.p) > 0">
+          @let qty = getQty(row.p);
+          @let bufferUsed = qty > row.importAvailable ? qty - row.importAvailable : 0;
+
+          <!-- Denumire -->
+          <div class="apm-name-cell">
+            <span class="apm-prod-name">{{ row.p.name }}</span>
+            @if (row.p.catalogId && catalogsService.getById(row.p.catalogId); as cat) {
+              <span class="apm-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
+            }
+          </div>
+
+          @if (colVisible('categorie'))   { <span class="apm-td"><span class="apm-cat-chip-sm">{{ row.p.category }}</span></span> }
+          @if (colVisible('um'))          { <span class="apm-td apm-tc apm-muted">{{ row.p.um }}</span> }
+          @if (colVisible('masaNeta'))    { <span class="apm-td apm-tr apm-muted">{{ row.p.masaNeta ? ((row.p.masaNeta | number:'1.0-2') + ' kg') : '—' }}</span> }
+          @if (colVisible('stocImport'))  { <span class="apm-td apm-tr apm-muted">{{ row.importedQty }}</span> }
+          @if (colVisible('stocFinal'))   { <span class="apm-td apm-tr" [class.apm-stock-zero]="row.finalQty === 0">{{ row.finalQty }}</span> }
+          @if (colVisible('stocBuffer'))  {
+            <span class="apm-td apm-tr" [class.apm-buf-pos]="row.bufferQty > 0" [class.apm-buf-neg]="row.bufferQty < 0">
+              {{ row.bufferQty !== 0 ? (row.bufferQty > 0 ? '+' : '') + row.bufferQty : '—' }}
+            </span>
+          }
+          @if (colVisible('codExtern'))   { <span class="apm-td apm-mono apm-muted">{{ row.p.codExtern || '—' }}</span> }
+          @if (colVisible('furnizor'))    { <span class="apm-td apm-furn">{{ row.p.furnizor || '—' }}</span> }
+          @if (colVisible('pretFaraTVA')) { <span class="apm-td apm-tr apm-muted">{{ row.p.pretFaraTVA != null ? ((row.p.pretFaraTVA | number:'1.2-2') + ' lei') : '—' }}</span> }
+          @if (colVisible('pretCuTVA'))   { <span class="apm-td apm-tr apm-price">{{ row.p.pretCuTVA != null ? ((row.p.pretCuTVA | number:'1.2-2') + ' lei') : '—' }}</span> }
+
+          <!-- Qty controls -->
+          <div class="apm-qty-cell">
+            <button class="apm-qbtn" (click)="decQty(row.p)">−</button>
+            <input class="apm-qinput" type="number" min="0" [value]="qty"
+                   (change)="setQty(row.p, $any($event.target).value)"
+                   (click)="$any($event.target).select()">
+            <button class="apm-qbtn apm-qbtn-add" (click)="incQty(row.p)">+</button>
+            @if (qty > 0 && bufferUsed > 0) {
+              <mat-icon class="apm-bwarn" [matTooltip]="bufferUsed + ' buc din Stoc Buffer'">warning</mat-icon>
+            }
+          </div>
+        </div>
+
+        @if (productRows().length === 0) {
+          <div class="apm-empty">
+            <mat-icon>search_off</mat-icon>
+            Niciun produs găsit.
+          </div>
+        }
+
+      </cdk-virtual-scroll-viewport>
+    </div>
+
+    <!-- Journal (outside virtual scroll) -->
+    @if (order().orderEvents?.length) {
+      <div class="apm-journal-section">
         <div class="apm-journal-toggle" (click)="showJournal.set(!showJournal())">
           <mat-icon>history</mat-icon>
           Modificări anterioare ({{ order().orderEvents!.length }})
@@ -149,25 +157,65 @@
                   <strong>{{ ev.userName }}</strong> · {{ sourceLabel(ev.source) }} · {{ ev.timestamp | date:'dd.MM.yy HH:mm' }}
                 </div>
                 <div class="apm-journal-products">
-                  @for (p of ev.products; track p.name) {
-                    <span class="apm-journal-chip">+{{ p.qty }} {{ p.name }} {{ p.um }}</span>
+                  @for (jp of ev.products; track jp.name) {
+                    <span class="apm-journal-chip">+{{ jp.qty }} {{ jp.name }} {{ jp.um }}</span>
                   }
                 </div>
               </div>
             }
           </div>
         }
-      }
+      </div>
+    }
 
-    </div>
+    <!-- Manual panel (collapsible, above bottom bar) -->
+    @if (showManual()) {
+      <div class="apm-manual-panel">
+        <span class="apm-manual-label">Adaugă manual</span>
+        <input class="apm-manual-name" [ngModel]="manualName()" (ngModelChange)="manualName.set($event)"
+               placeholder="Denumire produs…" (keydown.enter)="addManual()">
+        <input class="apm-manual-qty" type="number" min="1"
+               [ngModel]="manualQty()" (ngModelChange)="manualQty.set(+$event)" placeholder="Cant.">
+        <input class="apm-manual-um" [ngModel]="manualUm()" (ngModelChange)="manualUm.set($event)" placeholder="UM">
+        <input class="apm-manual-pret" type="text" inputmode="numeric"
+               [ngModel]="manualPret() ?? ''" (ngModelChange)="manualPret.set($event ? +$event : null)"
+               (keydown)="onPretKeydown($event)" placeholder="Preț lei">
+        <button mat-stroked-button (click)="addManual()"><mat-icon>add</mat-icon> Adaugă</button>
+        <button mat-icon-button (click)="showManual.set(false)"><mat-icon>close</mat-icon></button>
+      </div>
+    }
 
-    <!-- Footer -->
-    <div class="apm-footer">
-      <button mat-stroked-button (click)="closed.emit()">Anulează</button>
-      <button mat-flat-button color="primary" (click)="confirm()" [disabled]="staged().length === 0">
-        <mat-icon>check</mat-icon>
-        Confirmă ({{ staged().length }} produs{{ staged().length !== 1 ? 'e' : '' }})
-      </button>
+    <!-- Bottom bar -->
+    <div class="apm-bottom-bar">
+      <div class="apm-staged-chips">
+        @if (staged().length === 0) {
+          <span class="apm-staged-hint">Setează cantitatea din tabel sau adaugă manual.</span>
+        } @else {
+          @for (p of staged(); let i = $index; track i) {
+            <span class="apm-staged-chip">
+              {{ p.name }} ×{{ p.qty }}
+              <button class="apm-chip-remove" (click)="removeStaged(i)">×</button>
+            </span>
+          }
+          @if (stagedTotalMasa() > 0) {
+            <span class="apm-masa-total">
+              <mat-icon>scale</mat-icon>
+              {{ stagedTotalMasa() | number:'1.0-0' }} kg
+            </span>
+          }
+        }
+      </div>
+      <div class="apm-bottom-actions">
+        <button mat-stroked-button class="apm-manual-toggle-btn" (click)="showManual.set(!showManual())">
+          <mat-icon>edit_note</mat-icon>
+          Manual
+        </button>
+        <button mat-stroked-button (click)="closed.emit()">Anulează</button>
+        <button mat-flat-button color="primary" (click)="confirm()" [disabled]="staged().length === 0">
+          <mat-icon>check</mat-icon>
+          Confirmă ({{ staged().length }})
+        </button>
+      </div>
     </div>
 
   </div>
