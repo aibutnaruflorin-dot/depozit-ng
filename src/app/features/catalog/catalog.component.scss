@@ -200,6 +200,7 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
 .td-net   { font-size: 0.82rem; color: var(--color-text-muted); text-align: right; white-space: nowrap; }
 .td-tva   { font-size: 0.82rem; font-weight: 700; color: var(--color-primary); text-align: right; white-space: nowrap; }
+.td-masa  { font-size: 0.78rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 
 .order-btn {
   flex-shrink: 0;

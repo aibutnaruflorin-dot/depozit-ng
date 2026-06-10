@@ -205,6 +205,14 @@ export class NewOrderComponent implements OnInit {
   readonly totalCuTVA = computed(() =>
     this.cart().reduce((s, i) => s + (i.product.pretCuTVA ?? 0) * i.qty, 0)
   );
+  readonly cartTotalWeight = computed(() =>
+    this.cart().reduce((s, i) => {
+      const masa = i.product.masaNeta
+        ?? this.catalogsService.findProduct(i.product.catalogId ?? '', i.product.nr)?.masaNeta
+        ?? 0;
+      return s + masa * i.qty;
+    }, 0)
+  );
 
   rowBg(catalogId: string): string     { return this.catalogsService.bgColor(catalogId, 0.08); }
   rowBorder(catalogId: string): string { return this.catalogsService.borderColor(catalogId); }
@@ -370,6 +378,7 @@ export class NewOrderComponent implements OnInit {
         codExtern:   i.product.codExtern,
         pretFaraTVA: i.product.pretFaraTVA ?? undefined,
         pretCuTVA:   i.product.pretCuTVA ?? undefined,
+        masaNeta:    i.product.masaNeta   ?? undefined,
       } as OrderProduct)),
       status: 'trimis'
     };

@@ -112,7 +112,8 @@ export class SettingsComponent implements OnInit {
       denumire:            ['', Validators.required],
       numarInmatriculare:  ['', [Validators.required, Validators.pattern(/^[A-Z]{1,2}\s?\d{2,3}\s?[A-Z]{3}$/i)]],
       marca:               [''],
-      alias:               ['']
+      alias:               [''],
+      tonajMaxim:          [null, [Validators.min(1), Validators.max(40000)]]
     });
     this.permForm = this.fb.group({
       name:    ['', Validators.required],
@@ -414,9 +415,14 @@ export class SettingsComponent implements OnInit {
 
   // ── Vehicule ──────────────────────────────────────────────────────────────
 
+  fmtTonaj(kg: number | undefined): string {
+    if (!kg) return '—';
+    return kg >= 1000 ? `${(kg / 1000).toFixed(2).replace(/\.?0+$/, '')} t` : `${kg} kg`;
+  }
+
   openAddVehicle(): void {
     this.editingVehicleId.set(null);
-    this.vehicleForm.reset({ denumire: '', numarInmatriculare: '', marca: '', alias: '' });
+    this.vehicleForm.reset({ denumire: '', numarInmatriculare: '', marca: '', alias: '', tonajMaxim: null });
     this.showVehicleModal.set(true);
   }
 
@@ -428,9 +434,32 @@ export class SettingsComponent implements OnInit {
 
   closeVehicleModal(): void { this.showVehicleModal.set(false); }
 
+  blockNonNumeric(event: KeyboardEvent): void {
+    const nav = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
+    if (nav.includes(event.key)) return;
+    if (!/^\d$/.test(event.key)) event.preventDefault();
+  }
+
+  clampTonaj(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const ctrl  = this.vehicleForm.get('tonajMaxim')!;
+    const raw   = input.value.replace(/\D/g, '');
+    const val   = parseInt(raw, 10);
+    if (!raw || isNaN(val) || val <= 0) {
+      input.value = '';
+      ctrl.setValue(null, { emitEvent: false });
+      return;
+    }
+    const clamped = Math.min(val, 40000);
+    input.value = String(clamped);
+    ctrl.setValue(clamped, { emitEvent: false });
+  }
+
   saveVehicle(): void {
     if (this.vehicleForm.invalid) { this.vehicleForm.markAllAsTouched(); return; }
-    const val = this.vehicleForm.value;
+    const raw = this.vehicleForm.value;
+    const tonajRaw = parseFloat(String(raw.tonajMaxim ?? ''));
+    const val = { ...raw, tonajMaxim: isFinite(tonajRaw) && tonajRaw > 0 ? tonajRaw : undefined };
     const id  = this.editingVehicleId();
     if (id) {
       this.transportService.updateVehicle(id, val);

@@ -351,6 +351,13 @@
               @let tv = tripValue(t);
               <span class="val-net">{{ tv.net | number:'1.2-2' }} lei</span>
               <span class="val-tva">{{ tv.tva | number:'1.2-2' }} cu TVA</span>
+              @if (tripTotalWeight(t) > 0) {
+                <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
+                  <mat-icon style="font-size:13px;width:13px;height:13px;vertical-align:middle">scale</mat-icon>
+                  {{ fmtWeight(tripTotalWeight(t)) }}
+                  @if (tripWeightWarn(t)) { <mat-icon style="font-size:13px;width:13px;height:13px;color:#e53935">warning</mat-icon> }
+                </span>
+              }
             </td>
             <td>
               <span class="trip-status-badge"
@@ -961,6 +968,20 @@
 
       </mat-card-content>
       <mat-card-actions class="modal-actions">
+        @if (modalTotalWeight() > 0) {
+          @let selVehicleId = form.get('vehicleId')?.value;
+          @let maxKg = (selVehicleId ? (transportService.getVehicle(selVehicleId)?.tonajMaxim ?? 0) : 0);
+          <div class="modal-weight-row" [class.modal-weight-warn]="maxKg > 0 && modalTotalWeight() > maxKg">
+            <mat-icon class="modal-weight-icon">scale</mat-icon>
+            <span>Greutate cursă: <strong>{{ fmtWeight(modalTotalWeight()) }}</strong></span>
+            @if (maxKg > 0) {
+              <span class="modal-weight-max"> / max {{ fmtWeight(maxKg) }}</span>
+              @if (modalTotalWeight() > maxKg) {
+                <span class="modal-weight-over">Depășit tonaj!</span>
+              }
+            }
+          </div>
+        }
         <button mat-stroked-button (click)="closeModal()">Anulează</button>
         <button mat-flat-button color="primary" (click)="save()">
           {{ editingId() ? 'Salvează' : 'Creează cursa' }}

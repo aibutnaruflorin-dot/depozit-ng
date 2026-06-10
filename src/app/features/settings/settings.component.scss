@@ -351,6 +351,10 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
   font-size: 0.78rem; color: var(--color-text-muted);
   display: flex; align-items: center; gap: 0.25rem;
 }
+.fleet-tonaj {
+  background: #e0f2f1; color: #00695c; font-weight: 600;
+  border-radius: 4px; padding: 1px 5px; font-size: 0.72rem;
+}
 
 /* Users tab */
 .tab-content--wide { max-width: 900px; }

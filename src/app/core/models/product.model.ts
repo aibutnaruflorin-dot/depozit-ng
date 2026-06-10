@@ -10,6 +10,7 @@ export interface Product {
   codExtern?: string;
   pretFaraTVA?: number;
   pretCuTVA?: number;
+  masaNeta?: number;
 }
 
 export interface ProductMeta {

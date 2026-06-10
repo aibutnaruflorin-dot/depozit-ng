@@ -156,6 +156,19 @@ export class TransportComponent implements OnInit {
     return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
   });
 
+  readonly modalTotalWeight = computed(() => {
+    return this.modalOrders().reduce((sum, order) => {
+      const qtyMap = this.modalQty()[order.id] ?? {};
+      return sum + order.products.reduce((si, p, i) => {
+        const qty = qtyMap[i] ?? 0;
+        const masa = p.masaNeta
+          ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta
+          ?? 0;
+        return si + masa * qty;
+      }, 0);
+    }, 0);
+  });
+
   // ── Inline edit state for order meta fields ────────────────────────────────
   editingAddressId  = signal<string | null>(null);
   addressEdit       = signal('');
@@ -277,7 +290,7 @@ export class TransportComponent implements OnInit {
     public  ordersService: OrdersService,
     public  auth: AuthService,
     private snackBar: MatSnackBar,
-    private catalogsService: CatalogsService
+    public  catalogsService: CatalogsService
   ) {
     this.form = this.fb.group({
       vehicleId:   ['', Validators.required],
@@ -498,6 +511,34 @@ export class TransportComponent implements OnInit {
 
   totalQty(order: Order): number {
     return order.products.reduce((s, p) => s + p.qty, 0);
+  }
+
+  tripTotalWeight(t: Transport): number {
+    return this.ordersForTransport(t).reduce((sum, order) => {
+      const d = t.deliveries.find(del => del.orderId === order.id);
+      if (!d) return sum;
+      return sum + d.items.reduce((si, item) => {
+        const p = order.products[item.productIndex];
+        if (!p) return si;
+        const masa = p.masaNeta
+          ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta
+          ?? 0;
+        return si + masa * item.qty;
+      }, 0);
+    }, 0);
+  }
+
+  tripWeightWarn(t: Transport): boolean {
+    const vehicle = this.transportService.getVehicle(t.vehicleId);
+    if (!vehicle?.tonajMaxim) return false;
+    return this.tripTotalWeight(t) > vehicle.tonajMaxim;
+  }
+
+  fmtWeight(kg: number): string {
+    if (kg <= 0) return '';
+    return kg >= 1000
+      ? `${(kg / 1000).toFixed(2).replace(/\.?0+$/, '')} t`
+      : `${kg.toFixed(1).replace(/\.0$/, '')} kg`;
   }
 
   deliveredTotal(order: Order): number {

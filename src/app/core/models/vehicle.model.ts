@@ -4,4 +4,5 @@ export interface Vehicle {
   numarInmatriculare: string;
   marca: string;
   alias: string;
+  tonajMaxim?: number;
 }

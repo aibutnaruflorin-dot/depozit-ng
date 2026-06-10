@@ -19,6 +19,7 @@ export interface OrderProduct {
   codExtern?: string;
   pretFaraTVA?: number;
   pretCuTVA?: number;
+  masaNeta?: number;
 }
 
 export interface Order {

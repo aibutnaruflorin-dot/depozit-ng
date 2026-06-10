@@ -132,6 +132,12 @@
           <div class="col-sort-label">UM <mat-icon class="sort-icon" [class.sort-active]="sortField()==='um'">{{ sortIcon('um') }}</mat-icon></div>
         </th>
 
+        <th style="width:72px" class="col-sort-th" (click)="sort('masaNeta')">
+          <div class="col-sort-label">
+            Masă (kg) <mat-icon class="sort-icon" [class.sort-active]="sortField()==='masaNeta'">{{ sortIcon('masaNeta') }}</mat-icon>
+          </div>
+        </th>
+
         <!-- Stoc Import -->
         <th style="width:76px" class="col-sort-th" (click)="sort('importedQty')">
           <div class="col-sort-label">
@@ -286,6 +292,7 @@
         </td>
         <td><span class="cat-chip-sm">{{ p.category }}</span></td>
         <td class="td-muted">{{ p.um }}</td>
+        <td class="td-masa">{{ p.masaNeta != null ? p.masaNeta : '—' }}</td>
         <!-- Stoc Import — fix, niciodată modificat -->
         <td class="td-stoc-imp">{{ p.importedQty ?? p.qty }}</td>
         <!-- Stoc Final — ce folosesc comenzile, badge roșu la 0 -->

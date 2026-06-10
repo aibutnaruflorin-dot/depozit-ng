@@ -369,6 +369,7 @@ export class CatalogComponent implements OnInit {
         'Depozit':            cat?.name ?? '',
         'Categorie':          p.category,
         'UM':                 p.um,
+        'Masă netă (kg)':     p.masaNeta ?? '',
         'Stoc Import':  p.importedQty ?? p.qty,
         'Stoc Final':   p.qty,
         'Stoc Buffer':  bufferMap.get(key) ?? 0,

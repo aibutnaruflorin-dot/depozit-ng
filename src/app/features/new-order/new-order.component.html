@@ -212,6 +212,11 @@
             </div>
           </th>
 
+          <th style="width:72px" class="col-sort-th" (click)="sort('masaNeta')">
+            <div class="col-sort-label">
+              Masă (kg) <mat-icon class="sort-icon" [class.sort-active]="sortField()==='masaNeta'">{{ sortIcon('masaNeta') }}</mat-icon>
+            </div>
+          </th>
           <th style="width:115px" class="col-sort-th" (click)="sort('pretFaraTVA')">
             <div class="col-sort-label" style="justify-content:flex-end">
               Fără TVA <mat-icon class="sort-icon" [class.sort-active]="sortField()==='pretFaraTVA'">{{ sortIcon('pretFaraTVA') }}</mat-icon>
@@ -230,7 +235,7 @@
         @if (displayMode() === 'grouped' && (rowIndex === 0 || suggestions()[rowIndex - 1]?.catalogId !== p.catalogId)) {
           @if (catalogsService.getById(p.catalogId); as cat) {
             <tr class="catalog-group-row">
-              <td colspan="11">
+              <td colspan="12">
                 <span class="cgh-dot" [style.background]="cat.color"></span>
                 <span class="cgh-name" [style.color]="cat.color">{{ cat.name }}</span>
               </td>
@@ -265,6 +270,7 @@
           </td>
           <td class="pc-cod">{{ p.codExtern || '—' }}</td>
           <td class="pc-furn">{{ p.furnizor || '—' }}</td>
+          <td class="pc-masa">{{ p.masaNeta != null ? p.masaNeta : '—' }}</td>
           <td class="pc-net">{{ p.pretFaraTVA != null ? ((p.pretFaraTVA | number:'1.2-2') + ' lei') : '—' }}</td>
           <td class="pc-tva">{{ p.pretCuTVA != null ? ((p.pretCuTVA | number:'1.2-2') + ' lei') : '—' }}</td>
           <td>
@@ -439,6 +445,17 @@
               <span class="cart-total-label-tva">Total cu TVA</span>
               <span class="cart-total-value-tva">{{ totalCuTVA() | number:'1.2-2' }} lei</span>
             </div>
+            @if (cuLivrare() && cartTotalWeight() > 0) {
+              <div class="cart-total-row cart-weight-row">
+                <span class="cart-total-label">Greutate totală</span>
+                <span class="cart-weight-value">
+                  <mat-icon class="cart-weight-icon">scale</mat-icon>
+                  {{ cartTotalWeight() >= 1000
+                      ? ((cartTotalWeight() / 1000) | number:'1.2-2') + ' t'
+                      : (cartTotalWeight() | number:'1.2-2') + ' kg' }}
+                </span>
+              </div>
+            }
           </div>
         }
         <button mat-flat-button color="primary" class="submit-btn"

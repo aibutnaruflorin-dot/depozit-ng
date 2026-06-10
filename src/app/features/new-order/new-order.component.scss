@@ -276,8 +276,9 @@
   font-size: 0.75rem; color: var(--color-text-muted); font-style: italic;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.pc-net { font-size: 0.82rem; color: var(--color-text-muted); text-align: right; white-space: nowrap; }
-.pc-tva { font-size: 0.82rem; font-weight: 700; color: var(--color-primary); text-align: right; white-space: nowrap; }
+.pc-net  { font-size: 0.82rem; color: var(--color-text-muted); text-align: right; white-space: nowrap; }
+.pc-tva  { font-size: 0.82rem; font-weight: 700; color: var(--color-primary); text-align: right; white-space: nowrap; }
+.pc-masa { font-size: 0.78rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 
 /* ── Row actions: qty + add button ── */
 $h: 34px;
@@ -559,6 +560,12 @@ $cih: 20px;
 .cart-total-value     { font-size: 0.82rem; font-weight: 500; }
 .cart-total-label-tva { font-size: 0.82rem; font-weight: 600; color: var(--color-text); }
 .cart-total-value-tva { font-size: 1rem; font-weight: 700; color: var(--color-primary); }
+.cart-weight-row      { margin-top: 4px; border-top: 1px dashed var(--color-border); padding-top: 4px; }
+.cart-weight-value    {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.82rem; font-weight: 600; color: #00838f;
+}
+.cart-weight-icon     { font-size: 14px; width: 14px; height: 14px; }
 
 /* Footer */
 .cart-panel-footer {

@@ -171,45 +171,71 @@ export class CatalogsService {
           const ws   = wb.Sheets[wb.SheetNames[0]];
           const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-          // Detect column positions from header row
-          let furnizorCol = 10;
-          let categoryCol = 13;
-          let codExternCol = -1;
-          for (const row of rows) {
-            const cells = (row as any[]).map(c => String(c || '').toLowerCase().trim());
-            const fi = cells.findIndex(c => c.includes('furnizor'));
-            if (fi >= 0) {
-              furnizorCol = fi;
-              const ci = cells.findIndex(c => c.includes('subclas') || c === 'categorie' || c === 'category');
-              if (ci >= 0) categoryCol = ci;
-              const ei = cells.findIndex(c => c.includes('cod extern') || c === 'cod_extern' || c === 'codextern');
-              if (ei >= 0) codExternCol = ei;
-              break;
-            }
+          // Find header row by locating "Denumire" column
+          const colMap: Record<string, number> = {};
+          let dataStartRow = -1;
+
+          for (let i = 0; i < rows.length; i++) {
+            const cells = (rows[i] as any[]).map(c => String(c || '').toLowerCase().trim());
+            if (!cells.some(c => c === 'denumire' || c.includes('denumire'))) continue;
+
+            cells.forEach((cell, idx) => {
+              if      (cell.includes('denumire'))                                       colMap['name']       = idx;
+              else if (cell === 'u.m.' || cell === 'um' || cell.includes('unitate'))   colMap['um']         = idx;
+              else if (cell === 'cantitate' || cell.includes('cantit'))                colMap['qty']        = idx;
+              else if (cell.includes('masa neta') || cell === 'masa')                  colMap['masaNeta']   = idx;
+              else if (cell.includes('fara tva') || cell.includes('fără tva'))        colMap['pretFaraTVA']= idx;
+              else if (cell.includes('cu tva'))                                        colMap['pretCuTVA']  = idx;
+              else if (cell.includes('subclas') || cell === 'categorie')               colMap['category']   = idx;
+              else if (cell.includes('furnizor'))                                      colMap['furnizor']   = idx;
+              else if (cell.includes('cod extern') || cell === 'cod_extern')           colMap['codExtern']  = idx;
+            });
+            dataStartRow = i + 1;
+            break;
           }
 
+          if (dataStartRow < 0) {
+            resolve({ ok: false, msg: 'Nu s-a găsit rândul de header (coloana "Denumire" lipsește).' });
+            return;
+          }
+
+          const str = (row: any[], key: string): string =>
+            String(row[colMap[key] ?? -1] ?? '').trim();
+          const num = (row: any[], key: string): number =>
+            colMap[key] !== undefined
+              ? parseFloat(String(row[colMap[key]] || '0').replace(',', '.')) || 0
+              : 0;
+
           const products: Product[] = [];
-          for (const row of rows) {
-            const nr   = row[0];
-            const name = String(row[1] || '').trim();
+          let rowNr = 1;
+          for (let i = dataStartRow; i < rows.length; i++) {
+            const row = rows[i];
+            const name = str(row, 'name');
             if (!name) continue;
-            const nrNum = Number(nr);
-            if (!Number.isFinite(nrNum) || nrNum <= 0 || String(nr).trim() === '') continue;
-            const qty = parseFloat(String(row[3]).replace(',', '.')) || 0;
+
+            const qty = Math.max(0, num(row, 'qty'));
+            const masaNeta    = num(row, 'masaNeta')    || undefined;
+            const pretFaraTVA = num(row, 'pretFaraTVA') || undefined;
+            const pretCuTVA   = num(row, 'pretCuTVA')   || undefined;
+
             products.push({
-              nr: nrNum, name,
-              um:          String(row[2]  || '').trim(),
+              nr:          rowNr++,
+              name,
+              um:          str(row, 'um') || '',
               qty,
               importedQty: qty,
-              furnizor:    String(row[furnizorCol] || '').trim() || undefined,
-              codExtern:   codExternCol >= 0 ? (String(row[codExternCol] || '').trim() || undefined) : undefined,
-              category:    String(row[categoryCol] || '').trim().toUpperCase() || 'DIVERSE',
+              masaNeta,
+              pretFaraTVA,
+              pretCuTVA,
+              furnizor:    str(row, 'furnizor')  || undefined,
+              codExtern:   str(row, 'codExtern') || undefined,
+              category:    (str(row, 'category') || 'DIVERSE').toUpperCase(),
               catalogId
             });
           }
 
           if (!products.length) {
-            resolve({ ok: false, msg: 'Niciun rând valid găsit (col A = număr, col B = denumire).' });
+            resolve({ ok: false, msg: 'Niciun rând valid găsit (coloana "Denumire" goală).' });
             return;
           }
 
