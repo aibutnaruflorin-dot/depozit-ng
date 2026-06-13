@@ -156,7 +156,7 @@ export class CatalogComponent implements OnInit {
 
   readonly canAdjust = computed(() => {
     const role = this.auth.session()?.role;
-    return role === 'admin' || role === 'keyuser';
+    return role === 'keyuser';
   });
 
   readonly colSpan = computed(() => {

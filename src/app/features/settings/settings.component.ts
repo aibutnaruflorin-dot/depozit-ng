@@ -101,7 +101,7 @@ export class SettingsComponent implements OnInit {
   adminConfirmPass  = '';
   adminRecoveryEmail = '';
   adminPassError    = '';
-  secTargetUsername = 'admin';
+  secTargetUsername = 'keyuser';
 
   // ── Vehicles state ────────────────────────────────────────────────────────
   showVehicleModal = signal(false);
@@ -416,7 +416,7 @@ export class SettingsComponent implements OnInit {
     this.snackBar.open('Curățare sesiune test finalizată. Comenzi și curse șterse.', 'OK', { duration: 4000 });
   }
 
-  openAdminSec(username = 'admin'): void {
+  openAdminSec(username = 'keyuser'): void {
     this.secTargetUsername  = username;
     const u = this.users().find(u => u.username === username);
     this.adminNewPassword   = '';
@@ -463,7 +463,7 @@ export class SettingsComponent implements OnInit {
     this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role, telefon: user.telefon ?? '', recoveryEmail: user.recoveryEmail ?? '' });
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
-    const isProtected = user.username === 'admin' || user.username === 'keyuser';
+    const isProtected = user.username === 'admin' || user.username === 'keyuser'; // both are protected system accounts
     isProtected ? this.userForm.get('role')?.disable() : this.userForm.get('role')?.enable();
     this.showUserModal.set(true);
   }
@@ -621,18 +621,15 @@ export class SettingsComponent implements OnInit {
   }
 
   readonly PROTECTED_PERMS = new Set<string>(SYSTEM_PERM_IDS);
-  readonly LOCKED_PERMS    = new Set(['admin', 'keyuser']);
+  readonly LOCKED_PERMS    = new Set(['keyuser']);
   // Ranguri de sistem (nu apar în lista de roluri normale)
-  readonly RANK_IDS        = new Set(['admin', 'keyuser']);
+  readonly RANK_IDS        = new Set(['keyuser']);
   // Roluri sistem editabile (Șofer, Ajutor manipulant)
   readonly SYSTEM_ROLE_IDS = new Set(['sofer', 'ajutor_manipulant']);
 
-  // Ranguri de sistem: KeyUser, Admin
+  // Ranguri de sistem: KeyUser
   get systemRanks() {
-    const order = ['keyuser', 'admin'];
-    return this.permissions()
-      .filter(p => this.RANK_IDS.has(p.id))
-      .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    return this.permissions().filter(p => this.RANK_IDS.has(p.id));
   }
   // Roluri sistem editabile: Șofer, Ajutor manipulant
   get systemRoles() {

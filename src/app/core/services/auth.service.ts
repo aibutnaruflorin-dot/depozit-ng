@@ -11,12 +11,12 @@ export class AuthService {
 
   readonly session     = this._session.asReadonly();
   readonly isLoggedIn  = computed(() => !!this._session());
-  readonly isAdmin     = computed(() => { const r = this._session()?.role; return r === 'admin' || r === 'keyuser'; });
-  readonly isKeyUser   = computed(() => this._session()?.role === 'keyuser');
+  readonly isAdmin   = computed(() => this._session()?.role === 'keyuser');
+  readonly isKeyUser = computed(() => this._session()?.role === 'keyuser');
   readonly userName    = computed(() => this._session()?.name ?? '');
   readonly userInitial = computed(() => (this._session()?.name ?? 'U').charAt(0).toUpperCase());
   readonly roleLabel   = computed(() => {
-    const map: Record<string, string> = { admin: 'Administrator', keyuser: 'KeyUser', contabilitate: 'Contabilitate', agent: 'Agent', 'sub-agent': 'Sub-agent' };
+    const map: Record<string, string> = { keyuser: 'KeyUser', contabilitate: 'Contabilitate', agent: 'Agent', 'sub-agent': 'Sub-agent' };
     return map[this._session()?.role ?? ''] ?? 'Agent';
   });
 
@@ -25,8 +25,9 @@ export class AuthService {
   }
 
   private _loadSession(): void {
-    const s = this.storage.get<Session>('app_session');
-    const validRoles = ['admin', 'keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
+    let s = this.storage.get<Session>('app_session');
+    if (s && (s.role as string) === 'admin') { s = { ...s, role: 'keyuser' }; }
+    const validRoles = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
     if (s && Date.now() - s.loginTime <= SESSION_DURATION && validRoles.includes(s.role as string)) {
       s.loginTime = Date.now();
       this.storage.set('app_session', s);
@@ -58,8 +59,9 @@ export class AuthService {
   }
 
   refreshSession(): Session | null {
-    const s = this.storage.get<Session>('app_session');
-    const validRoles = ['admin', 'keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
+    let s = this.storage.get<Session>('app_session');
+    if (s && (s.role as string) === 'admin') { s = { ...s, role: 'keyuser' }; }
+    const validRoles = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
     if (!s || Date.now() - s.loginTime > SESSION_DURATION || !validRoles.includes(s.role as string)) {
       this.storage.remove('app_session');
       this._session.set(null);

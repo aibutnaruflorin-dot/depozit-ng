@@ -15,6 +15,6 @@ export const adminGuard: CanActivateFn = () => {
   const router = inject(Router);
   const session = auth.refreshSession();
   if (!session)               { router.navigate(['/login']);        return false; }
-  if (session.role !== 'admin' && session.role !== 'keyuser') { router.navigate(['/app/catalog']); return false; }
+  if (session.role !== 'keyuser') { router.navigate(['/app/catalog']); return false; }
   return true;
 };

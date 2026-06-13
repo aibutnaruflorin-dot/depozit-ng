@@ -551,15 +551,9 @@
             </td>
             @if (auth.isAdmin()) {
               <td>
-                @if (user.username === 'admin') {
+                @if (user.username === 'admin' || user.username === 'keyuser') {
                   <div class="user-actions">
-                    <button mat-icon-button (click)="openAdminSec()" matTooltip="Schimbă parola / email recuperare">
-                      <mat-icon>key</mat-icon>
-                    </button>
-                  </div>
-                } @else if (user.username === 'keyuser') {
-                  <div class="user-actions">
-                    <button mat-icon-button (click)="openAdminSec('keyuser')" matTooltip="Schimbă parola / email recuperare">
+                    <button mat-icon-button (click)="openAdminSec(user.username)" matTooltip="Schimbă parola / email recuperare">
                       <mat-icon>key</mat-icon>
                     </button>
                   </div>

@@ -39,16 +39,16 @@ export class LayoutComponent implements OnInit {
   activeRoute = '';
 
   readonly navItems: NavItem[] = [
-    { label: 'Catalog',         icon: 'inventory_2',       route: '/app/catalog',     roles: ['admin', 'keyuser', 'agent'] },
-    { label: 'Comandă nouă',    icon: 'add_shopping_cart', route: '/app/new-order',   roles: ['admin', 'keyuser', 'agent'] },
-    { label: 'Comenzile mele',  icon: 'list_alt',          route: '/app/history-me',  roles: ['admin', 'keyuser', 'agent'] },
-    { label: 'Toate comenzile', icon: 'bar_chart',         route: '/app/history-all', roles: ['admin', 'keyuser'] },
-    { label: 'Transport',       icon: 'local_shipping',    route: '/app/transport',   roles: ['admin', 'keyuser', 'agent'] },
-    { label: 'Cursele mele',   icon: 'drive_eta',         route: '/app/my-trips',    roles: ['admin', 'keyuser', 'agent'] },
-    { label: 'Setări',          icon: 'settings',          route: '/app/settings',    roles: ['admin', 'keyuser'] },
-    { label: 'Contul meu',      icon: 'manage_accounts',   route: '/app/account',     roles: ['admin', 'keyuser', 'agent'] },
-    { label: 'Manual',          icon: 'menu_book',         route: '/app/manual',      roles: ['admin', 'keyuser', 'agent'] },
-    { label: 'Pagina nouă',    icon: 'security',          route: '/app/security',    roles: ['admin', 'keyuser', 'agent'] },
+    { label: 'Catalog',         icon: 'inventory_2',       route: '/app/catalog',     roles: ['keyuser', 'agent'] },
+    { label: 'Comandă nouă',    icon: 'add_shopping_cart', route: '/app/new-order',   roles: ['keyuser', 'agent'] },
+    { label: 'Comenzile mele',  icon: 'list_alt',          route: '/app/history-me',  roles: ['keyuser', 'agent'] },
+    { label: 'Toate comenzile', icon: 'bar_chart',         route: '/app/history-all', roles: ['keyuser'] },
+    { label: 'Transport',       icon: 'local_shipping',    route: '/app/transport',   roles: ['keyuser', 'agent'] },
+    { label: 'Cursele mele',   icon: 'drive_eta',         route: '/app/my-trips',    roles: ['keyuser', 'agent'] },
+    { label: 'Setări',          icon: 'settings',          route: '/app/settings',    roles: ['keyuser'] },
+    { label: 'Contul meu',      icon: 'manage_accounts',   route: '/app/account',     roles: ['keyuser', 'agent'] },
+    { label: 'Manual',          icon: 'menu_book',         route: '/app/manual',      roles: ['keyuser', 'agent'] },
+    { label: 'Pagina nouă',    icon: 'security',          route: '/app/security',    roles: ['keyuser', 'agent'] },
   ];
 
   constructor(

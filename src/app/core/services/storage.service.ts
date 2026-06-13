@@ -27,16 +27,17 @@ export class StorageService {
   init(): void {
     if (!this.get('app_users')) {
       this.set('app_users', [
-        { id: 1, name: 'Administrator', username: 'admin',  password: 'admin123', role: 'admin', active: true },
-        { id: 2, name: 'Agent 1',       username: 'agent1', password: 'agent123', role: 'agent', active: true }
+        { id: 1, name: 'Administrator', username: 'admin',  password: 'admin123', role: 'keyuser', active: true },
+        { id: 2, name: 'Agent 1',       username: 'agent1', password: 'agent123', role: 'agent',   active: true }
       ] as User[]);
     }
-    // Cleanup: remove any leftover superadmin users / fix roles
+    // Cleanup: remove superadmin, migrate admin→keyuser, fix invalid roles
     const users = this.get<User[]>('app_users') ?? [];
-    const validRoles = ['admin', 'keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
+    const validRoles = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
     const fixed = users
       .filter(u => u.username !== 'superadmin')
-      .map(u => validRoles.includes(u.role as string) ? u : { ...u, role: 'admin' as any });
+      .map(u => (u.role as string) === 'admin' ? { ...u, role: 'keyuser' as any } : u)
+      .map(u => validRoles.includes(u.role as string) ? u : { ...u, role: 'keyuser' as any });
     if (fixed.length !== users.length || fixed.some((u, i) => u.role !== users[i]?.role)) {
       this.set('app_users', fixed);
     }

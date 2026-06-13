@@ -1,7 +1,6 @@
-export type Permission = 'admin' | 'keyuser' | 'sofer' | 'ajutor_manipulant' | 'contabilitate' | 'agent' | 'sub-agent';
+export type Permission = 'keyuser' | 'sofer' | 'ajutor_manipulant' | 'contabilitate' | 'agent' | 'sub-agent';
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
-  admin:             'Admin',
   keyuser:           'KeyUser',
   sofer:             'Șofer',
   ajutor_manipulant: 'Ajutor manipulant',

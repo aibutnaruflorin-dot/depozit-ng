@@ -147,7 +147,7 @@ export class HistoryAllComponent {
     const open = ['trimis', 'acceptat', 'planificat', 'livrat_partial'];
     if (!open.includes(order.status) || order.superseded) return false;
     const s = this.auth.session();
-    return !!s && (s.role === 'admin' || order.agent.id === s.userId);
+    return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
   }
 
   filterAgent   = signal('');

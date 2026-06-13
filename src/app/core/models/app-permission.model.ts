@@ -20,8 +20,6 @@ export const APP_PAGES: { id: string; label: string }[] = [
 ];
 
 export const DEFAULT_PERMISSIONS: AppPermission[] = [
-  { id: 'admin',            name: 'Admin',            isAdmin: true,
-    pages: { comenzi_noi: 'full', comenzi: 'full', catalog: 'full', transport: 'full', cursele_mele: 'full', istoric: 'full', contul_meu: 'full', manual: 'full', setari: 'full' } },
   { id: 'keyuser',          name: 'KeyUser',          isAdmin: true,
     pages: { comenzi_noi: 'full', comenzi: 'full', catalog: 'full', transport: 'full', cursele_mele: 'full', istoric: 'full', contul_meu: 'full', manual: 'full', setari: 'full' } },
   { id: 'sofer',            name: 'Șofer',            isAdmin: false,
@@ -36,7 +34,7 @@ export const DEFAULT_PERMISSIONS: AppPermission[] = [
     pages: { comenzi_noi: 'full', comenzi: 'none', catalog: 'read', transport: 'none', cursele_mele: 'none', istoric: 'none', contul_meu: 'full', manual: 'full', setari: 'none' } },
 ];
 
-export const SYSTEM_PERM_IDS = ['keyuser', 'admin', 'sofer', 'ajutor_manipulant'] as const;
+export const SYSTEM_PERM_IDS = ['keyuser', 'sofer', 'ajutor_manipulant'] as const;
 
 export const DEFAULT_JOB_FUNCTIONS = [
   { id: 'keyuser',           name: 'KeyUser' },
