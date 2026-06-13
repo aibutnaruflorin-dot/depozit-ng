@@ -635,6 +635,13 @@ export class SettingsComponent implements OnInit {
       .filter(p => this.SYSTEM_ROLE_IDS.has(p.id))
       .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   }
+  // Roluri disponibile în dropdown (fără keyuser), sortate alfabetic
+  get selectablePermissions() {
+    return this.permissions()
+      .filter(p => !this.LOCKED_PERMS.has(p.id))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ro'));
+  }
+
   // Roluri personalizate
   get customRoles() {
     return this.permissions().filter(p => !this.PROTECTED_PERMS.has(p.id));
