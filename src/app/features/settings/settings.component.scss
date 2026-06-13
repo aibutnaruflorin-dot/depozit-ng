@@ -373,7 +373,30 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
 .dest-sub       { font-size: 0.75rem; color: var(--color-text-muted); }
 .dest-empty     { font-size: 0.85rem; color: var(--color-text-muted); padding: 0.5rem 0 1rem; }
 .dest-manual-form { margin-top: 0.75rem; }
-.dest-toggle--on mat-icon { color: var(--color-success, #4caf50) !important; }
+
+.dest-col-header {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem;
+  &--wa .dest-wa-dot {
+    display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+    background: #25D366; flex-shrink: 0;
+  }
+}
+.dest-wa-dot {
+  display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+  background: #25D366; flex-shrink: 0;
+}
+
+.dest-cell {
+  display: flex; align-items: center; gap: 4px;
+}
+.dest-value {
+  font-size: 0.82rem; color: var(--color-text-muted);
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dest-missing { color: var(--color-text-muted); opacity: 0.4; }
+
+.dest-toggle--on mat-icon { color: #25D366 !important; font-size: 26px !important; width: 26px !important; height: 26px !important; }
+mat-icon.dest-off { color: var(--color-text-muted); opacity: 0.35; font-size: 26px; width: 26px; height: 26px; }
 
 /* Parallel two-column layout */
 .tab-content--parallel {
@@ -557,6 +580,50 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
 .modal-actions {
   display: flex; justify-content: flex-end;
   gap: 0.5rem; padding: 0.75rem 1rem 1rem;
+}
+
+/* ── Password rules block în modal utilizator ── */
+.pass-rules-block {
+  margin: -0.1rem 0 0.5rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--color-bg, #f9f9f9);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.strength-bar {
+  display: flex; gap: 4px; margin-bottom: 0.35rem;
+}
+.strength-segment {
+  flex: 1; height: 4px; border-radius: 3px;
+  background: var(--color-border);
+  transition: background 0.25s;
+  &.filled.s1 { background: #e53935; }
+  &.filled.s2 { background: #fb8c00; }
+  &.filled.s3 { background: #43a047; }
+}
+.strength-label {
+  font-size: 0.75rem; font-weight: 700;
+  display: block; margin-bottom: 0.4rem;
+  &.s1 { color: #e53935; }
+  &.s2 { color: #fb8c00; }
+  &.s3 { color: #43a047; }
+}
+.rules-title {
+  margin: 0 0 0.3rem;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--color-text-muted);
+}
+.rules-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 0.2rem;
+  li {
+    display: flex; align-items: center; gap: 0.3rem;
+    font-size: 0.8rem; color: var(--color-text-muted);
+    transition: color 0.2s;
+    mat-icon { font-size: 15px; width: 15px; height: 15px; }
+    &.ok { color: #43a047; mat-icon { color: #43a047; } }
+  }
 }
 
 /* ── Curățare sesiune test ── */

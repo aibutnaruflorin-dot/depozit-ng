@@ -154,10 +154,8 @@ export class CatalogComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  readonly canAdjust = computed(() => {
-    const role = this.auth.session()?.role;
-    return role === 'keyuser';
-  });
+  readonly canAdjust    = computed(() => this.auth.session()?.role === 'keyuser');
+  readonly canExport    = computed(() => this.auth.hasFullAccess('catalog'));
 
   readonly colSpan = computed(() => {
     const vis = this.CATALOG_COLS.filter(c => this.visibleCols().has(c.key)).length;
@@ -472,6 +470,9 @@ export class CatalogComponent implements OnInit {
   // ── Export Excel ──────────────────────────────────────────────────────────
 
   exportExcel(): void {
+    if (!this.auth.hasFullAccess('catalog')) {
+      return;
+    }
     const products     = this.filtered();
     const lastComments = this.lastCommentMap();
     const bufferMap    = this.bufferMap();

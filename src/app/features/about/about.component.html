@@ -1,0 +1,62 @@
+<div class="about-page">
+  <div class="about-card">
+
+    <!-- Logo placeholder -->
+    <div class="about-logo-wrap">
+      <div class="about-logo-placeholder">
+        <mat-icon>business</mat-icon>
+      </div>
+    </div>
+
+    <!-- Titlu aplicație -->
+    <div class="about-app">
+      <h1 class="about-app-name">{{ app.name }}</h1>
+      <p class="about-app-sub">{{ app.subtitle }}</p>
+    </div>
+
+    <mat-divider class="about-divider" />
+
+    <!-- Autor -->
+    <section class="about-section">
+      <h2 class="about-section-title">Dezvoltat de</h2>
+
+      <div class="about-row">
+        <mat-icon class="about-icon">person</mat-icon>
+        <span>{{ author.name }}</span>
+      </div>
+
+      <div class="about-row">
+        <mat-icon class="about-icon">apartment</mat-icon>
+        <a [href]="author.linkedin" target="_blank" rel="noopener" class="about-link">
+          {{ author.company }}
+          <mat-icon class="about-link-icon">open_in_new</mat-icon>
+        </a>
+      </div>
+    </section>
+
+    <mat-divider class="about-divider" />
+
+    <!-- Contact -->
+    <section class="about-section">
+      <h2 class="about-section-title">Contact</h2>
+
+      <div class="about-row">
+        <mat-icon class="about-icon">phone</mat-icon>
+        <a [href]="'tel:' + author.phone" class="about-link">{{ author.phone }}</a>
+      </div>
+
+      @for (email of author.emails; track email) {
+        <div class="about-row">
+          <mat-icon class="about-icon">email</mat-icon>
+          <a [href]="'mailto:' + email" class="about-link">{{ email }}</a>
+        </div>
+      }
+    </section>
+
+    <mat-divider class="about-divider" />
+
+    <!-- Footer -->
+    <p class="about-footer">© {{ year }} {{ author.company }}. Toate drepturile rezervate.</p>
+
+  </div>
+</div>

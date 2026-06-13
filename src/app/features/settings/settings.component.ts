@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -7,6 +7,8 @@ import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, ReservedProduct } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
 import { TransportService } from '../../core/services/transport.service';
+import { CryptoService } from '../../core/services/crypto.service';
+import { AuditService } from '../../core/services/audit.service';
 import { Catalog, CatalogMeta, CatalogUpload } from '../../core/models/catalog.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { EmailContact } from '../../core/models/email-contact.model';
@@ -80,11 +82,16 @@ export class SettingsComponent implements OnInit {
   newWaName  = '';
   newWaPhone = '';
   newWaType: 'number' | 'group' = 'number';
+  selectedWaUserId: number | null = null;
 
   emailContacts = signal<EmailContact[]>([]);
   newEmailName  = '';
   newEmailAddr  = '';
   newEmailType: 'individual' | 'list' = 'individual';
+  selectedEmailUserId: number | null = null;
+
+  private readonly PHONE_RE = /^\d{10}$/;
+  private readonly EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   readonly permLabels    = PERMISSION_LABELS;
 
@@ -92,6 +99,26 @@ export class SettingsComponent implements OnInit {
   showUserModal  = signal(false);
   editingUserId  = signal<number | null>(null);
   userForm: FormGroup;
+
+  hideUserPass   = true;
+  userPassValue  = signal('');
+
+  readonly userPassRules = computed(() => {
+    const v = this.userPassValue();
+    return [
+      { label: 'Minim 8 caractere',       ok: v.length >= 8 },
+      { label: 'Cel puțin o literă mare', ok: /[A-Z]/.test(v) },
+      { label: 'Cel puțin o cifră',       ok: /[0-9]/.test(v) },
+    ];
+  });
+
+  readonly userPassStrength = computed(() => {
+    const met = this.userPassRules().filter(r => r.ok).length;
+    if (met === 0) return { label: '', level: 0 };
+    if (met === 1) return { label: 'Slabă',    level: 1 };
+    if (met === 2) return { label: 'Medie',    level: 2 };
+    return              { label: 'Puternică', level: 3 };
+  });
 
   showAdminSecModal = signal(false);
   confirmReset      = signal(false);
@@ -123,15 +150,17 @@ export class SettingsComponent implements OnInit {
     private ordersService: OrdersService,
     public  transportService: TransportService,
     private storage: StorageService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private crypto: CryptoService,
+    private audit:  AuditService
   ) {
     this.userForm = this.fb.group({
       name:     ['', Validators.required],
       username: ['', Validators.required],
       password: [''],
       role:          ['agent', Validators.required],
-      telefon:       [''],
-      recoveryEmail: ['']
+      telefon:       ['', Validators.pattern(/^\d{10}$/)],
+      recoveryEmail: ['', Validators.email]
     });
     this.vehicleForm = this.fb.group({
       denumire:            ['', Validators.required],
@@ -149,6 +178,7 @@ export class SettingsComponent implements OnInit {
         this.permPagesAccess[p.id] = admin ? 'full' : 'none';
       });
     });
+    this.userForm.get('password')!.valueChanges.subscribe(v => this.userPassValue.set(v ?? ''));
   }
 
   ngOnInit(): void {
@@ -359,6 +389,42 @@ export class SettingsComponent implements OnInit {
 
   // ── WhatsApp contacts ─────────────────────────────────────────────────────
 
+  // ── Available users for WA / Email pickers ───────────────────────────────
+
+  get availableWaUsers(): User[] {
+    const existing = new Set(this.whatsappContacts().map(c => c.phone));
+    return this.users().filter(u => u.telefon && !existing.has(u.telefon) && u.active);
+  }
+
+  get availableEmailUsers(): User[] {
+    const existing = new Set(this.emailContacts().map(c => c.email));
+    return this.users().filter(u => u.recoveryEmail && !existing.has(u.recoveryEmail) && u.active);
+  }
+
+  addWaFromUser(): void {
+    const user = this.users().find(u => u.id === this.selectedWaUserId);
+    if (!user?.telefon) return;
+    if (this.whatsappContacts().some(c => c.name.toLowerCase() === user.name.toLowerCase())) {
+      this.snackBar.open(`Există deja un contact WhatsApp cu numele "${user.name}".`, '', { duration: 3000 }); return;
+    }
+    this.whatsappContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, phone: user.telefon!, type: 'number' }]);
+    this._saveWa();
+    this.selectedWaUserId = null;
+    this.snackBar.open('Contact WhatsApp adăugat.', '', { duration: 2000 });
+  }
+
+  addEmailFromUser(): void {
+    const user = this.users().find(u => u.id === this.selectedEmailUserId);
+    if (!user?.recoveryEmail) return;
+    if (this.emailContacts().some(c => c.name.toLowerCase() === user.name.toLowerCase())) {
+      this.snackBar.open(`Există deja un contact Email cu numele "${user.name}".`, '', { duration: 3000 }); return;
+    }
+    this.emailContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, email: user.recoveryEmail!, type: 'individual' }]);
+    this._saveEmail();
+    this.selectedEmailUserId = null;
+    this.snackBar.open('Adresă email adăugată.', '', { duration: 2000 });
+  }
+
   // ── User ↔ WA/Email toggle ─────────────────────────────────────────────────
 
   isUserWaEnabled(user: User): boolean {
@@ -372,6 +438,9 @@ export class SettingsComponent implements OnInit {
     } else {
       if (this.whatsappContacts().some(c => c.phone === user.telefon)) {
         this.snackBar.open('Numărul este deja în lista WhatsApp.', '', { duration: 2500 }); return;
+      }
+      if (this.whatsappContacts().some(c => c.name.toLowerCase() === user.name.toLowerCase())) {
+        this.snackBar.open(`Există deja un contact WhatsApp cu numele "${user.name}".`, '', { duration: 3000 }); return;
       }
       this.whatsappContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, phone: user.telefon!, type: 'number' }]);
     }
@@ -390,6 +459,9 @@ export class SettingsComponent implements OnInit {
       if (this.emailContacts().some(c => c.email === user.recoveryEmail)) {
         this.snackBar.open('Adresa email este deja în listă.', '', { duration: 2500 }); return;
       }
+      if (this.emailContacts().some(c => c.name.toLowerCase() === user.name.toLowerCase())) {
+        this.snackBar.open(`Există deja un contact Email cu numele "${user.name}".`, '', { duration: 3000 }); return;
+      }
       this.emailContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, email: user.recoveryEmail!, type: 'individual' }]);
     }
     this._saveEmail();
@@ -401,8 +473,14 @@ export class SettingsComponent implements OnInit {
     const name  = this.newWaName.trim();
     const phone = this.newWaPhone.trim();
     if (!name || !phone) return;
+    if (this.users().some(u => u.telefon === phone)) {
+      this.snackBar.open('Numărul aparține unui utilizator din sistem. Activați-l din tabel.', '', { duration: 3500 }); return;
+    }
     if (this.whatsappContacts().some(c => c.phone === phone)) {
       this.snackBar.open('Numărul este deja în lista WhatsApp.', '', { duration: 2500 }); return;
+    }
+    if (this.whatsappContacts().some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      this.snackBar.open(`Există deja un contact WhatsApp cu numele "${name}".`, '', { duration: 3000 }); return;
     }
     this.whatsappContacts.update(list => [...list, { id: Date.now().toString(), name, phone, type: this.newWaType }]);
     this._saveWa();
@@ -433,8 +511,14 @@ export class SettingsComponent implements OnInit {
     const name  = this.newEmailName.trim();
     const email = this.newEmailAddr.trim();
     if (!name || !email) return;
+    if (this.users().some(u => u.recoveryEmail === email)) {
+      this.snackBar.open('Adresa aparține unui utilizator din sistem. Activați-o din tabel.', '', { duration: 3500 }); return;
+    }
     if (this.emailContacts().some(c => c.email === email)) {
       this.snackBar.open('Adresa email este deja în listă.', '', { duration: 2500 }); return;
+    }
+    if (this.emailContacts().some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      this.snackBar.open(`Există deja un contact Email cu numele "${name}".`, '', { duration: 3000 }); return;
     }
     this.emailContacts.update(list => [...list, {
       id: Date.now().toString(), name, email, type: this.newEmailType
@@ -459,6 +543,8 @@ export class SettingsComponent implements OnInit {
     this.ordersService.resetPeriod();
     this.transportService.resetPeriod();
     this.confirmReset.set(false);
+    const session = this.auth.session();
+    if (session) this.audit.log(session.userId, 'PERIOD_RESET', 'Curățare sesiune: comenzi și curse șterse');
     this.snackBar.open('Curățare sesiune test finalizată. Comenzi și curse șterse.', 'OK', { duration: 4000 });
   }
 
@@ -472,26 +558,34 @@ export class SettingsComponent implements OnInit {
     this.showAdminSecModal.set(true);
   }
 
-  saveAdminSec(): void {
+  async saveAdminSec(): Promise<void> {
     const np = this.adminNewPassword.trim();
     const cp = this.adminConfirmPass.trim();
     if (np && np !== cp) {
       this.adminPassError = 'Parolele nu coincid.';
       return;
     }
-    if (np && np.length < 4) {
-      this.adminPassError = 'Parola trebuie să aibă minim 4 caractere.';
+    if (np && np.length < 8) {
+      this.adminPassError = 'Parola trebuie să aibă minim 8 caractere.';
       return;
     }
-    const target = this.secTargetUsername;
+    const target       = this.secTargetUsername;
+    const recoveryEmail = this.adminRecoveryEmail.trim() || undefined;
+    const hashedPass   = np ? await this.crypto.hash(np) : null;
+
     const updated = this.users().map(u => {
       if (u.username !== target) return u;
-      return { ...u, ...(np ? { password: np } : {}), recoveryEmail: this.adminRecoveryEmail.trim() || undefined };
+      const passFields = hashedPass ? { password: hashedPass, _v: 2 as const, mustChangePassword: false } : {};
+      return { ...u, ...passFields, recoveryEmail };
     });
     this.users.set(updated);
     this.storage.set('app_users', updated);
     this.transportService.refreshUsers(updated);
     this.showAdminSecModal.set(false);
+
+    const session = this.auth.session();
+    if (np && session) this.audit.log(session.userId, 'ADMIN_SET_PASS', `Parolă setată pentru ${target}`);
+
     this.snackBar.open(`Setările contului ${target} au fost salvate.`, '', { duration: 2500 });
   }
 
@@ -500,6 +594,8 @@ export class SettingsComponent implements OnInit {
     this.userForm.reset({ name: '', username: '', password: '', role: 'agent', telefon: '', recoveryEmail: '' });
     this.userForm.get('password')?.setValidators(Validators.required);
     this.userForm.get('password')?.updateValueAndValidity();
+    this.userPassValue.set('');
+    this.hideUserPass = true;
     this.showUserModal.set(true);
   }
 
@@ -508,31 +604,67 @@ export class SettingsComponent implements OnInit {
     this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role, telefon: user.telefon ?? '', recoveryEmail: user.recoveryEmail ?? '' });
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
+    this.userPassValue.set('');
+    this.hideUserPass = true;
     this.showUserModal.set(true);
   }
 
-  closeUserModal(): void { this.showUserModal.set(false); }
+  closeUserModal(): void {
+    this.userPassValue.set('');
+    this.showUserModal.set(false);
+  }
 
-  saveUser(): void {
+  async saveUser(): Promise<void> {
     if (this.userForm.invalid) { this.userForm.markAllAsTouched(); return; }
     const { name, username, password, role, telefon, recoveryEmail } = this.userForm.value;
     let users = [...this.users()];
-    const id = this.editingUserId();
+    const id  = this.editingUserId();
+
+    const cleanTelefon       = (telefon || '').trim() || undefined;
+    const cleanRecoveryEmail = (recoveryEmail || '').trim() || undefined;
+
+    if (cleanTelefon && !this.PHONE_RE.test(cleanTelefon)) {
+      this.snackBar.open('Numărul de telefon trebuie să aibă exact 10 cifre.', '', { duration: 3000 }); return;
+    }
+    if (cleanRecoveryEmail && !this.EMAIL_RE.test(cleanRecoveryEmail)) {
+      this.snackBar.open('Adresa de email nu este validă (ex: office@firma.ro).', '', { duration: 3000 }); return;
+    }
+
+    const session = this.auth.session();
 
     if (id === null) {
       const dup = users.find(u => u.username === username.trim().toLowerCase());
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      const newId = Math.max(0, ...users.map(u => u.id)) + 1;
-      users.push({ id: newId, name: name.trim(), username: username.trim().toLowerCase(), password, role, telefon: (telefon || '').trim() || undefined, recoveryEmail: (recoveryEmail || '').trim() || undefined, active: true });
+      if (cleanTelefon && users.some(u => u.telefon === cleanTelefon)) {
+        this.snackBar.open('Numărul de telefon este deja folosit de un alt utilizator.', '', { duration: 3000 }); return;
+      }
+      if (cleanRecoveryEmail && users.some(u => u.recoveryEmail === cleanRecoveryEmail)) {
+        this.snackBar.open('Adresa de email este deja folosită de un alt utilizator.', '', { duration: 3000 }); return;
+      }
+      const newId     = Math.max(0, ...users.map(u => u.id)) + 1;
+      const hashed    = await this.crypto.hash(password);
+      const cleanName = name.trim();
+      users.push({ id: newId, name: cleanName, username: username.trim().toLowerCase(), password: hashed, _v: 2, role, telefon: cleanTelefon, recoveryEmail: cleanRecoveryEmail, active: true });
+      if (session) this.audit.log(session.userId, 'USER_CREATE', `Creat utilizator ${username.trim().toLowerCase()}`);
     } else {
       const idx = users.findIndex(u => u.id === id);
       if (idx === -1) return;
       const dup = users.find(u => u.username === username.trim().toLowerCase() && u.id !== id);
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
+      if (cleanTelefon && users.some(u => u.telefon === cleanTelefon && u.id !== id)) {
+        this.snackBar.open('Numărul de telefon este deja folosit de un alt utilizator.', '', { duration: 3000 }); return;
+      }
+      if (cleanRecoveryEmail && users.some(u => u.recoveryEmail === cleanRecoveryEmail && u.id !== id)) {
+        this.snackBar.open('Adresa de email este deja folosită de un alt utilizator.', '', { duration: 3000 }); return;
+      }
       const isProtected = users[idx].username === 'keyuser';
-      const savedRole = isProtected ? users[idx].role : role;
-      users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role: savedRole, telefon: (telefon || '').trim() || undefined, recoveryEmail: (recoveryEmail || '').trim() || undefined };
-      if (password) users[idx].password = password;
+      const savedRole   = isProtected ? users[idx].role : role;
+      users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role: savedRole, telefon: cleanTelefon, recoveryEmail: cleanRecoveryEmail };
+      if (password) {
+        users[idx].password = await this.crypto.hash(password);
+        users[idx]._v       = 2;
+      }
+      if (session) this.audit.log(session.userId, 'USER_EDIT', `Editat utilizator ${username.trim().toLowerCase()}`);
     }
 
     this.storage.set('app_users', users);
@@ -569,6 +701,8 @@ export class SettingsComponent implements OnInit {
     this.storage.set('app_users', users);
     this.users.set(users);
     this.transportService.refreshUsers(users);
+    const session = this.auth.session();
+    if (session) this.audit.log(session.userId, 'USER_DELETE', `Șters utilizator ${user.username}`);
     this.snackBar.open('Utilizatorul a fost șters.', '', { duration: 2500 });
   }
 

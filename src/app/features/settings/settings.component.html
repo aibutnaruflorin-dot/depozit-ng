@@ -191,42 +191,50 @@
             <ng-template pTemplate="header">
               <tr>
                 <th>Nume</th>
-                <th style="text-align:center">
-                  <mat-icon style="font-size:18px;vertical-align:middle" matTooltip="WhatsApp">whatsapp</mat-icon>
+                <th>
+                  <span class="dest-col-header dest-col-header--wa">
+                    <span class="dest-wa-dot"></span> WhatsApp
+                  </span>
                 </th>
-                <th style="text-align:center">
-                  <mat-icon style="font-size:18px;vertical-align:middle" matTooltip="Email">email</mat-icon>
+                <th>
+                  <span class="dest-col-header">
+                    <mat-icon style="font-size:16px;vertical-align:middle">email</mat-icon> Email
+                  </span>
                 </th>
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-user>
               <tr>
+                <td><strong>{{ user.name }}</strong></td>
                 <td>
-                  <strong>{{ user.name }}</strong>
-                  @if (user.telefon) {
-                    <br><span class="dest-sub">{{ user.telefon }}</span>
-                  }
-                  @if (user.recoveryEmail) {
-                    <br><span class="dest-sub">{{ user.recoveryEmail }}</span>
-                  }
+                  <div class="dest-cell">
+                    @if (user.telefon) {
+                      <span class="dest-value">{{ user.telefon }}</span>
+                      <button mat-icon-button
+                              [class.dest-toggle--on]="isUserWaEnabled(user)"
+                              (click)="toggleUserWa(user)"
+                              [matTooltip]="isUserWaEnabled(user) ? 'Dezactivează' : 'Activează'">
+                        <mat-icon>{{ isUserWaEnabled(user) ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                      </button>
+                    } @else {
+                      <span class="dest-missing">—</span>
+                    }
+                  </div>
                 </td>
-                <td style="text-align:center">
-                  <button mat-icon-button
-                          [disabled]="!user.telefon"
-                          [class.dest-toggle--on]="isUserWaEnabled(user)"
-                          (click)="toggleUserWa(user)"
-                          [matTooltip]="user.telefon ? (isUserWaEnabled(user) ? 'Dezactivează WhatsApp' : 'Activează WhatsApp') : 'Fără număr de telefon'">
-                    <mat-icon>{{ isUserWaEnabled(user) ? 'phone_enabled' : 'phone_disabled' }}</mat-icon>
-                  </button>
-                </td>
-                <td style="text-align:center">
-                  <button mat-icon-button
-                          [disabled]="!user.recoveryEmail"
-                          [class.dest-toggle--on]="isUserEmailEnabled(user)"
-                          (click)="toggleUserEmail(user)"
-                          [matTooltip]="user.recoveryEmail ? (isUserEmailEnabled(user) ? 'Dezactivează Email' : 'Activează Email') : 'Fără email de recuperare'">
-                    <mat-icon>{{ isUserEmailEnabled(user) ? 'mark_email_read' : 'mail_off' }}</mat-icon>
-                  </button>
+                <td>
+                  <div class="dest-cell">
+                    @if (user.recoveryEmail) {
+                      <span class="dest-value">{{ user.recoveryEmail }}</span>
+                      <button mat-icon-button
+                              [class.dest-toggle--on]="isUserEmailEnabled(user)"
+                              (click)="toggleUserEmail(user)"
+                              [matTooltip]="isUserEmailEnabled(user) ? 'Dezactivează' : 'Activează'">
+                        <mat-icon>{{ isUserEmailEnabled(user) ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                      </button>
+                    } @else {
+                      <span class="dest-missing">—</span>
+                    }
+                  </div>
                 </td>
               </tr>
             </ng-template>
@@ -261,12 +269,7 @@
           }
 
           <div class="wa-form dest-manual-form">
-            <h4>Adaugă manual</h4>
             <div class="wa-form-row">
-              <mat-form-field appearance="outline" class="wa-name-field">
-                <mat-label>Nume</mat-label>
-                <input matInput [(ngModel)]="newWaName" placeholder="ex: Grup depozit">
-              </mat-form-field>
               <mat-form-field appearance="outline" class="wa-type-field">
                 <mat-label>Tip</mat-label>
                 <mat-select [(ngModel)]="newWaType">
@@ -275,19 +278,50 @@
                 </mat-select>
               </mat-form-field>
             </div>
-            <div class="wa-form-row">
-              <mat-form-field appearance="outline" class="wa-phone-field">
-                <mat-label>{{ newWaType === 'group' ? 'Link grup' : 'Număr telefon' }}</mat-label>
-                <mat-icon matPrefix>{{ newWaType === 'group' ? 'link' : 'phone' }}</mat-icon>
-                <input matInput [(ngModel)]="newWaPhone"
-                       [placeholder]="newWaType === 'group' ? 'https://chat.whatsapp.com/…' : '+40712345678'">
-              </mat-form-field>
-              <button mat-flat-button color="primary" class="wa-add-btn"
-                      [disabled]="!newWaName.trim() || !newWaPhone.trim()"
-                      (click)="addWhatsappContact()">
-                <mat-icon>add</mat-icon>
-              </button>
-            </div>
+
+            @if (newWaType === 'number') {
+              <!-- Adaugă din Utilizatori -->
+              @if (availableWaUsers.length === 0) {
+                <p class="dest-empty" style="margin-top:0.5rem">Toți utilizatorii cu telefon sunt deja adăugați.</p>
+              } @else {
+                <div class="wa-form-row">
+                  <mat-form-field appearance="outline" class="wa-phone-field">
+                    <mat-label>Selectează utilizator</mat-label>
+                    <mat-icon matPrefix>person</mat-icon>
+                    <mat-select [(ngModel)]="selectedWaUserId">
+                      @for (u of availableWaUsers; track u.id) {
+                        <mat-option [value]="u.id">{{ u.name }} — {{ u.telefon }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <button mat-flat-button color="primary" class="wa-add-btn"
+                          [disabled]="!selectedWaUserId"
+                          (click)="addWaFromUser()">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+              }
+            } @else {
+              <!-- Adaugă grup manual -->
+              <div class="wa-form-row">
+                <mat-form-field appearance="outline" class="wa-name-field">
+                  <mat-label>Nume grup</mat-label>
+                  <input matInput [(ngModel)]="newWaName" placeholder="ex: Grup depozit">
+                </mat-form-field>
+              </div>
+              <div class="wa-form-row">
+                <mat-form-field appearance="outline" class="wa-phone-field">
+                  <mat-label>Link grup</mat-label>
+                  <mat-icon matPrefix>link</mat-icon>
+                  <input matInput [(ngModel)]="newWaPhone" placeholder="https://chat.whatsapp.com/…">
+                </mat-form-field>
+                <button mat-flat-button color="primary" class="wa-add-btn"
+                        [disabled]="!newWaName.trim() || !newWaPhone.trim()"
+                        (click)="addWhatsappContact()">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            }
           </div>
 
           <mat-divider style="margin: 1.25rem 0"></mat-divider>
@@ -337,12 +371,7 @@
           }
 
           <div class="wa-form dest-manual-form">
-            <h4>Adaugă manual</h4>
             <div class="wa-form-row">
-              <mat-form-field appearance="outline" class="wa-name-field">
-                <mat-label>Nume / Etichetă</mat-label>
-                <input matInput [(ngModel)]="newEmailName" placeholder="ex: Contabilitate">
-              </mat-form-field>
               <mat-form-field appearance="outline" class="wa-type-field">
                 <mat-label>Tip</mat-label>
                 <mat-select [(ngModel)]="newEmailType">
@@ -351,18 +380,50 @@
                 </mat-select>
               </mat-form-field>
             </div>
-            <div class="wa-form-row">
-              <mat-form-field appearance="outline" class="wa-phone-field">
-                <mat-label>Adresă email</mat-label>
-                <mat-icon matPrefix>email</mat-icon>
-                <input matInput [(ngModel)]="newEmailAddr" type="email" placeholder="ex: office@firma.ro">
-              </mat-form-field>
-              <button mat-flat-button color="primary" class="wa-add-btn"
-                      [disabled]="!newEmailName.trim() || !newEmailAddr.trim()"
-                      (click)="addEmailContact()">
-                <mat-icon>add</mat-icon>
-              </button>
-            </div>
+
+            @if (newEmailType === 'individual') {
+              <!-- Adaugă din Utilizatori -->
+              @if (availableEmailUsers.length === 0) {
+                <p class="dest-empty" style="margin-top:0.5rem">Toți utilizatorii cu email sunt deja adăugați.</p>
+              } @else {
+                <div class="wa-form-row">
+                  <mat-form-field appearance="outline" class="wa-phone-field">
+                    <mat-label>Selectează utilizator</mat-label>
+                    <mat-icon matPrefix>person</mat-icon>
+                    <mat-select [(ngModel)]="selectedEmailUserId">
+                      @for (u of availableEmailUsers; track u.id) {
+                        <mat-option [value]="u.id">{{ u.name }} — {{ u.recoveryEmail }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <button mat-flat-button color="primary" class="wa-add-btn"
+                          [disabled]="!selectedEmailUserId"
+                          (click)="addEmailFromUser()">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+              }
+            } @else {
+              <!-- Adaugă listă manuală -->
+              <div class="wa-form-row">
+                <mat-form-field appearance="outline" class="wa-name-field">
+                  <mat-label>Nume / Etichetă</mat-label>
+                  <input matInput [(ngModel)]="newEmailName" placeholder="ex: Contabilitate">
+                </mat-form-field>
+              </div>
+              <div class="wa-form-row">
+                <mat-form-field appearance="outline" class="wa-phone-field">
+                  <mat-label>Adresă email</mat-label>
+                  <mat-icon matPrefix>email</mat-icon>
+                  <input matInput [(ngModel)]="newEmailAddr" type="email" placeholder="ex: office@firma.ro">
+                </mat-form-field>
+                <button mat-flat-button color="primary" class="wa-add-btn"
+                        [disabled]="!newEmailName.trim() || !newEmailAddr.trim()"
+                        (click)="addEmailContact()">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            }
           </div>
 
         </div>
@@ -732,18 +793,53 @@
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>{{ editingUserId() !== null ? 'Parolă nouă (gol = nemodificat)' : 'Parolă *' }}</mat-label>
             <mat-icon matPrefix>lock</mat-icon>
-            <input matInput type="password" formControlName="password">
+            <input matInput [type]="hideUserPass ? 'password' : 'text'" formControlName="password">
+            <button mat-icon-button matSuffix type="button" (click)="hideUserPass = !hideUserPass">
+              <mat-icon>{{ hideUserPass ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
           </mat-form-field>
+
+          <!-- Reguli parolă -->
+          <div class="pass-rules-block">
+            @if (userPassValue().length > 0) {
+              <div class="strength-bar">
+                <div class="strength-segment" [class.filled]="userPassStrength().level >= 1" [class.s1]="userPassStrength().level === 1" [class.s2]="userPassStrength().level === 2" [class.s3]="userPassStrength().level === 3"></div>
+                <div class="strength-segment" [class.filled]="userPassStrength().level >= 2" [class.s2]="userPassStrength().level === 2" [class.s3]="userPassStrength().level === 3"></div>
+                <div class="strength-segment" [class.filled]="userPassStrength().level >= 3" [class.s3]="userPassStrength().level === 3"></div>
+              </div>
+              @if (userPassStrength().label) {
+                <span class="strength-label" [class.s1]="userPassStrength().level === 1" [class.s2]="userPassStrength().level === 2" [class.s3]="userPassStrength().level === 3">
+                  {{ userPassStrength().label }}
+                </span>
+              }
+            }
+            <p class="rules-title">Parola trebuie să conțină:</p>
+            <ul class="rules-list">
+              @for (rule of userPassRules(); track rule.label) {
+                <li [class.ok]="rule.ok">
+                  <mat-icon>{{ rule.ok ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                  {{ rule.label }}
+                </li>
+              }
+            </ul>
+          </div>
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>Telefon</mat-label>
             <mat-icon matPrefix>phone</mat-icon>
-            <input matInput formControlName="telefon" placeholder="07xx xxx xxx">
+            <input matInput formControlName="telefon" placeholder="ex: 0763027577" maxlength="10" inputmode="numeric">
+            <mat-hint>10 cifre, fără spații</mat-hint>
+            @if (userForm.get('telefon')?.hasError('pattern') && userForm.get('telefon')?.touched) {
+              <mat-error>Telefonul trebuie să aibă exact 10 cifre.</mat-error>
+            }
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>Email recuperare parolă</mat-label>
             <mat-icon matPrefix>mail_outline</mat-icon>
             <input matInput type="email" formControlName="recoveryEmail" placeholder="ex: angajat@firma.ro">
-            <mat-hint>Folosit pentru recuperarea parolei</mat-hint>
+            <mat-hint>Folosit pentru recuperarea parolei și Destinatari</mat-hint>
+            @if (userForm.get('recoveryEmail')?.hasError('email') && userForm.get('recoveryEmail')?.touched) {
+              <mat-error>Adresa de email nu este validă.</mat-error>
+            }
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>Rol *</mat-label>

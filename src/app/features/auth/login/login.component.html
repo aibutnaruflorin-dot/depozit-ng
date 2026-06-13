@@ -1,6 +1,7 @@
 <div class="login-page">
   <mat-card class="login-card" appearance="outlined">
     <mat-card-content>
+
       <div class="login-header">
         <img src="logo.png" alt="D2C" class="login-logo">
         <p class="login-subtitle">D2C · Gestiune Comenzi</p>
@@ -17,8 +18,7 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Username</mat-label>
           <mat-icon matPrefix>person</mat-icon>
-          <input matInput formControlName="username" autocomplete="username"
-                 (input)="error = ''">
+          <input matInput formControlName="username" autocomplete="username" (input)="error = ''; showRecover = false">
           @if (form.get('username')?.hasError('required') && form.get('username')?.touched) {
             <mat-error>Username este obligatoriu.</mat-error>
           }
@@ -29,9 +29,8 @@
           <mat-icon matPrefix>lock</mat-icon>
           <input matInput [type]="hidePass ? 'password' : 'text'"
                  formControlName="password" autocomplete="current-password"
-                 (input)="error = ''">
-          <button mat-icon-button matSuffix type="button"
-                  (click)="hidePass = !hidePass" [attr.aria-label]="hidePass ? 'Arată parola' : 'Ascunde parola'">
+                 (input)="error = ''; showRecover = false">
+          <button mat-icon-button matSuffix type="button" (click)="hidePass = !hidePass">
             <mat-icon>{{ hidePass ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
           @if (form.get('password')?.hasError('required') && form.get('password')?.touched) {
@@ -43,6 +42,21 @@
           Autentificare
         </button>
       </form>
+
+      <div class="recover-link">
+        <button mat-button type="button" (click)="showRecover = !showRecover">
+          <mat-icon>help_outline</mat-icon>
+          Ai uitat parola?
+        </button>
+      </div>
+
+      @if (showRecover) {
+        <div class="recover-info">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <p>Parola poate fi resetată doar de <strong>Administrator</strong> sau <strong>KeyUser</strong> din secțiunea <em>Setări → Utilizatori</em>.</p>
+        </div>
+      }
+
     </mat-card-content>
   </mat-card>
 </div>

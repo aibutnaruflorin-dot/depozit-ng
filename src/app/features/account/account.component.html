@@ -7,6 +7,13 @@
     </h1>
   </div>
 
+  @if (forced) {
+    <div class="forced-banner">
+      <mat-icon>warning</mat-icon>
+      <span>Schimbați parola implicită înainte de a continua.</span>
+    </div>
+  }
+
   <div class="account-card">
     <!-- Info utilizator -->
     <div class="user-info-row">
@@ -21,28 +28,82 @@
     <h3>Schimbă parola</h3>
 
     <form [formGroup]="form" (ngSubmit)="save()" class="pass-form">
+
+      <!-- Parola curentă -->
       <mat-form-field appearance="outline" class="full-w">
         <mat-label>Parola curentă</mat-label>
         <mat-icon matPrefix>lock</mat-icon>
-        <input matInput type="password" formControlName="oldPass">
+        <input matInput [type]="hideOld ? 'password' : 'text'" formControlName="oldPass">
+        <button mat-icon-button matSuffix type="button" (click)="hideOld = !hideOld">
+          <mat-icon>{{ hideOld ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
         @if (form.get('oldPass')?.hasError('required') && form.get('oldPass')?.touched) {
           <mat-error>Câmp obligatoriu.</mat-error>
         }
       </mat-form-field>
 
+      <!-- Parola nouă -->
       <mat-form-field appearance="outline" class="full-w">
         <mat-label>Parola nouă</mat-label>
         <mat-icon matPrefix>lock_reset</mat-icon>
-        <input matInput type="password" formControlName="newPass">
+        <input matInput [type]="hideNew ? 'password' : 'text'" formControlName="newPass">
+        <button mat-icon-button matSuffix type="button" (click)="hideNew = !hideNew">
+          <mat-icon>{{ hideNew ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
         @if (form.get('newPass')?.hasError('minlength') && form.get('newPass')?.touched) {
-          <mat-error>Minim 4 caractere.</mat-error>
+          <mat-error>Minim 8 caractere.</mat-error>
         }
       </mat-form-field>
 
+      <!-- Reguli + indicator putere — mereu vizibile -->
+      <div class="strength-block">
+
+        <!-- Bara de putere — apare doar când există text -->
+        @if (newPassValue().length > 0) {
+          <div class="strength-bar">
+            <div class="strength-segment"
+              [class.filled]="strength().level >= 1"
+              [class.s1]="strength().level === 1"
+              [class.s2]="strength().level === 2"
+              [class.s3]="strength().level === 3"></div>
+            <div class="strength-segment"
+              [class.filled]="strength().level >= 2"
+              [class.s2]="strength().level === 2"
+              [class.s3]="strength().level === 3"></div>
+            <div class="strength-segment"
+              [class.filled]="strength().level >= 3"
+              [class.s3]="strength().level === 3"></div>
+          </div>
+          @if (strength().label) {
+            <span class="strength-label"
+              [class.s1]="strength().level === 1"
+              [class.s2]="strength().level === 2"
+              [class.s3]="strength().level === 3">
+              {{ strength().label }}
+            </span>
+          }
+        }
+
+        <!-- Lista de reguli — mereu vizibilă -->
+        <p class="rules-title">Parola trebuie să conțină:</p>
+        <ul class="rules-list">
+          @for (rule of rules(); track rule.label) {
+            <li [class.ok]="rule.ok">
+              <mat-icon>{{ rule.ok ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+              {{ rule.label }}
+            </li>
+          }
+        </ul>
+      </div>
+
+      <!-- Confirmă parola -->
       <mat-form-field appearance="outline" class="full-w">
         <mat-label>Confirmă parola nouă</mat-label>
         <mat-icon matPrefix>lock_reset</mat-icon>
-        <input matInput type="password" formControlName="confirm">
+        <input matInput [type]="hideConfirm ? 'password' : 'text'" formControlName="confirm">
+        <button mat-icon-button matSuffix type="button" (click)="hideConfirm = !hideConfirm">
+          <mat-icon>{{ hideConfirm ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
       </mat-form-field>
 
       @if (msg) {

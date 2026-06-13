@@ -32,6 +32,23 @@
           <span matListItemTitle>{{ item.label }}</span>
         </mat-list-item>
       }
+
+      <!-- Contul meu + Despre — mereu vizibile -->
+      <mat-divider style="margin: 0.5rem 0" />
+      <mat-list-item
+        [class.active]="isActive('/app/account')"
+        (click)="navigate('/app/account')"
+        [attr.aria-current]="isActive('/app/account') ? 'page' : null">
+        <mat-icon matListItemIcon>manage_accounts</mat-icon>
+        <span matListItemTitle>Contul meu</span>
+      </mat-list-item>
+      <mat-list-item
+        [class.active]="isActive('/app/about')"
+        (click)="navigate('/app/about')"
+        [attr.aria-current]="isActive('/app/about') ? 'page' : null">
+        <mat-icon matListItemIcon>info_outline</mat-icon>
+        <span matListItemTitle>Despre aplicație</span>
+      </mat-list-item>
     </mat-nav-list>
 
     <!-- User footer -->

@@ -1,5 +1,64 @@
-<div class="page-content">
+<div class="sec-page">
+
   <div class="page-header">
-    <h1 class="page-title">Pagina nouă</h1>
+    <h1 class="page-title">
+      <mat-icon>security</mat-icon>
+      Jurnal de securitate
+    </h1>
+    <button mat-stroked-button (click)="refresh()" matTooltip="Reîncarcă">
+      <mat-icon>refresh</mat-icon>
+    </button>
   </div>
+
+  <!-- Filtre -->
+  <div class="filter-bar">
+    <button mat-stroked-button
+      [class.active]="filterAction() === ''"
+      (click)="filterAction.set('')">
+      Toate
+    </button>
+    @for (a of allActions; track a) {
+      <button mat-stroked-button
+        [class.active]="filterAction() === a"
+        (click)="filterAction.set(a)">
+        {{ ACTION_LABELS[a] }}
+      </button>
+    }
+  </div>
+
+  <!-- Tabel -->
+  @if (filtered().length === 0) {
+    <div class="empty-state">
+      <mat-icon>history_toggle_off</mat-icon>
+      <p>Nicio înregistrare în jurnal.</p>
+    </div>
+  } @else {
+    <div class="audit-table-wrap">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Data și ora</th>
+            <th>Utilizator</th>
+            <th>Acțiune</th>
+            <th>Detalii</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of filtered(); track e.ts) {
+            <tr [class]="'row-' + e.action.toLowerCase()">
+              <td class="cell-ts">{{ e.ts | date:'dd.MM.yyyy HH:mm:ss' }}</td>
+              <td class="cell-user">{{ userName(e.userId) }}</td>
+              <td class="cell-action">
+                <span class="action-badge" [attr.data-action]="e.action">
+                  {{ actionLabel(e.action) }}
+                </span>
+              </td>
+              <td class="cell-detail">{{ e.detail }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

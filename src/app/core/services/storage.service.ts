@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { User } from '../models/user.model';
+import { DEFAULT_PERMISSIONS } from '../models/app-permission.model';
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
@@ -27,13 +28,21 @@ export class StorageService {
   init(): void {
     if (!this.get('app_users')) {
       this.set('app_users', [
-        { id: 1, name: 'Administrator', username: 'admin',  password: 'admin123', role: 'keyuser', active: true },
-        { id: 2, name: 'Agent 1',       username: 'agent1', password: 'agent123', role: 'agent',   active: true }
+        { id: 1, name: 'Administrator', username: 'admin',  password: 'admin123', _v: 1, mustChangePassword: true, role: 'keyuser', active: true },
+        { id: 2, name: 'Agent 1',       username: 'agent1', password: 'agent123', _v: 1, mustChangePassword: true, role: 'agent',   active: true }
       ] as User[]);
     }
-    // Cleanup: remove superadmin, migrate admin→keyuser, fix invalid roles
+    // Inițializare permisiuni dacă lipsesc
+    if (!this.get('app_permissions')) this.set('app_permissions', DEFAULT_PERMISSIONS);
+
+    // Cleanup: remove superadmin, migrate admin→keyuser
+    // Rolurile custom (din app_permissions) sunt valide — nu le convertim
+    const storedPerms = this.get<any[]>('app_permissions') ?? [];
+    const customRoleIds = storedPerms.map((p: any) => p.id as string);
+    const builtInRoles  = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
+    const validRoles    = [...builtInRoles, ...customRoleIds];
+
     const users = this.get<User[]>('app_users') ?? [];
-    const validRoles = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
     const fixed = users
       .filter(u => u.username !== 'superadmin')
       .map(u => (u.role as string) === 'admin' ? { ...u, role: 'keyuser' as any } : u)

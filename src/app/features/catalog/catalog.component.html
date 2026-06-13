@@ -9,9 +9,11 @@
     <button mat-stroked-button (click)="openResetBuf()" color="warn">
       <mat-icon>restart_alt</mat-icon> Resetare Buffer
     </button>
-    <button mat-stroked-button (click)="exportExcel()">
-      <mat-icon>download</mat-icon> Export Excel
-    </button>
+    @if (canExport()) {
+      <button mat-stroked-button (click)="exportExcel()">
+        <mat-icon>download</mat-icon> Export Excel
+      </button>
+    }
     <button mat-stroked-button (click)="goToNewOrder()">
       <mat-icon>add_shopping_cart</mat-icon> Comandă nouă
     </button>
