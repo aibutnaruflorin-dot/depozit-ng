@@ -379,181 +379,143 @@
 
   <!-- ══ TAB: UTILIZATORI + ROLURI ══ -->
   <mat-tab label="Utilizatori">
-    <div class="tab-content tab-content--wide">
-      <div class="tab-header">
-        <h3>Utilizatori</h3>
-        @if (auth.isAdmin()) {
-          <button mat-stroked-button (click)="openAddUser()">
-            <mat-icon>person_add</mat-icon> Adaugă utilizator
-          </button>
-        }
+    <div class="tab-content tab-content--parallel">
+
+      <!-- ── Coloana stânga: Utilizatori ── -->
+      <div class="parallel-col parallel-col--users">
+        <div class="tab-header">
+          <h3>Utilizatori</h3>
+          @if (auth.isAdmin()) {
+            <button mat-stroked-button (click)="openAddUser()">
+              <mat-icon>person_add</mat-icon> Adaugă utilizator
+            </button>
+          }
+        </div>
+
+        <p-table [value]="users()" styleClass="p-datatable-sm p-datatable-striped">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Nume</th>
+              <th>Username</th>
+              <th>Telefon</th>
+              <th>Status</th>
+              @if (auth.isAdmin()) {
+                <th style="text-align:right">Acțiuni</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-user>
+            <tr>
+              <td><strong>{{ user.name }}</strong></td>
+              <td><code>{{ user.username }}</code></td>
+              <td>
+                @if (user.telefon) {
+                  <a [href]="'tel:' + user.telefon" style="color:var(--color-primary);text-decoration:none">{{ user.telefon }}</a>
+                } @else { <span style="color:var(--color-text-muted)">—</span> }
+              </td>
+              <td>
+                <p-tag [value]="user.active !== false ? 'Activ' : 'Dezactivat'"
+                       [severity]="user.active !== false ? 'success' : 'danger'" />
+              </td>
+              @if (auth.isAdmin()) {
+                <td>
+                  @if (user.username === 'keyuser') {
+                    <div class="user-actions">
+                      <button mat-icon-button (click)="openAdminSec('keyuser')" matTooltip="Schimbă parola / email recuperare">
+                        <mat-icon>key</mat-icon>
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="user-actions">
+                      <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="toggleUserActive(user)"
+                              [matTooltip]="user.active !== false ? 'Dezactivează' : 'Activează'"
+                              [style.color]="user.active !== false ? 'var(--color-error)' : 'var(--color-success)'">
+                        <mat-icon>{{ user.active !== false ? 'person_off' : 'person' }}</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="deleteUser(user)" matTooltip="Șterge"
+                              style="color:var(--color-error)">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+        </p-table>
       </div>
 
-      <p-table [value]="users()" styleClass="p-datatable-sm p-datatable-striped"
-               [tableStyle]="{'min-width':'520px'}">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Nume</th>
-            <th>Username</th>
-            <th>Telefon</th>
-            <th>Status</th>
-            @if (auth.isAdmin()) {
-              <th style="text-align:right">Acțiuni</th>
-            }
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-user>
-          <tr>
-            <td><strong>{{ user.name }}</strong></td>
-            <td><code>{{ user.username }}</code></td>
-            <td>
-              @if (user.telefon) {
-                <a [href]="'tel:' + user.telefon" style="color:var(--color-primary);text-decoration:none">{{ user.telefon }}</a>
-              } @else { <span style="color:var(--color-text-muted)">—</span> }
-            </td>
-            <td>
-              <p-tag [value]="user.active !== false ? 'Activ' : 'Dezactivat'"
-                     [severity]="user.active !== false ? 'success' : 'danger'" />
-            </td>
-            @if (auth.isAdmin()) {
-              <td>
-                @if (user.username === 'keyuser') {
-                  <div class="user-actions">
-                    <button mat-icon-button (click)="openAdminSec('keyuser')" matTooltip="Schimbă parola / email recuperare">
-                      <mat-icon>key</mat-icon>
-                    </button>
-                  </div>
-                } @else {
-                  <div class="user-actions">
-                    <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button (click)="toggleUserActive(user)"
-                            [matTooltip]="user.active !== false ? 'Dezactivează' : 'Activează'"
-                            [style.color]="user.active !== false ? 'var(--color-error)' : 'var(--color-success)'">
-                      <mat-icon>{{ user.active !== false ? 'person_off' : 'person' }}</mat-icon>
-                    </button>
-                    <button mat-icon-button (click)="deleteUser(user)" matTooltip="Șterge"
-                            style="color:var(--color-error)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-                }
-              </td>
-            }
-          </tr>
-        </ng-template>
-      </p-table>
-
+      <!-- ── Coloana dreapta: Roluri (doar admin) ── -->
       @if (auth.isAdmin()) {
-        <mat-divider style="margin: 2rem 0"></mat-divider>
-
-        <div class="tab-header">
-          <h3>Roluri utilizatori</h3>
-          <button mat-stroked-button (click)="openAddPerm()">
-            <mat-icon>add</mat-icon> Adaugă rol
-          </button>
-        </div>
-        <p class="wa-hint">
-          <mat-icon class="wa-hint-icon">info</mat-icon>
-          Rolul definește ce pagini poate accesa un utilizator și cu ce nivel de acces (complet, citire, niciun).
-        </p>
-
-        <!-- Ranguri de sistem -->
-        <div class="func-group-label func-group-label--system">
-          <mat-icon>military_tech</mat-icon> Ranguri de sistem
-        </div>
-        <div class="perm-list perm-list--system">
-          @for (perm of systemRanks; track perm.id) {
-            <div class="perm-item perm-item--system">
-              <div class="perm-item-header">
-                <div class="perm-item-title">
-                  @if (perm.id === 'keyuser') {
-                    <mat-icon class="perm-icon perm-icon--keyuser" matTooltip="Rang unic în sistem">star</mat-icon>
-                  } @else {
-                    <mat-icon class="perm-icon">admin_panel_settings</mat-icon>
-                  }
-                  <strong>{{ perm.name }}</strong>
-                  @if (perm.id === 'keyuser') {
-                    <span class="perm-keyuser-badge">Unic</span>
-                  }
-                  <span class="perm-admin-badge">Admin</span>
-                  <span class="func-system-badge">Rang</span>
-                </div>
-                <div class="perm-item-actions">
-                  @if (canEditPerm(perm)) {
-                    <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                  }
-                  <mat-icon matTooltip="Rang protejat — nu poate fi șters"
-                            style="color:var(--color-text-muted);margin:0 4px;font-size:18px">lock</mat-icon>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Roluri sistem: Șofer, Ajutor manipulant -->
-        <div class="func-group-label func-group-label--system">
-          <mat-icon>shield</mat-icon> Roluri sistem
-        </div>
-        <div class="perm-list perm-list--system">
-          @for (perm of systemRoles; track perm.id) {
-            <div class="perm-item perm-item--system">
-              <div class="perm-item-header">
-                <div class="perm-item-title">
-                  <mat-icon class="perm-icon">shield</mat-icon>
-                  <strong>{{ perm.name }}</strong>
-                  <span class="func-system-badge">Sistem</span>
-                </div>
-                <div class="perm-item-actions">
-                  <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează pagini">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <mat-icon matTooltip="Nu poate fi șters"
-                            style="color:var(--color-text-muted);margin:0 4px;font-size:18px">lock</mat-icon>
-                </div>
-              </div>
-              <div class="perm-pages-grid">
-                @for (page of appPages; track page.id) {
-                  <div class="perm-page-chip" [class.perm-page--full]="perm.pages[page.id]==='full'" [class.perm-page--read]="perm.pages[page.id]==='read'" [class.perm-page--none]="perm.pages[page.id]==='none'||!perm.pages[page.id]">
-                    <mat-icon class="perm-page-icon">
-                      {{ (perm.pages[page.id]==='full') ? 'check_circle' : (perm.pages[page.id]==='read') ? 'visibility' : 'block' }}
-                    </mat-icon>
-                    <span>{{ page.label }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Roluri personalizate -->
-        <div class="func-group-label">
-          <mat-icon>verified_user</mat-icon> Roluri personalizate
-        </div>
-        @if (customRoles.length === 0) {
-          <div class="empty-state empty-state--sm">
-            <p>Niciun rol personalizat. Adaugă unul mai sus.</p>
+        <div class="parallel-col parallel-col--roles">
+          <div class="tab-header">
+            <h3>Roluri utilizatori</h3>
+            <button mat-stroked-button (click)="openAddPerm()">
+              <mat-icon>add</mat-icon> Adaugă rol
+            </button>
           </div>
-        } @else {
-          <div class="perm-list">
-            @for (perm of customRoles; track perm.id) {
-              <div class="perm-item">
+          <p class="wa-hint">
+            <mat-icon class="wa-hint-icon">info</mat-icon>
+            Rolul definește ce pagini poate accesa un utilizator și cu ce nivel de acces (complet, citire, niciun).
+          </p>
+
+          <!-- Ranguri de sistem -->
+          <div class="func-group-label func-group-label--system">
+            <mat-icon>military_tech</mat-icon> Ranguri de sistem
+          </div>
+          <div class="perm-list perm-list--system">
+            @for (perm of systemRanks; track perm.id) {
+              <div class="perm-item perm-item--system">
                 <div class="perm-item-header">
                   <div class="perm-item-title">
-                    <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+                    @if (perm.id === 'keyuser') {
+                      <mat-icon class="perm-icon perm-icon--keyuser" matTooltip="Rang unic în sistem">star</mat-icon>
+                    } @else {
+                      <mat-icon class="perm-icon">admin_panel_settings</mat-icon>
+                    }
                     <strong>{{ perm.name }}</strong>
-                    @if (perm.isAdmin) { <span class="perm-admin-badge">Admin</span> }
+                    @if (perm.id === 'keyuser') {
+                      <span class="perm-keyuser-badge">Unic</span>
+                    }
+                    <span class="perm-admin-badge">Admin</span>
+                    <span class="func-system-badge">Rang</span>
                   </div>
                   <div class="perm-item-actions">
-                    <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
+                    @if (canEditPerm(perm)) {
+                      <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                    }
+                    <mat-icon matTooltip="Rang protejat — nu poate fi șters"
+                              style="color:var(--color-text-muted);margin:0 4px;font-size:18px">lock</mat-icon>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Roluri sistem: Șofer, Ajutor manipulant -->
+          <div class="func-group-label func-group-label--system">
+            <mat-icon>shield</mat-icon> Roluri sistem
+          </div>
+          <div class="perm-list perm-list--system">
+            @for (perm of systemRoles; track perm.id) {
+              <div class="perm-item perm-item--system">
+                <div class="perm-item-header">
+                  <div class="perm-item-title">
+                    <mat-icon class="perm-icon">shield</mat-icon>
+                    <strong>{{ perm.name }}</strong>
+                    <span class="func-system-badge">Sistem</span>
+                  </div>
+                  <div class="perm-item-actions">
+                    <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează pagini">
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <button mat-icon-button color="warn" (click)="deletePerm(perm)" matTooltip="Șterge">
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
+                    <mat-icon matTooltip="Nu poate fi șters"
+                              style="color:var(--color-text-muted);margin:0 4px;font-size:18px">lock</mat-icon>
                   </div>
                 </div>
                 <div class="perm-pages-grid">
@@ -569,8 +531,51 @@
               </div>
             }
           </div>
-        }
+
+          <!-- Roluri personalizate -->
+          <div class="func-group-label">
+            <mat-icon>verified_user</mat-icon> Roluri personalizate
+          </div>
+          @if (customRoles.length === 0) {
+            <div class="empty-state empty-state--sm">
+              <p>Niciun rol personalizat. Adaugă unul mai sus.</p>
+            </div>
+          } @else {
+            <div class="perm-list">
+              @for (perm of customRoles; track perm.id) {
+                <div class="perm-item">
+                  <div class="perm-item-header">
+                    <div class="perm-item-title">
+                      <mat-icon class="perm-icon">{{ perm.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+                      <strong>{{ perm.name }}</strong>
+                      @if (perm.isAdmin) { <span class="perm-admin-badge">Admin</span> }
+                    </div>
+                    <div class="perm-item-actions">
+                      <button mat-icon-button (click)="openEditPerm(perm)" matTooltip="Editează">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button color="warn" (click)="deletePerm(perm)" matTooltip="Șterge">
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="perm-pages-grid">
+                    @for (page of appPages; track page.id) {
+                      <div class="perm-page-chip" [class.perm-page--full]="perm.pages[page.id]==='full'" [class.perm-page--read]="perm.pages[page.id]==='read'" [class.perm-page--none]="perm.pages[page.id]==='none'||!perm.pages[page.id]">
+                        <mat-icon class="perm-page-icon">
+                          {{ (perm.pages[page.id]==='full') ? 'check_circle' : (perm.pages[page.id]==='read') ? 'visibility' : 'block' }}
+                        </mat-icon>
+                        <span>{{ page.label }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
       }
+
     </div>
   </mat-tab>
 

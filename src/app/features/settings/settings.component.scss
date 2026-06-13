@@ -369,6 +369,26 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
 /* Users tab */
 .tab-content--wide { max-width: 900px; }
 
+/* Parallel two-column layout: Users | Roles */
+.tab-content--parallel {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  padding: 1.5rem 1rem;
+  max-width: none;
+}
+
+.parallel-col {
+  min-width: 0;
+  &--users { flex: 0 0 55%; }
+  &--roles { flex: 1; }
+}
+
+@media (max-width: 900px) {
+  .tab-content--parallel { flex-direction: column; }
+  .parallel-col--users   { flex: none; width: 100%; }
+}
+
 .user-actions {
   display: flex;
   justify-content: flex-end;
