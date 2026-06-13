@@ -78,6 +78,12 @@
                         {{ catStates[cat.id].importMsg }}
                       </span>
                     }
+                    @if (catStates[cat.id]?.importDetected) {
+                      <div class="import-cols-detected">
+                        <mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle">table_chart</mat-icon>
+                        Coloane detectate: {{ catStates[cat.id].importDetected }}
+                      </div>
+                    }
                   </div>
                   <p class="hint">Importă fișierul direct din Nexus, fără modificări. Fișierele cu același nume sunt respinse.</p>
 

@@ -169,7 +169,7 @@ export class CatalogsService {
     this._productsByCat.update(m => ({ ...m, [catalogId]: tagged }));
   }
 
-  async importExcel(catalogId: string, file: File): Promise<{ ok: boolean; msg: string }> {
+  async importExcel(catalogId: string, file: File): Promise<{ ok: boolean; msg: string; detected?: string }> {
     const filename = file.name;
 
     // Duplicate filename check
@@ -260,7 +260,17 @@ export class CatalogsService {
 
           this._saveProducts(catalogId, products);
           this._recordUpload(catalogId, filename, products.length);
-          resolve({ ok: true, msg: `${products.length} produse importate din "${filename}".` });
+
+          const LABELS: Record<string, string> = {
+            name: 'Denumire', um: 'UM', qty: 'Cantitate', masaNeta: 'Masă netă',
+            pretFaraTVA: 'Preț fără TVA', pretCuTVA: 'Preț cu TVA',
+            category: 'Categorie', furnizor: 'Furnizor', codExtern: 'Cod extern'
+          };
+          const detected = Object.entries(colMap)
+            .map(([k, idx]) => `${LABELS[k] ?? k}→col.${idx + 1}`)
+            .join(', ');
+
+          resolve({ ok: true, msg: `${products.length} produse importate din "${filename}".`, detected });
         } catch {
           resolve({ ok: false, msg: 'Eroare la citirea fișierului Excel.' });
         }

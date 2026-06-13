@@ -225,6 +225,16 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
   &.err { color: var(--color-error); }
 }
 
+.import-cols-detected {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #666);
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
 /* Upload history */
 .upload-history {
   margin-top: 0.75rem;

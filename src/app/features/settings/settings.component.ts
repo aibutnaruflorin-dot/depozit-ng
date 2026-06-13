@@ -33,11 +33,12 @@ import { TagModule } from 'primeng/tag';
 import { DragModalDirective } from '../../shared/drag-modal.directive';
 
 interface CatState {
-  importing: boolean;
-  testing:   boolean;
-  syncing:   boolean;
-  apiMsg:    { ok: boolean; msg: string } | null;
-  importMsg: string;
+  importing:       boolean;
+  testing:         boolean;
+  syncing:         boolean;
+  apiMsg:          { ok: boolean; msg: string } | null;
+  importMsg:       string;
+  importDetected:  string | null;
 }
 
 @Component({
@@ -166,7 +167,7 @@ export class SettingsComponent implements OnInit {
 
   private _initState(id: string): void {
     if (!this.catStates[id]) {
-      this.catStates[id] = { importing: false, testing: false, syncing: false, apiMsg: null, importMsg: '' };
+      this.catStates[id] = { importing: false, testing: false, syncing: false, apiMsg: null, importMsg: '', importDetected: null };
     }
   }
 
@@ -230,6 +231,7 @@ export class SettingsComponent implements OnInit {
     this.catalogsService.importExcel(cat.id, file).then(res => {
       st.importing = false;
       st.importMsg = res.msg;
+      st.importDetected = res.detected ?? null;
       this.snackBar.open(res.ok ? `✅ ${res.msg}` : `❌ ${res.msg}`, 'OK', {
         duration: 4000, panelClass: [res.ok ? 'snack-success' : 'snack-error']
       });
