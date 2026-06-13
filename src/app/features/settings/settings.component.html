@@ -172,163 +172,158 @@
     </mat-tab>
   }
 
-  <!-- ══ TAB 2: WHATSAPP (admin) ══ -->
+  <!-- ══ TAB: CONTACTE (WhatsApp + Email) ══ -->
   @if (auth.isAdmin()) {
-    <mat-tab label="WhatsApp">
-      <div class="tab-content">
-        <div class="tab-header">
-          <h3>Destinatari WhatsApp</h3>
-        </div>
-        <p class="wa-hint">
-          <mat-icon class="wa-hint-icon">info</mat-icon>
-          Adaugă numere de telefon sau linkuri de grup WhatsApp. Le vei putea selecta când trimiți o comandă.
-        </p>
+    <mat-tab label="Contacte">
+      <div class="tab-content tab-content--parallel">
 
-        <!-- Lista contacte existente -->
-        @if (whatsappContacts().length > 0) {
-          <div class="wa-list">
-            @for (c of whatsappContacts(); track c.id) {
-              <div class="wa-item">
-                <mat-icon class="wa-item-icon">{{ c.type === 'group' ? 'group' : 'phone' }}</mat-icon>
-                <div class="wa-item-info">
-                  <span class="wa-item-name">{{ c.name }}</span>
-                  <span class="wa-item-phone">{{ c.phone }}</span>
-                </div>
-                <span class="wa-item-type">{{ c.type === 'group' ? 'Grup' : 'Număr' }}</span>
-                <button mat-icon-button color="warn" (click)="removeWhatsappContact(c.id)" matTooltip="Șterge">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
-            }
+        <!-- ── Coloana stânga: WhatsApp ── -->
+        <div class="parallel-col">
+          <div class="tab-header">
+            <h3>WhatsApp</h3>
           </div>
-          <mat-divider class="wa-divider" />
-        }
-
-        <!-- Formular de adăugare -->
-        <div class="wa-form">
-          <h4>Adaugă contact nou</h4>
-          <div class="wa-form-row">
-            <mat-form-field appearance="outline" class="wa-name-field">
-              <mat-label>Nume</mat-label>
-              <input matInput [(ngModel)]="newWaName" placeholder="ex: Depozit central">
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="wa-type-field">
-              <mat-label>Tip</mat-label>
-              <mat-select [(ngModel)]="newWaType">
-                <mat-option value="number">Număr telefon</mat-option>
-                <mat-option value="group">Link grup</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-          <div class="wa-form-row">
-            <mat-form-field appearance="outline" class="wa-phone-field">
-              <mat-label>{{ newWaType === 'group' ? 'Link grup WhatsApp' : 'Număr telefon' }}</mat-label>
-              <mat-icon matPrefix>{{ newWaType === 'group' ? 'link' : 'phone' }}</mat-icon>
-              <input matInput [(ngModel)]="newWaPhone"
-                     [placeholder]="newWaType === 'group' ? 'https://chat.whatsapp.com/…' : '+40712345678 sau 0712345678'">
-            </mat-form-field>
-            <button mat-flat-button color="primary" class="wa-add-btn"
-                    [disabled]="!newWaName.trim() || !newWaPhone.trim()"
-                    (click)="addWhatsappContact()">
-              <mat-icon>add</mat-icon> Adaugă
-            </button>
-          </div>
-        </div>
-      </div>
-    </mat-tab>
-  }
-
-  <!-- ══ TAB: EMAIL (admin) ══ -->
-  @if (auth.isAdmin()) {
-    <mat-tab label="Email">
-      <div class="tab-content">
-        <div class="tab-header">
-          <h3>Destinatari Email</h3>
-        </div>
-
-        <!-- Notificare resetare buffer -->
-        <div class="buf-email-section">
-          <div class="buf-email-label">
-            <mat-icon>notifications_active</mat-icon>
-            Email notificare resetare buffer
-          </div>
-          <p class="buf-email-hint">
-            Înainte de fiecare resetare buffer se deschide clientul de email cu un rezumat al ajustărilor.
-            Câmpul nu poate fi lăsat gol.
+          <p class="wa-hint">
+            <mat-icon class="wa-hint-icon">info</mat-icon>
+            Adaugă numere de telefon sau linkuri de grup WhatsApp.
           </p>
-          <div class="buf-email-row">
-            <mat-form-field appearance="outline" class="buf-email-field">
-              <mat-label>Adresă email</mat-label>
-              <mat-icon matPrefix>email</mat-icon>
-              <input matInput type="email"
-                     [value]="catalogsService.bufferNotifyEmail()"
-                     #bufEmailInput
-                     placeholder="ex: office@firma.ro">
-            </mat-form-field>
-            <button mat-flat-button color="primary"
-                    [disabled]="!bufEmailInput.value.trim()"
-                    (click)="saveBufferEmail(bufEmailInput.value)">
-              <mat-icon>save</mat-icon> Salvează
-            </button>
-          </div>
-        </div>
 
-        <mat-divider style="margin: 12px 0 16px"></mat-divider>
-
-        <p class="wa-hint">
-          <mat-icon class="wa-hint-icon">info</mat-icon>
-          Adaugă adrese de email individuale sau liste de distribuție. Le vei putea selecta când trimiți o comandă.
-        </p>
-
-        @if (emailContacts().length > 0) {
-          <div class="wa-list">
-            @for (c of emailContacts(); track c.id) {
-              <div class="wa-item">
-                <mat-icon class="wa-item-icon">{{ c.type === 'list' ? 'group' : 'person' }}</mat-icon>
-                <div class="wa-item-info">
-                  <span class="wa-item-name">{{ c.name }}</span>
-                  <span class="wa-item-phone">{{ c.email }}</span>
+          @if (whatsappContacts().length > 0) {
+            <div class="wa-list">
+              @for (c of whatsappContacts(); track c.id) {
+                <div class="wa-item">
+                  <mat-icon class="wa-item-icon">{{ c.type === 'group' ? 'group' : 'phone' }}</mat-icon>
+                  <div class="wa-item-info">
+                    <span class="wa-item-name">{{ c.name }}</span>
+                    <span class="wa-item-phone">{{ c.phone }}</span>
+                  </div>
+                  <span class="wa-item-type">{{ c.type === 'group' ? 'Grup' : 'Număr' }}</span>
+                  <button mat-icon-button color="warn" (click)="removeWhatsappContact(c.id)" matTooltip="Șterge">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
                 </div>
-                <span class="wa-item-type">{{ c.type === 'list' ? 'Listă' : 'Individual' }}</span>
-                <button mat-icon-button color="warn" (click)="removeEmailContact(c.id)" matTooltip="Șterge">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
-            }
-          </div>
-          <mat-divider class="wa-divider" />
-        }
+              }
+            </div>
+            <mat-divider class="wa-divider" />
+          }
 
-        <div class="wa-form">
-          <h4>Adaugă adresă nouă</h4>
-          <div class="wa-form-row">
-            <mat-form-field appearance="outline" class="wa-name-field">
-              <mat-label>Nume / Etichetă</mat-label>
-              <input matInput [(ngModel)]="newEmailName" placeholder="ex: Contabilitate">
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="wa-type-field">
-              <mat-label>Tip</mat-label>
-              <mat-select [(ngModel)]="newEmailType">
-                <mat-option value="individual">Individual</mat-option>
-                <mat-option value="list">Listă distribuție</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-          <div class="wa-form-row">
-            <mat-form-field appearance="outline" class="wa-phone-field">
-              <mat-label>Adresă email</mat-label>
-              <mat-icon matPrefix>email</mat-icon>
-              <input matInput [(ngModel)]="newEmailAddr"
-                     type="email"
-                     placeholder="ex: office@firma.ro">
-            </mat-form-field>
-            <button mat-flat-button color="primary" class="wa-add-btn"
-                    [disabled]="!newEmailName.trim() || !newEmailAddr.trim()"
-                    (click)="addEmailContact()">
-              <mat-icon>add</mat-icon> Adaugă
-            </button>
+          <div class="wa-form">
+            <h4>Adaugă contact nou</h4>
+            <div class="wa-form-row">
+              <mat-form-field appearance="outline" class="wa-name-field">
+                <mat-label>Nume</mat-label>
+                <input matInput [(ngModel)]="newWaName" placeholder="ex: Depozit central">
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="wa-type-field">
+                <mat-label>Tip</mat-label>
+                <mat-select [(ngModel)]="newWaType">
+                  <mat-option value="number">Număr telefon</mat-option>
+                  <mat-option value="group">Link grup</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="wa-form-row">
+              <mat-form-field appearance="outline" class="wa-phone-field">
+                <mat-label>{{ newWaType === 'group' ? 'Link grup WhatsApp' : 'Număr telefon' }}</mat-label>
+                <mat-icon matPrefix>{{ newWaType === 'group' ? 'link' : 'phone' }}</mat-icon>
+                <input matInput [(ngModel)]="newWaPhone"
+                       [placeholder]="newWaType === 'group' ? 'https://chat.whatsapp.com/…' : '+40712345678 sau 0712345678'">
+              </mat-form-field>
+              <button mat-flat-button color="primary" class="wa-add-btn"
+                      [disabled]="!newWaName.trim() || !newWaPhone.trim()"
+                      (click)="addWhatsappContact()">
+                <mat-icon>add</mat-icon> Adaugă
+              </button>
+            </div>
           </div>
         </div>
+
+        <!-- ── Coloana dreapta: Email ── -->
+        <div class="parallel-col">
+          <div class="tab-header">
+            <h3>Email</h3>
+          </div>
+
+          <div class="buf-email-section">
+            <div class="buf-email-label">
+              <mat-icon>notifications_active</mat-icon>
+              Email notificare resetare buffer
+            </div>
+            <p class="buf-email-hint">
+              Înainte de fiecare resetare buffer se deschide clientul de email cu un rezumat al ajustărilor.
+            </p>
+            <div class="buf-email-row">
+              <mat-form-field appearance="outline" class="buf-email-field">
+                <mat-label>Adresă email</mat-label>
+                <mat-icon matPrefix>email</mat-icon>
+                <input matInput type="email"
+                       [value]="catalogsService.bufferNotifyEmail()"
+                       #bufEmailInput
+                       placeholder="ex: office@firma.ro">
+              </mat-form-field>
+              <button mat-flat-button color="primary"
+                      [disabled]="!bufEmailInput.value.trim()"
+                      (click)="saveBufferEmail(bufEmailInput.value)">
+                <mat-icon>save</mat-icon> Salvează
+              </button>
+            </div>
+          </div>
+
+          <mat-divider style="margin: 12px 0 16px"></mat-divider>
+
+          <p class="wa-hint">
+            <mat-icon class="wa-hint-icon">info</mat-icon>
+            Adaugă adrese de email individuale sau liste de distribuție.
+          </p>
+
+          @if (emailContacts().length > 0) {
+            <div class="wa-list">
+              @for (c of emailContacts(); track c.id) {
+                <div class="wa-item">
+                  <mat-icon class="wa-item-icon">{{ c.type === 'list' ? 'group' : 'person' }}</mat-icon>
+                  <div class="wa-item-info">
+                    <span class="wa-item-name">{{ c.name }}</span>
+                    <span class="wa-item-phone">{{ c.email }}</span>
+                  </div>
+                  <span class="wa-item-type">{{ c.type === 'list' ? 'Listă' : 'Individual' }}</span>
+                  <button mat-icon-button color="warn" (click)="removeEmailContact(c.id)" matTooltip="Șterge">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
+              }
+            </div>
+            <mat-divider class="wa-divider" />
+          }
+
+          <div class="wa-form">
+            <h4>Adaugă adresă nouă</h4>
+            <div class="wa-form-row">
+              <mat-form-field appearance="outline" class="wa-name-field">
+                <mat-label>Nume / Etichetă</mat-label>
+                <input matInput [(ngModel)]="newEmailName" placeholder="ex: Contabilitate">
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="wa-type-field">
+                <mat-label>Tip</mat-label>
+                <mat-select [(ngModel)]="newEmailType">
+                  <mat-option value="individual">Individual</mat-option>
+                  <mat-option value="list">Listă distribuție</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="wa-form-row">
+              <mat-form-field appearance="outline" class="wa-phone-field">
+                <mat-label>Adresă email</mat-label>
+                <mat-icon matPrefix>email</mat-icon>
+                <input matInput [(ngModel)]="newEmailAddr" type="email" placeholder="ex: office@firma.ro">
+              </mat-form-field>
+              <button mat-flat-button color="primary" class="wa-add-btn"
+                      [disabled]="!newEmailName.trim() || !newEmailAddr.trim()"
+                      (click)="addEmailContact()">
+                <mat-icon>add</mat-icon> Adaugă
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </mat-tab>
   }
