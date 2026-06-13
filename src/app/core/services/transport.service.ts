@@ -117,6 +117,10 @@ export class TransportService {
     });
   }
 
+  resetPeriod(): void {
+    this._save('transports', []);
+  }
+
   // ── Private ───────────────────────────────────────────────────────────────
 
   private _uid(): string {

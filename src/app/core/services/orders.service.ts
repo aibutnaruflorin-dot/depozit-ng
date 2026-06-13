@@ -169,6 +169,11 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
+  resetPeriod(): void {
+    this._orders.set([]);
+    this.storage.set('app_orders', []);
+  }
+
   generateText(order: Order): string {
     const line = '─'.repeat(50);
     const products = order.products.map((p, i) =>

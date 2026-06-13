@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
+import { OrdersService } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
 import { TransportService } from '../../core/services/transport.service';
 import { Catalog, CatalogMeta, CatalogUpload } from '../../core/models/catalog.model';
@@ -74,6 +75,7 @@ export class SettingsComponent implements OnInit {
   userForm: FormGroup;
 
   showAdminSecModal = signal(false);
+  confirmReset      = signal(false);
   adminNewPassword  = '';
   adminConfirmPass  = '';
   adminRecoveryEmail = '';
@@ -96,6 +98,7 @@ export class SettingsComponent implements OnInit {
     private fb: FormBuilder,
     public  auth: AuthService,
     public  catalogsService: CatalogsService,
+    private ordersService: OrdersService,
     public  transportService: TransportService,
     private storage: StorageService,
     private snackBar: MatSnackBar
@@ -310,6 +313,13 @@ export class SettingsComponent implements OnInit {
   }
 
   // ── Utilizatori ───────────────────────────────────────────────────────────
+
+  executePeriodReset(): void {
+    this.ordersService.resetPeriod();
+    this.transportService.resetPeriod();
+    this.confirmReset.set(false);
+    this.snackBar.open('Curățare sesiune test finalizată. Comenzi și curse șterse.', 'OK', { duration: 4000 });
+  }
 
   openAdminSec(): void {
     const admin = this.users().find(u => u.username === 'admin');

@@ -575,6 +575,42 @@
     </div>
   </mat-tab>
 
+  <!-- ══ TAB: CURĂȚARE SESIUNE TEST (admin) ══ -->
+  @if (auth.isAdmin()) {
+    <mat-tab label="Sesiune test">
+      <div class="tab-content">
+
+        <div class="danger-zone-card">
+          <div class="danger-zone-header">
+            <mat-icon>warning_amber</mat-icon>
+            <div>
+              <strong>Curățare sesiune test</strong>
+              <p>Șterge toate comenzile și toate cursele de transport. Cataloagele, stocul, mașinile, șoferii și utilizatorii rămân neatinși.</p>
+            </div>
+          </div>
+
+          @if (!confirmReset()) {
+            <button mat-stroked-button color="warn" (click)="confirmReset.set(true)">
+              <mat-icon>delete_sweep</mat-icon>
+              Curățare sesiune test
+            </button>
+          } @else {
+            <div class="danger-confirm">
+              <mat-icon color="warn">error_outline</mat-icon>
+              <span>Ești sigur? Această acțiune este <strong>ireversibilă</strong>.</span>
+              <button mat-flat-button color="warn" (click)="executePeriodReset()">
+                <mat-icon>delete_forever</mat-icon>
+                Da, șterge tot
+              </button>
+              <button mat-stroked-button (click)="confirmReset.set(false)">Anulează</button>
+            </div>
+          }
+        </div>
+
+      </div>
+    </mat-tab>
+  }
+
 </mat-tab-group>
 
 <!-- Modal securitate cont Admin -->
