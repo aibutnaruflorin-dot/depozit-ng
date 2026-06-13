@@ -369,7 +369,7 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
 /* Users tab */
 .tab-content--wide { max-width: 900px; }
 
-/* Parallel two-column layout: Users | Roles */
+/* Parallel two-column layout */
 .tab-content--parallel {
   display: flex;
   gap: 2rem;
@@ -378,7 +378,22 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
   max-width: none;
 }
 
+/* Contacts tab: full width, vertical divider between columns */
+.tab-content--contacts {
+  width: 100%;
+  gap: 0;
+  .parallel-col {
+    padding: 0 2rem;
+    &:first-child {
+      border-right: 1px solid var(--color-border, #e0e0e0);
+      padding-left: 0;
+    }
+    &:last-child { padding-right: 0; }
+  }
+}
+
 .parallel-col {
+  flex: 1;
   min-width: 0;
   &--users { flex: 0 0 55%; }
   &--roles { flex: 1; }
@@ -386,7 +401,7 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
 
 @media (max-width: 900px) {
   .tab-content--parallel { flex-direction: column; }
-  .parallel-col--users   { flex: none; width: 100%; }
+  .parallel-col, .parallel-col--users { flex: none; width: 100%; }
 }
 
 .user-actions {
