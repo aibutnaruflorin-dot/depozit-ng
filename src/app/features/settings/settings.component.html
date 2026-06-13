@@ -557,6 +557,12 @@
                       <mat-icon>key</mat-icon>
                     </button>
                   </div>
+                } @else if (user.username === 'keyuser') {
+                  <div class="user-actions">
+                    <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  </div>
                 } @else {
                   <div class="user-actions">
                     <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">

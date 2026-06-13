@@ -496,6 +496,10 @@ export class SettingsComponent implements OnInit {
   }
 
   toggleUserActive(user: User): void {
+    if (user.username === 'admin' || user.username === 'keyuser') {
+      this.snackBar.open('Acest cont de sistem nu poate fi dezactivat.', '', { duration: 3000 });
+      return;
+    }
     const session = this.auth.session();
     if (session?.userId === user.id) {
       this.snackBar.open('Nu poți dezactiva propriul cont.', '', { duration: 3000 });
@@ -509,6 +513,10 @@ export class SettingsComponent implements OnInit {
   }
 
   deleteUser(user: User): void {
+    if (user.username === 'admin' || user.username === 'keyuser') {
+      this.snackBar.open('Acest cont de sistem nu poate fi șters.', '', { duration: 3000 });
+      return;
+    }
     if (!confirm(`Ștergi utilizatorul "${user.name}"? Această acțiune nu poate fi anulată.`)) return;
     const users = this.users().filter(u => u.id !== user.id);
     this.storage.set('app_users', users);
