@@ -11,8 +11,8 @@ export class AuthService {
 
   readonly session     = this._session.asReadonly();
   readonly isLoggedIn  = computed(() => !!this._session());
-  readonly isAdmin   = computed(() => this._session()?.role === 'keyuser');
-  readonly isKeyUser = computed(() => this._session()?.role === 'keyuser');
+  readonly isAdmin     = computed(() => this._session()?.isAdmin === true);
+  readonly isKeyUser   = computed(() => this._session()?.role === 'keyuser');
   readonly userName    = computed(() => this._session()?.name ?? '');
   readonly userInitial = computed(() => (this._session()?.name ?? 'U').charAt(0).toUpperCase());
   readonly roleLabel   = computed(() => {
@@ -24,12 +24,25 @@ export class AuthService {
     this._loadSession();
   }
 
+  private _isValidRole(role: string): boolean {
+    const builtIn = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
+    if (builtIn.includes(role)) return true;
+    const perms: any[] = this.storage.get('app_permissions') ?? [];
+    return perms.some((p: any) => p.id === role);
+  }
+
+  private _computeIsAdmin(role: string): boolean {
+    if (role === 'keyuser') return true;
+    const perms: any[] = this.storage.get('app_permissions') ?? [];
+    const perm = perms.find((p: any) => p.id === role);
+    return perm?.pages?.['setari'] === 'full';
+  }
+
   private _loadSession(): void {
     let s = this.storage.get<Session>('app_session');
     if (s && (s.role as string) === 'admin') { s = { ...s, role: 'keyuser' }; }
-    const validRoles = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
-    if (s && Date.now() - s.loginTime <= SESSION_DURATION && validRoles.includes(s.role as string)) {
-      s.loginTime = Date.now();
+    if (s && Date.now() - s.loginTime <= SESSION_DURATION && this._isValidRole(s.role)) {
+      s = { ...s, loginTime: Date.now(), isAdmin: this._computeIsAdmin(s.role) };
       this.storage.set('app_session', s);
       this._session.set(s);
     } else {
@@ -45,7 +58,9 @@ export class AuthService {
     if (!user) return false;
     const session: Session = {
       userId: user.id, username: user.username,
-      name: user.name, role: user.role, loginTime: Date.now()
+      name: user.name, role: user.role as string,
+      isAdmin: this._computeIsAdmin(user.role as string),
+      loginTime: Date.now()
     };
     this.storage.set('app_session', session);
     this._session.set(session);
@@ -61,13 +76,12 @@ export class AuthService {
   refreshSession(): Session | null {
     let s = this.storage.get<Session>('app_session');
     if (s && (s.role as string) === 'admin') { s = { ...s, role: 'keyuser' }; }
-    const validRoles = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
-    if (!s || Date.now() - s.loginTime > SESSION_DURATION || !validRoles.includes(s.role as string)) {
+    if (!s || Date.now() - s.loginTime > SESSION_DURATION || !this._isValidRole(s.role)) {
       this.storage.remove('app_session');
       this._session.set(null);
       return null;
     }
-    s.loginTime = Date.now();
+    s = { ...s, loginTime: Date.now(), isAdmin: this._computeIsAdmin(s.role) };
     this.storage.set('app_session', s);
     this._session.set(s);
     return s;

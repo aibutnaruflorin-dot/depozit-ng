@@ -14,7 +14,7 @@ export interface User {
   name: string;
   username: string;
   password: string;
-  role: Permission;
+  role: string;
   jobRole?: string; // legacy — migrated to role on load
   telefon?: string;
   recoveryEmail?: string;
@@ -25,6 +25,7 @@ export interface Session {
   userId: number;
   username: string;
   name: string;
-  role: Permission;
+  role: string;
+  isAdmin?: boolean;
   loginTime: number;
 }
