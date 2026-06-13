@@ -455,6 +455,7 @@ export class SettingsComponent implements OnInit {
     this.userForm.reset({ name: '', username: '', password: '', role: 'agent', telefon: '', recoveryEmail: '' });
     this.userForm.get('password')?.setValidators(Validators.required);
     this.userForm.get('password')?.updateValueAndValidity();
+    this.userForm.get('role')?.enable();
     this.showUserModal.set(true);
   }
 
@@ -463,6 +464,8 @@ export class SettingsComponent implements OnInit {
     this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role, telefon: user.telefon ?? '', recoveryEmail: user.recoveryEmail ?? '' });
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
+    const isProtected = user.username === 'admin' || user.username === 'keyuser';
+    isProtected ? this.userForm.get('role')?.disable() : this.userForm.get('role')?.enable();
     this.showUserModal.set(true);
   }
 
@@ -484,7 +487,9 @@ export class SettingsComponent implements OnInit {
       if (idx === -1) return;
       const dup = users.find(u => u.username === username.trim().toLowerCase() && u.id !== id);
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role, telefon: (telefon || '').trim() || undefined, recoveryEmail: (recoveryEmail || '').trim() || undefined };
+      const isProtected = users[idx].username === 'admin' || users[idx].username === 'keyuser';
+      const savedRole = isProtected ? users[idx].role : role;
+      users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role: savedRole, telefon: (telefon || '').trim() || undefined, recoveryEmail: (recoveryEmail || '').trim() || undefined };
       if (password) users[idx].password = password;
     }
 
