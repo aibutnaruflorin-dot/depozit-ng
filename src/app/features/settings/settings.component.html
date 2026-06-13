@@ -764,7 +764,7 @@
                 @for (page of appPages; track page.id) {
                   <div class="perm-page-row">
                     <span class="perm-page-label">{{ page.label }}</span>
-                    <mat-button-toggle-group [(ngModel)]="permPagesAccess[page.id]" [ngModelOptions]="{standalone:true}" class="access-toggle">
+                    <mat-button-toggle-group [(ngModel)]="permPagesAccess[page.id]" [ngModelOptions]="{standalone:true}" class="access-toggle" [disabled]="permForm.get('isAdmin')?.value">
                       <mat-button-toggle value="full" class="toggle-full">
                         <mat-icon>check_circle</mat-icon> Complet
                       </mat-button-toggle>

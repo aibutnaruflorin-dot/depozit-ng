@@ -144,6 +144,11 @@ export class SettingsComponent implements OnInit {
       name:    ['', Validators.required],
       isAdmin: [false]
     });
+    this.permForm.get('isAdmin')?.valueChanges.subscribe((admin: boolean) => {
+      APP_PAGES.forEach(p => {
+        this.permPagesAccess[p.id] = admin ? 'full' : 'none';
+      });
+    });
   }
 
   ngOnInit(): void {
