@@ -483,7 +483,7 @@ export class SettingsComponent implements OnInit {
       if (idx === -1) return;
       const dup = users.find(u => u.username === username.trim().toLowerCase() && u.id !== id);
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      const isProtected = users[idx].username === 'admin' || users[idx].username === 'keyuser';
+      const isProtected = users[idx].username === 'keyuser';
       const savedRole = isProtected ? users[idx].role : role;
       users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role: savedRole, telefon: (telefon || '').trim() || undefined, recoveryEmail: (recoveryEmail || '').trim() || undefined };
       if (password) users[idx].password = password;
@@ -497,7 +497,7 @@ export class SettingsComponent implements OnInit {
   }
 
   toggleUserActive(user: User): void {
-    if (user.username === 'admin' || user.username === 'keyuser') {
+    if (user.username === 'keyuser') {
       this.snackBar.open('Acest cont de sistem nu poate fi dezactivat.', '', { duration: 3000 });
       return;
     }
@@ -514,7 +514,7 @@ export class SettingsComponent implements OnInit {
   }
 
   deleteUser(user: User): void {
-    if (user.username === 'admin' || user.username === 'keyuser') {
+    if (user.username === 'keyuser') {
       this.snackBar.open('Acest cont de sistem nu poate fi șters.', '', { duration: 3000 });
       return;
     }
