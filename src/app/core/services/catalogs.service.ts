@@ -198,16 +198,17 @@ export class CatalogsService {
             const cells = (rows[i] as any[]).map(c => norm(String(c || '')));
             if (!cells.some(c => c === 'denumire' || c.includes('denumire'))) continue;
 
+            const set = (key: string, idx: number) => { if (!(key in colMap)) colMap[key] = idx; };
             cells.forEach((cell, idx) => {
-              if      (cell.includes('denumire'))                                       colMap['name']       = idx;
-              else if (cell === 'u.m.' || cell === 'um' || cell.includes('unitate'))   colMap['um']         = idx;
-              else if (cell === 'cantitate' || cell.includes('cantit'))                colMap['qty']        = idx;
-              else if (cell.includes('masa neta') || cell === 'masa')                  colMap['masaNeta']   = idx;
-              else if (cell.includes('fara tva'))                                      colMap['pretFaraTVA']= idx;
-              else if (cell.includes('cu tva'))                                        colMap['pretCuTVA']  = idx;
-              else if (cell.includes('subclas') || cell === 'categorie')               colMap['category']   = idx;
-              else if (cell.includes('furnizor'))                                      colMap['furnizor']   = idx;
-              else if (cell.includes('cod extern') || cell === 'cod_extern')           colMap['codExtern']  = idx;
+              if      (cell.includes('denumire'))                                     set('name',       idx);
+              else if (cell === 'u.m.' || cell === 'um' || cell.includes('unitate')) set('um',         idx);
+              else if (cell === 'cantitate' || cell.includes('cantit'))              set('qty',        idx);
+              else if (cell.includes('masa neta') || cell === 'masa neta')           set('masaNeta',   idx);
+              else if (cell.includes('fara tva'))                                    set('pretFaraTVA',idx);
+              else if (cell.includes('cu tva'))                                      set('pretCuTVA',  idx);
+              else if (cell.includes('subclas') || cell === 'categorie')             set('category',   idx);
+              else if (cell.includes('furnizor'))                                    set('furnizor',   idx);
+              else if (cell.includes('cod extern') || cell === 'cod_extern')         set('codExtern',  idx);
             });
             dataStartRow = i + 1;
             break;
