@@ -32,6 +32,24 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { DragModalDirective } from '../../shared/drag-modal.directive';
 
+interface ImportRow {
+  name:       string;
+  codExtern?: string;
+  excelQty:   number;
+  currentQty: number;
+  reserved:   number;
+  orders:     { orderNumber?: number; qty: number; clientName: string }[];
+  mode:       'direct' | 'subtract';
+}
+
+interface ImportPending {
+  cat:         Catalog;
+  file:        File;
+  rows:        ImportRow[];
+  allProducts: any[];
+  detected:    string;
+}
+
 interface CatState {
   importing:       boolean;
   testing:         boolean;
@@ -77,7 +95,8 @@ export class SettingsComponent implements OnInit {
 
   showAdminSecModal = signal(false);
   confirmReset      = signal(false);
-  importPending     = signal<{ cat: Catalog; file: File; reserved: ReservedProduct[] } | null>(null);
+  importPending     = signal<ImportPending | null>(null);
+  importConfirming  = signal(false);
   adminNewPassword  = '';
   adminConfirmPass  = '';
   adminRecoveryEmail = '';
@@ -223,33 +242,72 @@ export class SettingsComponent implements OnInit {
 
   // ── Excel import ──────────────────────────────────────────────────────────
 
-  onFileSelected(cat: Catalog, event: Event): void {
+  async onFileSelected(cat: Catalog, event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
     input.value = '';
 
-    if (cat.dataSource !== 'api') {
-      const reserved = this.ordersService.reservedByCatalog(cat.id);
-      if (reserved.length > 0) {
-        this.importPending.set({ cat, file, reserved });
-        return;
-      }
+    if (cat.dataSource === 'api') { this._doImport(cat, file); return; }
+
+    const parsed = await this.catalogsService.previewExcel(cat.id, file);
+    if (!parsed.ok) {
+      const st = this.catStates[cat.id];
+      st.importMsg = parsed.msg ?? 'Eroare la citire.';
+      st.importDetected = null;
+      return;
     }
-    this._doImport(cat, file);
+
+    const reserved = this.ordersService.reservedByCatalog(cat.id);
+    if (!reserved.length) { this._doImportProducts(cat, file, parsed.products, parsed.detected); return; }
+
+    const nameToExcel = new Map(parsed.products.map(p => [p.name, p]));
+    const currentProds = this.catalogsService.productsFor([cat.id]);
+    const nameToCurrentQty = new Map(currentProds.map(p => [p.name, p.qty]));
+
+    const rows: ImportRow[] = reserved.map(r => ({
+      name:       r.name,
+      codExtern:  nameToExcel.get(r.name)?.codExtern,
+      excelQty:   nameToExcel.get(r.name)?.qty ?? 0,
+      currentQty: nameToCurrentQty.get(r.name) ?? 0,
+      reserved:   r.totalQty,
+      orders:     r.orders,
+      mode:       'direct' as const,
+    }));
+
+    this.importPending.set({ cat, file, rows, allProducts: parsed.products, detected: parsed.detected });
   }
 
-  proceedImport(mode: 'direct' | 'subtract'): void {
-    const pending = this.importPending();
-    if (!pending) return;
+  setRowMode(name: string, mode: 'direct' | 'subtract'): void {
+    const p = this.importPending();
+    if (!p) return;
+    this.importPending.set({ ...p, rows: p.rows.map(r => r.name === name ? { ...r, mode } : r) });
+  }
+
+  setAllMode(mode: 'direct' | 'subtract'): void {
+    const p = this.importPending();
+    if (!p) return;
+    this.importPending.set({ ...p, rows: p.rows.map(r => ({ ...r, mode })) });
+  }
+
+  requestConfirmImport(): void { this.importConfirming.set(true); }
+  cancelConfirm():        void { this.importConfirming.set(false); }
+  cancelImport():         void { this.importPending.set(null); this.importConfirming.set(false); }
+
+  proceedImport(): void {
+    const p = this.importPending();
+    if (!p) return;
     this.importPending.set(null);
-    const subtractMap = mode === 'subtract'
-      ? new Map(pending.reserved.map(r => [r.name, r.totalQty]))
-      : undefined;
-    this._doImport(pending.cat, pending.file, subtractMap);
+    this.importConfirming.set(false);
+    const subtractMap = new Map(
+      p.rows.filter(r => r.mode === 'subtract').map(r => [r.name, r.reserved])
+    );
+    this._doImportProducts(p.cat, p.file, p.allProducts, p.detected, subtractMap.size ? subtractMap : undefined);
   }
 
-  cancelImport(): void { this.importPending.set(null); }
+  private _doImportProducts(cat: Catalog, file: File, products: any[], detected: string, subtractReserved?: Map<string, number>): void {
+    this._doImport(cat, file, subtractReserved);
+  }
 
   private _doImport(cat: Catalog, file: File, subtractReserved?: Map<string, number>): void {
     const st = this.catStates[cat.id];
@@ -265,6 +323,12 @@ export class SettingsComponent implements OnInit {
       });
     });
   }
+
+  rowDirectQty(row: ImportRow):   number { return row.excelQty; }
+  rowSubtractQty(row: ImportRow): number { return Math.max(0, row.excelQty - row.reserved); }
+
+  get importDirectCount():   number { return this.importPending()?.rows.filter(r => r.mode === 'direct').length ?? 0; }
+  get importSubtractCount(): number { return this.importPending()?.rows.filter(r => r.mode === 'subtract').length ?? 0; }
 
   // ── API ───────────────────────────────────────────────────────────────────
 

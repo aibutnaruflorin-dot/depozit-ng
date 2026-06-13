@@ -11,7 +11,7 @@ export interface StockCheckResult {
 export interface ReservedProduct {
   name: string;
   totalQty: number;
-  orders: { orderNumber?: number; qty: number }[];
+  orders: { orderNumber?: number; qty: number; clientName: string }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -187,7 +187,7 @@ export class OrdersService {
         rp.totalQty += p.qty;
         const existing = rp.orders.find(o => o.orderNumber === order.orderNumber);
         if (existing) existing.qty += p.qty;
-        else rp.orders.push({ orderNumber: order.orderNumber, qty: p.qty });
+        else rp.orders.push({ orderNumber: order.orderNumber, qty: p.qty, clientName: order.client?.name ?? '—' });
       }
     }
     return [...byName.values()].sort((a, b) => b.totalQty - a.totalQty);

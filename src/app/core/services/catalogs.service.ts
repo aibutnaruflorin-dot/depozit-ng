@@ -169,16 +169,35 @@ export class CatalogsService {
     this._productsByCat.update(m => ({ ...m, [catalogId]: tagged }));
   }
 
+  /** Parse Excel → products (read-only, no save). Used for preview before import. */
+  previewExcel(catalogId: string, file: File): Promise<{ ok: boolean; products: Product[]; detected: string; msg?: string }> {
+    return this._parseExcel(catalogId, file);
+  }
+
   async importExcel(catalogId: string, file: File, subtractReserved?: Map<string, number>): Promise<{ ok: boolean; msg: string; detected?: string }> {
     const filename = file.name;
-
-    // Duplicate filename check
     const cat = this.getById(catalogId);
-    const existingUploads = cat?.uploads ?? [];
-    if (existingUploads.some(u => u.filename === filename)) {
+    if ((cat?.uploads ?? []).some(u => u.filename === filename)) {
       return { ok: false, msg: `Fișierul "${filename}" a fost deja importat. Redenumește fișierul și încearcă din nou.` };
     }
 
+    const parsed = await this._parseExcel(catalogId, file);
+    if (!parsed.ok) return { ok: false, msg: parsed.msg ?? 'Eroare la import.' };
+
+    let products = parsed.products;
+    if (subtractReserved?.size) {
+      products = products.map(p => {
+        const res = subtractReserved.get(p.name) ?? 0;
+        return res > 0 ? { ...p, qty: Math.max(0, p.qty - res) } : p;
+      });
+    }
+
+    this._saveProducts(catalogId, products);
+    this._recordUpload(catalogId, filename, products.length);
+    return { ok: true, msg: `${products.length} produse importate din "${filename}".`, detected: parsed.detected };
+  }
+
+  private _parseExcel(catalogId: string, file: File): Promise<{ ok: boolean; products: Product[]; detected: string; msg?: string }> {
     return new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = e => {
@@ -187,58 +206,29 @@ export class CatalogsService {
           const ws   = wb.Sheets[wb.SheetNames[0]];
           const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-          // Find header row by locating "Denumire" column
-          const colMap: Record<string, number> = {};
-          let dataStartRow = -1;
-
           const norm = (s: string) =>
             s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-          // Explicit header-name → field mapping (exact match after normalize).
-          // Add aliases here when a new Excel format uses a different column name.
           const COL_ALIASES: Record<string, string> = {
-            // Denumire
-            'denumire':                    'name',
-            'denumire produs':             'name',
-            'denumire produse':            'name',
-            // UM
-            'u.m.':                        'um',
-            'um':                          'um',
-            'unitate masura':              'um',
-            'unitate de masura':           'um',
-            // Cantitate
-            'cantitate':                   'qty',
-            // Masa netă
-            'masa neta':                   'masaNeta',
-            'masa neta (kg)':              'masaNeta',
-            'masa':                        'masaNeta',
-            // Preț cu TVA
-            'pret lista cu tva in lei':    'pretCuTVA',
-            'pret cu tva in lei':          'pretCuTVA',
-            'pret cu tva':                 'pretCuTVA',
-            'pret vanzare cu tva':         'pretCuTVA',
-            // Preț fără TVA
-            'pret lista fara tva in lei':  'pretFaraTVA',
-            'pret fara tva in lei':        'pretFaraTVA',
-            'pret fara tva':               'pretFaraTVA',
-            'pret vanzare fara tva':       'pretFaraTVA',
-            // Categorie
-            'subclasa produse':            'category',
-            'subcategorie produse':        'category',
-            'categorie':                   'category',
-            'clasa':                       'category',
-            // Furnizor
-            'furnizor':                    'furnizor',
-            // Cod extern
-            'cod extern':                  'codExtern',
-            'cod_extern':                  'codExtern',
-            'cod articol':                 'codExtern',
+            'denumire': 'name', 'denumire produs': 'name', 'denumire produse': 'name',
+            'u.m.': 'um', 'um': 'um', 'unitate masura': 'um', 'unitate de masura': 'um',
+            'cantitate': 'qty',
+            'masa neta': 'masaNeta', 'masa neta (kg)': 'masaNeta', 'masa': 'masaNeta',
+            'pret lista cu tva in lei': 'pretCuTVA', 'pret cu tva in lei': 'pretCuTVA',
+            'pret cu tva': 'pretCuTVA', 'pret vanzare cu tva': 'pretCuTVA',
+            'pret lista fara tva in lei': 'pretFaraTVA', 'pret fara tva in lei': 'pretFaraTVA',
+            'pret fara tva': 'pretFaraTVA', 'pret vanzare fara tva': 'pretFaraTVA',
+            'subclasa produse': 'category', 'subcategorie produse': 'category',
+            'categorie': 'category', 'clasa': 'category',
+            'furnizor': 'furnizor',
+            'cod extern': 'codExtern', 'cod_extern': 'codExtern', 'cod articol': 'codExtern',
           };
 
+          const colMap: Record<string, number> = {};
+          let dataStartRow = -1;
           for (let i = 0; i < rows.length; i++) {
             const cells = (rows[i] as any[]).map(c => norm(String(c || '')));
             if (!cells.some(c => c.includes('denumire'))) continue;
-
             cells.forEach((cell, idx) => {
               const field = COL_ALIASES[cell];
               if (field && !(field in colMap)) colMap[field] = idx;
@@ -248,16 +238,13 @@ export class CatalogsService {
           }
 
           if (dataStartRow < 0) {
-            resolve({ ok: false, msg: 'Nu s-a găsit rândul de header (coloana "Denumire" lipsește).' });
+            resolve({ ok: false, products: [], detected: '', msg: 'Nu s-a găsit rândul de header (coloana "Denumire" lipsește).' });
             return;
           }
 
-          const str = (row: any[], key: string): string =>
-            String(row[colMap[key] ?? -1] ?? '').trim();
-          const num = (row: any[], key: string): number =>
-            colMap[key] !== undefined
-              ? parseFloat(String(row[colMap[key]] || '0').replace(',', '.')) || 0
-              : 0;
+          const str = (row: any[], key: string) => String(row[colMap[key] ?? -1] ?? '').trim();
+          const num = (row: any[], key: string) =>
+            colMap[key] !== undefined ? parseFloat(String(row[colMap[key]] || '0').replace(',', '.')) || 0 : 0;
 
           const products: Product[] = [];
           let rowNr = 1;
@@ -265,50 +252,35 @@ export class CatalogsService {
             const row = rows[i];
             const name = str(row, 'name');
             if (!name) continue;
-
             const rawQty = Math.max(0, num(row, 'qty'));
-            const reserved = subtractReserved?.get(name) ?? 0;
-            const qty = Math.max(0, rawQty - reserved);
-            const masaNeta    = num(row, 'masaNeta')    || undefined;
-            const pretFaraTVA = num(row, 'pretFaraTVA') || undefined;
-            const pretCuTVA   = num(row, 'pretCuTVA')   || undefined;
-
             products.push({
-              nr:          rowNr++,
-              name,
-              um:          str(row, 'um') || '',
-              qty,
-              importedQty: rawQty,
-              masaNeta,
-              pretFaraTVA,
-              pretCuTVA,
-              furnizor:    str(row, 'furnizor')  || undefined,
-              codExtern:   str(row, 'codExtern') || undefined,
-              category:    (str(row, 'category') || 'DIVERSE').toUpperCase(),
+              nr: rowNr++, name,
+              um: str(row, 'um') || '',
+              qty: rawQty, importedQty: rawQty,
+              masaNeta:    num(row, 'masaNeta')    || undefined,
+              pretFaraTVA: num(row, 'pretFaraTVA') || undefined,
+              pretCuTVA:   num(row, 'pretCuTVA')   || undefined,
+              furnizor:  str(row, 'furnizor')  || undefined,
+              codExtern: str(row, 'codExtern') || undefined,
+              category:  (str(row, 'category') || 'DIVERSE').toUpperCase(),
               catalogId
             });
           }
 
           if (!products.length) {
-            resolve({ ok: false, msg: 'Niciun rând valid găsit (coloana "Denumire" goală).' });
+            resolve({ ok: false, products: [], detected: '', msg: 'Niciun rând valid găsit (coloana "Denumire" goală).' });
             return;
           }
-
-          this._saveProducts(catalogId, products);
-          this._recordUpload(catalogId, filename, products.length);
 
           const LABELS: Record<string, string> = {
             name: 'Denumire', um: 'UM', qty: 'Cantitate', masaNeta: 'Masă netă',
             pretFaraTVA: 'Preț fără TVA', pretCuTVA: 'Preț cu TVA',
             category: 'Categorie', furnizor: 'Furnizor', codExtern: 'Cod extern'
           };
-          const detected = Object.entries(colMap)
-            .map(([k, idx]) => `${LABELS[k] ?? k}→col.${idx + 1}`)
-            .join(', ');
-
-          resolve({ ok: true, msg: `${products.length} produse importate din "${filename}".`, detected });
+          const detected = Object.entries(colMap).map(([k, idx]) => `${LABELS[k] ?? k}→col.${idx + 1}`).join(', ');
+          resolve({ ok: true, products, detected });
         } catch {
-          resolve({ ok: false, msg: 'Eroare la citirea fișierului Excel.' });
+          resolve({ ok: false, products: [], detected: '', msg: 'Eroare la citirea fișierului Excel.' });
         }
       };
       reader.readAsArrayBuffer(file);

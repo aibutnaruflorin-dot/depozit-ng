@@ -853,50 +853,109 @@
 
 <!-- ── Import impact dialog ─────────────────────────────────────────────── -->
 @if (importPending(); as pending) {
-  <div class="impact-overlay" (click)="cancelImport()">
-    <div class="impact-card" (click)="$event.stopPropagation()">
+  <div class="impact-overlay">
+    <div class="impact-card">
+
+      <!-- Header -->
       <div class="impact-header">
         <mat-icon class="impact-warn-icon">warning</mat-icon>
-        <div>
-          <div class="impact-title">Comenzi active detectate pentru <strong>{{ pending.cat.name }}</strong></div>
-          <div class="impact-subtitle">{{ pending.reserved.length }} produse rezervate în comenzi nesoluționate</div>
+        <div class="impact-header-text">
+          <div class="impact-title">Comenzi active pentru <strong>{{ pending.cat.name }}</strong></div>
+          <div class="impact-subtitle">{{ pending.rows.length }} produse rezervate în comenzi nesoluționate — alege modul de import pentru fiecare</div>
         </div>
+        <button class="impact-close-btn" (click)="cancelImport()"><mat-icon>close</mat-icon></button>
       </div>
 
+      <!-- Global actions -->
+      <div class="impact-global-actions">
+        <span class="impact-global-label">Aplică la toate:</span>
+        <button class="ig-btn ig-direct" (click)="setAllMode('direct')">
+          <mat-icon>download_done</mat-icon> Direct TOATE
+        </button>
+        <button class="ig-btn ig-subtract" (click)="setAllMode('subtract')">
+          <mat-icon>remove_circle_outline</mat-icon> Scădere TOATE
+        </button>
+      </div>
+
+      <!-- Product rows -->
       <div class="impact-list">
-        @for (r of pending.reserved; track r.name) {
-          <div class="impact-row">
-            <span class="impact-name" [title]="r.name">{{ r.name }}</span>
-            <span class="impact-orders">
-              @for (o of r.orders; track o.orderNumber) {
-                <span class="impact-chip">#{{ o.orderNumber ?? '?' }} ×{{ o.qty }}</span>
+        @for (row of pending.rows; track row.name) {
+          <div class="impact-product-row">
+            <!-- Name + cod extern -->
+            <div class="ipr-name-line">
+              <span class="ipr-name" [title]="row.name">{{ row.name }}</span>
+              @if (row.codExtern) {
+                <span class="ipr-extern">{{ row.codExtern }}</span>
               }
-            </span>
-            <span class="impact-total">{{ r.totalQty }} buc</span>
+            </div>
+
+            <!-- Stock numbers -->
+            <div class="ipr-stats">
+              <div class="ipr-stat">
+                <span class="ipr-stat-lbl">Stoc Excel</span>
+                <span class="ipr-stat-val">{{ row.excelQty }}</span>
+              </div>
+              <div class="ipr-stat">
+                <span class="ipr-stat-lbl">Stoc actual</span>
+                <span class="ipr-stat-val">{{ row.currentQty }}</span>
+              </div>
+              <div class="ipr-stat ipr-stat--reserved">
+                <span class="ipr-stat-lbl">Rezervat comenzi</span>
+                <span class="ipr-stat-val">{{ row.reserved }}</span>
+              </div>
+            </div>
+
+            <!-- Orders -->
+            <div class="ipr-orders">
+              @for (o of row.orders; track o.orderNumber) {
+                <span class="ipr-order-chip">
+                  <strong>#{{ o.orderNumber ?? '?' }}</strong> ×{{ o.qty }} — {{ o.clientName }}
+                </span>
+              }
+            </div>
+
+            <!-- Mode toggle + preview -->
+            <div class="ipr-modes">
+              <button class="ipr-mode-btn" [class.ipr-mode-direct]="row.mode === 'direct'" (click)="setRowMode(row.name, 'direct')">
+                <span class="ipr-mode-label">Direct</span>
+                <span class="ipr-mode-result" [class.ipr-result-warn]="row.reserved > 0">
+                  Stoc final: {{ rowDirectQty(row) }} buc
+                  @if (row.reserved > 0) { <span class="ipr-err-note">⚠ pot apărea erori de stoc</span> }
+                </span>
+              </button>
+              <button class="ipr-mode-btn" [class.ipr-mode-subtract]="row.mode === 'subtract'" (click)="setRowMode(row.name, 'subtract')">
+                <span class="ipr-mode-label">Scădere automată</span>
+                <span class="ipr-mode-result">
+                  Stoc final: {{ rowSubtractQty(row) }} buc
+                  <span class="ipr-ok-note">({{ row.excelQty }} − {{ row.reserved }})</span>
+                </span>
+              </button>
+            </div>
           </div>
         }
       </div>
 
-      <div class="impact-choices">
-        <button class="impact-btn impact-btn-primary" (click)="proceedImport('direct')">
-          <mat-icon>download_done</mat-icon>
+      <!-- Confirm step -->
+      @if (importConfirming()) {
+        <div class="impact-confirm-bar">
+          <mat-icon style="color:#f59e0b">help_outline</mat-icon>
           <span>
-            <strong>Import direct</strong>
-            <small>Excel-ul reflectă deja stocul după comenzi (cazul A)</small>
+            Ești sigur?
+            @if (importDirectCount > 0) { <strong class="warn-text"> {{ importDirectCount }} produse — Direct</strong> }
+            @if (importSubtractCount > 0) { <strong> · {{ importSubtractCount }} produse — Scădere</strong> }
           </span>
-        </button>
-        <button class="impact-btn" (click)="proceedImport('subtract')">
-          <mat-icon>remove_circle_outline</mat-icon>
-          <span>
-            <strong>Import cu scădere automată</strong>
-            <small>qty_excel − qty_rezervat în comenzi active (cazul B)</small>
-          </span>
-        </button>
-        <button class="impact-btn impact-btn-cancel" (click)="cancelImport()">
-          <mat-icon>close</mat-icon>
-          <span><strong>Anulează</strong></span>
-        </button>
-      </div>
+          <button mat-flat-button color="warn" (click)="proceedImport()">Da, importă</button>
+          <button mat-stroked-button (click)="cancelConfirm()">Înapoi</button>
+        </div>
+      } @else {
+        <div class="impact-footer">
+          <button mat-flat-button color="primary" (click)="requestConfirmImport()">
+            <mat-icon>file_upload</mat-icon> Confirmă importul
+          </button>
+          <button mat-stroked-button (click)="cancelImport()">Anulează</button>
+        </div>
+      }
+
     </div>
   </div>
 }
