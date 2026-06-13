@@ -191,8 +191,11 @@ export class CatalogsService {
           const colMap: Record<string, number> = {};
           let dataStartRow = -1;
 
+          const norm = (s: string) =>
+            s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
           for (let i = 0; i < rows.length; i++) {
-            const cells = (rows[i] as any[]).map(c => String(c || '').toLowerCase().trim());
+            const cells = (rows[i] as any[]).map(c => norm(String(c || '')));
             if (!cells.some(c => c === 'denumire' || c.includes('denumire'))) continue;
 
             cells.forEach((cell, idx) => {
@@ -200,7 +203,7 @@ export class CatalogsService {
               else if (cell === 'u.m.' || cell === 'um' || cell.includes('unitate'))   colMap['um']         = idx;
               else if (cell === 'cantitate' || cell.includes('cantit'))                colMap['qty']        = idx;
               else if (cell.includes('masa neta') || cell === 'masa')                  colMap['masaNeta']   = idx;
-              else if (cell.includes('fara tva') || cell.includes('fără tva'))        colMap['pretFaraTVA']= idx;
+              else if (cell.includes('fara tva'))                                      colMap['pretFaraTVA']= idx;
               else if (cell.includes('cu tva'))                                        colMap['pretCuTVA']  = idx;
               else if (cell.includes('subclas') || cell === 'categorie')               colMap['category']   = idx;
               else if (cell.includes('furnizor'))                                      colMap['furnizor']   = idx;
