@@ -129,7 +129,7 @@ export class SettingsComponent implements OnInit {
       name:     ['', Validators.required],
       username: ['', Validators.required],
       password: [''],
-      role:          ['agent'],
+      role:          ['agent', Validators.required],
       telefon:       [''],
       recoveryEmail: ['']
     });
