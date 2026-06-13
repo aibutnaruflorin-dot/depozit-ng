@@ -307,6 +307,7 @@
           <th>Plecare → Sosire</th>
           <th>Comenzi / Articole</th>
           <th>Valoare</th>
+          <th>Masă</th>
           <th>Status</th>
           <th>Acțiuni</th>
         </tr>
@@ -363,12 +364,19 @@
               @let tv = tripValue(t);
               <span class="val-net">{{ tv.net | number:'1.2-2' }} lei</span>
               <span class="val-tva">{{ tv.tva | number:'1.2-2' }} cu TVA</span>
-              @if (tripTotalWeight(t) > 0) {
+            </td>
+            <td class="masa-cell">
+              @let tw = tripTotalWeight(t);
+              @if (tw > 0) {
                 <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
-                  <mat-icon style="font-size:13px;width:13px;height:13px;vertical-align:middle">scale</mat-icon>
-                  {{ fmtWeight(tripTotalWeight(t)) }}
-                  @if (tripWeightWarn(t)) { <mat-icon style="font-size:13px;width:13px;height:13px;color:#e53935">warning</mat-icon> }
+                  <mat-icon>scale</mat-icon>
+                  {{ fmtWeight(tw) }}
+                  @if (tripWeightWarn(t)) {
+                    <mat-icon class="warn-icon" matTooltip="Tonaj depășit!">warning</mat-icon>
+                  }
                 </span>
+              } @else {
+                <span class="muted">—</span>
               }
             </td>
             <td>
@@ -415,6 +423,7 @@
             <th>Plecare → Sosire</th>
             <th>Comenzi / Articole</th>
             <th>Valoare</th>
+            <th>Masă</th>
             <th>Status</th>
             <th>Acțiuni</th>
           </tr>
@@ -471,12 +480,19 @@
                 @let ov = tripValue(t);
                 <span class="val-net">{{ ov.net | number:'1.2-2' }} lei</span>
                 <span class="val-tva">{{ ov.tva | number:'1.2-2' }} cu TVA</span>
-                @if (tripTotalWeight(t) > 0) {
+              </td>
+              <td class="masa-cell">
+                @let tw = tripTotalWeight(t);
+                @if (tw > 0) {
                   <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
-                    <mat-icon style="font-size:13px;width:13px;height:13px;vertical-align:middle">scale</mat-icon>
-                    {{ fmtWeight(tripTotalWeight(t)) }}
-                    @if (tripWeightWarn(t)) { <mat-icon style="font-size:13px;width:13px;height:13px;color:#e53935">warning</mat-icon> }
+                    <mat-icon>scale</mat-icon>
+                    {{ fmtWeight(tw) }}
+                    @if (tripWeightWarn(t)) {
+                      <mat-icon class="warn-icon" matTooltip="Tonaj depășit!">warning</mat-icon>
+                    }
                   </span>
+                } @else {
+                  <span class="muted">—</span>
                 }
               </td>
               <td>

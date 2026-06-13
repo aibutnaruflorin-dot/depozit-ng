@@ -575,11 +575,14 @@
 .val-tva {
   display: block; font-size: 0.72rem; color: var(--color-text-muted, #888);
 }
+.masa-cell { white-space: nowrap; vertical-align: middle; }
 .val-weight {
-  display: flex; align-items: center; gap: 3px;
-  font-size: 0.72rem; color: #00838f; margin-top: 2px;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.82rem; font-weight: 600; color: #2e7d32;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
-.val-weight-warn { color: #e53935; font-weight: 600; }
+.val-weight-warn { color: #e53935; }
+.warn-icon { color: #e53935 !important; }
 
 /* ── Modal – trip variant ────────────────────────────────────── */
 .modal-card--trip { width: 720px; max-height: 90vh; overflow-y: auto; }
