@@ -101,6 +101,7 @@ export class SettingsComponent implements OnInit {
   adminConfirmPass  = '';
   adminRecoveryEmail = '';
   adminPassError    = '';
+  secTargetUsername = 'admin';
 
   // ── Vehicles state ────────────────────────────────────────────────────────
   showVehicleModal = signal(false);
@@ -415,11 +416,12 @@ export class SettingsComponent implements OnInit {
     this.snackBar.open('Curățare sesiune test finalizată. Comenzi și curse șterse.', 'OK', { duration: 4000 });
   }
 
-  openAdminSec(): void {
-    const admin = this.users().find(u => u.username === 'admin');
+  openAdminSec(username = 'admin'): void {
+    this.secTargetUsername  = username;
+    const u = this.users().find(u => u.username === username);
     this.adminNewPassword   = '';
     this.adminConfirmPass   = '';
-    this.adminRecoveryEmail = admin?.recoveryEmail ?? '';
+    this.adminRecoveryEmail = u?.recoveryEmail ?? '';
     this.adminPassError     = '';
     this.showAdminSecModal.set(true);
   }
@@ -435,19 +437,16 @@ export class SettingsComponent implements OnInit {
       this.adminPassError = 'Parola trebuie să aibă minim 4 caractere.';
       return;
     }
+    const target = this.secTargetUsername;
     const updated = this.users().map(u => {
-      if (u.username !== 'admin') return u;
-      return {
-        ...u,
-        ...(np ? { password: np } : {}),
-        recoveryEmail: this.adminRecoveryEmail.trim() || undefined
-      };
+      if (u.username !== target) return u;
+      return { ...u, ...(np ? { password: np } : {}), recoveryEmail: this.adminRecoveryEmail.trim() || undefined };
     });
     this.users.set(updated);
     this.storage.set('app_users', updated);
     this.transportService.refreshUsers(updated);
     this.showAdminSecModal.set(false);
-    this.snackBar.open('Setările contului Admin au fost salvate.', '', { duration: 2500 });
+    this.snackBar.open(`Setările contului ${target} au fost salvate.`, '', { duration: 2500 });
   }
 
   openAddUser(): void {

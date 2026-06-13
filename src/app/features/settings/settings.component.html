@@ -559,8 +559,8 @@
                   </div>
                 } @else if (user.username === 'keyuser') {
                   <div class="user-actions">
-                    <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
-                      <mat-icon>edit</mat-icon>
+                    <button mat-icon-button (click)="openAdminSec('keyuser')" matTooltip="Schimbă parola / email recuperare">
+                      <mat-icon>key</mat-icon>
                     </button>
                   </div>
                 } @else {
@@ -754,7 +754,7 @@
             }
           </mat-form-field>
 
-          @if (!PROTECTED_PERMS.has(editingPermId() ?? '')) {
+          @if (!PROTECTED_PERMS.has(editingPermId() ?? '') && auth.isKeyUser()) {
             <div class="perm-admin-toggle">
               <mat-checkbox formControlName="isAdmin">
                 Rol de tip Admin (acces complet la toate setările)

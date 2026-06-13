@@ -12,6 +12,7 @@ export class AuthService {
   readonly session     = this._session.asReadonly();
   readonly isLoggedIn  = computed(() => !!this._session());
   readonly isAdmin     = computed(() => { const r = this._session()?.role; return r === 'admin' || r === 'keyuser'; });
+  readonly isKeyUser   = computed(() => this._session()?.role === 'keyuser');
   readonly userName    = computed(() => this._session()?.name ?? '');
   readonly userInitial = computed(() => (this._session()?.name ?? 'U').charAt(0).toUpperCase());
   readonly roleLabel   = computed(() => {
