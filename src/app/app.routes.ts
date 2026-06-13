@@ -23,6 +23,7 @@ export const routes: Routes = [
       { path: 'my-trips',    loadComponent: () => import('./features/my-trips/my-trips.component').then(m => m.MyTripsComponent) },
       { path: 'account',     loadComponent: () => import('./features/account/account.component').then(m => m.AccountComponent) },
       { path: 'manual',      loadComponent: () => import('./features/manual/manual.component').then(m => m.ManualComponent) },
+      { path: 'security',    loadComponent: () => import('./features/security/security.component').then(m => m.SecurityComponent) },
     ]
   },
   { path: '**', redirectTo: '/app/catalog' }

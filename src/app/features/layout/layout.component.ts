@@ -48,6 +48,7 @@ export class LayoutComponent implements OnInit {
     { label: 'Setări',          icon: 'settings',          route: '/app/settings',    roles: ['admin', 'keyuser'] },
     { label: 'Contul meu',      icon: 'manage_accounts',   route: '/app/account',     roles: ['admin', 'keyuser', 'agent'] },
     { label: 'Manual',          icon: 'menu_book',         route: '/app/manual',      roles: ['admin', 'keyuser', 'agent'] },
+    { label: 'Pagina nouă',    icon: 'security',          route: '/app/security',    roles: ['admin', 'keyuser', 'agent'] },
   ];
 
   constructor(
