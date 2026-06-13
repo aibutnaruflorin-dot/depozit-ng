@@ -194,21 +194,54 @@ export class CatalogsService {
           const norm = (s: string) =>
             s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
+          // Explicit header-name → field mapping (exact match after normalize).
+          // Add aliases here when a new Excel format uses a different column name.
+          const COL_ALIASES: Record<string, string> = {
+            // Denumire
+            'denumire':                    'name',
+            'denumire produs':             'name',
+            'denumire produse':            'name',
+            // UM
+            'u.m.':                        'um',
+            'um':                          'um',
+            'unitate masura':              'um',
+            'unitate de masura':           'um',
+            // Cantitate
+            'cantitate':                   'qty',
+            // Masa netă
+            'masa neta':                   'masaNeta',
+            'masa neta (kg)':              'masaNeta',
+            'masa':                        'masaNeta',
+            // Preț cu TVA
+            'pret lista cu tva in lei':    'pretCuTVA',
+            'pret cu tva in lei':          'pretCuTVA',
+            'pret cu tva':                 'pretCuTVA',
+            'pret vanzare cu tva':         'pretCuTVA',
+            // Preț fără TVA
+            'pret lista fara tva in lei':  'pretFaraTVA',
+            'pret fara tva in lei':        'pretFaraTVA',
+            'pret fara tva':               'pretFaraTVA',
+            'pret vanzare fara tva':       'pretFaraTVA',
+            // Categorie
+            'subclasa produse':            'category',
+            'subcategorie produse':        'category',
+            'categorie':                   'category',
+            'clasa':                       'category',
+            // Furnizor
+            'furnizor':                    'furnizor',
+            // Cod extern
+            'cod extern':                  'codExtern',
+            'cod_extern':                  'codExtern',
+            'cod articol':                 'codExtern',
+          };
+
           for (let i = 0; i < rows.length; i++) {
             const cells = (rows[i] as any[]).map(c => norm(String(c || '')));
-            if (!cells.some(c => c === 'denumire' || c.includes('denumire'))) continue;
+            if (!cells.some(c => c.includes('denumire'))) continue;
 
-            const set = (key: string, idx: number) => { if (!(key in colMap)) colMap[key] = idx; };
             cells.forEach((cell, idx) => {
-              if      (cell.includes('denumire'))                                     set('name',       idx);
-              else if (cell === 'u.m.' || cell === 'um' || cell.includes('unitate')) set('um',         idx);
-              else if (cell === 'cantitate' || cell.includes('cantit'))              set('qty',        idx);
-              else if (cell.includes('masa neta') || cell === 'masa neta')           set('masaNeta',   idx);
-              else if (cell.includes('fara tva'))                                    set('pretFaraTVA',idx);
-              else if (cell.includes('cu tva'))                                      set('pretCuTVA',  idx);
-              else if (cell.includes('subclas') || cell === 'categorie')             set('category',   idx);
-              else if (cell.includes('furnizor'))                                    set('furnizor',   idx);
-              else if (cell.includes('cod extern') || cell === 'cod_extern')         set('codExtern',  idx);
+              const field = COL_ALIASES[cell];
+              if (field && !(field in colMap)) colMap[field] = idx;
             });
             dataStartRow = i + 1;
             break;
