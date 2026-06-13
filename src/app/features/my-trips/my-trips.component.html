@@ -251,6 +251,7 @@
         <th>Mașină</th>
         <th>Plecare → Sosire</th>
         <th>Comenzi / Articole</th>
+        <th>Masă</th>
         <th>Progres livrare</th>
         @if (trips[0]?.status === 'livrat') {
           <th>Log tranziții</th>
@@ -304,6 +305,21 @@
                   </span>
                 }
               </div>
+            }
+          </td>
+          <td class="weight-cell">
+            @let tw = tripTotalWeight(t);
+            @if (tw > 0) {
+              <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
+                <mat-icon style="font-size:13px;width:13px;height:13px;vertical-align:middle">scale</mat-icon>
+                {{ fmtWeight(tw) }}
+                @if (tripWeightWarn(t)) {
+                  <mat-icon style="font-size:13px;width:13px;height:13px;color:#e53935"
+                            matTooltip="Tonaj depășit!">warning</mat-icon>
+                }
+              </span>
+            } @else {
+              <span class="muted">—</span>
             }
           </td>
           <td class="stepper-cell">

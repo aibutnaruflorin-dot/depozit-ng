@@ -265,6 +265,14 @@
 .log-label { color: var(--color-text-muted); min-width: 80px; }
 .log-time  { font-weight: 600; color: var(--color-text); }
 
+/* ── Weight cell ── */
+.weight-cell { vertical-align: middle; white-space: nowrap; }
+.val-weight {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.8rem; font-weight: 600; color: #2e7d32;
+  &.val-weight-warn { color: #e53935; }
+}
+
 /* ── Trip stepper ── */
 .stepper-cell { vertical-align: middle; min-width: 280px; }
 

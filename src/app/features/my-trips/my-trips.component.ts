@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { TransportService } from '../../core/services/transport.service';
 import { OrdersService } from '../../core/services/orders.service';
+import { CatalogsService } from '../../core/services/catalogs.service';
 import { Transport, TransportStatus } from '../../core/models/transport.model';
 import { Order } from '../../core/models/order.model';
 import { MatIconModule } from '@angular/material/icon';
@@ -110,8 +111,37 @@ export class MyTripsComponent {
     public  auth: AuthService,
     public  transportService: TransportService,
     private ordersService: OrdersService,
+    private catalogsService: CatalogsService,
     private snackBar: MatSnackBar
   ) {}
+
+  tripTotalWeight(t: Transport): number {
+    return this.ordersForTransport(t).reduce((sum, order) => {
+      const d = t.deliveries.find(del => del.orderId === order.id);
+      if (!d) return sum;
+      return sum + d.items.reduce((si, item) => {
+        const p = order.products[item.productIndex];
+        if (!p) return si;
+        const masa = p.masaNeta
+          ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta
+          ?? 0;
+        return si + masa * item.qty;
+      }, 0);
+    }, 0);
+  }
+
+  tripWeightWarn(t: Transport): boolean {
+    const vehicle = this.transportService.getVehicle(t.vehicleId);
+    if (!vehicle?.tonajMaxim) return false;
+    return this.tripTotalWeight(t) > vehicle.tonajMaxim;
+  }
+
+  fmtWeight(kg: number): string {
+    if (kg <= 0) return '';
+    return kg >= 1000
+      ? `${(kg / 1000).toFixed(2).replace(/\.?0+$/, '')} t`
+      : `${kg.toFixed(1).replace(/\.0$/, '')} kg`;
+  }
 
   setTripStatus(t: Transport, status: TransportStatus): void {
     if (status === t.status) return;

@@ -219,6 +219,7 @@
           <th>Produse</th>
           <th>Livrat / Total</th>
           <th>Valoare</th>
+          <th>Masă</th>
           <th>Acțiuni</th>
         </tr>
       </thead>
@@ -258,6 +259,17 @@
               @let ov = orderPendingValue(o);
               <span class="val-net">{{ ov.net | number:'1.2-2' }} lei</span>
               <span class="val-tva">{{ ov.tva | number:'1.2-2' }} cu TVA</span>
+            </td>
+            <td class="value-cell">
+              @let ow = orderTotalWeight(o);
+              @if (ow > 0) {
+                <span class="val-weight">
+                  <mat-icon style="font-size:13px;width:13px;height:13px;vertical-align:middle">scale</mat-icon>
+                  {{ fmtWeight(ow) }}
+                </span>
+              } @else {
+                <span class="muted">—</span>
+              }
             </td>
             <td>
               <div class="delivery-actions">
@@ -459,6 +471,13 @@
                 @let ov = tripValue(t);
                 <span class="val-net">{{ ov.net | number:'1.2-2' }} lei</span>
                 <span class="val-tva">{{ ov.tva | number:'1.2-2' }} cu TVA</span>
+                @if (tripTotalWeight(t) > 0) {
+                  <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
+                    <mat-icon style="font-size:13px;width:13px;height:13px;vertical-align:middle">scale</mat-icon>
+                    {{ fmtWeight(tripTotalWeight(t)) }}
+                    @if (tripWeightWarn(t)) { <mat-icon style="font-size:13px;width:13px;height:13px;color:#e53935">warning</mat-icon> }
+                  </span>
+                }
               </td>
               <td>
                 <span class="trip-status-badge trip-status--overdue">
