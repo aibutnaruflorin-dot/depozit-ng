@@ -851,3 +851,53 @@
   </div>
 }
 
+<!-- ── Import impact dialog ─────────────────────────────────────────────── -->
+@if (importPending(); as pending) {
+  <div class="impact-overlay" (click)="cancelImport()">
+    <div class="impact-card" (click)="$event.stopPropagation()">
+      <div class="impact-header">
+        <mat-icon class="impact-warn-icon">warning</mat-icon>
+        <div>
+          <div class="impact-title">Comenzi active detectate pentru <strong>{{ pending.cat.name }}</strong></div>
+          <div class="impact-subtitle">{{ pending.reserved.length }} produse rezervate în comenzi nesoluționate</div>
+        </div>
+      </div>
+
+      <div class="impact-list">
+        @for (r of pending.reserved; track r.name) {
+          <div class="impact-row">
+            <span class="impact-name" [title]="r.name">{{ r.name }}</span>
+            <span class="impact-orders">
+              @for (o of r.orders; track o.orderNumber) {
+                <span class="impact-chip">#{{ o.orderNumber ?? '?' }} ×{{ o.qty }}</span>
+              }
+            </span>
+            <span class="impact-total">{{ r.totalQty }} buc</span>
+          </div>
+        }
+      </div>
+
+      <div class="impact-choices">
+        <button class="impact-btn impact-btn-primary" (click)="proceedImport('direct')">
+          <mat-icon>download_done</mat-icon>
+          <span>
+            <strong>Import direct</strong>
+            <small>Excel-ul reflectă deja stocul după comenzi (cazul A)</small>
+          </span>
+        </button>
+        <button class="impact-btn" (click)="proceedImport('subtract')">
+          <mat-icon>remove_circle_outline</mat-icon>
+          <span>
+            <strong>Import cu scădere automată</strong>
+            <small>qty_excel − qty_rezervat în comenzi active (cazul B)</small>
+          </span>
+        </button>
+        <button class="impact-btn impact-btn-cancel" (click)="cancelImport()">
+          <mat-icon>close</mat-icon>
+          <span><strong>Anulează</strong></span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+

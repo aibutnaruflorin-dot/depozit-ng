@@ -169,7 +169,7 @@ export class CatalogsService {
     this._productsByCat.update(m => ({ ...m, [catalogId]: tagged }));
   }
 
-  async importExcel(catalogId: string, file: File): Promise<{ ok: boolean; msg: string; detected?: string }> {
+  async importExcel(catalogId: string, file: File, subtractReserved?: Map<string, number>): Promise<{ ok: boolean; msg: string; detected?: string }> {
     const filename = file.name;
 
     // Duplicate filename check
@@ -266,7 +266,9 @@ export class CatalogsService {
             const name = str(row, 'name');
             if (!name) continue;
 
-            const qty = Math.max(0, num(row, 'qty'));
+            const rawQty = Math.max(0, num(row, 'qty'));
+            const reserved = subtractReserved?.get(name) ?? 0;
+            const qty = Math.max(0, rawQty - reserved);
             const masaNeta    = num(row, 'masaNeta')    || undefined;
             const pretFaraTVA = num(row, 'pretFaraTVA') || undefined;
             const pretCuTVA   = num(row, 'pretCuTVA')   || undefined;
@@ -276,7 +278,7 @@ export class CatalogsService {
               name,
               um:          str(row, 'um') || '',
               qty,
-              importedQty: qty,
+              importedQty: rawQty,
               masaNeta,
               pretFaraTVA,
               pretCuTVA,

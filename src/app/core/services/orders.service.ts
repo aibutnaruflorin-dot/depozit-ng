@@ -8,6 +8,12 @@ export interface StockCheckResult {
   insufficient: { name: string; available: number; requested: number }[];
 }
 
+export interface ReservedProduct {
+  name: string;
+  totalQty: number;
+  orders: { orderNumber?: number; qty: number }[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class OrdersService {
   private _orders = signal<Order[]>([]);
@@ -167,6 +173,24 @@ export class OrdersService {
       })
     );
     this.storage.set('app_orders', this._orders());
+  }
+
+  reservedByCatalog(catalogId: string): ReservedProduct[] {
+    const closed = new Set(['livrat', 'anulat']);
+    const byName = new Map<string, ReservedProduct>();
+    for (const order of this._orders()) {
+      if (order.superseded || closed.has(order.status)) continue;
+      for (const p of order.products) {
+        if (p.catalogId !== catalogId) continue;
+        if (!byName.has(p.name)) byName.set(p.name, { name: p.name, totalQty: 0, orders: [] });
+        const rp = byName.get(p.name)!;
+        rp.totalQty += p.qty;
+        const existing = rp.orders.find(o => o.orderNumber === order.orderNumber);
+        if (existing) existing.qty += p.qty;
+        else rp.orders.push({ orderNumber: order.orderNumber, qty: p.qty });
+      }
+    }
+    return [...byName.values()].sort((a, b) => b.totalQty - a.totalQty);
   }
 
   resetPeriod(): void {

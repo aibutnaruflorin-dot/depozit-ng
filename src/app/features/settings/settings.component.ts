@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
-import { OrdersService } from '../../core/services/orders.service';
+import { OrdersService, ReservedProduct } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
 import { TransportService } from '../../core/services/transport.service';
 import { Catalog, CatalogMeta, CatalogUpload } from '../../core/models/catalog.model';
@@ -77,6 +77,7 @@ export class SettingsComponent implements OnInit {
 
   showAdminSecModal = signal(false);
   confirmReset      = signal(false);
+  importPending     = signal<{ cat: Catalog; file: File; reserved: ReservedProduct[] } | null>(null);
   adminNewPassword  = '';
   adminConfirmPass  = '';
   adminRecoveryEmail = '';
@@ -223,12 +224,39 @@ export class SettingsComponent implements OnInit {
   // ── Excel import ──────────────────────────────────────────────────────────
 
   onFileSelected(cat: Catalog, event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
+    input.value = '';
+
+    if (cat.dataSource !== 'api') {
+      const reserved = this.ordersService.reservedByCatalog(cat.id);
+      if (reserved.length > 0) {
+        this.importPending.set({ cat, file, reserved });
+        return;
+      }
+    }
+    this._doImport(cat, file);
+  }
+
+  proceedImport(mode: 'direct' | 'subtract'): void {
+    const pending = this.importPending();
+    if (!pending) return;
+    this.importPending.set(null);
+    const subtractMap = mode === 'subtract'
+      ? new Map(pending.reserved.map(r => [r.name, r.totalQty]))
+      : undefined;
+    this._doImport(pending.cat, pending.file, subtractMap);
+  }
+
+  cancelImport(): void { this.importPending.set(null); }
+
+  private _doImport(cat: Catalog, file: File, subtractReserved?: Map<string, number>): void {
     const st = this.catStates[cat.id];
     st.importing = true;
     st.importMsg = '';
-    this.catalogsService.importExcel(cat.id, file).then(res => {
+    st.importDetected = null;
+    this.catalogsService.importExcel(cat.id, file, subtractReserved).then(res => {
       st.importing = false;
       st.importMsg = res.msg;
       st.importDetected = res.detected ?? null;
