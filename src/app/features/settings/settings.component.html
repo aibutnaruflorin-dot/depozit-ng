@@ -397,6 +397,7 @@
             <tr>
               <th>Nume</th>
               <th>Username</th>
+              <th>Rol</th>
               <th>Telefon</th>
               <th>Status</th>
               @if (auth.isAdmin()) {
@@ -408,6 +409,9 @@
             <tr>
               <td><strong>{{ user.name }}</strong></td>
               <td><code>{{ user.username }}</code></td>
+              <td>
+                <p-tag [value]="permLabel(user.role)" [severity]="permSeverity(user.role)" />
+              </td>
               <td>
                 @if (user.telefon) {
                   <a [href]="'tel:' + user.telefon" style="color:var(--color-primary);text-decoration:none">{{ user.telefon }}</a>
