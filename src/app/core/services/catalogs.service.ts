@@ -28,6 +28,17 @@ export class CatalogsService {
     return m;
   });
 
+  /** Sum of manual stock log deltas per product key `${catalogId}_${nr}`. */
+  private readonly _manualBufferMap = computed(() => {
+    const map = new Map<string, number>();
+    for (const entry of this._stockLog()) {
+      if (entry.source !== 'manual') continue;
+      const key = `${entry.catalogId}_${String(entry.productNr)}`;
+      map.set(key, (map.get(key) ?? 0) + entry.delta);
+    }
+    return map;
+  });
+
   /** Pre-sorted products per catalog (A-Z). Recomputed only when catalog data changes. */
   private readonly _sortedByCat = computed(() => {
     const result: Record<string, Product[]> = {};
@@ -366,32 +377,73 @@ export class CatalogsService {
     return p != null ? p.qty : null;
   }
 
-  /** Returns the 3-column stock breakdown for display. */
-  getStockThreeCol(catalogId: string | undefined, productNr: string | number): { importedQty: number; finalQty: number; bufferQty: number; importAvailable: number } {
-    if (!catalogId) return { importedQty: 0, finalQty: 0, bufferQty: 0, importAvailable: 0 };
+  /** Returns the 4-column stock breakdown for display.
+   *  Formula: importedQty − consumedQty + bufferQty = finalQty */
+  getStockThreeCol(catalogId: string | undefined, productNr: string | number): { importedQty: number; consumedQty: number; bufferQty: number; finalQty: number; importAvailable: number } {
+    if (!catalogId) return { importedQty: 0, consumedQty: 0, bufferQty: 0, finalQty: 0, importAvailable: 0 };
     const p = this._productMap().get(`${catalogId}_${String(productNr)}`);
-    if (!p) return { importedQty: 0, finalQty: 0, bufferQty: 0, importAvailable: 0 };
-    const importedQty = p.importedQty ?? p.qty;
+    if (!p) return { importedQty: 0, consumedQty: 0, bufferQty: 0, finalQty: 0, importAvailable: 0 };
     const finalQty    = p.qty;
+    const bufferQty   = this._manualBufferMap().get(`${catalogId}_${String(productNr)}`) ?? 0;
+    const rawImported = p.importedQty ?? finalQty;
+    // consumedQty can't be negative; if data is inconsistent (re-import with smaller qty),
+    // clamp to 0 and derive importedQty to keep the display formula consistent.
+    const consumedQty = Math.max(0, rawImported - finalQty + bufferQty);
+    const importedQty = Math.max(0, finalQty + consumedQty - bufferQty);
     return {
       importedQty,
+      consumedQty,
+      bufferQty,
       finalQty,
-      bufferQty:       finalQty - importedQty,
-      importAvailable: Math.min(finalQty, importedQty),
+      importAvailable: Math.max(0, finalQty - bufferQty),
     };
   }
 
-  /** Returns warning data when an order uses buffer stock. */
+  /** Returns warning data when an order uses buffer stock. Only warns when manual buffer exists. */
   calcBufferWarning(catalogId: string | undefined, productNr: string | number, orderedQty: number): { warn: boolean; bufferUsed: number } {
     const s = this.getStockThreeCol(catalogId, productNr);
+    if (s.bufferQty <= 0) return { warn: false, bufferUsed: 0 };
     const bufferUsed = Math.max(0, orderedQty - s.importAvailable);
     return { warn: bufferUsed > 0, bufferUsed };
+  }
+
+  /** Removes all non-manual stock log entries (order/revise/cancel/add_products/import). Used on session reset. */
+  clearOrderStockLog(): void {
+    const next = this._stockLog().filter(e => e.source === 'manual');
+    this._stockLog.set(next);
+    this.storage.set('app_stock_log', next);
+  }
+
+  /** Resets every product's qty to importedQty + manual buffer — undoes all order effects. */
+  reconcileStockToImport(): void {
+    const manualBuf = this._manualBufferMap();
+    const next: Record<string, Product[]> = {};
+    for (const [catId, prods] of Object.entries(this._productsByCat())) {
+      next[catId] = prods.map(p => {
+        const key = `${catId}_${String(p.nr)}`;
+        const buf  = manualBuf.get(key) ?? 0;
+        const base = p.importedQty ?? p.qty;
+        return { ...p, qty: base + buf };
+      });
+      this.storage.set(`app_catalog_${catId}_products`, next[catId]);
+    }
+    this._productsByCat.set({ ...next });
   }
 
   /** Clears manual stock-log entries for the given catalog IDs. Stoc Final stays unchanged. */
   resetBuffer(catalogIds: string[]): void {
     const idSet = new Set(catalogIds);
     const next  = this._stockLog().filter(e => !(e.source === 'manual' && idSet.has(e.catalogId)));
+    this._stockLog.set(next);
+    this.storage.set('app_stock_log', next);
+  }
+
+  /** Clears manual stock-log entries for specific products (by catalogId + productNr). */
+  resetBufferForProducts(products: { catalogId: string; productNr: string | number }[]): void {
+    const keySet = new Set(products.map(p => `${p.catalogId}_${String(p.productNr)}`));
+    const next   = this._stockLog().filter(e =>
+      !(e.source === 'manual' && keySet.has(`${e.catalogId}_${String(e.productNr)}`))
+    );
     this._stockLog.set(next);
     this.storage.set('app_stock_log', next);
   }

@@ -3,7 +3,14 @@ import { Component, computed, signal, OnInit } from '@angular/core';
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
-    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return new Set(a); }
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved)) {
+        const merged = new Set<string>(saved);
+        for (const d of defaults) if (!merged.has(d)) merged.add(d);
+        return merged;
+      }
+    }
   } catch {}
   return new Set(defaults);
 }
@@ -11,6 +18,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CatalogsService } from '../../core/services/catalogs.service';
+import { OrdersService, ReservedProduct } from '../../core/services/orders.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -93,8 +101,40 @@ export class CatalogComponent implements OnInit {
   adjComment = signal('');
   adjError   = signal('');
 
-  historyModal        = signal<Product | null>(null);
-  resetBufConfirm     = signal(false);
+  historyModal     = signal<Product | null>(null);
+  resetBufStep     = signal<'idle' | 'export' | 'confirm'>('idle');
+  resetBufExported = signal(false);
+  resetBufModes    = signal<Map<string, 'reset' | 'keep'>>(new Map());
+
+  readonly resetBufImpact = computed(() => {
+    if (this.resetBufStep() === 'idle') return [];
+    const ids = this.selectedCatIds().length
+      ? this.selectedCatIds()
+      : this.catalogsService.catalogs().map(c => c.id);
+    const idSet  = new Set(ids);
+    const bufMap = this.bufferMap();
+    const result: Array<{
+      key: string; name: string; catalogId: string; nr: string;
+      catalogName: string; bufVal: number;
+      reserved: number; orders: { orderNumber?: number; qty: number; clientName: string }[];
+    }> = [];
+    for (const [key, bufVal] of bufMap) {
+      if (bufVal === 0) continue;
+      const sepIdx    = key.indexOf('|');
+      const catalogId = key.slice(0, sepIdx);
+      const nr        = key.slice(sepIdx + 1);
+      if (!idSet.has(catalogId)) continue;
+      const p   = this.catalogsService.findProduct(catalogId, nr);
+      const cat = this.catalogsService.getById(catalogId);
+      if (!p) continue;
+      const res = this.ordersService.reservedByCatalog(catalogId).find(r => r.name === p.name);
+      result.push({
+        key, name: p.name, catalogId, nr, catalogName: cat?.name ?? catalogId, bufVal,
+        reserved: res?.totalQty ?? 0, orders: res?.orders ?? [],
+      });
+    }
+    return result.sort((a, b) => Math.abs(b.bufVal) - Math.abs(a.bufVal));
+  });
 
   readonly SOURCE_LABELS: Record<string, string> = {
     manual:       'Manual',
@@ -106,6 +146,7 @@ export class CatalogComponent implements OnInit {
 
   constructor(
     public catalogsService: CatalogsService,
+    public ordersService: OrdersService,
     private auth: AuthService,
     private snackBar: MatSnackBar,
     private router: Router
@@ -298,26 +339,55 @@ export class CatalogComponent implements OnInit {
 
   rowBg(catalogId: string): string     { return this.catalogsService.bgColor(catalogId, 0.08); }
   rowBorder(catalogId: string): string { return this.catalogsService.borderColor(catalogId); }
-  goToNewOrder(): void                 { this.router.navigate(['/app/new-order']); }
+  goToNewOrder(product?: Product): void {
+    this.router.navigate(['/app/new-order'], product ? { state: { product } } : undefined);
+  }
 
   // ── Stock adjustment ──────────────────────────────────────────────────────
 
   openHistory(product: Product): void  { this.historyModal.set(product); }
   closeHistory(): void                  { this.historyModal.set(null); }
 
-  openResetBuf(): void { this.resetBufConfirm.set(true); }
-  closeResetBuf(): void { this.resetBufConfirm.set(false); }
+  openResetBuf(): void {
+    this.resetBufExported.set(false);
+    this.resetBufStep.set('export');
+  }
+  closeResetBuf(): void {
+    this.resetBufStep.set('idle');
+    this.resetBufExported.set(false);
+  }
+  downloadAndContinue(): void {
+    this.exportExcel();
+    this.resetBufExported.set(true);
+    const modes = new Map<string, 'reset' | 'keep'>();
+    for (const item of this.resetBufImpact()) modes.set(item.key, 'reset');
+    this.resetBufModes.set(modes);
+    this.resetBufStep.set('confirm');
+  }
+  setResetBufMode(key: string, mode: 'reset' | 'keep'): void {
+    const m = new Map(this.resetBufModes());
+    m.set(key, mode);
+    this.resetBufModes.set(m);
+  }
+  setAllResetBufMode(mode: 'reset' | 'keep'): void {
+    const m = new Map<string, 'reset' | 'keep'>();
+    for (const item of this.resetBufImpact()) m.set(item.key, mode);
+    this.resetBufModes.set(m);
+  }
+  resetBufResetCount(): number {
+    let n = 0;
+    for (const v of this.resetBufModes().values()) if (v === 'reset') n++;
+    return n;
+  }
   confirmResetBuf(): void {
-    const ids = this.selectedCatIds().length
-      ? this.selectedCatIds()
-      : this.catalogsService.catalogs().map(c => c.id);
-
-    // Build mailto summary before resetting
-    this._sendBufferEmail(ids);
-
-    this.catalogsService.resetBuffer(ids);
+    const modes   = this.resetBufModes();
+    const toReset = this.resetBufImpact()
+      .filter(item => (modes.get(item.key) ?? 'reset') === 'reset')
+      .map(item => ({ catalogId: item.catalogId, productNr: item.nr }));
+    if (toReset.length === 0) { this.closeResetBuf(); return; }
+    this.catalogsService.resetBufferForProducts(toReset);
     this.closeResetBuf();
-    this.snackBar.open('Buffer resetat. Stoc Final rămâne nemodificat.', '', { duration: 3000 });
+    this.snackBar.open(`Buffer resetat pentru ${toReset.length} produs${toReset.length === 1 ? '' : 'e'}. Stoc Final rămâne nemodificat.`, '', { duration: 3500 });
   }
 
   private _sendBufferEmail(ids: string[]): void {

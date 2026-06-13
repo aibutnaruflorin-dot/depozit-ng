@@ -3,7 +3,14 @@ import { Component, computed, signal } from '@angular/core';
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
-    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return new Set(a); }
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved)) {
+        const merged = new Set<string>(saved);
+        for (const d of defaults) if (!merged.has(d)) merged.add(d);
+        return merged;
+      }
+    }
   } catch {}
   return new Set(defaults);
 }
@@ -649,4 +656,33 @@ export class HistoryComponent {
     if (p.startsWith('40') && !p.startsWith('+')) p = '+' + p;
     return p;
   }
+
+  // ── Istoric ajustări stoc ──────────────────────────────────────────────────
+
+  readonly SOURCE_LABELS: Record<string, string> = {
+    manual:       'Manual',
+    order:        'Comandă',
+    cancel:       'Anulare',
+    revise:       'Revizie',
+    add_products: 'Ad. produse',
+    import:       'Import',
+  };
+
+  stockHistoryModal = signal<{ name: string; catalogId: string; nr: string | number } | null>(null);
+
+  readonly stockHistory = computed(() => {
+    const m = this.stockHistoryModal();
+    if (!m) return [];
+    return this.catalogsService.stockLog().filter(e =>
+      e.catalogId === m.catalogId && String(e.productNr) === String(m.nr)
+    );
+  });
+
+  openStockHistory(name: string, catalogId: string | undefined, nr: string | number, ev: Event): void {
+    ev.stopPropagation();
+    if (!catalogId) return;
+    this.stockHistoryModal.set({ name, catalogId, nr });
+  }
+
+  closeStockHistory(): void { this.stockHistoryModal.set(null); }
 }

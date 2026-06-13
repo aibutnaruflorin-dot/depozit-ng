@@ -15,15 +15,23 @@ import { Product } from '../../core/models/product.model';
 interface ProductRow {
   p: Product;
   importedQty: number;
-  finalQty: number;
+  consumedQty: number;
   bufferQty: number;
+  finalQty: number;
   importAvailable: number;
 }
 
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
-    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return new Set(a); }
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved)) {
+        const merged = new Set<string>(saved);
+        for (const d of defaults) if (!merged.has(d)) merged.add(d);
+        return merged;
+      }
+    }
   } catch {}
   return new Set(defaults);
 }

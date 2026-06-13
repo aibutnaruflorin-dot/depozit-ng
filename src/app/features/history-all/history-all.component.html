@@ -467,16 +467,23 @@
                     </span>
                     <span class="epc-um">{{ p.um }}</span>
                     @let s = catalogsService.getStockThreeCol(p.catalogId, p.nr);
-                    <div class="stoc3-cell">
-                      <span class="s3-imp">{{ s.importedQty }}</span>
-                      <span class="s3-sep">·</span>
-                      <span class="s3-final" [class.s3-zero]="s.finalQty === 0">{{ s.finalQty }}</span>
-                      @if (s.bufferQty !== 0) {
-                        <span class="s3-sep">·</span>
-                        <span class="s3-buf" [class.s3-pos]="s.bufferQty > 0" [class.s3-neg]="s.bufferQty < 0">
-                          {{ s.bufferQty > 0 ? '+' : '' }}{{ s.bufferQty }}
-                        </span>
-                      }
+                    <div class="stoc3-cell" (click)="openStockHistory(p.name, p.catalogId, p.nr, $event)" style="cursor:pointer">
+                      <div class="s3-row">
+                        <span class="s3-label">Importat</span>
+                        <span class="s3-imp">{{ s.importedQty }}</span>
+                      </div>
+                      <div class="s3-row">
+                        <span class="s3-label">Consumat</span>
+                        <span class="s3-con">{{ s.consumedQty > 0 ? '−' + s.consumedQty : s.consumedQty }}</span>
+                      </div>
+                      <div class="s3-row">
+                        <span class="s3-label">Buffer</span>
+                        <span class="s3-buf" [class.s3-pos]="s.bufferQty > 0" [class.s3-neg]="s.bufferQty < 0">{{ s.bufferQty > 0 ? '+' : '' }}{{ s.bufferQty === 0 ? '—' : s.bufferQty }}</span>
+                      </div>
+                      <div class="s3-row s3-total">
+                        <span class="s3-label">Final</span>
+                        <span class="s3-final" [class.s3-zero]="s.finalQty === 0">{{ s.finalQty }}</span>
+                      </div>
                     </div>
                     <span class="epc-cod">{{ getCodExtern(p) || '—' }}</span>
                     <span class="epc-furn">{{ p.furnizor || '—' }}</span>
@@ -493,7 +500,8 @@
                                [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
                                (change)="setEditQty(order.id, j, p.qty, $any($event.target).value)"
                                (click)="$any($event.target).select()">
-                        <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)">
+                        <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)"
+                                [disabled]="s.finalQty <= 0">
                           <mat-icon>add</mat-icon>
                         </button>
                       </div>
@@ -523,16 +531,23 @@
                     </span>
                     <span class="epc-um">{{ p.um }}</span>
                     @let sr = catalogsService.getStockThreeCol(p.catalogId, p.nr);
-                    <div class="stoc3-cell">
-                      <span class="s3-imp">{{ sr.importedQty }}</span>
-                      <span class="s3-sep">·</span>
-                      <span class="s3-final" [class.s3-zero]="sr.finalQty === 0">{{ sr.finalQty }}</span>
-                      @if (sr.bufferQty !== 0) {
-                        <span class="s3-sep">·</span>
-                        <span class="s3-buf" [class.s3-pos]="sr.bufferQty > 0" [class.s3-neg]="sr.bufferQty < 0">
-                          {{ sr.bufferQty > 0 ? '+' : '' }}{{ sr.bufferQty }}
-                        </span>
-                      }
+                    <div class="stoc3-cell" (click)="openStockHistory(p.name, p.catalogId, p.nr, $event)" style="cursor:pointer">
+                      <div class="s3-row">
+                        <span class="s3-label">Importat</span>
+                        <span class="s3-imp">{{ sr.importedQty }}</span>
+                      </div>
+                      <div class="s3-row">
+                        <span class="s3-label">Consumat</span>
+                        <span class="s3-con">{{ sr.consumedQty > 0 ? '−' + sr.consumedQty : sr.consumedQty }}</span>
+                      </div>
+                      <div class="s3-row">
+                        <span class="s3-label">Buffer</span>
+                        <span class="s3-buf" [class.s3-pos]="sr.bufferQty > 0" [class.s3-neg]="sr.bufferQty < 0">{{ sr.bufferQty > 0 ? '+' : '' }}{{ sr.bufferQty === 0 ? '—' : sr.bufferQty }}</span>
+                      </div>
+                      <div class="s3-row s3-total">
+                        <span class="s3-label">Final</span>
+                        <span class="s3-final" [class.s3-zero]="sr.finalQty === 0">{{ sr.finalQty }}</span>
+                      </div>
                     </div>
                     <span class="epc-cod">{{ getCodExtern(p) || '—' }}</span>
                     <span class="epc-furn">{{ p.furnizor || '—' }}</span>
@@ -646,4 +661,52 @@
     source="toate-comenzile"
     (closed)="addProductsOrderId.set(null)">
   </app-add-products-modal>
+}
+
+@if (stockHistoryModal(); as m) {
+  <div class="sh-overlay" (click)="closeStockHistory()">
+    <div class="sh-card" (click)="$event.stopPropagation()">
+      <div class="sh-header">
+        <div class="sh-title">
+          <mat-icon style="color:var(--color-primary)">history</mat-icon>
+          Istoric ajustări stoc
+        </div>
+        <button mat-icon-button (click)="closeStockHistory()"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="sh-product-name">{{ m.name }}</div>
+      <div class="sh-body">
+        @if (stockHistory().length === 0) {
+          <div class="sh-empty">
+            <mat-icon>info_outline</mat-icon>
+            Nicio ajustare înregistrată pentru acest produs.
+          </div>
+        } @else {
+          <table class="sh-table">
+            <thead>
+              <tr>
+                <th>Data / Ora</th>
+                <th>Sursă</th>
+                <th>Delta</th>
+                <th>Comentariu</th>
+                <th>Utilizator</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of stockHistory(); track e.timestamp) {
+                <tr>
+                  <td class="sh-ts">{{ e.timestamp | date:'dd.MM.yyyy HH:mm' }}</td>
+                  <td><span class="sh-source">{{ SOURCE_LABELS[e.source] ?? e.source }}</span></td>
+                  <td class="sh-delta" [class.sh-pos]="e.delta > 0" [class.sh-neg]="e.delta < 0">
+                    {{ e.delta > 0 ? '+' : '' }}{{ e.delta }}
+                  </td>
+                  <td class="sh-comment">{{ e.comment || '—' }}</td>
+                  <td class="sh-user">{{ e.userName }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  </div>
 }

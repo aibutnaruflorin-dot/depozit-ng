@@ -3,7 +3,14 @@ import { Component, signal, computed, OnInit } from '@angular/core';
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
-    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return new Set(a); }
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved)) {
+        const merged = new Set<string>(saved);
+        for (const d of defaults) if (!merged.has(d)) merged.add(d);
+        return merged;
+      }
+    }
   } catch {}
   return new Set(defaults);
 }
@@ -116,7 +123,15 @@ export class NewOrderComponent implements OnInit {
     private router: Router
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    const product = (window.history.state as any)?.product;
+    if (product) {
+      const key = this.pkey(product);
+      this._pendingQty.update(m => ({ ...m, [key]: 1 }));
+      this.cart.update(c => [...c, { product, qty: 1 }]);
+      this.showCart.set(true);
+    }
+  }
 
   furnizorDropdownOpen = signal(false);
   furnizorSearch       = signal('');

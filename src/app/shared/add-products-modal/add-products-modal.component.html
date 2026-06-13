@@ -92,7 +92,7 @@
         <div *cdkVirtualFor="let row of productRows(); trackBy: trackRow"
              class="apm-table-row" [class.apm-row-selected]="getQty(row.p) > 0">
           @let qty = getQty(row.p);
-          @let bufferUsed = qty > row.importAvailable ? qty - row.importAvailable : 0;
+          @let bufferUsed = row.bufferQty > 0 && qty > row.importAvailable ? qty - row.importAvailable : 0;
 
           <!-- Denumire -->
           <div class="apm-name-cell">
@@ -123,7 +123,8 @@
             <input class="apm-qinput" type="number" min="0" [value]="qty"
                    (change)="setQty(row.p, $any($event.target).value)"
                    (click)="$any($event.target).select()">
-            <button class="apm-qbtn apm-qbtn-add" (click)="incQty(row.p)">+</button>
+            <button class="apm-qbtn apm-qbtn-add" (click)="incQty(row.p)"
+                    [disabled]="row.finalQty <= 0 || qty >= row.finalQty">+</button>
             @if (qty > 0 && bufferUsed > 0) {
               <mat-icon class="apm-bwarn" [matTooltip]="bufferUsed + ' buc din Stoc Buffer'">warning</mat-icon>
             }

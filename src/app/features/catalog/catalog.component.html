@@ -394,7 +394,7 @@
           <td class="td-tva">{{ p.pretCuTVA != null ? ((p.pretCuTVA | number:'1.2-2') + ' lei') : '—' }}</td>
         }
         <td>
-          <button mat-icon-button class="order-btn" color="primary" (click)="goToNewOrder()" matTooltip="Adaugă la comandă">
+          <button mat-icon-button class="order-btn" color="primary" (click)="goToNewOrder(p)" matTooltip="Adaugă la comandă">
             <mat-icon>add_shopping_cart</mat-icon>
           </button>
         </td>
@@ -410,29 +410,101 @@
   }
 }
 
-<!-- Reset buffer confirmation -->
-@if (resetBufConfirm()) {
+<!-- Reset buffer: Step 1 — export obligatoriu -->
+@if (resetBufStep() === 'export') {
   <div class="adj-overlay" (click)="closeResetBuf()">
-    <div class="adj-card" style="max-width:440px" (click)="$event.stopPropagation()">
+    <div class="adj-card rbs-card" (click)="$event.stopPropagation()">
       <div class="adj-card-header">
         <div class="adj-card-title">
-          <mat-icon style="color:#e53935">warning</mat-icon>
-          Resetare Stoc Buffer
+          <mat-icon style="color:#e65100">file_download</mat-icon>
+          Resetare Buffer — Pasul 1/2
         </div>
         <button mat-icon-button (click)="closeResetBuf()"><mat-icon>close</mat-icon></button>
       </div>
       <div class="adj-card-body">
-        <p style="margin:0 0 8px">Această acțiune va șterge <strong>tot istoricul de ajustări manuale</strong>
-          @if (selectedCatIds().length) { pentru catalogele selectate } @else { pentru toate catalogele }.
+        <p style="margin:0 0 10px">
+          Înainte de a reseta buffer-ul, <strong>descarcă exportul Excel</strong>
+          cu valorile actuale — va fi arhiva ta dacă ai nevoie să refaci manual ajustările.
         </p>
-        <p style="margin:0;color:var(--color-text-muted);font-size:.85rem">
-          <strong>Stoc Final rămâne nemodificat</strong> — se resetează doar afișajul Stoc Buffer.
-        </p>
+        <div class="rbs-count-chip">
+          <mat-icon>layers</mat-icon>
+          {{ resetBufImpact().length }} produse cu buffer activ
+        </div>
       </div>
       <div class="adj-card-footer">
         <button mat-stroked-button (click)="closeResetBuf()">Anulează</button>
-        <button mat-flat-button color="warn" (click)="confirmResetBuf()">
-          <mat-icon>restart_alt</mat-icon> Resetează
+        <button mat-flat-button color="primary" (click)="downloadAndContinue()">
+          <mat-icon>download</mat-icon> Descarcă Export &amp; Continuă
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reset buffer: Step 2 — impact comenzi active + per-produs accept/skip -->
+@if (resetBufStep() === 'confirm') {
+  <div class="adj-overlay" (click)="closeResetBuf()">
+    <div class="rbs-impact-card" (click)="$event.stopPropagation()">
+      <div class="adj-card-header">
+        <div class="adj-card-title">
+          <mat-icon style="color:#e53935">warning</mat-icon>
+          Resetare Buffer — Pasul 2/2
+        </div>
+        <button mat-icon-button (click)="closeResetBuf()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="rbs-sub">
+        {{ resetBufImpact().length }} produse cu buffer activ — alege ce se resetează.
+        <span style="color:var(--color-text-muted);font-size:.82rem;display:block;margin-top:4px">
+          Stoc Final rămâne nemodificat.
+        </span>
+      </div>
+
+      <div class="rbs-global-bar">
+        <button class="rbs-global-btn rbs-global-reset" (click)="setAllResetBufMode('reset')">
+          <mat-icon>restart_alt</mat-icon> Resetează TOATE
+        </button>
+        <button class="rbs-global-btn rbs-global-keep" (click)="setAllResetBufMode('keep')">
+          <mat-icon>lock</mat-icon> Păstrează TOATE
+        </button>
+      </div>
+
+      <div class="rbs-list">
+        @for (item of resetBufImpact(); track item.key) {
+          @let mode = resetBufModes().get(item.key) ?? 'reset';
+          <div class="rbs-row" [class.rbs-row-warn]="item.reserved > 0" [class.rbs-row-keep]="mode === 'keep'">
+            <div class="rbs-row-top">
+              <span class="rbs-name">{{ item.name }}</span>
+              <span class="rbs-cat-tag">{{ item.catalogName }}</span>
+              <span class="rbs-buf-val" [class.rbs-pos]="item.bufVal > 0" [class.rbs-neg]="item.bufVal < 0">
+                {{ item.bufVal > 0 ? '+' : '' }}{{ item.bufVal }}
+              </span>
+              <div class="rbs-mode-btns">
+                <button class="rbs-mode-btn" [class.rbs-mode-active-reset]="mode === 'reset'"
+                  (click)="setResetBufMode(item.key, 'reset')">Resetează</button>
+                <button class="rbs-mode-btn" [class.rbs-mode-active-keep]="mode === 'keep'"
+                  (click)="setResetBufMode(item.key, 'keep')">Păstrează</button>
+              </div>
+            </div>
+            @if (item.reserved > 0) {
+              <div class="rbs-orders">
+                <mat-icon style="font-size:13px;width:13px;height:13px;color:#e65100">warning</mat-icon>
+                <span style="color:#e65100;font-size:0.76rem;font-weight:600">{{ item.reserved }} rezervat în comenzi active</span>
+                @for (o of item.orders; track o.orderNumber) {
+                  <span class="rbs-order-chip">#{{ o.orderNumber }} ×{{ o.qty }} — {{ o.clientName }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="rbs-footer">
+        <button mat-stroked-button (click)="closeResetBuf()">Anulează</button>
+        <button mat-flat-button color="warn" [disabled]="resetBufResetCount() === 0"
+          (click)="confirmResetBuf()">
+          <mat-icon>restart_alt</mat-icon>
+          Confirmă ({{ resetBufResetCount() }} de resetat)
         </button>
       </div>
     </div>

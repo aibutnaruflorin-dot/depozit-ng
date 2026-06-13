@@ -194,6 +194,8 @@ export class OrdersService {
   }
 
   resetPeriod(): void {
+    this.catalogs.reconcileStockToImport();
+    this.catalogs.clearOrderStockLog();
     this._orders.set([]);
     this.storage.set('app_orders', []);
   }

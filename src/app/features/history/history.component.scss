@@ -257,18 +257,33 @@
 }
 
 // Columns: Name | Cat | UM | Stoc | Cod | Furnizor | Net | TVA | Masă | Qty
-$_epc-cols: minmax(180px, 1fr) 120px 50px 90px 90px 130px 108px 108px 80px 130px;
+$_epc-cols: minmax(180px, 1fr) 120px 50px 145px 90px 130px 108px 108px 80px 130px;
 
 .stoc3-cell {
   display: flex;
-  align-items: center;
-  gap: 3px;
+  flex-direction: column;
+  gap: 2px;
   font-size: 0.72rem;
-  flex-wrap: nowrap;
+}
+.s3-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+.s3-total {
+  border-top: 1px solid var(--color-border);
+  margin-top: 2px;
+  padding-top: 3px;
+}
+.s3-label {
+  font-size: 0.62rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 .s3-imp   { color: var(--color-text-muted); }
-.s3-sep   { color: var(--color-border); }
-.s3-final { font-weight: 600; color: var(--color-primary); }
+.s3-con   { color: #e53935; }
+.s3-final { font-weight: 700; color: var(--color-primary); }
 .s3-zero  { color: #e53935 !important; }
 .s3-buf   { font-weight: 600; }
 .s3-pos   { color: #43a047; }
@@ -400,3 +415,58 @@ $_epc-cols: minmax(180px, 1fr) 120px 50px 90px 90px 130px 108px 108px 80px 130px
 }
 .anulat-row-product { opacity: 0.5; }
 .order-ref-accept { color: #2e7d32; }
+
+/* ── Istoric ajustări stoc modal ── */
+.sh-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+.sh-card {
+  background: var(--color-surface); border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.22);
+  width: 720px; max-width: calc(100vw - 32px);
+  max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+}
+.sh-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 10px; border-bottom: 1px solid var(--color-border);
+}
+.sh-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 1rem; font-weight: 600; color: var(--color-text);
+}
+.sh-product-name {
+  padding: 6px 16px 10px;
+  font-size: 0.88rem; font-weight: 600; color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+.sh-body { overflow-y: auto; flex: 1; }
+.sh-empty {
+  display: flex; align-items: center; gap: 8px;
+  padding: 2rem; color: var(--color-text-muted); font-size: 0.88rem;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+.sh-table {
+  width: 100%; border-collapse: collapse; font-size: 0.82rem;
+  th {
+    background: var(--color-surface-2); text-align: left;
+    padding: 7px 12px; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--color-text-muted); position: sticky; top: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--color-border); }
+  tbody tr:hover { background: var(--color-surface-2); }
+}
+.sh-ts      { color: var(--color-text-muted); white-space: nowrap; font-size: 0.78rem; }
+.sh-source  {
+  background: var(--color-surface-2); border-radius: 4px;
+  padding: 1px 6px; font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; white-space: nowrap;
+}
+.sh-delta   { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sh-pos     { color: #43a047; }
+.sh-neg     { color: #e53935; }
+.sh-comment { color: var(--color-text); max-width: 260px; }
+.sh-user    { color: var(--color-text-muted); font-size: 0.75rem; white-space: nowrap; }
