@@ -377,10 +377,77 @@
     </mat-tab>
   }
 
-  <!-- ══ TAB 4: ROLURI (admin) ══ -->
-  @if (auth.isAdmin()) {
-    <mat-tab label="Roluri">
-      <div class="tab-content tab-content--wide">
+  <!-- ══ TAB: UTILIZATORI + ROLURI ══ -->
+  <mat-tab label="Utilizatori">
+    <div class="tab-content tab-content--wide">
+      <div class="tab-header">
+        <h3>Utilizatori</h3>
+        @if (auth.isAdmin()) {
+          <button mat-stroked-button (click)="openAddUser()">
+            <mat-icon>person_add</mat-icon> Adaugă utilizator
+          </button>
+        }
+      </div>
+
+      <p-table [value]="users()" styleClass="p-datatable-sm p-datatable-striped"
+               [tableStyle]="{'min-width':'520px'}">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Nume</th>
+            <th>Username</th>
+            <th>Telefon</th>
+            <th>Status</th>
+            @if (auth.isAdmin()) {
+              <th style="text-align:right">Acțiuni</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-user>
+          <tr>
+            <td><strong>{{ user.name }}</strong></td>
+            <td><code>{{ user.username }}</code></td>
+            <td>
+              @if (user.telefon) {
+                <a [href]="'tel:' + user.telefon" style="color:var(--color-primary);text-decoration:none">{{ user.telefon }}</a>
+              } @else { <span style="color:var(--color-text-muted)">—</span> }
+            </td>
+            <td>
+              <p-tag [value]="user.active !== false ? 'Activ' : 'Dezactivat'"
+                     [severity]="user.active !== false ? 'success' : 'danger'" />
+            </td>
+            @if (auth.isAdmin()) {
+              <td>
+                @if (user.username === 'keyuser') {
+                  <div class="user-actions">
+                    <button mat-icon-button (click)="openAdminSec('keyuser')" matTooltip="Schimbă parola / email recuperare">
+                      <mat-icon>key</mat-icon>
+                    </button>
+                  </div>
+                } @else {
+                  <div class="user-actions">
+                    <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="toggleUserActive(user)"
+                            [matTooltip]="user.active !== false ? 'Dezactivează' : 'Activează'"
+                            [style.color]="user.active !== false ? 'var(--color-error)' : 'var(--color-success)'">
+                      <mat-icon>{{ user.active !== false ? 'person_off' : 'person' }}</mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="deleteUser(user)" matTooltip="Șterge"
+                            style="color:var(--color-error)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+      </p-table>
+
+      @if (auth.isAdmin()) {
+        <mat-divider style="margin: 2rem 0"></mat-divider>
+
         <div class="tab-header">
           <h3>Roluri utilizatori</h3>
           <button mat-stroked-button (click)="openAddPerm()">
@@ -392,7 +459,7 @@
           Rolul definește ce pagini poate accesa un utilizator și cu ce nivel de acces (complet, citire, niciun).
         </p>
 
-        <!-- Ranguri de sistem: KeyUser, Admin -->
+        <!-- Ranguri de sistem -->
         <div class="func-group-label func-group-label--system">
           <mat-icon>military_tech</mat-icon> Ranguri de sistem
         </div>
@@ -503,77 +570,7 @@
             }
           </div>
         }
-      </div>
-    </mat-tab>
-  }
-
-  <!-- ══ TAB 6: UTILIZATORI (toți) ══ -->
-  <mat-tab label="Utilizatori">
-    <div class="tab-content tab-content--wide">
-      <div class="tab-header">
-        <h3>Utilizatori</h3>
-        @if (auth.isAdmin()) {
-          <button mat-stroked-button (click)="openAddUser()">
-            <mat-icon>person_add</mat-icon> Adaugă utilizator
-          </button>
-        }
-      </div>
-
-      <p-table [value]="users()" styleClass="p-datatable-sm p-datatable-striped"
-               [tableStyle]="{'min-width':'520px'}">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Nume</th>
-            <th>Username</th>
-            <th>Telefon</th>
-            <th>Status</th>
-            @if (auth.isAdmin()) {
-              <th style="text-align:right">Acțiuni</th>
-            }
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-user>
-          <tr>
-            <td><strong>{{ user.name }}</strong></td>
-            <td><code>{{ user.username }}</code></td>
-            <td>
-              @if (user.telefon) {
-                <a [href]="'tel:' + user.telefon" style="color:var(--color-primary);text-decoration:none">{{ user.telefon }}</a>
-              } @else { <span style="color:var(--color-text-muted)">—</span> }
-            </td>
-            <td>
-              <p-tag [value]="user.active !== false ? 'Activ' : 'Dezactivat'"
-                     [severity]="user.active !== false ? 'success' : 'danger'" />
-            </td>
-            @if (auth.isAdmin()) {
-              <td>
-                @if (user.username === 'keyuser') {
-                  <div class="user-actions">
-                    <button mat-icon-button (click)="openAdminSec('keyuser')" matTooltip="Schimbă parola / email recuperare">
-                      <mat-icon>key</mat-icon>
-                    </button>
-                  </div>
-                } @else {
-                  <div class="user-actions">
-                    <button mat-icon-button (click)="openEditUser(user)" matTooltip="Editează">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button (click)="toggleUserActive(user)"
-                            [matTooltip]="user.active !== false ? 'Dezactivează' : 'Activează'"
-                            [style.color]="user.active !== false ? 'var(--color-error)' : 'var(--color-success)'">
-                      <mat-icon>{{ user.active !== false ? 'person_off' : 'person' }}</mat-icon>
-                    </button>
-                    <button mat-icon-button (click)="deleteUser(user)" matTooltip="Șterge"
-                            style="color:var(--color-error)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-                }
-              </td>
-            }
-          </tr>
-        </ng-template>
-      </p-table>
+      }
     </div>
   </mat-tab>
 
