@@ -129,7 +129,7 @@ export class SettingsComponent implements OnInit {
       name:     ['', Validators.required],
       username: ['', Validators.required],
       password: [''],
-      role:          ['agent', Validators.required],
+      role:          ['agent'],
       telefon:       [''],
       recoveryEmail: ['']
     });
@@ -454,7 +454,6 @@ export class SettingsComponent implements OnInit {
     this.userForm.reset({ name: '', username: '', password: '', role: 'agent', telefon: '', recoveryEmail: '' });
     this.userForm.get('password')?.setValidators(Validators.required);
     this.userForm.get('password')?.updateValueAndValidity();
-    this.userForm.get('role')?.enable();
     this.showUserModal.set(true);
   }
 
@@ -463,8 +462,6 @@ export class SettingsComponent implements OnInit {
     this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role, telefon: user.telefon ?? '', recoveryEmail: user.recoveryEmail ?? '' });
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
-    const isProtected = user.username === 'admin' || user.username === 'keyuser'; // both are protected system accounts
-    isProtected ? this.userForm.get('role')?.disable() : this.userForm.get('role')?.enable();
     this.showUserModal.set(true);
   }
 
