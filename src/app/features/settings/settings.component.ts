@@ -359,14 +359,52 @@ export class SettingsComponent implements OnInit {
 
   // ── WhatsApp contacts ─────────────────────────────────────────────────────
 
+  // ── User ↔ WA/Email toggle ─────────────────────────────────────────────────
+
+  isUserWaEnabled(user: User): boolean {
+    return !!user.telefon && this.whatsappContacts().some(c => c.phone === user.telefon);
+  }
+
+  toggleUserWa(user: User): void {
+    if (!user.telefon) { this.snackBar.open('Utilizatorul nu are număr de telefon.', '', { duration: 2500 }); return; }
+    if (this.isUserWaEnabled(user)) {
+      this.whatsappContacts.update(list => list.filter(c => c.phone !== user.telefon));
+    } else {
+      if (this.whatsappContacts().some(c => c.phone === user.telefon)) {
+        this.snackBar.open('Numărul este deja în lista WhatsApp.', '', { duration: 2500 }); return;
+      }
+      this.whatsappContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, phone: user.telefon!, type: 'number' }]);
+    }
+    this._saveWa();
+  }
+
+  isUserEmailEnabled(user: User): boolean {
+    return !!user.recoveryEmail && this.emailContacts().some(c => c.email === user.recoveryEmail);
+  }
+
+  toggleUserEmail(user: User): void {
+    if (!user.recoveryEmail) { this.snackBar.open('Utilizatorul nu are email de recuperare.', '', { duration: 2500 }); return; }
+    if (this.isUserEmailEnabled(user)) {
+      this.emailContacts.update(list => list.filter(c => c.email !== user.recoveryEmail));
+    } else {
+      if (this.emailContacts().some(c => c.email === user.recoveryEmail)) {
+        this.snackBar.open('Adresa email este deja în listă.', '', { duration: 2500 }); return;
+      }
+      this.emailContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, email: user.recoveryEmail!, type: 'individual' }]);
+    }
+    this._saveEmail();
+  }
+
+  // ── WhatsApp contacts ─────────────────────────────────────────────────────
+
   addWhatsappContact(): void {
     const name  = this.newWaName.trim();
     const phone = this.newWaPhone.trim();
     if (!name || !phone) return;
-    const contact: WhatsAppContact = {
-      id: Date.now().toString(), name, phone, type: this.newWaType
-    };
-    this.whatsappContacts.update(list => [...list, contact]);
+    if (this.whatsappContacts().some(c => c.phone === phone)) {
+      this.snackBar.open('Numărul este deja în lista WhatsApp.', '', { duration: 2500 }); return;
+    }
+    this.whatsappContacts.update(list => [...list, { id: Date.now().toString(), name, phone, type: this.newWaType }]);
     this._saveWa();
     this.newWaName = ''; this.newWaPhone = ''; this.newWaType = 'number';
     this.snackBar.open('Contact WhatsApp adăugat.', '', { duration: 2000 });
@@ -395,6 +433,9 @@ export class SettingsComponent implements OnInit {
     const name  = this.newEmailName.trim();
     const email = this.newEmailAddr.trim();
     if (!name || !email) return;
+    if (this.emailContacts().some(c => c.email === email)) {
+      this.snackBar.open('Adresa email este deja în listă.', '', { duration: 2500 }); return;
+    }
     this.emailContacts.update(list => [...list, {
       id: Date.now().toString(), name, email, type: this.newEmailType
     }]);

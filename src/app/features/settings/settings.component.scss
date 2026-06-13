@@ -369,6 +369,12 @@ h4 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--colo
 /* Users tab */
 .tab-content--wide { max-width: 900px; }
 
+/* Destinatari tab */
+.dest-sub       { font-size: 0.75rem; color: var(--color-text-muted); }
+.dest-empty     { font-size: 0.85rem; color: var(--color-text-muted); padding: 0.5rem 0 1rem; }
+.dest-manual-form { margin-top: 0.75rem; }
+.dest-toggle--on mat-icon { color: var(--color-success, #4caf50) !important; }
+
 /* Parallel two-column layout */
 .tab-content--parallel {
   display: flex;

@@ -177,17 +177,72 @@
     <mat-tab label="Destinatari">
       <div class="tab-content tab-content--parallel tab-content--contacts">
 
-        <!-- ── Coloana stânga: WhatsApp ── -->
+        <!-- ── Coloana stânga: Utilizatori cu toggle WA/Email ── -->
         <div class="parallel-col">
           <div class="tab-header">
-            <h3>WhatsApp</h3>
+            <h3>Utilizatori</h3>
           </div>
           <p class="wa-hint">
             <mat-icon class="wa-hint-icon">info</mat-icon>
-            Adaugă numere de telefon sau linkuri de grup WhatsApp.
+            Activează WhatsApp sau Email per utilizator. Sunt necesare numărul de telefon și emailul de recuperare.
           </p>
 
-          @if (whatsappContacts().length > 0) {
+          <p-table [value]="users()" styleClass="p-datatable-sm p-datatable-striped">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Nume</th>
+                <th style="text-align:center">
+                  <mat-icon style="font-size:18px;vertical-align:middle" matTooltip="WhatsApp">whatsapp</mat-icon>
+                </th>
+                <th style="text-align:center">
+                  <mat-icon style="font-size:18px;vertical-align:middle" matTooltip="Email">email</mat-icon>
+                </th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-user>
+              <tr>
+                <td>
+                  <strong>{{ user.name }}</strong>
+                  @if (user.telefon) {
+                    <br><span class="dest-sub">{{ user.telefon }}</span>
+                  }
+                  @if (user.recoveryEmail) {
+                    <br><span class="dest-sub">{{ user.recoveryEmail }}</span>
+                  }
+                </td>
+                <td style="text-align:center">
+                  <button mat-icon-button
+                          [disabled]="!user.telefon"
+                          [class.dest-toggle--on]="isUserWaEnabled(user)"
+                          (click)="toggleUserWa(user)"
+                          [matTooltip]="user.telefon ? (isUserWaEnabled(user) ? 'Dezactivează WhatsApp' : 'Activează WhatsApp') : 'Fără număr de telefon'">
+                    <mat-icon>{{ isUserWaEnabled(user) ? 'phone_enabled' : 'phone_disabled' }}</mat-icon>
+                  </button>
+                </td>
+                <td style="text-align:center">
+                  <button mat-icon-button
+                          [disabled]="!user.recoveryEmail"
+                          [class.dest-toggle--on]="isUserEmailEnabled(user)"
+                          (click)="toggleUserEmail(user)"
+                          [matTooltip]="user.recoveryEmail ? (isUserEmailEnabled(user) ? 'Dezactivează Email' : 'Activează Email') : 'Fără email de recuperare'">
+                    <mat-icon>{{ isUserEmailEnabled(user) ? 'mark_email_read' : 'mail_off' }}</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- ── Coloana dreapta: Liste active + adăugare manuală ── -->
+        <div class="parallel-col">
+
+          <!-- WhatsApp -->
+          <div class="tab-header">
+            <h3>WhatsApp</h3>
+          </div>
+          @if (whatsappContacts().length === 0) {
+            <p class="dest-empty">Niciun destinatar WhatsApp activ.</p>
+          } @else {
             <div class="wa-list">
               @for (c of whatsappContacts(); track c.id) {
                 <div class="wa-item">
@@ -203,42 +258,41 @@
                 </div>
               }
             </div>
-            <mat-divider class="wa-divider" />
           }
 
-          <div class="wa-form">
-            <h4>Adaugă contact nou</h4>
+          <div class="wa-form dest-manual-form">
+            <h4>Adaugă manual</h4>
             <div class="wa-form-row">
               <mat-form-field appearance="outline" class="wa-name-field">
                 <mat-label>Nume</mat-label>
-                <input matInput [(ngModel)]="newWaName" placeholder="ex: Depozit central">
+                <input matInput [(ngModel)]="newWaName" placeholder="ex: Grup depozit">
               </mat-form-field>
               <mat-form-field appearance="outline" class="wa-type-field">
                 <mat-label>Tip</mat-label>
                 <mat-select [(ngModel)]="newWaType">
-                  <mat-option value="number">Număr telefon</mat-option>
-                  <mat-option value="group">Link grup</mat-option>
+                  <mat-option value="number">Număr</mat-option>
+                  <mat-option value="group">Grup</mat-option>
                 </mat-select>
               </mat-form-field>
             </div>
             <div class="wa-form-row">
               <mat-form-field appearance="outline" class="wa-phone-field">
-                <mat-label>{{ newWaType === 'group' ? 'Link grup WhatsApp' : 'Număr telefon' }}</mat-label>
+                <mat-label>{{ newWaType === 'group' ? 'Link grup' : 'Număr telefon' }}</mat-label>
                 <mat-icon matPrefix>{{ newWaType === 'group' ? 'link' : 'phone' }}</mat-icon>
                 <input matInput [(ngModel)]="newWaPhone"
-                       [placeholder]="newWaType === 'group' ? 'https://chat.whatsapp.com/…' : '+40712345678 sau 0712345678'">
+                       [placeholder]="newWaType === 'group' ? 'https://chat.whatsapp.com/…' : '+40712345678'">
               </mat-form-field>
               <button mat-flat-button color="primary" class="wa-add-btn"
                       [disabled]="!newWaName.trim() || !newWaPhone.trim()"
                       (click)="addWhatsappContact()">
-                <mat-icon>add</mat-icon> Adaugă
+                <mat-icon>add</mat-icon>
               </button>
             </div>
           </div>
-        </div>
 
-        <!-- ── Coloana dreapta: Email ── -->
-        <div class="parallel-col">
+          <mat-divider style="margin: 1.25rem 0"></mat-divider>
+
+          <!-- Email -->
           <div class="tab-header">
             <h3>Email</h3>
           </div>
@@ -246,36 +300,25 @@
           <div class="buf-email-section">
             <div class="buf-email-label">
               <mat-icon>notifications_active</mat-icon>
-              Email notificare resetare buffer
+              Notificare resetare buffer
             </div>
-            <p class="buf-email-hint">
-              Înainte de fiecare resetare buffer se deschide clientul de email cu un rezumat al ajustărilor.
-            </p>
             <div class="buf-email-row">
               <mat-form-field appearance="outline" class="buf-email-field">
                 <mat-label>Adresă email</mat-label>
                 <mat-icon matPrefix>email</mat-icon>
-                <input matInput type="email"
-                       [value]="catalogsService.bufferNotifyEmail()"
-                       #bufEmailInput
-                       placeholder="ex: office@firma.ro">
+                <input matInput type="email" [value]="catalogsService.bufferNotifyEmail()" #bufEmailInput placeholder="ex: office@firma.ro">
               </mat-form-field>
-              <button mat-flat-button color="primary"
-                      [disabled]="!bufEmailInput.value.trim()"
-                      (click)="saveBufferEmail(bufEmailInput.value)">
-                <mat-icon>save</mat-icon> Salvează
+              <button mat-flat-button color="primary" [disabled]="!bufEmailInput.value.trim()" (click)="saveBufferEmail(bufEmailInput.value)">
+                <mat-icon>save</mat-icon>
               </button>
             </div>
           </div>
 
-          <mat-divider style="margin: 12px 0 16px"></mat-divider>
+          <mat-divider style="margin: 0.75rem 0 1rem"></mat-divider>
 
-          <p class="wa-hint">
-            <mat-icon class="wa-hint-icon">info</mat-icon>
-            Adaugă adrese de email individuale sau liste de distribuție.
-          </p>
-
-          @if (emailContacts().length > 0) {
+          @if (emailContacts().length === 0) {
+            <p class="dest-empty">Niciun destinatar Email activ.</p>
+          } @else {
             <div class="wa-list">
               @for (c of emailContacts(); track c.id) {
                 <div class="wa-item">
@@ -291,11 +334,10 @@
                 </div>
               }
             </div>
-            <mat-divider class="wa-divider" />
           }
 
-          <div class="wa-form">
-            <h4>Adaugă adresă nouă</h4>
+          <div class="wa-form dest-manual-form">
+            <h4>Adaugă manual</h4>
             <div class="wa-form-row">
               <mat-form-field appearance="outline" class="wa-name-field">
                 <mat-label>Nume / Etichetă</mat-label>
@@ -305,7 +347,7 @@
                 <mat-label>Tip</mat-label>
                 <mat-select [(ngModel)]="newEmailType">
                   <mat-option value="individual">Individual</mat-option>
-                  <mat-option value="list">Listă distribuție</mat-option>
+                  <mat-option value="list">Listă</mat-option>
                 </mat-select>
               </mat-form-field>
             </div>
@@ -318,12 +360,12 @@
               <button mat-flat-button color="primary" class="wa-add-btn"
                       [disabled]="!newEmailName.trim() || !newEmailAddr.trim()"
                       (click)="addEmailContact()">
-                <mat-icon>add</mat-icon> Adaugă
+                <mat-icon>add</mat-icon>
               </button>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </mat-tab>
   }
