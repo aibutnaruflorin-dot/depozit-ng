@@ -72,7 +72,7 @@ export class AuthService {
       return;
     }
     const actualRole = user.role as string;
-    s = { ...s, role: actualRole, loginTime: Date.now(), isAdmin: this._computeIsAdmin(actualRole) };
+    s = { ...s, role: actualRole, loginTime: Date.now(), isAdmin: this._computeIsAdmin(actualRole), mustChangePassword: user.mustChangePassword ?? false };
     this.storage.set('app_session', s);
     this._session.set(s);
   }
@@ -86,16 +86,21 @@ export class AuthService {
     const user = users[idx];
 
     let passwordMatch = false;
-    if (user._v === 2) {
+    if (user._v === 3 && user.salt) {
+      // SHA-256 + salt (curent)
+      passwordMatch = user.password === this.crypto.hashWithSalt(password, user.salt);
+    } else if (user._v === 2) {
+      // SHA-256 fără salt (legacy) — migrează la v3 dacă parola e corectă
       passwordMatch = user.password === await this.crypto.hash(password);
     } else {
-      // Plaintext legacy — compară și migrează la SHA-256
+      // Plaintext (legacy) — migrează la v3 dacă parola e corectă
       passwordMatch = user.password === password;
-      if (passwordMatch) {
-        const hashed = await this.crypto.hash(password);
-        users[idx]   = { ...user, password: hashed, _v: 2 };
-        this.storage.set('app_users', users);
-      }
+    }
+    if (passwordMatch && (user._v !== 3 || !user.salt)) {
+      const salt   = this.crypto.generateSalt();
+      const hashed = this.crypto.hashWithSalt(password, salt);
+      users[idx]   = { ...user, password: hashed, _v: 3, salt };
+      this.storage.set('app_users', users);
     }
 
     if (!passwordMatch) return false;
@@ -119,6 +124,8 @@ export class AuthService {
     const s = this._session();
     if (s) this.audit.log(s.userId, 'LOGOUT', s.username);
     this.storage.remove('app_session');
+    localStorage.removeItem('_lk');
+    sessionStorage.clear();
     this._session.set(null);
     this.router.navigate(['/login']);
   }
@@ -140,7 +147,7 @@ export class AuthService {
       return null;
     }
     const actualRole = user.role as string;
-    s = { ...s, role: actualRole, loginTime: Date.now(), isAdmin: this._computeIsAdmin(actualRole) };
+    s = { ...s, role: actualRole, loginTime: Date.now(), isAdmin: this._computeIsAdmin(actualRole), mustChangePassword: user.mustChangePassword ?? false };
     this.storage.set('app_session', s);
     this._session.set(s);
     return s;
@@ -153,7 +160,9 @@ export class AuthService {
 
     const user = users[idx];
     let oldMatch: boolean;
-    if (user._v === 2) {
+    if (user._v === 3 && user.salt) {
+      oldMatch = user.password === this.crypto.hashWithSalt(oldPass, user.salt);
+    } else if (user._v === 2) {
       oldMatch = user.password === await this.crypto.hash(oldPass);
     } else {
       oldMatch = user.password === oldPass;
@@ -161,8 +170,9 @@ export class AuthService {
     if (!oldMatch) return { ok: false, msg: 'Parola curentă este incorectă.' };
     if (newPass.length < MIN_PASS_LEN) return { ok: false, msg: `Parola trebuie să aibă cel puțin ${MIN_PASS_LEN} caractere.` };
 
-    const hashed  = await this.crypto.hash(newPass);
-    users[idx]    = { ...user, password: hashed, _v: 2, mustChangePassword: false };
+    const salt    = this.crypto.generateSalt();
+    const hashed  = this.crypto.hashWithSalt(newPass, salt);
+    users[idx]    = { ...user, password: hashed, _v: 3, salt, mustChangePassword: false };
     this.storage.set('app_users', users);
 
     // Șterge flag-ul din sesiunea curentă

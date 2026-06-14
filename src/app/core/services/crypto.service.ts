@@ -2,7 +2,19 @@ import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class CryptoService {
-  /** SHA-256 — implementare pură JS, funcționează pe orice protocol (HTTP/HTTPS/file) */
+  /** Generează salt aleatoriu de 16 octeți (hex). crypto.getRandomValues funcționează pe HTTP/HTTPS/LAN. */
+  generateSalt(): string {
+    const arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /** SHA-256(salt + password) — cu salt, rezistent la rainbow tables */
+  hashWithSalt(password: string, salt: string): string {
+    return this._sha256(salt + password);
+  }
+
+  /** SHA-256 fără salt — păstrat pentru migrarea conturilor _v:2 */
   async hash(password: string): Promise<string> {
     return this._sha256(password);
   }

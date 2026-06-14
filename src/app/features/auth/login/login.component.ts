@@ -55,7 +55,7 @@ export class LoginComponent implements OnDestroy {
 
   private getLockout(): { attempts: number; lockedUntil: number } {
     try {
-      const raw = sessionStorage.getItem('_lk');
+      const raw = localStorage.getItem('_lk');
       return raw ? JSON.parse(raw) : { attempts: 0, lockedUntil: 0 };
     } catch { return { attempts: 0, lockedUntil: 0 }; }
   }
@@ -112,7 +112,7 @@ export class LoginComponent implements OnDestroy {
     this.loading = false;
 
     if (ok) {
-      sessionStorage.removeItem('_lk');
+      localStorage.removeItem('_lk');
       this._clearTimer();
       const session = this.auth.session();
       if (session?.mustChangePassword) {
@@ -123,7 +123,7 @@ export class LoginComponent implements OnDestroy {
     } else {
       const attempts    = lk.attempts + 1;
       const lockedUntil = attempts >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_MS : 0;
-      sessionStorage.setItem('_lk', JSON.stringify({ attempts, lockedUntil }));
+      localStorage.setItem('_lk', JSON.stringify({ attempts, lockedUntil }));
       if (lockedUntil) {
         this._startCountdown(lockedUntil);
       } else {

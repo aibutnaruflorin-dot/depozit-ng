@@ -4,11 +4,21 @@ import { AuthService } from '../services/auth.service';
 import { StorageService } from '../services/storage.service';
 import { AppPermission, DEFAULT_PERMISSIONS } from '../models/app-permission.model';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (route) => {
   const auth   = inject(AuthService);
   const router = inject(Router);
   const session = auth.refreshSession();
   if (!session) { router.navigate(['/login']); return false; }
+
+  // Dacă parola trebuie schimbată, permite doar ruta /app/account
+  if (session.mustChangePassword) {
+    const url = route.routeConfig?.path ?? '';
+    if (url !== 'account') {
+      router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
+      return false;
+    }
+  }
+
   return true;
 };
 
@@ -28,6 +38,13 @@ export const pageGuard: CanActivateFn = (route) => {
 
   const session = auth.refreshSession();
   if (!session) { router.navigate(['/login']); return false; }
+
+  // Forțează schimbarea parolei înainte de orice altă pagină
+  if (session.mustChangePassword) {
+    router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
+    return false;
+  }
+
   if (session.isAdmin) return true;
 
   const pageId = route.data['pageId'] as string;

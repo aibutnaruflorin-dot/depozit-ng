@@ -571,11 +571,12 @@ export class SettingsComponent implements OnInit {
     }
     const target       = this.secTargetUsername;
     const recoveryEmail = this.adminRecoveryEmail.trim() || undefined;
-    const hashedPass   = np ? await this.crypto.hash(np) : null;
+    const salt       = np ? this.crypto.generateSalt() : null;
+    const hashedPass = np && salt ? this.crypto.hashWithSalt(np, salt) : null;
 
     const updated = this.users().map(u => {
       if (u.username !== target) return u;
-      const passFields = hashedPass ? { password: hashedPass, _v: 2 as const, mustChangePassword: false } : {};
+      const passFields = hashedPass && salt ? { password: hashedPass, _v: 3 as const, salt, mustChangePassword: false } : {};
       return { ...u, ...passFields, recoveryEmail };
     });
     this.users.set(updated);
@@ -642,9 +643,10 @@ export class SettingsComponent implements OnInit {
         this.snackBar.open('Adresa de email este deja folosită de un alt utilizator.', '', { duration: 3000 }); return;
       }
       const newId     = Math.max(0, ...users.map(u => u.id)) + 1;
-      const hashed    = await this.crypto.hash(password);
+      const salt      = this.crypto.generateSalt();
+      const hashed    = this.crypto.hashWithSalt(password, salt);
       const cleanName = name.trim();
-      users.push({ id: newId, name: cleanName, username: username.trim().toLowerCase(), password: hashed, _v: 2, role, telefon: cleanTelefon, recoveryEmail: cleanRecoveryEmail, active: true });
+      users.push({ id: newId, name: cleanName, username: username.trim().toLowerCase(), password: hashed, _v: 3, salt, role, telefon: cleanTelefon, recoveryEmail: cleanRecoveryEmail, active: true });
       if (session) this.audit.log(session.userId, 'USER_CREATE', `Creat utilizator ${username.trim().toLowerCase()}`);
     } else {
       const idx = users.findIndex(u => u.id === id);
@@ -661,8 +663,10 @@ export class SettingsComponent implements OnInit {
       const savedRole   = isProtected ? users[idx].role : role;
       users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role: savedRole, telefon: cleanTelefon, recoveryEmail: cleanRecoveryEmail };
       if (password) {
-        users[idx].password = await this.crypto.hash(password);
-        users[idx]._v       = 2;
+        const salt          = this.crypto.generateSalt();
+        users[idx].password = this.crypto.hashWithSalt(password, salt);
+        users[idx]._v       = 3;
+        users[idx].salt     = salt;
       }
       if (session) this.audit.log(session.userId, 'USER_EDIT', `Editat utilizator ${username.trim().toLowerCase()}`);
     }

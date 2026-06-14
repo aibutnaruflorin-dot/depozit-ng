@@ -28,8 +28,8 @@ export class StorageService {
   init(): void {
     if (!this.get('app_users')) {
       this.set('app_users', [
-        { id: 1, name: 'Administrator', username: 'admin',  password: 'admin123', _v: 1, mustChangePassword: true, role: 'keyuser', active: true },
-        { id: 2, name: 'Agent 1',       username: 'agent1', password: 'agent123', _v: 1, mustChangePassword: true, role: 'agent',   active: true }
+        { id: 1, name: 'Administrator', username: 'admin',  password: '887feb544c1cebeb85a35b92c604ca77a99116d5ba7e9c6b7944d38b0c4a652c', salt: 'a3f8c2e1d4b7a9f0', _v: 3, mustChangePassword: true, role: 'keyuser', active: true },
+        { id: 2, name: 'Agent 1',       username: 'agent1', password: '2f571d7829018116fd14029be9e9e271fa69ef8c0b45554ca1198d93b2409d8c', salt: 'b7e2d9c4f1a8b3e6', _v: 3, mustChangePassword: true, role: 'agent',   active: true }
       ] as User[]);
     }
     // Inițializare permisiuni dacă lipsesc

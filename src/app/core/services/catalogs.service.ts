@@ -5,7 +5,7 @@ import { Product, StockLogEntry } from '../models/product.model';
 import * as XLSX from 'xlsx';
 
 const BUFFER_EMAIL_KEY     = 'app_buffer_notify_email';
-const BUFFER_EMAIL_DEFAULT = 'ai.butnaru.florin@gmail.com';
+const BUFFER_EMAIL_DEFAULT = '';
 
 @Injectable({ providedIn: 'root' })
 export class CatalogsService {

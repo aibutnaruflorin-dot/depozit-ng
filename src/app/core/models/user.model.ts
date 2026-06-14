@@ -14,7 +14,8 @@ export interface User {
   name: string;
   username: string;
   password: string;
-  _v?: number;                 // 1 = plaintext (legacy), 2 = SHA-256
+  _v?: number;                 // 1 = plaintext (legacy), 2 = SHA-256, 3 = SHA-256 + salt
+  salt?: string;               // prezent doar când _v === 3
   mustChangePassword?: boolean;
   role: string;
   jobRole?: string; // legacy — migrated to role on load
