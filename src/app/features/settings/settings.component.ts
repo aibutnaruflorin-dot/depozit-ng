@@ -97,7 +97,8 @@ export class SettingsComponent implements OnInit {
 
   users         = signal<User[]>([]);
   showUserModal  = signal(false);
-  editingUserId  = signal<number | null>(null);
+  editingUserId    = signal<number | null>(null);
+  editingIsKeyUser = signal(false);
   userForm: FormGroup;
 
   hideUserPass   = true;
@@ -592,6 +593,7 @@ export class SettingsComponent implements OnInit {
 
   openAddUser(): void {
     this.editingUserId.set(null);
+    this.editingIsKeyUser.set(false);
     this.userForm.reset({ name: '', username: '', password: '', role: 'agent', telefon: '', recoveryEmail: '' });
     this.userForm.get('password')?.setValidators(Validators.required);
     this.userForm.get('password')?.updateValueAndValidity();
@@ -602,6 +604,7 @@ export class SettingsComponent implements OnInit {
 
   openEditUser(user: User): void {
     this.editingUserId.set(user.id);
+    this.editingIsKeyUser.set((user.role as string) === 'keyuser');
     this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role, telefon: user.telefon ?? '', recoveryEmail: user.recoveryEmail ?? '' });
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
@@ -612,6 +615,7 @@ export class SettingsComponent implements OnInit {
 
   closeUserModal(): void {
     this.userPassValue.set('');
+    this.editingIsKeyUser.set(false);
     this.showUserModal.set(false);
   }
 
@@ -659,7 +663,7 @@ export class SettingsComponent implements OnInit {
       if (cleanRecoveryEmail && users.some(u => u.recoveryEmail === cleanRecoveryEmail && u.id !== id)) {
         this.snackBar.open('Adresa de email este deja folosită de un alt utilizator.', '', { duration: 3000 }); return;
       }
-      const isProtected = users[idx].username === 'keyuser';
+      const isProtected = (users[idx].role as string) === 'keyuser';
       const savedRole   = isProtected ? users[idx].role : role;
       users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role: savedRole, telefon: cleanTelefon, recoveryEmail: cleanRecoveryEmail };
       if (password) {
@@ -679,8 +683,8 @@ export class SettingsComponent implements OnInit {
   }
 
   toggleUserActive(user: User): void {
-    if (user.username === 'keyuser') {
-      this.snackBar.open('Acest cont de sistem nu poate fi dezactivat.', '', { duration: 3000 });
+    if ((user.role as string) === 'keyuser') {
+      this.snackBar.open('Contul KeyUser nu poate fi dezactivat.', '', { duration: 3000 });
       return;
     }
     const session = this.auth.session();
@@ -696,8 +700,8 @@ export class SettingsComponent implements OnInit {
   }
 
   deleteUser(user: User): void {
-    if (user.username === 'keyuser') {
-      this.snackBar.open('Acest cont de sistem nu poate fi șters.', '', { duration: 3000 });
+    if ((user.role as string) === 'keyuser') {
+      this.snackBar.open('Contul KeyUser nu poate fi șters.', '', { duration: 3000 });
       return;
     }
     if (!confirm(`Ștergi utilizatorul "${user.name}"? Această acțiune nu poate fi anulată.`)) return;

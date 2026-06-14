@@ -844,11 +844,14 @@
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>Rol *</mat-label>
             <mat-icon matPrefix>shield</mat-icon>
-            <mat-select formControlName="role">
+            <mat-select formControlName="role" [disabled]="editingIsKeyUser()">
               @for (p of selectablePermissions; track p.id) {
                 <mat-option [value]="p.id">{{ p.name }}</mat-option>
               }
             </mat-select>
+            @if (editingIsKeyUser()) {
+              <mat-hint>Rolul KeyUser nu poate fi modificat.</mat-hint>
+            }
           </mat-form-field>
         </form>
       </mat-card-content>
