@@ -4,19 +4,16 @@ import { AuthService } from '../services/auth.service';
 import { StorageService } from '../services/storage.service';
 import { AppPermission, DEFAULT_PERMISSIONS } from '../models/app-permission.model';
 
-export const authGuard: CanActivateFn = (route) => {
+export const authGuard: CanActivateFn = (route, state) => {
   const auth   = inject(AuthService);
   const router = inject(Router);
   const session = auth.refreshSession();
   if (!session) { router.navigate(['/login']); return false; }
 
-  // Dacă parola trebuie schimbată, permite doar ruta /app/account
-  if (session.mustChangePassword) {
-    const url = route.routeConfig?.path ?? '';
-    if (url !== 'account') {
-      router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
-      return false;
-    }
+  // Dacă parola trebuie schimbată, permite doar /app/account
+  if (session.mustChangePassword && !state.url.startsWith('/app/account')) {
+    router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
+    return false;
   }
 
   return true;
