@@ -54,6 +54,15 @@
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
 
+.exp-qty-changed-banner {
+  display: flex; align-items: center; gap: 6px;
+  margin: 8px 0 4px; padding: 6px 10px;
+  border-radius: 6px; border: 1px dashed #f59e0b; background: #fffbeb;
+  font-size: 0.75rem; font-weight: 500; color: #b45309;
+  [data-theme="dark"] & { background: rgba(245,158,11,0.08); border-color: #d97706; }
+  mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; }
+}
+
 .exp-pending-section {
   margin: 10px 0 4px; padding: 10px 12px;
   border: 1.5px dashed #f59e0b; border-radius: 8px; background: #fffbeb;
