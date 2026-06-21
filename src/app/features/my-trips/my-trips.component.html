@@ -304,6 +304,11 @@
                   }
                   <span class="art-count">· {{ deliveryItems(t, o.id).length }} art.</span>
                 </div>
+                @if (o.client.phone) {
+                  <a [href]="'tel:' + o.client.phone" class="chip-phone" (click)="$event.stopPropagation()">
+                    <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                  </a>
+                }
                 @if (o.client.address) {
                   <span class="addr-text">
                     <mat-icon>location_on</mat-icon>{{ o.client.address }}

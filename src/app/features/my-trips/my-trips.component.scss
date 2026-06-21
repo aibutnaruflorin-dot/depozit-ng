@@ -156,6 +156,13 @@
   &:hover { color: var(--color-primary); }
 }
 
+.chip-phone {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 0.78rem; color: var(--color-primary); text-decoration: none; font-weight: 600;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+  &:hover { text-decoration: underline; }
+}
+
 .chip-obs {
   display: flex; align-items: flex-start; gap: 3px; margin-top: 3px;
   font-size: 0.74rem; color: var(--color-text-muted); font-style: italic;

@@ -363,8 +363,13 @@
                       <span class="order-partial-tag">livrare parțială</span>
                     }
                   </div>
-                  @if (o.client.address || o.deliveryDate) {
+                  @if (o.client.address || o.deliveryDate || o.client.phone) {
                     <div class="order-chip-meta">
+                      @if (o.client.phone) {
+                        <a [href]="'tel:' + o.client.phone" class="order-chip-phone" (click)="$event.stopPropagation()">
+                          <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                        </a>
+                      }
                       @if (o.client.address) {
                         <span class="order-chip-addr">
                           <mat-icon>location_on</mat-icon>{{ o.client.address }}
@@ -517,8 +522,13 @@
                         <span class="order-partial-tag">livrare parțială</span>
                       }
                     </div>
-                    @if (o.client.address || o.deliveryDate) {
+                    @if (o.client.address || o.deliveryDate || o.client.phone) {
                       <div class="order-chip-meta">
+                        @if (o.client.phone) {
+                          <a [href]="'tel:' + o.client.phone" class="order-chip-phone" (click)="$event.stopPropagation()">
+                            <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                          </a>
+                        }
                         @if (o.client.address) {
                           <span class="order-chip-addr">
                             <mat-icon>location_on</mat-icon>{{ o.client.address }}
