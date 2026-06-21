@@ -1033,11 +1033,10 @@
                 <tfoot>
                   @let tv = modalOrderTotalValue(order.id, order);
                   <tr>
-                    <td colspan="3" class="totals-label">Total pe cursă:</td>
-                    <td></td>
+                    <td colspan="4" class="totals-label">Total pe cursă:</td>
                     <td class="num-col price-col totals-label">{{ tv.net | number:'1.2-2' }}</td>
                     <td class="num-col price-col totals-val">{{ tv.tva | number:'1.2-2' }}</td>
-                    <td class="num-col totals-val">{{ modalOrderTotalQty(order.id, order) }}</td>
+                    <td></td>
                   </tr>
                 </tfoot>
               </table>
