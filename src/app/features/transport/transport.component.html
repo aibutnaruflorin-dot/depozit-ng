@@ -1009,6 +1009,14 @@
                     <td colspan="4" class="totals-label">Total pe cursă:</td>
                     <td class="num-col totals-val">{{ modalOrderTotalQty(order.id, order) }}</td>
                   </tr>
+                  @let tv = modalOrderTotalValue(order.id, order);
+                  <tr class="totals-price-row">
+                    <td colspan="4" class="totals-label">
+                      <span class="price-net">f.TVA: {{ tv.net | number:'1.2-2' }} lei</span>
+                      <span class="price-tva">c.TVA: {{ tv.tva | number:'1.2-2' }} lei</span>
+                    </td>
+                    <td></td>
+                  </tr>
                 </tfoot>
               </table>
             </div>

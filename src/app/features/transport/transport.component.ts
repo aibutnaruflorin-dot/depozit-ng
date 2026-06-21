@@ -423,6 +423,14 @@ export class TransportComponent implements OnInit {
     return order.products.reduce((s, _, i) => s + this.getModalQty(orderId, i), 0);
   }
 
+  modalOrderTotalValue(orderId: string, order: Order): { net: number; tva: number } {
+    return order.products.reduce((s, p, i) => {
+      const qty = this.getModalQty(orderId, i);
+      const price = this.productPrice(p);
+      return { net: s.net + price.net * qty, tva: s.tva + price.tva * qty };
+    }, { net: 0, tva: 0 });
+  }
+
   // ── Delivered / remaining qty ─────────────────────────────────────────────
 
   getDeliveredQtyArr(order: Order): number[] {
