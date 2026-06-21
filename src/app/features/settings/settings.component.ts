@@ -10,6 +10,8 @@ import { TransportService } from '../../core/services/transport.service';
 import { CryptoService } from '../../core/services/crypto.service';
 import { AuditService } from '../../core/services/audit.service';
 import { Catalog, CatalogMeta, CatalogUpload } from '../../core/models/catalog.model';
+import { UnitOfMeasure } from '../../core/models/unit-of-measure.model';
+import { UnitsService } from '../../core/services/units.service';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { EmailContact } from '../../core/models/email-contact.model';
 import { User, PERMISSION_LABELS, Permission } from '../../core/models/user.model';
@@ -136,6 +138,13 @@ export class SettingsComponent implements OnInit {
   editingVehicleId = signal<string | null>(null);
   vehicleForm: FormGroup;
 
+  // ── Unități de măsură state ───────────────────────────────────────────────
+  editingUmCode  = signal<string | null>(null);
+  editUmCode     = '';
+  editUmDecimal  = false;
+  newUmCode      = '';
+  newUmDecimal   = false;
+
   // ── Permisiuni state ──────────────────────────────────────────────────────
   permissions      = signal<AppPermission[]>([]);
   showPermModal    = signal(false);
@@ -153,7 +162,8 @@ export class SettingsComponent implements OnInit {
     private storage: StorageService,
     private snackBar: MatSnackBar,
     private crypto: CryptoService,
-    private audit:  AuditService
+    private audit:  AuditService,
+    public  unitsService: UnitsService
   ) {
     this.userForm = this.fb.group({
       name:     ['', Validators.required],
@@ -186,6 +196,9 @@ export class SettingsComponent implements OnInit {
     for (const cat of this.catalogsService.catalogs()) {
       this._initState(cat.id);
     }
+    // Auto-detect UMs from all catalog products (adds new ones with allowDecimal=false)
+    const allUMs = this.catalogsService.allProducts().map(p => p.um).filter(Boolean);
+    this.unitsService.ensureFromProducts(allUMs);
     const savedWa = this.storage.get<WhatsAppContact[]>('app_whatsapp_contacts');
     if (savedWa) this.whatsappContacts.set(savedWa);
 
@@ -293,6 +306,18 @@ export class SettingsComponent implements OnInit {
       st.importMsg = parsed.msg ?? 'Eroare la citire.';
       st.importDetected = null;
       return;
+    }
+
+    // UM validation: all UMs in the file must be known
+    if (this.unitsService.getAll().length > 0) {
+      const unknownUMs = [...new Set(parsed.products.map(p => p.um).filter(Boolean))]
+        .filter(um => !this.unitsService.hasCode(um));
+      if (unknownUMs.length) {
+        const st = this.catStates[cat.id];
+        st.importMsg = `UMs necunoscute în fișier: ${unknownUMs.join(', ')}. Adăugați-le mai întâi în tab-ul „Unități de măsură".`;
+        st.importDetected = null;
+        return;
+      }
     }
 
     const reserved = this.ordersService.reservedByCatalog(cat.id);
@@ -892,5 +917,46 @@ export class SettingsComponent implements OnInit {
     const perms = this.permissions().filter(p => p.id !== perm.id);
     this.permissions.set(perms);
     this.storage.set('app_permissions', perms);
+  }
+
+  // ── Unități de măsură ─────────────────────────────────────────────────────
+
+  startEditUm(um: UnitOfMeasure): void {
+    this.editingUmCode.set(um.code);
+    this.editUmCode    = um.code;
+    this.editUmDecimal = um.allowDecimal;
+  }
+
+  saveEditUm(): void {
+    const code = this.editingUmCode();
+    if (!code) return;
+    const ok = this.unitsService.update(code, this.editUmCode, this.editUmDecimal);
+    if (!ok) {
+      this.snackBar.open('Codul UM există deja sau este invalid.', '', { duration: 2500 });
+      return;
+    }
+    this.editingUmCode.set(null);
+    this.snackBar.open('Unitate de măsură actualizată.', '', { duration: 2000 });
+  }
+
+  cancelEditUm(): void { this.editingUmCode.set(null); }
+
+  deleteUm(code: string): void {
+    if (!confirm(`Ștergi unitatea de măsură "${code}"?`)) return;
+    this.unitsService.delete(code);
+    this.snackBar.open('Unitate de măsură ștearsă.', '', { duration: 2000 });
+  }
+
+  addUm(): void {
+    const code = this.newUmCode.trim();
+    if (!code) return;
+    const ok = this.unitsService.add(code, this.newUmDecimal);
+    if (!ok) {
+      this.snackBar.open(`Codul "${code.toUpperCase()}" există deja.`, '', { duration: 2500 });
+      return;
+    }
+    this.newUmCode    = '';
+    this.newUmDecimal = false;
+    this.snackBar.open('Unitate de măsură adăugată.', '', { duration: 2000 });
   }
 }

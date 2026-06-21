@@ -343,7 +343,7 @@
             <div class="row-actions" (click)="$event.stopPropagation()">
               <div class="row-qty-wrap">
                 <button class="qty-btn" (click)="decPending(p)">−</button>
-                <input class="row-qty" type="number" min="0"
+                <input class="row-qty" type="number" min="0" [attr.step]="unitsService.allowDecimal(p.um) ? '0.01' : '1'"
                        [value]="pendingQtyMap()[pkey(p)] ?? 0"
                        (change)="setPendingQty(p, $any($event.target).value)"
                        (click)="$any($event.target).select()">
@@ -484,7 +484,9 @@
                   </div>
                   <div class="ci-controls">
                     <button class="ci-qty-btn" (click)="decrementQty(item.product)">−</button>
-                    <input class="ci-qty-input" type="number" [value]="cartQtyOf(item.product)" min="1"
+                    <input class="ci-qty-input" type="number" [value]="cartQtyOf(item.product)"
+                           [attr.min]="unitsService.allowDecimal(item.product.um) ? '0.01' : '1'"
+                           [attr.step]="unitsService.allowDecimal(item.product.um) ? '0.01' : '1'"
                            (change)="updateQty(item.product, $any($event.target).value)">
                     <button class="ci-qty-btn" (click)="incrementQty(item.product)">+</button>
                     <button class="ci-del-btn" (click)="confirmRemove(item.product)">

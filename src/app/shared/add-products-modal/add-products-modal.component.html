@@ -120,7 +120,8 @@
           <!-- Qty controls -->
           <div class="apm-qty-cell">
             <button class="apm-qbtn" (click)="decQty(row.p)">−</button>
-            <input class="apm-qinput" type="number" min="0" [value]="qty"
+            <input class="apm-qinput" type="number" min="0" [attr.step]="unitsService.allowDecimal(row.p.um) ? '0.01' : '1'"
+                   [value]="qty"
                    (change)="setQty(row.p, $any($event.target).value)"
                    (click)="$any($event.target).select()">
             <button class="apm-qbtn apm-qbtn-add" (click)="incQty(row.p)"

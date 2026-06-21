@@ -20,6 +20,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
+import { UnitsService } from '../../core/services/units.service';
 import { Product } from '../../core/models/product.model';
 import { Order, OrderProduct } from '../../core/models/order.model';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -120,7 +121,8 @@ export class NewOrderComponent implements OnInit {
     public  catalogsService: CatalogsService,
     private ordersService: OrdersService,
     private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
+    public  unitsService: UnitsService
   ) {}
 
   ngOnInit(): void {
@@ -282,7 +284,8 @@ export class NewOrderComponent implements OnInit {
   }
   setPendingQty(p: Product, val: string | number): void {
     const max = p.qty;
-    const qty = Math.min(max, Math.max(0, parseFloat(String(val)) || 0));
+    let qty = Math.min(max, Math.max(0, parseFloat(String(val)) || 0));
+    if (!this.unitsService.allowDecimal(p.um)) qty = Math.round(qty);
     this._pendingQty.update(m => ({ ...m, [this.pkey(p)]: qty }));
   }
   incPending(p: Product): void { this.setPendingQty(p, this.getPendingQty(p) + 1); }
@@ -337,7 +340,9 @@ export class NewOrderComponent implements OnInit {
 
   updateQty(product: Product, val: string): void {
     const max = this.catalogsService.getStock(product.catalogId, product.nr) ?? Infinity;
-    const qty = Math.min(max, Math.max(0.01, parseFloat(val) || 0.01));
+    const minQty = this.unitsService.allowDecimal(product.um) ? 0.01 : 1;
+    let qty = Math.min(max, Math.max(minQty, parseFloat(val) || minQty));
+    if (!this.unitsService.allowDecimal(product.um)) qty = Math.round(qty);
     const key = this.pkey(product);
     this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty } : i));
   }

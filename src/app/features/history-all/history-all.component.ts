@@ -24,6 +24,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
+import { UnitsService } from '../../core/services/units.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -267,7 +268,8 @@ export class HistoryAllComponent {
     public  catalogsService: CatalogsService,
     private ordersService: OrdersService,
     private storage: StorageService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    public  unitsService: UnitsService
   ) {}
 
   private _localDate(d: Date): string {
@@ -628,14 +630,20 @@ export class HistoryAllComponent {
   getEditQty(orderId: string, idx: number, def: number): number {
     return this._editQty()[this.ekey(orderId, idx)] ?? def;
   }
-  setEditQty(orderId: string, idx: number, def: number, val: number | string): void {
-    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: Math.max(0, parseFloat(String(val)) || 0) }));
+  setEditQty(orderId: string, idx: number, def: number, val: number | string, um = ''): void {
+    let qty = Math.max(0, parseFloat(String(val)) || 0);
+    if (um && !this.unitsService.allowDecimal(um)) qty = Math.round(qty);
+    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: qty }));
   }
   incEditQty(orderId: string, idx: number, def: number): void {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1);
   }
   decEditQty(orderId: string, idx: number, def: number): void {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);
+  }
+
+  umStep(um: string): string {
+    return this.unitsService.allowDecimal(um) ? '0.01' : '1';
   }
 
   printOrder(order: Order, e: Event): void {

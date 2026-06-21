@@ -781,3 +781,47 @@ mat-icon.dest-off { color: var(--color-text-muted); opacity: 0.35; font-size: 26
 }
 .impact-footer { background: var(--color-bg-alt,#f9f9f9); }
 .impact-footer button:first-child { margin-left: auto; }
+
+/* Tab header desc */
+.tab-header__desc {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  max-width: 480px;
+  text-align: right;
+}
+
+/* Unități de măsură */
+.um-table { margin-bottom: 1.25rem; }
+.um-code { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.03em; }
+.um-code-input {
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  width: 90px;
+  &:focus { outline: 2px solid #1976d2; border-color: #1976d2; }
+}
+.um-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 10px;
+  &--yes { background: #e8f5e9; color: #2e7d32; }
+  &--no  { background: #f3f4f6; color: #6b7280; }
+}
+.um-actions { display: flex; gap: 4px; align-items: center; }
+.um-empty { text-align: center; color: var(--color-text-muted); font-size: 0.85rem; padding: 1rem 0; }
+.um-add-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0;
+  .um-add-code { width: 160px; }
+  .um-add-decimal { white-space: nowrap; }
+}
+

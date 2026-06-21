@@ -9,6 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { OrdersService } from '../../core/services/orders.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { AuthService } from '../../core/services/auth.service';
+import { UnitsService } from '../../core/services/units.service';
 import { Order, OrderProduct, OrderEvent } from '../../core/models/order.model';
 import { Product } from '../../core/models/product.model';
 
@@ -148,7 +149,8 @@ export class AddProductsModalComponent implements OnInit {
     private ordersService: OrdersService,
     public  catalogsService: CatalogsService,
     private auth: AuthService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    public  unitsService: UnitsService
   ) {}
 
   ngOnInit(): void {
@@ -170,7 +172,8 @@ export class AddProductsModalComponent implements OnInit {
   }
 
   setQty(p: Product, val: number | string): void {
-    const qty = Math.max(0, parseFloat(String(val)) || 0);
+    let qty = Math.max(0, parseFloat(String(val)) || 0);
+    if (!this.unitsService.allowDecimal(p.um)) qty = Math.round(qty);
     const key = this.stagingKey(p);
     if (qty === 0) {
       this.staged.update(list => list.filter(s => this.stagingKey(s) !== key));
