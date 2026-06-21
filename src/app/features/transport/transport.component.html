@@ -257,8 +257,12 @@
             <td><span class="delivery-progress">{{ deliveredTotal(o) }} / {{ totalQty(o) }}</span></td>
             <td class="value-cell">
               @let ov = orderPendingValue(o);
+              @let rv = orderRemainingValue(o);
               <span class="val-net">{{ ov.net | number:'1.2-2' }} lei</span>
               <span class="val-tva">{{ ov.tva | number:'1.2-2' }} cu TVA</span>
+              @if (rv.tva < ov.tva) {
+                <span class="val-remaining">rest: {{ rv.tva | number:'1.2-2' }} cu TVA</span>
+              }
             </td>
             <td class="value-cell">
               @let ow = orderTotalWeight(o);

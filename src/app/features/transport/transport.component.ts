@@ -493,6 +493,14 @@ export class TransportComponent implements OnInit {
     }, { net: 0, tva: 0 });
   }
 
+  orderRemainingValue(order: Order): { net: number; tva: number } {
+    const remaining = this.getRemainingQtyArr(order);
+    return order.products.reduce((s, p, i) => {
+      const price = this.productPrice(p);
+      return { net: s.net + remaining[i] * price.net, tva: s.tva + remaining[i] * price.tva };
+    }, { net: 0, tva: 0 });
+  }
+
   tripValue(t: Transport): { net: number; tva: number } {
     return this.ordersForTransport(t).reduce((s, order) => {
       const d = t.deliveries.find(del => del.orderId === order.id);

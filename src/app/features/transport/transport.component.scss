@@ -588,6 +588,9 @@
 .val-tva {
   display: block; font-size: 0.72rem; color: var(--color-text-muted, #888);
 }
+.val-remaining {
+  display: block; font-size: 0.72rem; color: var(--color-primary); font-weight: 600;
+}
 .masa-cell { white-space: nowrap; vertical-align: middle; }
 .val-weight {
   display: inline-flex; align-items: center; gap: 4px;
