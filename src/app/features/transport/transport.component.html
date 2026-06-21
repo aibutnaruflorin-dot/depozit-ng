@@ -971,25 +971,22 @@
                     <th class="num-col">Total cmd.</th>
                     <th class="num-col">Livrat</th>
                     <th class="num-col">Rămas</th>
+                    <th class="num-col price-col">f.TVA</th>
+                    <th class="num-col price-col">c.TVA</th>
                     <th class="num-col">Pe cursă</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (product of order.products; let i = $index; track i) {
                     @if (getRemainingQtyArr(order, editingId() ?? undefined)[i] > 0) {
+                      @let pp = productPrice(product);
                       <tr>
-                        <td>
-                          {{ product.name }} <small class="muted">{{ product.um }}</small>
-                          @if (product.pretFaraTVA != null || product.pretCuTVA != null) {
-                            <div class="price-tags" style="margin-top:2px">
-                              @if (product.pretFaraTVA != null) { <span class="price-notva">{{ product.pretFaraTVA | number:'1.2-2' }} lei</span> }
-                              @if (product.pretCuTVA != null)   { <span class="price-tva">{{ product.pretCuTVA | number:'1.2-2' }} lei</span> }
-                            </div>
-                          }
-                        </td>
+                        <td>{{ product.name }} <small class="muted">{{ product.um }}</small></td>
                         <td class="num-col">{{ product.qty }}</td>
                         <td class="num-col">{{ getDeliveredQtyArr(order)[i] || 0 }}</td>
                         <td class="num-col remaining-col">{{ getRemainingQtyArr(order, editingId() ?? undefined)[i] }}</td>
+                        <td class="num-col price-col muted">{{ pp.net | number:'1.2-2' }}</td>
+                        <td class="num-col price-col">{{ pp.tva | number:'1.2-2' }}</td>
                         <td class="num-col">
                           <div class="qty-input-wrap">
                             <button class="qty-btn" (click)="setModalQty(order.id, i, getModalQty(order.id, i) - 1)">−</button>
@@ -1007,12 +1004,10 @@
                 <tfoot>
                   @let tv = modalOrderTotalValue(order.id, order);
                   <tr>
-                    <td colspan="3" class="totals-label">
-                      Total pe cursă:
-                      <span class="price-net">f.TVA: {{ tv.net | number:'1.2-2' }} lei</span>
-                      <span class="price-tva">c.TVA: {{ tv.tva | number:'1.2-2' }} lei</span>
-                    </td>
+                    <td colspan="3" class="totals-label">Total pe cursă:</td>
                     <td></td>
+                    <td class="num-col price-col totals-label">{{ tv.net | number:'1.2-2' }}</td>
+                    <td class="num-col price-col totals-val">{{ tv.tva | number:'1.2-2' }}</td>
                     <td class="num-col totals-val">{{ modalOrderTotalQty(order.id, order) }}</td>
                   </tr>
                 </tfoot>

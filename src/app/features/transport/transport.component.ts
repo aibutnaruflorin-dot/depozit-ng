@@ -471,7 +471,7 @@ export class TransportComponent implements OnInit {
       .some(t => t.deliveries.some(d => d.orderId === order.id));
   }
 
-  private productPrice(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): { net: number; tva: number } {
+  productPrice(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): { net: number; tva: number } {
     let net = p.pretFaraTVA ?? null;
     let tva = p.pretCuTVA ?? null;
     if ((net == null || tva == null) && p.catalogId) {
