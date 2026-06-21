@@ -487,6 +487,7 @@ export class HistoryAllComponent {
     const newOrder: Order = {
       id: generateId(), timestamp: new Date().toISOString(),
       agent: order.agent, client: order.client,
+      cuLivrare: order.cuLivrare, deliveryDate: order.deliveryDate, deliveryTime: order.deliveryTime,
       products: newProducts, status: 'acceptat', revisedFromId: order.id
     };
     const result = this.ordersService.reviseOrder(order.id, newOrder);

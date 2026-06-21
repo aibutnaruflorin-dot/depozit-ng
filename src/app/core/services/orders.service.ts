@@ -74,7 +74,7 @@ export class OrdersService {
     this._decrementStock(newOrder.products, 'revise');
     newOrder.orderNumber = this.nextOrderNumber();
     const updated = this._orders().map(o =>
-      o.id === originalId ? { ...o, superseded: true } : o
+      o.id === originalId ? { ...o, superseded: true, pendingProducts: [] } : o
     );
     const final = [newOrder, ...updated];
     this.storage.set('app_orders', final);
@@ -145,14 +145,27 @@ export class OrdersService {
   }
 
   addProductsToOrder(orderId: string, products: OrderProduct[], event: Omit<OrderEvent, 'id'>): StockCheckResult {
-    const insufficient = this._checkStock(products);
-    if (insufficient.length) return { ok: false, insufficient };
-    this._decrementStock(products, 'add_products');
+    const isPending = event.source === 'comenzile-mele';
+    if (!isPending) {
+      const insufficient = this._checkStock(products);
+      if (insufficient.length) return { ok: false, insufficient };
+      this._decrementStock(products, 'add_products');
+    }
     this._orders.update(orders =>
       orders.map(o => {
         if (o.id !== orderId) return o;
-        const newNr = o.products.reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0);
-        const numbered = products.map((p, i) => ({ ...p, nr: newNr + i + 1 }));
+        const maxNr = Math.max(
+          o.products.reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0),
+          (o.pendingProducts ?? []).reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0)
+        );
+        const numbered = products.map((p, i) => ({ ...p, nr: maxNr + i + 1 }));
+        if (isPending) {
+          return {
+            ...o,
+            pendingProducts: [...(o.pendingProducts ?? []), ...numbered],
+            orderEvents: [...(o.orderEvents ?? []), { ...event, id: generateId() }]
+          };
+        }
         return {
           ...o,
           products: [...o.products, ...numbered],

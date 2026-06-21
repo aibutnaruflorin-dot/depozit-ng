@@ -480,9 +480,10 @@ export class HistoryComponent {
 
   reviseOrder(order: Order): void {
     if (!this._checkDelivery(order)) return;
-    const newProducts = order.products
+    const editedProducts = order.products
       .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
       .filter(p => p.qty > 0);
+    const newProducts = [...editedProducts, ...(order.pendingProducts ?? [])];
 
     if (newProducts.length === 0) {
       this.snackBar.open('Adaugă cel puțin un produs cu qty > 0.', '', { duration: 2500 });
@@ -495,6 +496,9 @@ export class HistoryComponent {
       timestamp:     new Date().toISOString(),
       agent:         { id: session.userId, name: session.name, username: session.username },
       client:        order.client,
+      cuLivrare:     order.cuLivrare,
+      deliveryDate:  order.deliveryDate,
+      deliveryTime:  order.deliveryTime,
       products:      newProducts,
       status:        'trimis',
       revisedFromId: order.id

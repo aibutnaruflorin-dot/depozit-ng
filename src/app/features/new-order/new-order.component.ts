@@ -313,6 +313,10 @@ export class NewOrderComponent implements OnInit {
 
   addProduct(product: Product): void {
     const max     = this.catalogsService.getStock(product.catalogId, product.nr) ?? product.qty;
+    if (max <= 0) {
+      this.snackBar.open('Stoc epuizat — produsul nu poate fi adăugat în coș.', '', { duration: 2500, panelClass: ['snack-warn'] });
+      return;
+    }
     const pending = this.getPendingQty(product);
     const key     = this.pkey(product);
     const qty     = Math.min(max, pending > 0 ? pending : 1);
@@ -361,6 +365,7 @@ export class NewOrderComponent implements OnInit {
   doRemove(product: Product): void {
     const key = this.pkey(product);
     this.cart.update(c => c.filter(i => this.pkey(i.product) !== key));
+    this._pendingQty.update(m => ({ ...m, [key]: 0 }));
     this.confirmDeleteKey.set(null);
   }
 

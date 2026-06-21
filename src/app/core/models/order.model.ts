@@ -34,6 +34,7 @@ export interface Order {
   deliveryTime?: string;
   deliveredQty?: number[];
   products: OrderProduct[];
+  pendingProducts?: OrderProduct[];
   status: 'trimis' | 'acceptat' | 'planificat' | 'in_livrare' | 'livrat_partial' | 'livrat' | 'anulat' | string;
   revisedFromId?: string;
   superseded?: boolean;
