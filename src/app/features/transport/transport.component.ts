@@ -853,6 +853,17 @@ export class TransportComponent implements OnInit {
       .map(id => this.getOrder(id)).filter((o): o is Order => !!o);
   }
 
+  getTripDelivery(t: Transport, orderId: string): import('../../core/models/transport.model').TripDelivery | undefined {
+    return t.deliveries.find(d => d.orderId === orderId);
+  }
+
+  saveTripDeliveryNote(t: Transport, orderId: string, note: string): void {
+    const deliveries = t.deliveries.map(d =>
+      d.orderId === orderId ? { ...d, observatii: note.trim() || undefined } : d
+    );
+    this.transportService.updateTransport(t.id, { deliveries });
+  }
+
   selectedHelpers(): { orderNum: number | undefined; helper: string }[] {
     return this.modalOrders()
       .filter(o => !!o.helper)

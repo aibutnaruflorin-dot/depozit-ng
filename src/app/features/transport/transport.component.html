@@ -343,6 +343,7 @@
             </td>
             <td>
               @for (o of ordersForTransport(t); track o.id) {
+                @let del = getTripDelivery(t, o.id);
                 <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                   <div class="order-chip-top">
                     <span class="order-num-badge">#{{ o.orderNumber }}</span>
@@ -366,6 +367,13 @@
                       }
                     </div>
                   }
+                  <textarea class="chip-note-input"
+                            rows="1"
+                            placeholder="Observații…"
+                            [value]="del?.observatii ?? ''"
+                            (click)="$event.stopPropagation()"
+                            (blur)="saveTripDeliveryNote(t, o.id, $any($event.target).value)"
+                            (keydown.enter)="$any($event.target).blur(); $event.preventDefault()"></textarea>
                 </div>
               }
             </td>
@@ -489,6 +497,7 @@
               </td>
               <td>
                 @for (o of ordersForTransport(t); track o.id) {
+                  @let del = getTripDelivery(t, o.id);
                   <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                     <div class="order-chip-top">
                       <span class="order-num-badge">#{{ o.orderNumber }}</span>
@@ -512,6 +521,13 @@
                         }
                       </div>
                     }
+                    <textarea class="chip-note-input"
+                              rows="1"
+                              placeholder="Observații…"
+                              [value]="del?.observatii ?? ''"
+                              (click)="$event.stopPropagation()"
+                              (blur)="saveTripDeliveryNote(t, o.id, $any($event.target).value)"
+                              (keydown.enter)="$any($event.target).blur(); $event.preventDefault()"></textarea>
                   </div>
                 }
               </td>
