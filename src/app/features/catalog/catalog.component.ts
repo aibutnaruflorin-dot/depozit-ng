@@ -48,7 +48,8 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('stickyTop') private stickyTopRef!: ElementRef<HTMLElement>;
   readonly tableScrollHeight = signal('calc(100vh - 260px)');
   private resizeObs?: ResizeObserver;
-  readonly PAGE_SIZE = 48;
+  readonly PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+  pageSize = signal(50);
 
   readonly CATALOG_COLS = [
     { key: 'categorie',   label: 'Categorie' },
@@ -297,8 +298,8 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   readonly paged = computed(() => {
-    const start = this.currentPage() * this.PAGE_SIZE;
-    return this.filtered().slice(start, start + this.PAGE_SIZE);
+    const start = this.currentPage() * this.pageSize();
+    return this.filtered().slice(start, start + this.pageSize());
   });
 
   toggleDisplayMode(): void { this.displayMode.update(m => m === 'mixed' ? 'grouped' : 'mixed'); this.currentPage.set(0); }
@@ -315,7 +316,13 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onSearch(val: string):   void { this.search.set(val);   this.currentPage.set(0); }
   onCategory(val: string): void { this.category.set(val); this.currentPage.set(0); }
-  onPageChange(e: any):    void { this.currentPage.set(e.page); }
+  onPageChange(e: any):    void {
+    this.currentPage.set(e.page);
+    if (e.rows && e.rows !== this.pageSize()) {
+      this.pageSize.set(e.rows);
+      this.currentPage.set(0);
+    }
+  }
 
   clearFilters(): void {
     this.search.set('');

@@ -410,9 +410,9 @@
 
   </p-table>
 
-  @if (filtered().length > PAGE_SIZE) {
-    <p-paginator [rows]="PAGE_SIZE" [totalRecords]="filtered().length"
-                 [rowsPerPageOptions]="[]"
+  @if (filtered().length > pageSize()) {
+    <p-paginator [rows]="pageSize()" [totalRecords]="filtered().length"
+                 [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
                  (onPageChange)="onPageChange($event)" />
   }
 }
