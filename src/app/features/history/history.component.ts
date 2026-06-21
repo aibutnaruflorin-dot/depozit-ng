@@ -186,6 +186,20 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
   }
 
+  canReopenAdd(order: Order): boolean {
+    const closed = ['anulat', 'livrat', 'in_livrare'];
+    if (!closed.includes(order.status) || order.superseded) return false;
+    const s = this.auth.session();
+    return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
+  }
+
+  reopenAndAdd(order: Order): void {
+    this.ordersService.reopenOrder(order.id);
+    this.snackBar.open('Comanda redeschisă.', 'OK', { duration: 2000 });
+    this.addProductsOrderId.set(order.id);
+    this.expandRow(order.id);
+  }
+
   sendDraft(order: Order): void {
     const result = this.ordersService.submitDraftOrder(order.id);
     if (!result.ok) {

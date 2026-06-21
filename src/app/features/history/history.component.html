@@ -382,6 +382,11 @@
                       matTooltip="Adaugă produse la comandă">
                 <mat-icon>add_shopping_cart</mat-icon>
               </button>
+            } @else if (canReopenAdd(order)) {
+              <button mat-icon-button (click)="reopenAndAdd(order)"
+                      matTooltip="Redeschide comanda și adaugă produse">
+                <mat-icon>add_shopping_cart</mat-icon>
+              </button>
             } @else {
               <span class="action-placeholder"></span>
             }
@@ -715,6 +720,11 @@
                   <button mat-stroked-button (click)="addProductsOrderId.set(order.id); expandRow(order.id)">
                     <mat-icon>add_shopping_cart</mat-icon>
                     Adaugă produse
+                  </button>
+                } @else if (canReopenAdd(order)) {
+                  <button mat-stroked-button (click)="reopenAndAdd(order)">
+                    <mat-icon>add_shopping_cart</mat-icon>
+                    Redeschide și adaugă produse
                   </button>
                 }
                 <button mat-stroked-button (click)="collapseRow(order.id)">
