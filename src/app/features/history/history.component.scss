@@ -399,6 +399,8 @@ $_epc-cols: minmax(180px, 1fr) 120px 50px 145px 90px 130px 108px 108px 80px 130p
 .eq-input {
   width: 54px; text-align: center; border: 1px solid var(--color-border);
   border-radius: 4px; padding: 3px 4px; font-size: 0.9rem;
+  &.eq-input--over { border-color: #ef4444; color: #ef4444; background: #fff1f1;
+    [data-theme="dark"] & { background: rgba(239,68,68,0.1); } }
   background: var(--color-bg);
   &::-webkit-inner-spin-button,
   &::-webkit-outer-spin-button { -webkit-appearance: none; }
@@ -429,6 +431,10 @@ $_epc-cols: minmax(180px, 1fr) 120px 50px 145px 90px 130px 108px 108px 80px 130p
 .expansion-footer {
   display: flex; gap: 0.75rem; align-items: center;
   border-top: 1px solid var(--color-border); padding-top: 0.75rem;
+}
+.btn-cancel-order {
+  background: #c62828 !important; color: #fff !important;
+  mat-icon { font-size: 18px; }
 }
 
 /* ── Read-only qty in agent expansion ── */

@@ -415,7 +415,7 @@ export class TransportComponent implements OnInit {
     const order = this.modalOrders().find(o => o.id === orderId);
     if (!order) return;
     const max = this.getRemainingQtyArr(order, this.editingId() ?? undefined)[idx] ?? 0;
-    const qty = Math.min(max, Math.max(0, parseInt(String(val)) || 0));
+    const qty = Math.min(max, Math.max(0, parseFloat(String(val)) || 0));
     this.modalQty.update(m => ({ ...m, [orderId]: { ...(m[orderId] ?? {}), [idx]: qty } }));
   }
 

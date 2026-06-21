@@ -86,7 +86,7 @@ export class HistoryComponent {
     { key: 'livrare',  label: 'Livrare' },
     { key: 'adresa',   label: 'Adresă livrare' },
     { key: 'termen',   label: 'Termen livrare' },
-    { key: 'produse',  label: 'Produse' },
+    { key: 'produse',  label: 'Cantitate' },
     { key: 'faraTVA',  label: 'Fără TVA' },
     { key: 'cuTVA',      label: 'Cu TVA' },
     { key: 'masaTotala', label: 'Masă totală' },
@@ -377,7 +377,7 @@ export class HistoryComponent {
           o.client.name, o.client.phone ?? '', p.name, String(p.qty), p.um, status]);
       }
     }
-    this._downloadCsv([headers, ...rows], `comenzi-${new Date().toISOString().slice(0, 10)}.csv`, [3]);
+    this._downloadCsv([headers, ...rows], `comenzi-export-${new Date().toISOString().slice(0, 10)}.csv`, [3]);
   }
 
   downloadOrderCsv(order: Order, e: Event): void {
@@ -389,7 +389,9 @@ export class HistoryComponent {
       `#${order.orderNumber ?? '?'}`, this.formatDate(order.timestamp),
       order.client.name, order.client.phone ?? '', p.name, String(p.qty), p.um, status
     ]);
-    this._downloadCsv([headers, ...rows], `comanda-${order.orderNumber ?? order.id.slice(0, 6)}.csv`, [3]);
+    const clientSlug = order.client.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '').slice(0, 30);
+    const dateSlug = order.timestamp.slice(0, 10);
+    this._downloadCsv([headers, ...rows], `${clientSlug}-${dateSlug}-#${order.orderNumber ?? order.id.slice(0, 6)}.csv`, [3]);
   }
 
   private _downloadCsv(rows: string[][], filename: string, textCols: number[] = []): void {
@@ -405,6 +407,25 @@ export class HistoryComponent {
     document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
+  isPending(order: Order): boolean {
+    return order.status === 'trimis' && !order.superseded;
+  }
+
+  cancelOrder(order: Order): void {
+    if (!confirm(`Anulezi comanda #${order.orderNumber ?? '?'} pentru ${order.client.name}?`)) return;
+    this.ordersService.cancelOrder(order.id);
+    this.collapseRow(order.id);
+    this.snackBar.open('Comanda anulată.', '', { duration: 2500 });
+  }
+
+  editQtyExceedsStock(orderId: string, idx: number, catalogId: string | undefined, nr: string | number): boolean {
+    if (!catalogId) return false;
+    const edited = this._editQty()[this.ekey(orderId, idx)];
+    if (edited === undefined) return false;
+    const stock = this.catalogsService.getStock(catalogId, nr);
+    return stock !== null && edited > stock;
+  }
+
   hasEditedQty(order: Order): boolean {
     return order.products.some((p, i) => {
       const edited = this._editQty()[this.ekey(order.id, i)];
@@ -418,7 +439,7 @@ export class HistoryComponent {
     return this._editQty()[this.ekey(orderId, idx)] ?? def;
   }
   setEditQty(orderId: string, idx: number, def: number, val: number | string): void {
-    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: Math.max(0, parseInt(String(val)) || 0) }));
+    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: Math.max(0, parseFloat(String(val)) || 0) }));
   }
   incEditQty(orderId: string, idx: number, def: number): void {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1);

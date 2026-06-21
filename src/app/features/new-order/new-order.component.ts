@@ -282,7 +282,7 @@ export class NewOrderComponent implements OnInit {
   }
   setPendingQty(p: Product, val: string | number): void {
     const max = p.qty;
-    const qty = Math.min(max, Math.max(0, parseInt(String(val)) || 0));
+    const qty = Math.min(max, Math.max(0, parseFloat(String(val)) || 0));
     this._pendingQty.update(m => ({ ...m, [this.pkey(p)]: qty }));
   }
   incPending(p: Product): void { this.setPendingQty(p, this.getPendingQty(p) + 1); }
@@ -337,7 +337,7 @@ export class NewOrderComponent implements OnInit {
 
   updateQty(product: Product, val: string): void {
     const max = this.catalogsService.getStock(product.catalogId, product.nr) ?? Infinity;
-    const qty = Math.min(max, Math.max(1, parseInt(val) || 1));
+    const qty = Math.min(max, Math.max(0.01, parseFloat(val) || 0.01));
     const key = this.pkey(product);
     this.cart.update(c => c.map(i => this.pkey(i.product) === key ? { ...i, qty } : i));
   }

@@ -88,7 +88,7 @@ export class HistoryAllComponent {
     { key: 'adresa',   label: 'Adresă livrare' },
     { key: 'termen',   label: 'Termen livrare' },
     { key: 'agent',    label: 'Agent' },
-    { key: 'produse',  label: 'Produse' },
+    { key: 'produse',  label: 'Cantitate' },
     { key: 'faraTVA',  label: 'Fără TVA' },
     { key: 'cuTVA',      label: 'Cu TVA' },
     { key: 'masaTotala', label: 'Masă totală' },
@@ -615,11 +615,19 @@ export class HistoryAllComponent {
 
   ekey(orderId: string, idx: number): string { return `${orderId}::${idx}`; }
 
+  editQtyExceedsStock(orderId: string, idx: number, catalogId: string | undefined, nr: string | number): boolean {
+    if (!catalogId) return false;
+    const edited = this._editQty()[this.ekey(orderId, idx)];
+    if (edited === undefined) return false;
+    const stock = this.catalogsService.getStock(catalogId, nr);
+    return stock !== null && edited > stock;
+  }
+
   getEditQty(orderId: string, idx: number, def: number): number {
     return this._editQty()[this.ekey(orderId, idx)] ?? def;
   }
   setEditQty(orderId: string, idx: number, def: number, val: number | string): void {
-    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: Math.max(0, parseInt(String(val)) || 0) }));
+    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: Math.max(0, parseFloat(String(val)) || 0) }));
   }
   incEditQty(orderId: string, idx: number, def: number): void {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1);

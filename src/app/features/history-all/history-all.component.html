@@ -496,8 +496,9 @@
                         <button mat-icon-button class="eq-btn" (click)="decEditQty(order.id, j, p.qty)">
                           <mat-icon>remove</mat-icon>
                         </button>
-                        <input class="eq-input" type="number" min="0"
+                        <input class="eq-input" type="number" min="0" step="0.01"
                                [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
+                               [class.eq-input--over]="editQtyExceedsStock(order.id, j, p.catalogId, p.nr)"
                                (change)="setEditQty(order.id, j, p.qty, $any($event.target).value)"
                                (click)="$any($event.target).select()">
                         <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)"

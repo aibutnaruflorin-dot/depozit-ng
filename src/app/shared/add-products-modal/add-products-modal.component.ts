@@ -170,7 +170,7 @@ export class AddProductsModalComponent implements OnInit {
   }
 
   setQty(p: Product, val: number | string): void {
-    const qty = Math.max(0, parseInt(String(val)) || 0);
+    const qty = Math.max(0, parseFloat(String(val)) || 0);
     const key = this.stagingKey(p);
     if (qty === 0) {
       this.staged.update(list => list.filter(s => this.stagingKey(s) !== key));
