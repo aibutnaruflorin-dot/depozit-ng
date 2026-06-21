@@ -467,7 +467,7 @@
                     </span>
                     <span class="epc-um">{{ p.um }}</span>
                     @let s = catalogsService.getStockThreeCol(p.catalogId, p.nr);
-                    <div class="stoc3-cell" (click)="openStockHistory(p.name, p.catalogId, p.nr, $event)" style="cursor:pointer">
+                    <div class="stoc3-cell">
                       <div class="s3-row">
                         <span class="s3-label">Importat</span>
                         <span class="s3-imp">{{ s.importedQty }}</span>
@@ -480,7 +480,7 @@
                         <span class="s3-label">Buffer</span>
                         <span class="s3-buf" [class.s3-pos]="s.bufferQty > 0" [class.s3-neg]="s.bufferQty < 0">{{ s.bufferQty > 0 ? '+' : '' }}{{ s.bufferQty === 0 ? '—' : s.bufferQty }}</span>
                       </div>
-                      <div class="s3-row s3-total">
+                      <div class="s3-row s3-total" (click)="openStockHistory(p.name, p.catalogId, p.nr, $event)" style="cursor:pointer" matTooltip="Click pentru Istoricul ajustărilor">
                         <span class="s3-label">Final</span>
                         <span class="s3-final" [class.s3-zero]="s.finalQty === 0">{{ s.finalQty }}</span>
                       </div>
@@ -531,7 +531,7 @@
                     </span>
                     <span class="epc-um">{{ p.um }}</span>
                     @let sr = catalogsService.getStockThreeCol(p.catalogId, p.nr);
-                    <div class="stoc3-cell" (click)="openStockHistory(p.name, p.catalogId, p.nr, $event)" style="cursor:pointer">
+                    <div class="stoc3-cell">
                       <div class="s3-row">
                         <span class="s3-label">Importat</span>
                         <span class="s3-imp">{{ sr.importedQty }}</span>
@@ -544,7 +544,7 @@
                         <span class="s3-label">Buffer</span>
                         <span class="s3-buf" [class.s3-pos]="sr.bufferQty > 0" [class.s3-neg]="sr.bufferQty < 0">{{ sr.bufferQty > 0 ? '+' : '' }}{{ sr.bufferQty === 0 ? '—' : sr.bufferQty }}</span>
                       </div>
-                      <div class="s3-row s3-total">
+                      <div class="s3-row s3-total" (click)="openStockHistory(p.name, p.catalogId, p.nr, $event)" style="cursor:pointer" matTooltip="Click pentru Istoricul ajustărilor">
                         <span class="s3-label">Final</span>
                         <span class="s3-final" [class.s3-zero]="sr.finalQty === 0">{{ sr.finalQty }}</span>
                       </div>
