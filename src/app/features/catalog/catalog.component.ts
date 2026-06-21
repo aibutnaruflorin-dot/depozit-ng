@@ -46,7 +46,7 @@ import * as XLSX from 'xlsx';
 })
 export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('stickyTop') private stickyTopRef!: ElementRef<HTMLElement>;
-  readonly theadTop = signal('200px');
+  readonly tableScrollHeight = signal('calc(100vh - 260px)');
   private resizeObs?: ResizeObserver;
   readonly PAGE_SIZE = 48;
 
@@ -161,7 +161,10 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.resizeObs = new ResizeObserver(entries => {
       const h = entries[0]?.contentRect.height ?? 0;
-      this.zone.run(() => this.theadTop.set(`${56 + Math.round(h)}px`));
+      // 56px toolbar + sticky-top height + 24px page-content padding-bottom + 56px paginator
+      this.zone.run(() =>
+        this.tableScrollHeight.set(`calc(100vh - ${56 + Math.round(h) + 80}px)`)
+      );
     });
     this.resizeObs.observe(this.stickyTopRef.nativeElement);
   }

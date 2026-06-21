@@ -85,9 +85,9 @@
     <button mat-stroked-button (click)="clearFilters()">Șterge filtrele</button>
   </div>
 } @else {
-  <div [style]="{'--thead-top': theadTop()}">
   <p-table [value]="paged()" [tableStyle]="{'min-width':'960px'}"
-           styleClass="p-datatable-sm p-datatable-striped">
+           styleClass="p-datatable-sm p-datatable-striped"
+           [scrollable]="true" [scrollHeight]="tableScrollHeight()">
 
     <ng-template pTemplate="header">
       <tr>
@@ -409,7 +409,6 @@
     </ng-template>
 
   </p-table>
-  </div>
 
   @if (filtered().length > PAGE_SIZE) {
     <p-paginator [rows]="PAGE_SIZE" [totalRecords]="filtered().length"

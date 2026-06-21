@@ -135,11 +135,8 @@
 /* Allow furnizor dropdown to overflow th */
 ::ng-deep .p-datatable th { overflow: visible !important; }
 
-/* Sticky table header below the sticky top block */
-::ng-deep .p-datatable table thead {
-  position: sticky;
-  top: var(--thead-top, 56px);
-  z-index: 9;
+/* Thead background in scrollable mode */
+::ng-deep .p-datatable .p-datatable-thead > tr > th {
   background: var(--color-bg);
 }
 .phc-furn-trigger {
