@@ -12,7 +12,12 @@
 /* ── Page header ─────────────────────────────────────────────── */
 .page-header {
   display: flex; align-items: center; gap: 1rem;
-  flex-wrap: wrap; margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  position: sticky; top: 56px; z-index: 9;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  margin: -1.5rem -2rem 1.25rem;
+  padding: 0.75rem 2rem 0.6rem;
 }
 .page-title {
   display: flex; align-items: center; gap: 8px;
@@ -393,13 +398,21 @@
     background: #e8f0fe; border-color: #90caf9; color: #1565c0;
     mat-icon { color: #1565c0; }
   }
+  &.trip-status--confirmed {
+    background: #f0fdf4; border-color: #22c55e; color: #166534;
+    mat-icon { color: #22c55e; }
+  }
   &.trip-status--in-livrare {
-    background: #f0fdf4; border-color: #86efac; color: #16a34a;
-    mat-icon { color: #16a34a; }
+    background: #fef9c3; border-color: #fde047; color: #854d0e;
+    mat-icon { color: #ca8a04; }
   }
   &.trip-status--livrat {
     background: #f3f4f6; border-color: #d1d5db; color: #6b7280;
     mat-icon { color: #6b7280; }
+  }
+  &.trip-status--cancelled {
+    background: #fff5f5; border-color: #fca5a5; color: #991b1b;
+    mat-icon { color: #ef4444; }
   }
 }
 

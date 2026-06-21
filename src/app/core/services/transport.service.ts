@@ -21,7 +21,7 @@ export class TransportService {
   );
 
   readonly active = computed(() =>
-    this._transports().filter(t => t.status !== 'livrat')
+    this._transports().filter(t => t.status !== 'livrat' && t.status !== 'anulat')
       .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))
   );
   readonly history = computed(() =>
@@ -91,7 +91,12 @@ export class TransportService {
     const changes: Partial<Omit<Transport, 'id' | 'createdAt'>> = { status };
     if (status === 'in_livrare') changes.startedAt  = now;
     if (status === 'livrat')     changes.completedAt = now;
+    if (status === 'anulat')     changes.cancelledAt = now;
     this.updateTransport(id, changes);
+  }
+
+  cancelTrip(id: string): void {
+    this.setStatus(id, 'anulat');
   }
 
   deleteTransport(id: string): void {

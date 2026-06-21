@@ -1,3 +1,25 @@
+/* ── Page header ── */
+.page-header {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  position: sticky; top: 56px; z-index: 9;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  margin: -1.5rem -2rem 0;
+  padding: 0.75rem 2rem 0.6rem;
+}
+.page-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1.4rem; font-weight: 700; margin: 0;
+  mat-icon { color: var(--color-primary); font-size: 1.5rem; width: 1.5rem; height: 1.5rem; }
+}
+.page-actions { margin-left: auto; display: flex; gap: 0.5rem; align-items: center; }
+.count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+  background: var(--color-primary); color: #fff;
+  font-size: 0.72rem; font-weight: 700;
+}
+
 /* ── Column visibility dropdown ── */
 .cols-vis-bar {
   display: flex; align-items: center;
@@ -428,6 +450,28 @@ $_epc-cols: minmax(180px, 1fr) 120px 50px 145px 90px 130px 108px 108px 80px 130p
 .epc-masa { font-size: 0.78rem; color: #2e7d32; text-align: right; white-space: nowrap; font-weight: 500; }
 
 .td-masa-order { font-size: 0.82rem; font-weight: 600; color: #2e7d32; text-align: right; white-space: nowrap; }
+
+.obs-section {
+  padding: 0.75rem 0; border-top: 1px solid var(--color-border);
+}
+.obs-label {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 4px;
+}
+.obs-text {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.88rem; color: var(--color-text); cursor: pointer;
+  padding: 2px 4px; border-radius: 4px; min-height: 28px;
+  &:hover { background: var(--color-surface); }
+}
+.obs-edit-icon { font-size: 14px; width: 14px; height: 14px; color: var(--color-text-muted); opacity: 0.6; }
+.obs-textarea {
+  width: 100%; max-width: 600px; border: 1px solid var(--color-border);
+  border-radius: 4px; padding: 6px 8px; font-size: 0.88rem; resize: vertical;
+  color: var(--color-text); background: var(--color-bg); font-family: inherit;
+  &:focus { outline: none; border-color: var(--color-primary); }
+}
+.obs-actions { display: flex; gap: 4px; margin-top: 4px; }
 
 .expansion-footer {
   display: flex; gap: 0.75rem; align-items: center;

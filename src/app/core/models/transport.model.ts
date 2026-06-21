@@ -8,7 +8,7 @@ export interface TripDelivery {
   items: TripOrderItem[];
 }
 
-export type TransportStatus = 'planificat' | 'in_livrare' | 'livrat';
+export type TransportStatus = 'planificat' | 'confirmat_sofer' | 'in_livrare' | 'livrat' | 'anulat';
 
 export interface Transport {
   id: string;
@@ -22,4 +22,5 @@ export interface Transport {
   createdAt: string;
   startedAt?: string;
   completedAt?: string;
+  cancelledAt?: string;
 }

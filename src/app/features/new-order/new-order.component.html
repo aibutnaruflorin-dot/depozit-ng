@@ -288,8 +288,10 @@
             </tr>
           }
         }
-        <tr [style.background-color]="rowBg(p.catalogId)"
-            [style.border-left]="'3px solid ' + rowBorder(p.catalogId)">
+        <tr [style.background-color]="highlightedPkey() === pkey(p) ? null : rowBg(p.catalogId)"
+            [style.border-left]="'3px solid ' + rowBorder(p.catalogId)"
+            [class.product-row--highlight]="highlightedPkey() === pkey(p)"
+            [attr.data-pkey]="pkey(p)">
           <td>
             <div class="pc-name-cell">
               <span class="product-name">{{ p.name }}</span>
@@ -451,7 +453,8 @@
       } @else {
         <div class="cart-items">
           @for (item of cart(); track (item.product.catalogId + '::' + item.product.nr)) {
-            <div class="cart-item" [style.border-left-color]="rowBorder(item.product.catalogId)">
+            <div class="cart-item" [style.border-left-color]="rowBorder(item.product.catalogId)"
+                 (click)="scrollToProduct(item.product)" style="cursor:pointer">
               @if (confirmDeleteKey() === pkey(item.product)) {
                 <div class="ci-confirm">
                   <span class="ci-confirm-text">Elimini "{{ item.product.name.slice(0, 28) }}"?</span>

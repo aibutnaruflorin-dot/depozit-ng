@@ -47,6 +47,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1rem 0.5rem;
+  position: sticky; top: 56px; z-index: 9;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
 }
 .no-title {
   margin: 0;
@@ -486,6 +489,16 @@ $h: 34px;
   background: var(--color-surface-2);
   border-radius: 4px;
   border-left: 3px solid transparent;
+  transition: background 0.15s;
+  &:hover { background: var(--color-surface); }
+}
+
+@keyframes highlight-pulse {
+  0%, 100% { background-color: transparent; }
+  30%       { background-color: rgba(13,148,136,0.22); }
+}
+.product-row--highlight {
+  animation: highlight-pulse 2s ease-out forwards;
 }
 .ci-main {
   display: flex;

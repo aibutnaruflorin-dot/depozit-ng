@@ -114,9 +114,27 @@ export class AddProductsModalComponent implements OnInit {
   manualQty         = signal(1);
   manualUm          = signal('BUC');
   manualPret        = signal<number | null>(null);
+  sortCol           = signal<string>('name');
+  sortDir           = signal<'asc' | 'desc'>('asc');
+  /** tracks raw (unblurred) input values so red class shows immediately while typing */
+  private rawQtyMap = signal<Record<string, number>>({});
 
   readonly sourceLabel = (s: string) => SOURCE_LABELS[s] ?? s;
   readonly catalogs = computed(() => this.catalogsService.catalogs());
+
+  toggleSort(col: string): void {
+    if (this.sortCol() === col) {
+      this.sortDir.update(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortCol.set(col);
+      this.sortDir.set('asc');
+    }
+  }
+
+  sortIcon(col: string): string {
+    if (this.sortCol() !== col) return 'unfold_more';
+    return this.sortDir() === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
 
   readonly productRows = computed((): ProductRow[] => {
     const q     = this.searchQ().toLowerCase().trim();
@@ -125,10 +143,30 @@ export class AddProductsModalComponent implements OnInit {
     const filtered = q
       ? pool.filter(p => p.name.toLowerCase().includes(q) || (p.codExtern ?? '').toLowerCase().includes(q))
       : pool;
-    return filtered.map(p => {
+    const rows = filtered.map(p => {
       const s = this.catalogsService.getStockThreeCol(p.catalogId, p.nr);
       return { p, ...s };
     });
+    const col = this.sortCol();
+    const dir = this.sortDir();
+    rows.sort((a, b) => {
+      let cmp = 0;
+      switch (col) {
+        case 'name':        cmp = a.p.name.localeCompare(b.p.name); break;
+        case 'categorie':   cmp = (a.p.category ?? '').localeCompare(b.p.category ?? ''); break;
+        case 'um':          cmp = (a.p.um ?? '').localeCompare(b.p.um ?? ''); break;
+        case 'masaNeta':    cmp = (a.p.masaNeta ?? 0) - (b.p.masaNeta ?? 0); break;
+        case 'stocImport':  cmp = a.importedQty - b.importedQty; break;
+        case 'stocFinal':   cmp = a.finalQty - b.finalQty; break;
+        case 'stocBuffer':  cmp = a.bufferQty - b.bufferQty; break;
+        case 'codExtern':   cmp = (a.p.codExtern ?? '').localeCompare(b.p.codExtern ?? ''); break;
+        case 'furnizor':    cmp = (a.p.furnizor ?? '').localeCompare(b.p.furnizor ?? ''); break;
+        case 'pretFaraTVA': cmp = (a.p.pretFaraTVA ?? 0) - (b.p.pretFaraTVA ?? 0); break;
+        case 'pretCuTVA':   cmp = (a.p.pretCuTVA ?? 0) - (b.p.pretCuTVA ?? 0); break;
+      }
+      return dir === 'asc' ? cmp : -cmp;
+    });
+    return rows;
   });
 
   trackRow(_: number, row: ProductRow): string {
@@ -143,6 +181,21 @@ export class AddProductsModalComponent implements OnInit {
 
   readonly stagedTotalMasa = computed(() =>
     this.staged().reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0)
+  );
+
+  readonly stagedTotalPrice = computed(() =>
+    this.staged().reduce((s, p) => {
+      const price = p.pretCuTVA ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.pretCuTVA ?? 0;
+      return s + price * p.qty;
+    }, 0)
+  );
+
+  readonly hasOverStock = computed(() =>
+    this.staged().some(p => {
+      if (!p.catalogId) return false;
+      const avail = this.catalogsService.getStock(p.catalogId, p.nr) ?? Infinity;
+      return p.qty > avail;
+    })
   );
 
   constructor(
@@ -171,18 +224,29 @@ export class AddProductsModalComponent implements OnInit {
     return this.stagedMap()[this.stagingKey(p)] ?? 0;
   }
 
+  /** Returns raw typed value (before blur) or staged value — used for real-time red class */
+  getEffectiveQty(p: Product): number {
+    const k = this.stagingKey(p);
+    const raw = this.rawQtyMap()[k];
+    return raw !== undefined ? raw : (this.stagedMap()[k] ?? 0);
+  }
+
+  private clearRawQty(p: Product): void {
+    this.rawQtyMap.update(m => { const n = { ...m }; delete n[this.stagingKey(p)]; return n; });
+  }
+
+  onQtyInput(p: Product, val: string): void {
+    this.rawQtyMap.update(m => ({ ...m, [this.stagingKey(p)]: Math.max(0, parseFloat(val) || 0) }));
+  }
+
+  onQtyChange(p: Product, val: string): void {
+    this.setQty(p, val);
+    this.clearRawQty(p);
+  }
+
   setQty(p: Product, val: number | string): void {
     let qty = Math.max(0, parseFloat(String(val)) || 0);
     if (!this.unitsService.allowDecimal(p.um)) qty = Math.round(qty);
-    // Stock validation — clamp to available and warn
-    const available = this.catalogsService.getStock(p.catalogId, p.nr) ?? Infinity;
-    if (qty > available && available > 0) {
-      this.snackBar.open(`Stoc insuficient. Disponibil: ${available} ${p.um}`, '', { duration: 3000, panelClass: ['snack-warn'] });
-      qty = available;
-    } else if (qty > 0 && available <= 0) {
-      this.snackBar.open(`Produsul nu are stoc disponibil.`, '', { duration: 3000, panelClass: ['snack-warn'] });
-      qty = 0;
-    }
     const key = this.stagingKey(p);
     if (qty === 0) {
       this.staged.update(list => list.filter(s => this.stagingKey(s) !== key));
@@ -197,10 +261,21 @@ export class AddProductsModalComponent implements OnInit {
     }
   }
 
-  incQty(p: Product): void { this.setQty(p, this.getQty(p) + 1); }
-  decQty(p: Product): void { this.setQty(p, this.getQty(p) - 1); }
+  incQty(p: Product): void {
+    const step = this.unitsService.allowDecimal(p.um) ? 0.1 : 1;
+    this.clearRawQty(p);
+    this.setQty(p, Math.round((this.getQty(p) + step) * 1000) / 1000);
+  }
+
+  decQty(p: Product): void {
+    const step = this.unitsService.allowDecimal(p.um) ? 0.1 : 1;
+    this.clearRawQty(p);
+    this.setQty(p, Math.max(0, Math.round((this.getQty(p) - step) * 1000) / 1000));
+  }
 
   removeStaged(idx: number): void {
+    const p = this.staged()[idx];
+    if (p) this.clearRawQty(p as unknown as Product);
     this.staged.update(list => list.filter((_, i) => i !== idx));
   }
 

@@ -631,7 +631,7 @@ export class TransportComponent implements OnInit {
 
   setTripStatus(t: Transport, status: TransportStatus): void {
     if (status === t.status) return;
-    if (status === 'livrat' && t.status !== 'in_livrare') return;
+    if (status === 'livrat' && t.status !== 'in_livrare' && t.status !== 'confirmat_sofer') return;
     if (status === 'livrat' && !confirm('Sigur s-a livrat? Cursa va fi marcată finalizată.')) return;
 
     this.transportService.setStatus(t.id, status);
@@ -650,6 +650,31 @@ export class TransportComponent implements OnInit {
       : status === 'planificat' ? 'Cursă repusă pe Planificat.'
       : 'Livrare finalizată!';
     this.snackBar.open(msg, '', { duration: 2200 });
+  }
+
+  sendDriverWhatsApp(t: Transport): void {
+    const driver = this.transportService.getDriver(t.driverId);
+    if (!driver?.telefon) {
+      this.snackBar.open('Șoferul nu are număr de telefon configurat.', 'OK', { duration: 3000 });
+      return;
+    }
+    const orders = this.ordersForTransport(t);
+    const lines = orders.map(o => `• ${o.client.name}${o.client.address ? ' — ' + o.client.address : ''}`).join('\n');
+    const msg = `Cursa ta:\nPlecare: ${this.transportService.formatDateTime(t.oraPlecare)}\nSosire: ${this.transportService.formatDateTime(t.oraSosire)}\n${lines}`;
+    const phone = driver.telefon.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  cancelTransport(t: Transport): void {
+    if (!confirm('Anulezi această cursă? Șoferul va fi notificat prin WhatsApp.')) return;
+    this.transportService.cancelTrip(t.id);
+    const driver = this.transportService.getDriver(t.driverId);
+    if (driver?.telefon) {
+      const msg = `Cursa ta din ${this.transportService.formatDateTime(t.oraPlecare)} a fost ANULATĂ.`;
+      const phone = driver.telefon.replace(/\D/g, '');
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+    this.snackBar.open('Cursa a fost anulată.', 'OK', { duration: 2500 });
   }
 
   deleteTransport(t: Transport): void {
@@ -823,11 +848,25 @@ export class TransportComponent implements OnInit {
   }
 
   statusLabel(s: string): string {
-    return s === 'planificat' ? 'Planificat' : s === 'in_livrare' ? 'În livrare' : 'Livrat';
+    switch (s) {
+      case 'planificat':     return 'Planificat';
+      case 'confirmat_sofer': return 'Confirmat șofer';
+      case 'in_livrare':    return 'În livrare';
+      case 'livrat':        return 'Livrat';
+      case 'anulat':        return 'Anulat';
+      default:              return s;
+    }
   }
 
   statusClass(s: string): string {
-    return s === 'planificat' ? 'status-planned' : s === 'in_livrare' ? 'status-active' : 'status-done';
+    switch (s) {
+      case 'planificat':     return 'status-planned';
+      case 'confirmat_sofer': return 'status-confirmed';
+      case 'in_livrare':    return 'status-active';
+      case 'livrat':        return 'status-done';
+      case 'anulat':        return 'status-cancelled';
+      default:              return '';
+    }
   }
 
   isHelperBusy(t: Transport): boolean {

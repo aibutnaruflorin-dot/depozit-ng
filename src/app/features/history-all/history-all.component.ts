@@ -175,6 +175,8 @@ export class HistoryAllComponent {
   editingDeliveryId = signal<string | null>(null);
   editDeliveryDate  = '';
   editDeliveryTime  = '';
+  editingNoteId     = signal<string | null>(null);
+  editNoteVal       = '';
 
   readonly agents = computed(() => {
     const users = this.storage.get<User[]>('app_users') || [];
@@ -192,7 +194,7 @@ export class HistoryAllComponent {
     const dateRange  = this._dateRange();
     const delivRange = this._deliveryRange();
 
-    let orders = this.ordersService.orders();
+    let orders = this.ordersService.orders().filter(o => o.status !== 'draft');
     if (agent)           orders = orders.filter(o => String(o.agent?.id) === agent);
     if (nr)              orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
     if (client)          orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
@@ -602,7 +604,28 @@ export class HistoryAllComponent {
     this.editingPhoneId.set(null);
   }
 
+  startEditNote(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.editingNoteId.set(order.id);
+    this.editNoteVal = order.client.note ?? '';
+  }
+
+  saveNote(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.ordersService.updateClientNote(order.id, this.editNoteVal);
+    this.editingNoteId.set(null);
+  }
+
+  cancelNote(e: Event): void {
+    e.stopPropagation();
+    this.editingNoteId.set(null);
+  }
+
   // ── Expand / collapse ─────────────────────────────────────────────────────
+
+  expandRow(orderId: string): void {
+    this.expandedRows.update(m => ({ ...m, [orderId]: true }));
+  }
 
   toggleExpand(orderId: string): void {
     this.expandedRows.update(m =>

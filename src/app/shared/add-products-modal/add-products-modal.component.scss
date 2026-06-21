@@ -127,6 +127,18 @@
   font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .04em; color: var(--color-text-muted);
   white-space: nowrap;
+  &.apm-th--sort {
+    display: flex; align-items: center; gap: 2px;
+    cursor: pointer; user-select: none;
+    &:hover { color: var(--color-text); .apm-sort-icon { opacity: 1; } }
+  }
+  &.apm-tr.apm-th--sort { justify-content: flex-end; }
+  &.apm-tc.apm-th--sort { justify-content: center; }
+  &.apm-th--active { color: var(--color-primary); .apm-sort-icon { opacity: 1; } }
+}
+.apm-sort-icon {
+  font-size: 13px; width: 13px; height: 13px; flex-shrink: 0;
+  opacity: 0.35; transition: opacity .15s;
 }
 
 .apm-table-row {
@@ -149,7 +161,7 @@
   align-self: flex-start;
 }
 
-.apm-td { font-size: 0.8rem; }
+.apm-td { font-size: 0.8rem; min-width: 0; overflow: hidden; }
 .apm-tc { text-align: center; }
 .apm-tr { text-align: right; }
 .apm-muted { color: var(--color-text-muted); }
@@ -164,7 +176,7 @@
   display: inline-block; background: var(--color-surface-2, #f0f0f0);
   color: var(--color-text-muted); border-radius: 4px; padding: 1px 6px;
   font-size: 0.68rem; font-weight: 600; text-transform: uppercase; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
+  overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 
 /* ── Qty controls ── */
@@ -187,6 +199,11 @@
   &::-webkit-inner-spin-button,
   &::-webkit-outer-spin-button { -webkit-appearance: none; }
   &:focus { border-color: var(--color-primary); }
+  &.apm-qinput--over {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: #fff1f1;
+  }
 }
 .apm-bwarn {
   font-size: 14px; width: 14px; height: 14px; color: #e65100; cursor: default;
@@ -283,6 +300,14 @@
   padding: 3px 10px; border-radius: 12px;
   background: rgba(46,125,50,.1); border: 1px solid rgba(46,125,50,.3);
   color: #2e7d32; font-size: 0.78rem; font-weight: 600;
+  flex-shrink: 0;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+.apm-price-total {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 12px;
+  background: rgba(13,148,136,.1); border: 1px solid rgba(13,148,136,.3);
+  color: #0d9488; font-size: 0.78rem; font-weight: 600;
   flex-shrink: 0;
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }

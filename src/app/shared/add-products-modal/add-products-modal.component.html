@@ -72,17 +72,59 @@
 
       <!-- Table header (always visible, outside the scrolling viewport) -->
       <div class="apm-table-header">
-        <span class="apm-th">Denumire produs</span>
-        @if (colVisible('categorie'))   { <span class="apm-th">Categorie</span> }
-        @if (colVisible('um'))          { <span class="apm-th apm-tc">UM</span> }
-        @if (colVisible('masaNeta'))    { <span class="apm-th apm-tr">Masă (kg)</span> }
-        @if (colVisible('stocImport'))  { <span class="apm-th apm-tr">Stoc imp.</span> }
-        @if (colVisible('stocFinal'))   { <span class="apm-th apm-tr">Stoc fin.</span> }
-        @if (colVisible('stocBuffer'))  { <span class="apm-th apm-tr">Buffer</span> }
-        @if (colVisible('codExtern'))   { <span class="apm-th">Cod extern</span> }
-        @if (colVisible('furnizor'))    { <span class="apm-th">Furnizor</span> }
-        @if (colVisible('pretFaraTVA')) { <span class="apm-th apm-tr">F. TVA</span> }
-        @if (colVisible('pretCuTVA'))   { <span class="apm-th apm-tr">C. TVA</span> }
+        <span class="apm-th apm-th--sort" [class.apm-th--active]="sortCol()==='name'" (click)="toggleSort('name')">
+          Denumire produs<mat-icon class="apm-sort-icon">{{ sortIcon('name') }}</mat-icon>
+        </span>
+        @if (colVisible('categorie')) {
+          <span class="apm-th apm-th--sort" [class.apm-th--active]="sortCol()==='categorie'" (click)="toggleSort('categorie')">
+            Categorie<mat-icon class="apm-sort-icon">{{ sortIcon('categorie') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('um')) {
+          <span class="apm-th apm-tc apm-th--sort" [class.apm-th--active]="sortCol()==='um'" (click)="toggleSort('um')">
+            UM<mat-icon class="apm-sort-icon">{{ sortIcon('um') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('masaNeta')) {
+          <span class="apm-th apm-tr apm-th--sort" [class.apm-th--active]="sortCol()==='masaNeta'" (click)="toggleSort('masaNeta')">
+            Masă (kg)<mat-icon class="apm-sort-icon">{{ sortIcon('masaNeta') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('stocImport')) {
+          <span class="apm-th apm-tr apm-th--sort" [class.apm-th--active]="sortCol()==='stocImport'" (click)="toggleSort('stocImport')">
+            Stoc imp.<mat-icon class="apm-sort-icon">{{ sortIcon('stocImport') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('stocFinal')) {
+          <span class="apm-th apm-tr apm-th--sort" [class.apm-th--active]="sortCol()==='stocFinal'" (click)="toggleSort('stocFinal')">
+            Stoc fin.<mat-icon class="apm-sort-icon">{{ sortIcon('stocFinal') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('stocBuffer')) {
+          <span class="apm-th apm-tr apm-th--sort" [class.apm-th--active]="sortCol()==='stocBuffer'" (click)="toggleSort('stocBuffer')">
+            Buffer<mat-icon class="apm-sort-icon">{{ sortIcon('stocBuffer') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('codExtern')) {
+          <span class="apm-th apm-th--sort" [class.apm-th--active]="sortCol()==='codExtern'" (click)="toggleSort('codExtern')">
+            Cod extern<mat-icon class="apm-sort-icon">{{ sortIcon('codExtern') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('furnizor')) {
+          <span class="apm-th apm-th--sort" [class.apm-th--active]="sortCol()==='furnizor'" (click)="toggleSort('furnizor')">
+            Furnizor<mat-icon class="apm-sort-icon">{{ sortIcon('furnizor') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('pretFaraTVA')) {
+          <span class="apm-th apm-tr apm-th--sort" [class.apm-th--active]="sortCol()==='pretFaraTVA'" (click)="toggleSort('pretFaraTVA')">
+            F. TVA<mat-icon class="apm-sort-icon">{{ sortIcon('pretFaraTVA') }}</mat-icon>
+          </span>
+        }
+        @if (colVisible('pretCuTVA')) {
+          <span class="apm-th apm-tr apm-th--sort" [class.apm-th--active]="sortCol()==='pretCuTVA'" (click)="toggleSort('pretCuTVA')">
+            C. TVA<mat-icon class="apm-sort-icon">{{ sortIcon('pretCuTVA') }}</mat-icon>
+          </span>
+        }
         <span class="apm-th apm-tc">Cantitate</span>
       </div>
 
@@ -122,10 +164,13 @@
             <button class="apm-qbtn" (click)="decQty(row.p)">−</button>
             <input class="apm-qinput" type="number" min="0" [attr.step]="unitsService.allowDecimal(row.p.um) ? '0.01' : '1'"
                    [value]="qty"
-                   (change)="setQty(row.p, $any($event.target).value)"
+                   [class.apm-qinput--over]="getEffectiveQty(row.p) > 0 && getEffectiveQty(row.p) > row.finalQty"
+                   [matTooltip]="getEffectiveQty(row.p) > 0 && getEffectiveQty(row.p) > row.finalQty ? 'Depășești stocul! Disponibil: ' + row.finalQty + ' ' + row.p.um : ''"
+                   (input)="onQtyInput(row.p, $any($event.target).value)"
+                   (change)="onQtyChange(row.p, $any($event.target).value)"
                    (click)="$any($event.target).select()">
             <button class="apm-qbtn apm-qbtn-add" (click)="incQty(row.p)"
-                    [disabled]="row.finalQty <= 0 || qty >= row.finalQty">+</button>
+                    [disabled]="row.finalQty <= 0 || getEffectiveQty(row.p) >= row.finalQty">+</button>
             @if (qty > 0 && bufferUsed > 0) {
               <mat-icon class="apm-bwarn" [matTooltip]="bufferUsed + ' buc din Stoc Buffer'">warning</mat-icon>
             }
@@ -205,6 +250,12 @@
               {{ stagedTotalMasa() | number:'1.0-0' }} kg
             </span>
           }
+          @if (stagedTotalPrice() > 0) {
+            <span class="apm-price-total">
+              <mat-icon>payments</mat-icon>
+              {{ stagedTotalPrice() | number:'1.2-2' }} lei
+            </span>
+          }
         }
       </div>
       <div class="apm-bottom-actions">
@@ -213,7 +264,8 @@
           Manual
         </button>
         <button mat-stroked-button (click)="closed.emit()">Anulează</button>
-        <button mat-flat-button color="primary" (click)="confirm()" [disabled]="staged().length === 0">
+        <button mat-flat-button color="primary" (click)="confirm()" [disabled]="staged().length === 0 || hasOverStock()"
+                [matTooltip]="hasOverStock() ? 'Corectează cantitățile care depășesc stocul (roșu)' : ''">
           <mat-icon>check</mat-icon>
           Confirmă ({{ staged().length }})
         </button>

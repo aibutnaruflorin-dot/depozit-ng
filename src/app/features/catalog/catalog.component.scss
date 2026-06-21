@@ -1,4 +1,11 @@
-.page-header { padding: 1rem 1rem 0.5rem; }
+.page-header {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  position: sticky; top: 56px; z-index: 9;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  margin: -1.5rem -2rem 0;
+  padding: 0.75rem 2rem 0.6rem;
+}
 
 /* ── Column visibility dropdown ── */
 .cols-vis-bar {

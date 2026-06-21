@@ -62,6 +62,30 @@ export class OrdersService {
     return { ok: true, insufficient: [] };
   }
 
+  saveDraftOrder(order: Order): void {
+    order.status = 'draft';
+    const updated = [order, ...this._orders()];
+    this.storage.set('app_orders', updated);
+    this._orders.set(updated);
+  }
+
+  submitDraftOrder(orderId: string): StockCheckResult {
+    const order = this._orders().find(o => o.id === orderId);
+    if (!order) return { ok: false, insufficient: [] };
+    const allProducts = [...order.products, ...(order.pendingProducts ?? [])];
+    const insufficient = this._checkStock(allProducts);
+    if (insufficient.length) return { ok: false, insufficient };
+    this._decrementStock(allProducts, 'order');
+    const orderNumber = this.nextOrderNumber();
+    this._orders.update(orders => orders.map(o =>
+      o.id === orderId
+        ? { ...o, status: 'trimis', orderNumber, products: allProducts, pendingProducts: [] }
+        : o
+    ));
+    this.storage.set('app_orders', this._orders());
+    return { ok: true, insufficient: [] };
+  }
+
   reviseOrder(originalId: string, newOrder: Order): StockCheckResult {
     const original = this._orders().find(o => o.id === originalId);
     if (original) this._incrementStock(original.products, 'revise');
@@ -141,6 +165,13 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
+  updateClientNote(orderId: string, note: string): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id === orderId ? { ...o, client: { ...o.client, note } } : o)
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
   updateOrderDeliveryDateTime(id: string, deliveryDate: string, deliveryTime: string): void {
     this._orders.update(orders =>
       orders.map(o => o.id !== id ? o : { ...o, deliveryDate: deliveryDate || undefined, deliveryTime: deliveryTime || undefined })
@@ -174,18 +205,19 @@ export class OrdersService {
     this._orders.update(orders =>
       orders.map(o => {
         if (o.id !== orderId) return o;
-        const maxNr = Math.max(
-          o.products.reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0),
-          (o.pendingProducts ?? []).reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0)
-        );
-        const numbered = products.map((p, i) => ({ ...p, nr: maxNr + i + 1 }));
         if (isPending) {
+          // Keep original catalog nrs so catalogId+nr stock lookup works at revise time
           return {
             ...o,
-            pendingProducts: [...(o.pendingProducts ?? []), ...numbered],
+            pendingProducts: [...(o.pendingProducts ?? []), ...products],
             orderEvents: [...(o.orderEvents ?? []), { ...event, id: generateId() }]
           };
         }
+        const maxNr = Math.max(
+          o.products.reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0),
+          0
+        );
+        const numbered = products.map((p, i) => ({ ...p, nr: maxNr + i + 1 }));
         return {
           ...o,
           products: [...o.products, ...numbered],

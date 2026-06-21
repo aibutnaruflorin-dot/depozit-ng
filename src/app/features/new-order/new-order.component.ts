@@ -278,6 +278,16 @@ export class NewOrderComponent implements OnInit {
   /** Unique key per product across catalogs */
   pkey(p: Product): string { return `${p.catalogId}::${p.nr}`; }
 
+  highlightedPkey = signal<string | null>(null);
+
+  scrollToProduct(p: Product): void {
+    const key = this.pkey(p);
+    this.highlightedPkey.set(key);
+    const el = document.querySelector(`[data-pkey="${CSS.escape(key)}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => this.highlightedPkey.set(null), 2000);
+  }
+
   /* ── Pending qty (list rows) — default 0, min 0 ── */
   getPendingQty(p: Product): number {
     return this._pendingQty()[this.pkey(p)] ?? 0;
@@ -450,26 +460,16 @@ export class NewOrderComponent implements OnInit {
         pretCuTVA:   i.product.pretCuTVA ?? undefined,
         masaNeta:    i.product.masaNeta   ?? undefined,
       } as OrderProduct)),
-      status: 'trimis'
+      status: 'draft'
     };
 
-    const result = this.ordersService.saveOrder(order);
-    if (!result.ok) {
-      const list = result.insufficient.map(i =>
-        `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`
-      ).join('\n');
-      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', {
-        duration: 6000,
-        panelClass: ['snack-warn'],
-        verticalPosition: 'top'
-      });
-      return;
-    }
-    this.lastOrderText = this.ordersService.generateText(order);
-    this.lastOrder = order;
-
-    const mailto = this.ordersService.generateMailto(order, this.lastOrderText);
-    window.open(mailto, '_blank');
+    this.ordersService.saveDraftOrder(order);
+    this.snackBar.open('Comanda a fost salvată. O trimiți din „Comenzile mele".', 'Mergi acolo', {
+      duration: 5000,
+      panelClass: ['snack-success']
+    }).onAction().subscribe(() => {
+      this.router.navigate(['/app/history-me']);
+    });
 
     this.cart.set([]);
     this.nameCtrl.reset();
@@ -479,9 +479,6 @@ export class NewOrderComponent implements OnInit {
     this.deliveryTimeCtrl.reset();
     this.noteCtrl.reset();
     this.cuLivrare.set(false);
-    this.submitted = true;
-
-    this.snackBar.open('Comanda a fost salvată!', 'OK', { duration: 4000, panelClass: ['snack-success'] });
   }
 
   copyText(): void {

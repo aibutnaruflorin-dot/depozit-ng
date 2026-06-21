@@ -201,6 +201,7 @@
                       [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"
                       (click)="$event.stopPropagation()">
                 <option value="">Toate</option>
+                <option value="Ciornă">Ciornă</option>
                 <option value="În așteptare">În așteptare</option>
                 <option value="Acceptată">Acceptată</option>
                 <option value="Anulată">Anulată</option>
@@ -228,8 +229,8 @@
         </td>
         <td>
           <span class="order-num"
-                [class.order-num-faded]="order.superseded || order.status === 'anulat'">
-            #{{ order.orderNumber ?? '?' }}
+                [class.order-num-faded]="order.superseded || order.status === 'anulat' || order.status === 'draft'">
+            {{ order.status === 'draft' ? 'Ciornă' : '#' + (order.orderNumber ?? '?') }}
           </span>
         </td>
         @if (colVisible('data')) {
@@ -361,6 +362,8 @@
               <p-tag value="Înlocuită" severity="danger" />
             } @else if (order.status === 'anulat') {
               <p-tag value="Anulată" severity="danger" />
+            } @else if (order.status === 'draft') {
+              <p-tag value="Ciornă" severity="secondary" />
             } @else if (order.status === 'acceptat') {
               <p-tag value="Acceptată" severity="success" />
             } @else {
@@ -371,7 +374,7 @@
         <td>
           <div class="action-btns" (click)="$event.stopPropagation()">
             @if (canAddProducts(order)) {
-              <button mat-icon-button (click)="addProductsOrderId.set(order.id)"
+              <button mat-icon-button (click)="addProductsOrderId.set(order.id); expandRow(order.id)"
                       matTooltip="Adaugă produse la comandă">
                 <mat-icon>add_shopping_cart</mat-icon>
               </button>
@@ -476,7 +479,7 @@
                         <div class="s3-row s3-total" (click)="openStockHistory(p.name, p.catalogId, p.nr, $event)" style="cursor:pointer"
                              matTooltip="Click pentru Istoricul ajustărilor">
                           <span class="s3-label">Final</span>
-                          <span class="s3-final" [class.s3-zero]="s.finalQty === 0">{{ s.finalQty }}</span>
+                          <span class="s3-final" [class.s3-zero]="s.finalQty === 0">{{ s.finalQty | number:'1.0-4' }}</span>
                         </div>
                       </div>
                       <span class="epc-cod">{{ p.codExtern || '—' }}</span>
@@ -606,7 +609,17 @@
                         @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
                       </span>
                       <span class="epc-um">{{ p.um }}</span>
-                      <span></span>
+                      @if (p.catalogId) {
+                        @let ps = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                        <div class="stoc3-cell">
+                          <div class="s3-row"><span class="s3-label">Importat</span><span class="s3-imp">{{ ps.importedQty }}</span></div>
+                          <div class="s3-row"><span class="s3-label">Consumat</span><span class="s3-con">{{ ps.consumedQty > 0 ? '−' + ps.consumedQty : ps.consumedQty }}</span></div>
+                          <div class="s3-row"><span class="s3-label">Buffer</span><span class="s3-buf" [class.s3-pos]="ps.bufferQty > 0" [class.s3-neg]="ps.bufferQty < 0">{{ ps.bufferQty > 0 ? '+' : '' }}{{ ps.bufferQty === 0 ? '—' : ps.bufferQty }}</span></div>
+                          <div class="s3-row s3-total"><span class="s3-label">Final</span><span class="s3-final" [class.s3-zero]="ps.finalQty === 0">{{ ps.finalQty | number:'1.0-4' }}</span></div>
+                        </div>
+                      } @else {
+                        <span></span>
+                      }
                       <span class="epc-cod">{{ p.codExtern || '—' }}</span>
                       <span class="epc-furn">{{ p.furnizor || '—' }}</span>
                       <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
@@ -658,7 +671,32 @@
                 </div>
               }
 
+              <div class="obs-section" (click)="$event.stopPropagation()">
+                <div class="obs-label">Observații</div>
+                @if (editingNoteId() === order.id) {
+                  <textarea class="obs-textarea" [(ngModel)]="editNoteVal" rows="2" (click)="$event.stopPropagation()"></textarea>
+                  <div class="obs-actions">
+                    <button mat-button (click)="saveNote(order, $event)"><mat-icon>check</mat-icon> Salvează</button>
+                    <button mat-button (click)="cancelNote($event)">Anulează</button>
+                  </div>
+                } @else {
+                  <span class="obs-text" (click)="startEditNote(order, $event)">
+                    {{ order.client.note || '—' }}<mat-icon class="obs-edit-icon">edit</mat-icon>
+                  </span>
+                }
+              </div>
+
               <div class="expansion-footer">
+                @if (order.status === 'draft' && !order.superseded) {
+                  <button mat-flat-button color="primary" (click)="sendDraft(order)">
+                    <mat-icon>send</mat-icon>
+                    Trimite
+                  </button>
+                  <button mat-flat-button class="btn-cancel-order" (click)="cancelOrder(order)">
+                    <mat-icon>block</mat-icon>
+                    Anulează
+                  </button>
+                }
                 @if (isPending(order)) {
                   <button mat-flat-button color="primary" (click)="reviseOrder(order)">
                     <mat-icon>send</mat-icon>
@@ -670,7 +708,7 @@
                   </button>
                 }
                 @if (canAddProducts(order)) {
-                  <button mat-stroked-button (click)="addProductsOrderId.set(order.id)">
+                  <button mat-stroked-button (click)="addProductsOrderId.set(order.id); expandRow(order.id)">
                     <mat-icon>add_shopping_cart</mat-icon>
                     Adaugă produse
                   </button>

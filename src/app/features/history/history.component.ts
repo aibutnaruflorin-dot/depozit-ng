@@ -149,6 +149,8 @@ export class HistoryComponent {
   editingDeliveryId = signal<string | null>(null);
   editDeliveryDate  = '';
   editDeliveryTime  = '';
+  editingNoteId     = signal<string | null>(null);
+  editNoteVal       = '';
 
   addProductsOrderId = signal<string | null>(null);
   readonly addProductsOrder = computed(() => {
@@ -157,10 +159,23 @@ export class HistoryComponent {
   });
 
   canAddProducts(order: Order): boolean {
-    const open = ['trimis', 'acceptat', 'planificat', 'livrat_partial'];
+    const open = ['draft', 'trimis', 'acceptat', 'planificat', 'livrat_partial'];
     if (!open.includes(order.status) || order.superseded) return false;
     const s = this.auth.session();
     return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
+  }
+
+  sendDraft(order: Order): void {
+    const result = this.ordersService.submitDraftOrder(order.id);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-warn'], verticalPosition: 'top' });
+      return;
+    }
+    const sent = this.ordersService.orders().find(o => o.id === order.id)!;
+    const text = this.ordersService.generateText(sent);
+    window.open(this.ordersService.generateMailto(sent, text), '_blank');
+    this.snackBar.open(`Comanda #${sent.orderNumber} a fost trimisă!`, 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   hideSuperseded = signal(true);
@@ -214,6 +229,7 @@ export class HistoryComponent {
     if (livrare === 'fara') orders = orders.filter(o => !o.cuLivrare);
     if (address)         orders = orders.filter(o => (o.client.address ?? '').toLowerCase().includes(address));
     if (status) orders = orders.filter(o =>
+      status === 'Ciornă'       ? o.status === 'draft' :
       status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
       status === 'Acceptată'    ? o.status === 'acceptat' :
       status === 'Anulată'      ? o.status === 'anulat' : true
@@ -369,14 +385,18 @@ export class HistoryComponent {
   }
 
   exportCsv(): void {
-    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
+    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status',
+                     'Preț f.TVA', 'Preț c.TVA', 'Adresă livrare', 'Termen livrare'];
     const rows: string[][] = [];
     for (const o of this.sortedOrders()) {
       const status = o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
                      o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
+      const adresa = o.client.address ?? '';
+      const termen = o.deliveryDate ? (o.deliveryDate + (o.deliveryTime ? ' ' + o.deliveryTime : '')) : '';
       for (const p of o.products) {
         rows.push([`#${o.orderNumber ?? '?'}`, this.formatDate(o.timestamp),
-          o.client.name, o.client.phone ?? '', p.name, String(p.qty), p.um, status]);
+          o.client.name, o.client.phone ?? '', p.name, String(p.qty), p.um, status,
+          String(this.pFaraTVA(p) ?? ''), String(this.pCuTVA(p) ?? ''), adresa, termen]);
       }
     }
     this._downloadCsv([headers, ...rows], `comenzi-export-${new Date().toISOString().slice(0, 10)}.csv`, [3]);
@@ -386,10 +406,14 @@ export class HistoryComponent {
     e.stopPropagation();
     const status = order.superseded ? 'Înlocuită' : order.status === 'anulat' ? 'Anulată' :
                    order.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
-    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
+    const adresa = order.client.address ?? '';
+    const termen = order.deliveryDate ? (order.deliveryDate + (order.deliveryTime ? ' ' + order.deliveryTime : '')) : '';
+    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status',
+                     'Preț f.TVA', 'Preț c.TVA', 'Adresă livrare', 'Termen livrare'];
     const rows = order.products.map(p => [
       `#${order.orderNumber ?? '?'}`, this.formatDate(order.timestamp),
-      order.client.name, order.client.phone ?? '', p.name, String(p.qty), p.um, status
+      order.client.name, order.client.phone ?? '', p.name, String(p.qty), p.um, status,
+      String(this.pFaraTVA(p) ?? ''), String(this.pCuTVA(p) ?? ''), adresa, termen
     ]);
     const clientSlug = order.client.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '').slice(0, 30);
     const dateSlug = order.timestamp.slice(0, 10);
@@ -636,6 +660,27 @@ export class HistoryComponent {
   cancelEditPhone(e: Event): void {
     e.stopPropagation();
     this.editingPhoneId.set(null);
+  }
+
+  startEditNote(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.editingNoteId.set(order.id);
+    this.editNoteVal = order.client.note ?? '';
+  }
+
+  saveNote(order: Order, e: Event): void {
+    e.stopPropagation();
+    this.ordersService.updateClientNote(order.id, this.editNoteVal);
+    this.editingNoteId.set(null);
+  }
+
+  cancelNote(e: Event): void {
+    e.stopPropagation();
+    this.editingNoteId.set(null);
+  }
+
+  expandRow(orderId: string): void {
+    this.expandedRows.update(m => ({ ...m, [orderId]: true }));
   }
 
   toggleExpand(orderId: string): void {

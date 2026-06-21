@@ -45,9 +45,12 @@ export class MyTripsComponent {
     const myId = this.myDriverId();
     if (!myId) return [];
     return this.transportService.transports()
-      .filter(t => String(t.driverId) === myId && (t.status === 'planificat' || t.status === 'in_livrare'))
+      .filter(t => String(t.driverId) === myId &&
+        (t.status === 'planificat' || t.status === 'confirmat_sofer' || t.status === 'in_livrare' || t.status === 'anulat'))
       .sort((a, b) => {
-        if (a.status !== b.status) return a.status === 'in_livrare' ? -1 : 1;
+        const order = ['in_livrare', 'confirmat_sofer', 'planificat', 'anulat'];
+        const ai = order.indexOf(a.status), bi = order.indexOf(b.status);
+        if (ai !== bi) return ai - bi;
         return a.oraPlecare.localeCompare(b.oraPlecare);
       });
   });
@@ -90,8 +93,7 @@ export class MyTripsComponent {
       .map(driver => {
         const dId  = String(driver.id);
         const mine = transports.filter(t => String(t.driverId) === dId);
-        // in_livrare first, then planificat, sorted by departure time
-        const active   = mine.filter(t => t.status === 'in_livrare').sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+        const active   = mine.filter(t => t.status === 'in_livrare' || t.status === 'confirmat_sofer').sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
         const planned  = mine.filter(t => t.status === 'planificat').sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
         const history  = mine.filter(t => t.status === 'livrat').sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare));
         return { driver, active, planned, history };
@@ -208,8 +210,27 @@ export class MyTripsComponent {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   }
 
+  tripDuration(t: Transport): string {
+    if (!t.startedAt || !t.completedAt) return '—';
+    const ms = new Date(t.completedAt).getTime() - new Date(t.startedAt).getTime();
+    if (ms <= 0) return '—';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  confirmReceipt(t: Transport): void {
+    this.transportService.setStatus(t.id, 'confirmat_sofer');
+    this.snackBar.open('Ai confirmat primirea sarcinii!', 'OK', { duration: 2500, panelClass: ['snack-success'] });
+  }
+
+  confirmCancellation(t: Transport): void {
+    this.transportService.setStatus(t.id, 'anulat');
+    this.snackBar.open('Anulare confirmată.', '', { duration: 2500 });
+  }
+
   isOverdue(t: Transport): boolean {
-    return t.status !== 'livrat' && new Date(t.oraSosire).getTime() < Date.now();
+    return t.status !== 'livrat' && t.status !== 'anulat' && new Date(t.oraSosire).getTime() < Date.now();
   }
 
   fmt(iso: string): string {

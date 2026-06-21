@@ -254,13 +254,17 @@
         <th>Masă</th>
         <th>Progres livrare</th>
         @if (trips[0]?.status === 'livrat') {
+          <th>Durată</th>
           <th>Log tranziții</th>
         }
       </tr>
     </thead>
     <tbody>
       @for (t of trips; track t.id) {
-        <tr [class.row--active]="t.status === 'in_livrare'" [class.row--historic]="t.status === 'livrat'">
+        <tr [class.row--active]="t.status === 'in_livrare'"
+            [class.row--confirmed]="t.status === 'confirmat_sofer'"
+            [class.row--cancelled]="t.status === 'anulat'"
+            [class.row--historic]="t.status === 'livrat'">
           <td>
             <div class="vehicle-cell">
               <mat-icon>local_shipping</mat-icon>
@@ -378,7 +382,30 @@
 
             </div>
           </td>
+          @if (!auth.isAdmin() && t.status === 'planificat') {
+            <td class="driver-action-cell" colspan="1">
+              <div class="driver-confirm-banner">
+                <mat-icon>notifications_active</mat-icon>
+                <span>Ai o nouă sarcină! Confirmă că ai primit informațiile.</span>
+                <button mat-flat-button color="primary" (click)="confirmReceipt(t)">
+                  <mat-icon>check</mat-icon> Am primit, confirm
+                </button>
+              </div>
+            </td>
+          }
+          @if (!auth.isAdmin() && t.status === 'anulat') {
+            <td class="driver-action-cell" colspan="1">
+              <div class="driver-cancelled-banner">
+                <mat-icon>cancel</mat-icon>
+                <span>Această cursă a fost ANULATĂ.</span>
+                <button mat-flat-button color="warn" (click)="confirmCancellation(t)">
+                  <mat-icon>check</mat-icon> Am văzut, confirm anularea
+                </button>
+              </div>
+            </td>
+          }
           @if (t.status === 'livrat') {
+            <td class="duration-cell">{{ tripDuration(t) }}</td>
             <td class="log-cell">
               <div class="log-entry">
                 <mat-icon class="log-icon log-icon--done">check_circle</mat-icon>
