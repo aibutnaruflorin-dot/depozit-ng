@@ -230,9 +230,16 @@
               <strong>{{ o.client.name }}</strong>
               @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial livrat</span> }
               @if (isPartiallyOnTrip(o)) { <span class="partial-badge partial-badge--on-trip">livrare parțială</span> }
-              @if (o.client.note) {
-                <div class="order-client-note"><mat-icon>notes</mat-icon>{{ o.client.note }}</div>
-              }
+              <div class="order-client-note">
+                <mat-icon>notes</mat-icon>
+                <textarea class="order-note-edit"
+                          rows="1"
+                          placeholder="Adaugă observație…"
+                          [value]="o.client.note ?? ''"
+                          (click)="$event.stopPropagation()"
+                          (blur)="o.client.note !== $any($event.target).value && ordersService.updateOrderClient(o.id, { note: $any($event.target).value })"
+                          (keydown.enter)="$any($event.target).blur(); $event.preventDefault()"></textarea>
+              </div>
             </td>
             <td>
               @if (o.client.phone) {
