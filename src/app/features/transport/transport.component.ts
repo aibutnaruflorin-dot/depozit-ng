@@ -574,6 +574,20 @@ export class TransportComponent implements OnInit {
     return this.getRemainingQtyArr(order).reduce((s, q) => s + q, 0);
   }
 
+  deliveredProductCount(order: Order): number {
+    return this.getDeliveredQtyArr(order).filter(q => q > 0).length;
+  }
+
+  orderDeliveredWeight(order: Order): number {
+    const delivered = this.getDeliveredQtyArr(order);
+    return order.products.reduce((s, p, i) => {
+      const masa = p.masaNeta
+        ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta
+        ?? 0;
+      return s + masa * (delivered[i] || 0);
+    }, 0);
+  }
+
   // ── Save ──────────────────────────────────────────────────────────────────
 
   save(): void {

@@ -217,7 +217,6 @@
           <th>Adresă livrare</th>
           <th>Termen dorit</th>
           <th>Produse</th>
-          <th>Livrat / Total</th>
           <th>Valoare</th>
           <th>Masă</th>
           <th>Acțiuni</th>
@@ -253,8 +252,9 @@
                 </span>
               } @else { <span class="muted">—</span> }
             </td>
-            <td>{{ o.products.length }} art.</td>
-            <td><span class="delivery-progress">{{ deliveredTotal(o) }} / {{ totalQty(o) }}</span></td>
+            <td>
+              <span class="delivery-progress">{{ deliveredProductCount(o) }} / {{ o.products.length }} art.</span>
+            </td>
             <td class="value-cell">
               @let ov = orderPendingValue(o);
               @let rv = orderRemainingValue(o);
@@ -266,10 +266,11 @@
             </td>
             <td class="value-cell">
               @let ow = orderTotalWeight(o);
+              @let dw = orderDeliveredWeight(o);
               @if (ow > 0) {
                 <span class="val-weight">
                   <mat-icon style="font-size:13px;width:13px;height:13px;vertical-align:middle">scale</mat-icon>
-                  {{ fmtWeight(ow) }}
+                  {{ fmtWeight(dw) }} / {{ fmtWeight(ow) }}
                 </span>
               } @else {
                 <span class="muted">—</span>
