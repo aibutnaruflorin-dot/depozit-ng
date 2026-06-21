@@ -26,6 +26,15 @@ export class TransportService {
       .map(u => ({ id: String(u.id), nume: u.name, telefon: u.telefon ?? '' }))
   );
 
+  readonly helperOptions = computed<{ group: string; items: Driver[] }[]>(() => {
+    const helpers = this.helpers();
+    const drivers = this.drivers();
+    const groups: { group: string; items: Driver[] }[] = [];
+    if (helpers.length) groups.push({ group: 'Ajutor manipulant', items: helpers });
+    if (drivers.length) groups.push({ group: 'Șoferi', items: drivers });
+    return groups;
+  });
+
   readonly active = computed(() =>
     this._transports().filter(t => t.status !== 'livrat' && t.status !== 'anulat')
       .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))

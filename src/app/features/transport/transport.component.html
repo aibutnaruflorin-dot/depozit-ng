@@ -857,10 +857,14 @@
             <mat-icon matPrefix>person_add</mat-icon>
             <input matInput formControlName="helper" placeholder="Opțional…" [matAutocomplete]="helperAC">
             <mat-autocomplete #helperAC>
-              @for (d of transportService.helpers(); track d.id) {
-                <mat-option [value]="d.nume" [disabled]="busyDriverNamesInForm.has(d.nume)">
-                  {{ d.nume }} @if (busyDriverNamesInForm.has(d.nume)) { <span class="option-busy-tag">· în cursă</span> }
-                </mat-option>
+              @for (grp of transportService.helperOptions(); track grp.group) {
+                <mat-optgroup [label]="grp.group">
+                  @for (d of grp.items; track d.id) {
+                    <mat-option [value]="d.nume" [disabled]="busyDriverNamesInForm.has(d.nume)">
+                      {{ d.nume }} @if (busyDriverNamesInForm.has(d.nume)) { <span class="option-busy-tag">· în cursă</span> }
+                    </mat-option>
+                  }
+                </mat-optgroup>
               }
             </mat-autocomplete>
           </mat-form-field>
