@@ -880,6 +880,20 @@
   padding-bottom: 4px;
 }
 
+.delivery-note-wrap {
+  display: flex; align-items: flex-start; gap: 0.4rem;
+  padding: 0.3rem 0.75rem 0.4rem;
+  background: var(--color-bg-alt, #f8f9fa);
+  border-bottom: 1px solid var(--color-border);
+}
+.delivery-note-icon { font-size: 16px; width: 16px; height: 16px; margin-top: 4px; color: var(--color-text-muted); }
+.delivery-note-input {
+  flex: 1; border: none; background: transparent; resize: none;
+  font-size: 0.78rem; color: var(--color-text); line-height: 1.4;
+  outline: none; font-family: inherit;
+  &::placeholder { color: var(--color-text-muted); }
+}
+
 .trip-order-title {
   display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
   font-size: 0.85rem; flex: 1; min-width: 0;

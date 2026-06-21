@@ -146,6 +146,7 @@ export class TransportComponent implements OnInit {
   // ── Modal state (article-level selection) ─────────────────────────────────
   modalOrders    = signal<Order[]>([]);
   modalQty       = signal<Record<string, Record<number, number>>>({});
+  deliveryNotes  = signal<Record<string, string>>({});
   orderSearch    = signal('');
   singleOrderMode = signal(false);
 
@@ -349,11 +350,14 @@ export class TransportComponent implements OnInit {
     this.modalOrders.set(orders);
 
     const qty: Record<string, Record<number, number>> = {};
+    const notes: Record<string, string> = {};
     for (const d of t.deliveries) {
       qty[d.orderId] = {};
       for (const item of d.items) qty[d.orderId][item.productIndex] = item.qty;
+      if (d.observatii) notes[d.orderId] = d.observatii;
     }
     this.modalQty.set(qty);
+    this.deliveryNotes.set(notes);
 
     this.form.patchValue({
       vehicleId:   t.vehicleId,
@@ -379,12 +383,21 @@ export class TransportComponent implements OnInit {
       ...m,
       [order.id]: Object.fromEntries(remaining.map((q, i) => [i, q]))
     }));
+    if (order.client.note) {
+      this.deliveryNotes.update(n => ({ ...n, [order.id]: order.client.note }));
+    }
     this.orderSearch.set('');
   }
 
   removeOrderFromModal(orderId: string): void {
     this.modalOrders.update(list => list.filter(o => o.id !== orderId));
     this.modalQty.update(m => { const n = { ...m }; delete n[orderId]; return n; });
+    this.deliveryNotes.update(n => { const c = { ...n }; delete c[orderId]; return c; });
+  }
+
+  getDeliveryNote(orderId: string): string { return this.deliveryNotes()[orderId] ?? ''; }
+  setDeliveryNote(orderId: string, val: string): void {
+    this.deliveryNotes.update(n => ({ ...n, [orderId]: val }));
   }
 
   moveOrderUp(id: string): void {
@@ -616,12 +629,17 @@ export class TransportComponent implements OnInit {
     }
 
     const deliveries: TripDelivery[] = this.modalOrders()
-      .map(order => ({
-        orderId: order.id,
-        items: order.products
-          .map((_, i) => ({ productIndex: i, qty: this.getModalQty(order.id, i) }))
-          .filter(item => item.qty > 0)
-      }))
+      .map(order => {
+        const note = this.getDeliveryNote(order.id).trim();
+        const d: TripDelivery = {
+          orderId: order.id,
+          items: order.products
+            .map((_, i) => ({ productIndex: i, qty: this.getModalQty(order.id, i) }))
+            .filter(item => item.qty > 0)
+        };
+        if (note) d.observatii = note;
+        return d;
+      })
       .filter(d => d.items.length > 0);
 
     if (deliveries.length === 0) {
@@ -1000,6 +1018,7 @@ export class TransportComponent implements OnInit {
   private _resetModal(): void {
     this.modalOrders.set([]);
     this.modalQty.set({});
+    this.deliveryNotes.set({});
     this.orderSearch.set('');
   }
 

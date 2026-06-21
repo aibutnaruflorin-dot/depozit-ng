@@ -996,6 +996,14 @@
                 </button>
               </div>
 
+              <div class="delivery-note-wrap">
+                <mat-icon class="delivery-note-icon">notes</mat-icon>
+                <textarea class="delivery-note-input"
+                          rows="2"
+                          placeholder="Observații pentru șofer (opțional)…"
+                          [value]="getDeliveryNote(order.id)"
+                          (input)="setDeliveryNote(order.id, $any($event.target).value)"></textarea>
+              </div>
 
               <table class="article-table">
                 <thead>

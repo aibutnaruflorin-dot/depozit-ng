@@ -6,6 +6,7 @@ export interface TripOrderItem {
 export interface TripDelivery {
   orderId: string;
   items: TripOrderItem[];
+  observatii?: string;
 }
 
 export type TransportStatus = 'planificat' | 'confirmat_sofer' | 'in_livrare' | 'livrat' | 'anulat';
