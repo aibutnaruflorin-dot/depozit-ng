@@ -426,6 +426,11 @@
                       matTooltip="Trimite WhatsApp clientului">
                 <img src="whatsapp.svg" alt="WhatsApp" class="wa-icon" />
               </button>
+            } @else {
+              <button mat-icon-button class="wa-btn" disabled
+                      matTooltip="Clientul nu are telefon configurat">
+                <img src="whatsapp.svg" alt="WhatsApp" class="wa-icon wa-icon--disabled" />
+              </button>
             }
             <button mat-icon-button (click)="printOrder(order, $event)" matTooltip="Printează comanda">
               <mat-icon>print</mat-icon>

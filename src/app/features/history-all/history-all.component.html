@@ -394,7 +394,6 @@
           <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Trimite email">
             <mat-icon>email</mat-icon>
           </button>
-          <!-- WhatsApp: meniu dacă există contacte configurate, altfel direct pe numărul clientului -->
           @if (whatsappContacts().length > 0) {
             <button mat-icon-button class="wa-btn" [matMenuTriggerFor]="waMenu"
                     (click)="$event.stopPropagation()" matTooltip="Trimite WhatsApp">
@@ -427,6 +426,11 @@
                     (click)="sendWhatsApp(order, order.client.phone, $event)"
                     matTooltip="Trimite WhatsApp clientului">
               <img src="whatsapp.svg" alt="WhatsApp" class="wa-icon" />
+            </button>
+          } @else {
+            <button mat-icon-button class="wa-btn" disabled
+                    matTooltip="Clientul nu are telefon configurat">
+              <img src="whatsapp.svg" alt="WhatsApp" class="wa-icon wa-icon--disabled" />
             </button>
           }
           <button mat-icon-button (click)="printOrder(order, $event)" matTooltip="Printează comanda">

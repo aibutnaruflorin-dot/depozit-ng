@@ -289,6 +289,7 @@
 .action-btns { display: flex; gap: 0.2rem; align-items: center; }
 .wa-btn { display: flex; align-items: center; justify-content: center; }
 .wa-icon { width: 20px; height: 20px; }
+.wa-icon--disabled { opacity: 0.3; }
 
 /* ── Row expansion ── */
 .expansion-cell { padding: 0 !important; background: var(--color-surface) !important; }
