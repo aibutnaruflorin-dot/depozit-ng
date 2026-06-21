@@ -526,6 +526,10 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     return stock !== null && edited > stock;
   }
 
+  hasPendingChanges(order: Order): boolean {
+    return this.hasEditedQty(order) || !!(order.pendingProducts?.length);
+  }
+
   hasEditedQty(order: Order): boolean {
     return order.products.some((p, i) => {
       const edited = this._editQty()[this.ekey(order.id, i)];

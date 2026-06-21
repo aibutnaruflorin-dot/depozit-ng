@@ -707,7 +707,9 @@
                   </button>
                 }
                 @if (isPending(order)) {
-                  <button mat-flat-button color="primary" (click)="reviseOrder(order)">
+                  <button mat-flat-button color="primary" (click)="reviseOrder(order)"
+                          [disabled]="!hasPendingChanges(order)"
+                          [matTooltip]="hasPendingChanges(order) ? '' : 'Nu există modificări de trimis'">
                     <mat-icon>send</mat-icon>
                     Retrimite modificat
                   </button>
