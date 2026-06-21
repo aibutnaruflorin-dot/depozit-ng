@@ -532,7 +532,9 @@ export class HistoryAllComponent {
       order.agent?.name ?? '', order.client.name, order.client.phone ?? '',
       p.name, String(p.qty), p.um, status
     ]);
-    this._downloadCsv([headers, ...rows], `comanda-${order.orderNumber ?? order.id.slice(0, 6)}.csv`, [4]);
+    const clientSlug = order.client.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '').slice(0, 30);
+    const dateSlug = order.timestamp.slice(0, 10);
+    this._downloadCsv([headers, ...rows], `${clientSlug}-${dateSlug}-#${order.orderNumber ?? order.id.slice(0, 6)}.csv`, [4]);
   }
 
   private _downloadCsv(rows: string[][], filename: string, textCols: number[] = []): void {
