@@ -181,6 +181,10 @@ export class MyTripsComponent {
       .map(id => this.getOrder(id)).filter((o): o is Order => !!o);
   }
 
+  getTripDelivery(t: Transport, orderId: string) {
+    return t.deliveries.find(d => d.orderId === orderId);
+  }
+
   articleCount(t: Transport): number {
     return t.deliveries.reduce((s, d) => s + d.items.reduce((a, i) => a + i.qty, 0), 0);
   }

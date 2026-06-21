@@ -156,6 +156,12 @@
   &:hover { color: var(--color-primary); }
 }
 
+.chip-obs {
+  display: flex; align-items: flex-start; gap: 3px; margin-top: 3px;
+  font-size: 0.74rem; color: var(--color-text-muted); font-style: italic;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
+}
+
 /* ── Clickable chip ── */
 .order-chip--clickable {
   cursor: pointer; border-radius: 6px;

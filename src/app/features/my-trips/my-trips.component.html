@@ -289,6 +289,7 @@
           </td>
           <td>
             @for (o of ordersForTransport(t); track o.id) {
+              @let del = getTripDelivery(t, o.id);
               <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                 <div class="order-chip-header">
                   <span class="order-num-badge">#{{ o.orderNumber }}</span>
@@ -307,6 +308,11 @@
                   <span class="addr-text">
                     <mat-icon>location_on</mat-icon>{{ o.client.address }}
                   </span>
+                }
+                @if (del?.observatii) {
+                  <span class="chip-obs"><mat-icon>notes</mat-icon>{{ del!.observatii }}</span>
+                } @else if (o.client.note) {
+                  <span class="chip-obs"><mat-icon>notes</mat-icon>{{ o.client.note }}</span>
                 }
               </div>
             }
