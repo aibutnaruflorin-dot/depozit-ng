@@ -79,7 +79,8 @@
     </div>
   } @else {
     <p-table [value]="suggestions()" [tableStyle]="{'min-width':'900px'}"
-             styleClass="p-datatable-sm p-datatable-striped">
+             styleClass="p-datatable-sm p-datatable-striped"
+             [paginator]="true" [rows]="25" [rowsPerPageOptions]="[10,25,50,100]">
 
       <ng-template pTemplate="header">
         <tr>
