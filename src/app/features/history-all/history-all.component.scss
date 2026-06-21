@@ -558,3 +558,49 @@ $_epc-cols: minmax(180px, 1fr) 120px 50px 145px 90px 130px 108px 108px 80px 130p
 .sh-neg     { color: #e53935; }
 .sh-comment { color: var(--color-text); max-width: 260px; }
 .sh-user    { color: var(--color-text-muted); font-size: 0.75rem; white-space: nowrap; }
+
+/* ── CSV export modal ── */
+.csv-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+.csv-card {
+  background: var(--color-surface); border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  width: min(520px, 96vw); max-height: 90vh;
+  display: flex; flex-direction: column;
+}
+.csv-header {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.csv-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1rem; font-weight: 700; flex: 1;
+  mat-icon { color: var(--color-primary); }
+}
+.csv-body {
+  padding: 1rem; overflow-y: auto; flex: 1;
+}
+.csv-group-label {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--color-text-muted);
+  margin: 0.75rem 0 0.4rem;
+  &:first-child { margin-top: 0; }
+}
+.csv-cols-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 12px;
+}
+.csv-col-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 6px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;
+  &:hover { background: var(--color-hover); }
+  input[type=checkbox] { accent-color: var(--color-primary); width: 15px; height: 15px; cursor: pointer; }
+}
+.csv-footer {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-border);
+}

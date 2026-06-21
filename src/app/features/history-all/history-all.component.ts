@@ -8,6 +8,35 @@ function savePageSize(n: number): void {
   try { localStorage.setItem(PAGE_SIZE_LS_KEY, String(n)); } catch {}
 }
 
+const CSV_COLS_KEY = 'depot.csvCols';
+export const CSV_ALL_COLS = [
+  { key: 'nr',        label: 'Nr. comandă',    group: 'Comandă' },
+  { key: 'data',      label: 'Data',            group: 'Comandă' },
+  { key: 'agent',     label: 'Agent',           group: 'Comandă' },
+  { key: 'client',    label: 'Client',          group: 'Comandă' },
+  { key: 'telefon',   label: 'Telefon',         group: 'Comandă' },
+  { key: 'livrare',   label: 'Cu livrare',      group: 'Comandă' },
+  { key: 'adresa',    label: 'Adresă livrare',  group: 'Comandă' },
+  { key: 'termen',    label: 'Termen livrare',  group: 'Comandă' },
+  { key: 'status',    label: 'Status',          group: 'Comandă' },
+  { key: 'produs',    label: 'Produs',          group: 'Produs' },
+  { key: 'categorie', label: 'Categorie',       group: 'Produs' },
+  { key: 'cantitate', label: 'Cantitate',       group: 'Produs' },
+  { key: 'um',        label: 'UM',              group: 'Produs' },
+  { key: 'codExtern', label: 'Cod extern',      group: 'Produs' },
+  { key: 'furnizor',  label: 'Furnizor',        group: 'Produs' },
+  { key: 'faraTVA',   label: 'Preț f.TVA',      group: 'Produs' },
+  { key: 'cuTVA',     label: 'Preț c.TVA',      group: 'Produs' },
+  { key: 'masa',      label: 'Masă (kg)',        group: 'Produs' },
+];
+const CSV_DEFAULT_KEYS = ['nr', 'data', 'agent', 'client', 'telefon', 'produs', 'cantitate', 'um', 'faraTVA', 'cuTVA', 'status'];
+function loadCsvCols(): string[] {
+  try { const v = localStorage.getItem(CSV_COLS_KEY); return v ? JSON.parse(v) : [...CSV_DEFAULT_KEYS]; } catch { return [...CSV_DEFAULT_KEYS]; }
+}
+function saveCsvColsLS(cols: string[]): void {
+  try { localStorage.setItem(CSV_COLS_KEY, JSON.stringify(cols)); } catch {}
+}
+
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
@@ -164,6 +193,12 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     const id = this.addProductsOrderId();
     return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
   });
+
+  readonly CSV_ALL_COLS = CSV_ALL_COLS;
+  showCsvModal  = signal(false);
+  csvSelCols    = signal<string[]>([]);
+  private _csvBulk = true;
+  private _csvOrder?: Order;
 
   canAddProducts(order: Order): boolean {
     const open = ['trimis', 'acceptat', 'planificat', 'livrat_partial'];
@@ -548,34 +583,86 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
 
   // ── CSV export ────────────────────────────────────────────────────────────
 
-  exportCsv(): void {
-    const headers = ['Nr.', 'Data', 'Agent', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
-    const rows: string[][] = [];
-    for (const o of this.sortedFiltered()) {
-      const status = o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
-                     o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
-      for (const p of o.products) {
-        rows.push([`#${o.orderNumber ?? '?'}`, this.formatDate(o.timestamp),
-          o.agent?.name ?? '', o.client.name, o.client.phone ?? '',
-          p.name, String(p.qty), p.um, status]);
-      }
-    }
-    this._downloadCsv([headers, ...rows], `comenzi-toate-${new Date().toISOString().slice(0, 10)}.csv`, [4]);
+  openCsvExport(bulk: boolean, order?: Order, e?: Event): void {
+    e?.stopPropagation();
+    this._csvBulk = bulk;
+    this._csvOrder = order;
+    this.csvSelCols.set(loadCsvCols());
+    this.showCsvModal.set(true);
   }
 
-  downloadOrderCsv(order: Order, e: Event): void {
-    e.stopPropagation();
-    const status = order.superseded ? 'Înlocuită' : order.status === 'anulat' ? 'Anulată' :
-                   order.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
-    const headers = ['Nr.', 'Data', 'Agent', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status'];
-    const rows = order.products.map(p => [
-      `#${order.orderNumber ?? '?'}`, this.formatDate(order.timestamp),
-      order.agent?.name ?? '', order.client.name, order.client.phone ?? '',
-      p.name, String(p.qty), p.um, status
-    ]);
-    const clientSlug = order.client.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '').slice(0, 30);
-    const dateSlug = order.timestamp.slice(0, 10);
-    this._downloadCsv([headers, ...rows], `${clientSlug}-${dateSlug}-#${order.orderNumber ?? order.id.slice(0, 6)}.csv`, [4]);
+  isCsvColSel(key: string): boolean { return this.csvSelCols().includes(key); }
+
+  toggleCsvCol(key: string): void {
+    const c = this.csvSelCols();
+    this.csvSelCols.set(c.includes(key) ? c.filter(x => x !== key) : [...c, key]);
+  }
+
+  saveCsvDefault(): void {
+    saveCsvColsLS(this.csvSelCols());
+    this.snackBar.open('Setări CSV salvate ca implicit.', 'OK', { duration: 2000 });
+  }
+
+  confirmCsvDownload(): void {
+    const ordered = CSV_ALL_COLS.map(c => c.key).filter(k => this.csvSelCols().includes(k));
+    if (this._csvBulk) {
+      this._doCsvBulk(ordered);
+    } else if (this._csvOrder) {
+      this._doCsvSingle(ordered, this._csvOrder);
+    }
+    this.showCsvModal.set(false);
+  }
+
+  private _orderStatusLabel(o: Order): string {
+    return o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
+           o.status === 'livrat' ? 'Livrată' : o.status === 'in_livrare' ? 'În livrare' :
+           o.status === 'planificat' ? 'Planificată' : o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
+  }
+
+  private _csvRow(cols: string[], o: Order, p: any): string[] {
+    return cols.map(col => {
+      switch (col) {
+        case 'nr':        return `#${o.orderNumber ?? '?'}`;
+        case 'data':      return this.formatDate(o.timestamp);
+        case 'agent':     return o.agent?.name ?? '';
+        case 'client':    return o.client.name;
+        case 'telefon':   return o.client.phone ?? '';
+        case 'livrare':   return o.cuLivrare ? 'Da' : 'Nu';
+        case 'adresa':    return o.client.address ?? '';
+        case 'termen':    return o.deliveryDate ? (o.deliveryDate + (o.deliveryTime ? ' ' + o.deliveryTime : '')) : '';
+        case 'status':    return this._orderStatusLabel(o);
+        case 'produs':    return p.name;
+        case 'categorie': return p.category ?? '';
+        case 'cantitate': return String(p.qty);
+        case 'um':        return p.um;
+        case 'codExtern': return this.getCodExtern(p);
+        case 'furnizor':  return p.furnizor ?? '';
+        case 'faraTVA':   return String(this.pFaraTVA(p) ?? '');
+        case 'cuTVA':     return String(this.pCuTVA(p) ?? '');
+        case 'masa':      return String(this.pMasa(p) * p.qty);
+        default: return '';
+      }
+    });
+  }
+
+  private _doCsvBulk(cols: string[]): void {
+    const labelMap = Object.fromEntries(CSV_ALL_COLS.map(c => [c.key, c.label]));
+    const headers = cols.map(k => labelMap[k]);
+    const textIdx = cols.map((k, i) => ['telefon', 'codExtern'].includes(k) ? i : -1).filter(i => i >= 0);
+    const rows: string[][] = [];
+    for (const o of this.sortedFiltered()) {
+      for (const p of o.products) rows.push(this._csvRow(cols, o, p));
+    }
+    this._downloadCsv([headers, ...rows], `comenzi-toate-${new Date().toISOString().slice(0, 10)}.csv`, textIdx);
+  }
+
+  private _doCsvSingle(cols: string[], order: Order): void {
+    const labelMap = Object.fromEntries(CSV_ALL_COLS.map(c => [c.key, c.label]));
+    const headers = cols.map(k => labelMap[k]);
+    const textIdx = cols.map((k, i) => ['telefon', 'codExtern'].includes(k) ? i : -1).filter(i => i >= 0);
+    const rows = order.products.map(p => this._csvRow(cols, order, p));
+    const slug = order.client.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 30);
+    this._downloadCsv([headers, ...rows], `${slug}-${order.timestamp.slice(0, 10)}-#${order.orderNumber ?? order.id.slice(0, 6)}.csv`, textIdx);
   }
 
   private _downloadCsv(rows: string[][], filename: string, textCols: number[] = []): void {

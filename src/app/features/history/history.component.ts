@@ -8,6 +8,34 @@ function savePageSize(n: number): void {
   try { localStorage.setItem(PAGE_SIZE_LS_KEY, String(n)); } catch {}
 }
 
+const CSV_COLS_KEY = 'depot.csvCols';
+export const CSV_HIST_COLS = [
+  { key: 'nr',        label: 'Nr. comandă',    group: 'Comandă' },
+  { key: 'data',      label: 'Data',            group: 'Comandă' },
+  { key: 'client',    label: 'Client',          group: 'Comandă' },
+  { key: 'telefon',   label: 'Telefon',         group: 'Comandă' },
+  { key: 'livrare',   label: 'Cu livrare',      group: 'Comandă' },
+  { key: 'adresa',    label: 'Adresă livrare',  group: 'Comandă' },
+  { key: 'termen',    label: 'Termen livrare',  group: 'Comandă' },
+  { key: 'status',    label: 'Status',          group: 'Comandă' },
+  { key: 'produs',    label: 'Produs',          group: 'Produs' },
+  { key: 'categorie', label: 'Categorie',       group: 'Produs' },
+  { key: 'cantitate', label: 'Cantitate',       group: 'Produs' },
+  { key: 'um',        label: 'UM',              group: 'Produs' },
+  { key: 'codExtern', label: 'Cod extern',      group: 'Produs' },
+  { key: 'furnizor',  label: 'Furnizor',        group: 'Produs' },
+  { key: 'faraTVA',   label: 'Preț f.TVA',      group: 'Produs' },
+  { key: 'cuTVA',     label: 'Preț c.TVA',      group: 'Produs' },
+  { key: 'masa',      label: 'Masă (kg)',        group: 'Produs' },
+];
+const CSV_DEFAULT_KEYS = ['nr', 'data', 'client', 'telefon', 'produs', 'cantitate', 'um', 'faraTVA', 'cuTVA', 'status'];
+function loadCsvCols(): string[] {
+  try { const v = localStorage.getItem(CSV_COLS_KEY); return v ? JSON.parse(v) : [...CSV_DEFAULT_KEYS]; } catch { return [...CSV_DEFAULT_KEYS]; }
+}
+function saveCsvColsLS(cols: string[]): void {
+  try { localStorage.setItem(CSV_COLS_KEY, JSON.stringify(cols)); } catch {}
+}
+
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
@@ -178,6 +206,12 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     const id = this.addProductsOrderId();
     return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
   });
+
+  readonly CSV_ALL_COLS = CSV_HIST_COLS;
+  showCsvModal  = signal(false);
+  csvSelCols    = signal<string[]>([]);
+  private _csvBulk = true;
+  private _csvOrder?: Order;
 
   canAddProducts(order: Order): boolean {
     const open = ['draft', 'trimis', 'acceptat', 'planificat', 'livrat_partial'];
@@ -426,40 +460,84 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     return chain.join(' → ');
   }
 
-  exportCsv(): void {
-    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status',
-                     'Preț f.TVA', 'Preț c.TVA', 'Adresă livrare', 'Termen livrare'];
-    const rows: string[][] = [];
-    for (const o of this.sortedOrders()) {
-      const status = o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
-                     o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
-      const adresa = o.client.address ?? '';
-      const termen = o.deliveryDate ? (o.deliveryDate + (o.deliveryTime ? ' ' + o.deliveryTime : '')) : '';
-      for (const p of o.products) {
-        rows.push([`#${o.orderNumber ?? '?'}`, this.formatDate(o.timestamp),
-          o.client.name, o.client.phone ?? '', p.name, String(p.qty), p.um, status,
-          String(this.pFaraTVA(p) ?? ''), String(this.pCuTVA(p) ?? ''), adresa, termen]);
-      }
-    }
-    this._downloadCsv([headers, ...rows], `comenzi-export-${new Date().toISOString().slice(0, 10)}.csv`, [3]);
+  openCsvExport(bulk: boolean, order?: Order, e?: Event): void {
+    e?.stopPropagation();
+    this._csvBulk = bulk;
+    this._csvOrder = order;
+    this.csvSelCols.set(loadCsvCols());
+    this.showCsvModal.set(true);
   }
 
-  downloadOrderCsv(order: Order, e: Event): void {
-    e.stopPropagation();
-    const status = order.superseded ? 'Înlocuită' : order.status === 'anulat' ? 'Anulată' :
-                   order.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
-    const adresa = order.client.address ?? '';
-    const termen = order.deliveryDate ? (order.deliveryDate + (order.deliveryTime ? ' ' + order.deliveryTime : '')) : '';
-    const headers = ['Nr.', 'Data', 'Client', 'Telefon', 'Produs', 'Cantitate', 'UM', 'Status',
-                     'Preț f.TVA', 'Preț c.TVA', 'Adresă livrare', 'Termen livrare'];
-    const rows = order.products.map(p => [
-      `#${order.orderNumber ?? '?'}`, this.formatDate(order.timestamp),
-      order.client.name, order.client.phone ?? '', p.name, String(p.qty), p.um, status,
-      String(this.pFaraTVA(p) ?? ''), String(this.pCuTVA(p) ?? ''), adresa, termen
-    ]);
-    const clientSlug = order.client.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '').slice(0, 30);
-    const dateSlug = order.timestamp.slice(0, 10);
-    this._downloadCsv([headers, ...rows], `${clientSlug}-${dateSlug}-#${order.orderNumber ?? order.id.slice(0, 6)}.csv`, [3]);
+  isCsvColSel(key: string): boolean { return this.csvSelCols().includes(key); }
+
+  toggleCsvCol(key: string): void {
+    const c = this.csvSelCols();
+    this.csvSelCols.set(c.includes(key) ? c.filter(x => x !== key) : [...c, key]);
+  }
+
+  saveCsvDefault(): void {
+    saveCsvColsLS(this.csvSelCols());
+    this.snackBar.open('Setări CSV salvate ca implicit.', 'OK', { duration: 2000 });
+  }
+
+  confirmCsvDownload(): void {
+    const ordered = CSV_HIST_COLS.map(c => c.key).filter(k => this.csvSelCols().includes(k));
+    if (this._csvBulk) {
+      this._doCsvBulk(ordered);
+    } else if (this._csvOrder) {
+      this._doCsvSingle(ordered, this._csvOrder);
+    }
+    this.showCsvModal.set(false);
+  }
+
+  private _orderStatusLabel(o: Order): string {
+    return o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
+           o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
+  }
+
+  private _csvRow(cols: string[], o: Order, p: any): string[] {
+    return cols.map(col => {
+      switch (col) {
+        case 'nr':        return `#${o.orderNumber ?? '?'}`;
+        case 'data':      return this.formatDate(o.timestamp);
+        case 'client':    return o.client.name;
+        case 'telefon':   return o.client.phone ?? '';
+        case 'livrare':   return o.cuLivrare ? 'Da' : 'Nu';
+        case 'adresa':    return o.client.address ?? '';
+        case 'termen':    return o.deliveryDate ? (o.deliveryDate + (o.deliveryTime ? ' ' + o.deliveryTime : '')) : '';
+        case 'status':    return this._orderStatusLabel(o);
+        case 'produs':    return p.name;
+        case 'categorie': return p.category ?? '';
+        case 'cantitate': return String(p.qty);
+        case 'um':        return p.um;
+        case 'codExtern': return p.codExtern ?? '';
+        case 'furnizor':  return p.furnizor ?? '';
+        case 'faraTVA':   return String(this.pFaraTVA(p) ?? '');
+        case 'cuTVA':     return String(this.pCuTVA(p) ?? '');
+        case 'masa':      return String(this.pMasa(p) * p.qty);
+        default: return '';
+      }
+    });
+  }
+
+  private _doCsvBulk(cols: string[]): void {
+    const labelMap = Object.fromEntries(CSV_HIST_COLS.map(c => [c.key, c.label]));
+    const headers = cols.map(k => labelMap[k]);
+    const textIdx = cols.map((k, i) => ['telefon', 'codExtern'].includes(k) ? i : -1).filter(i => i >= 0);
+    const rows: string[][] = [];
+    for (const o of this.sortedOrders()) {
+      for (const p of o.products) rows.push(this._csvRow(cols, o, p));
+    }
+    this._downloadCsv([headers, ...rows], `comenzi-export-${new Date().toISOString().slice(0, 10)}.csv`, textIdx);
+  }
+
+  private _doCsvSingle(cols: string[], order: Order): void {
+    const labelMap = Object.fromEntries(CSV_HIST_COLS.map(c => [c.key, c.label]));
+    const headers = cols.map(k => labelMap[k]);
+    const textIdx = cols.map((k, i) => ['telefon', 'codExtern'].includes(k) ? i : -1).filter(i => i >= 0);
+    const rows = order.products.map(p => this._csvRow(cols, order, p));
+    const slug = order.client.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 30);
+    this._downloadCsv([headers, ...rows], `${slug}-${order.timestamp.slice(0, 10)}-#${order.orderNumber ?? order.id.slice(0, 6)}.csv`, textIdx);
   }
 
   private _downloadCsv(rows: string[][], filename: string, textCols: number[] = []): void {

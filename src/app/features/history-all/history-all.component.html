@@ -15,7 +15,7 @@
     <button mat-stroked-button (click)="reset()" matTooltip="Resetează toate filtrele">
       <mat-icon>filter_list_off</mat-icon>
     </button>
-    <button mat-stroked-button (click)="exportCsv()" matTooltip="Descarcă Excel / CSV">
+    <button mat-stroked-button (click)="openCsvExport(true)" matTooltip="Descarcă Excel / CSV">
       <mat-icon>download</mat-icon>
       Excel
     </button>
@@ -432,7 +432,7 @@
           <button mat-icon-button (click)="printOrder(order, $event)" matTooltip="Printează comanda">
             <mat-icon>print</mat-icon>
           </button>
-          <button mat-icon-button (click)="downloadOrderCsv(order, $event)" matTooltip="Descarcă Excel/CSV">
+          <button mat-icon-button (click)="openCsvExport(false, order, $event)" matTooltip="Descarcă Excel/CSV">
             <mat-icon>download</mat-icon>
           </button>
         </div>
@@ -740,6 +740,56 @@
     source="toate-comenzile"
     (closed)="addProductsOrderId.set(null)">
   </app-add-products-modal>
+}
+
+@if (showCsvModal()) {
+  <div class="csv-overlay" (click)="showCsvModal.set(false)">
+    <div class="csv-card" (click)="$event.stopPropagation()">
+      <div class="csv-header">
+        <div class="csv-title">
+          <mat-icon>table_chart</mat-icon>
+          Export CSV — selectează coloanele
+        </div>
+        <button mat-icon-button (click)="showCsvModal.set(false)"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="csv-body">
+        <div class="csv-group-label">Detalii comandă</div>
+        <div class="csv-cols-grid">
+          @for (col of CSV_ALL_COLS; track col.key) {
+            @if (col.group === 'Comandă') {
+              <label class="csv-col-item">
+                <input type="checkbox" [checked]="isCsvColSel(col.key)" (change)="toggleCsvCol(col.key)">
+                {{ col.label }}
+              </label>
+            }
+          }
+        </div>
+        <div class="csv-group-label">Detalii produs (un rând per produs)</div>
+        <div class="csv-cols-grid">
+          @for (col of CSV_ALL_COLS; track col.key) {
+            @if (col.group === 'Produs') {
+              <label class="csv-col-item">
+                <input type="checkbox" [checked]="isCsvColSel(col.key)" (change)="toggleCsvCol(col.key)">
+                {{ col.label }}
+              </label>
+            }
+          }
+        </div>
+      </div>
+      <div class="csv-footer">
+        <button mat-stroked-button (click)="saveCsvDefault()">
+          <mat-icon>bookmark</mat-icon>
+          Salvează ca implicit
+        </button>
+        <div style="flex:1"></div>
+        <button mat-stroked-button (click)="showCsvModal.set(false)">Anulează</button>
+        <button mat-flat-button color="primary" (click)="confirmCsvDownload()">
+          <mat-icon>download</mat-icon>
+          Descarcă CSV
+        </button>
+      </div>
+    </div>
+  </div>
 }
 
 @if (stockHistoryModal(); as m) {
