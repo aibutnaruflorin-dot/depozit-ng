@@ -797,6 +797,19 @@ export class SettingsComponent implements OnInit {
       );
       return;
     }
+    const aliasNorm = norm(raw.alias ?? '');
+    if (aliasNorm) {
+      const dupAlias = this.transportService.vehicles().find(v =>
+        norm(v.alias ?? '') === aliasNorm && v.id !== editingId
+      );
+      if (dupAlias) {
+        this.snackBar.open(
+          `Aliasul "${raw.alias}" este deja folosit de "${dupAlias.denumire}".`,
+          'OK', { duration: 4000, panelClass: ['snack-warn'] }
+        );
+        return;
+      }
+    }
     const tonajRaw = parseFloat(String(raw.tonajMaxim ?? ''));
     const val = { ...raw, tonajMaxim: isFinite(tonajRaw) && tonajRaw > 0 ? tonajRaw : undefined };
     if (editingId) {
