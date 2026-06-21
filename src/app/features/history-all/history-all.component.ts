@@ -646,6 +646,38 @@ export class HistoryAllComponent {
     return this.unitsService.allowDecimal(um) ? '0.01' : '1';
   }
 
+  incPending(orderId: string, idx: number, um: string): void {
+    const order = this.ordersService.orders().find(o => o.id === orderId);
+    const p = order?.pendingProducts?.[idx];
+    if (!p) return;
+    let newQty = p.qty + 1;
+    if (!this.unitsService.allowDecimal(um)) newQty = Math.round(newQty);
+    this.ordersService.updatePendingProduct(orderId, idx, newQty);
+  }
+
+  decPending(orderId: string, idx: number, um: string): void {
+    const order = this.ordersService.orders().find(o => o.id === orderId);
+    const p = order?.pendingProducts?.[idx];
+    if (!p) return;
+    let newQty = Math.max(0, p.qty - 1);
+    if (!this.unitsService.allowDecimal(um) && newQty > 0) newQty = Math.round(newQty);
+    this.ordersService.updatePendingProduct(orderId, idx, newQty);
+  }
+
+  deletePending(orderId: string, idx: number, name: string): void {
+    if (!confirm(`Elimini "${name}" din produsele neconfirmate?`)) return;
+    this.ordersService.removePendingProduct(orderId, idx);
+  }
+
+  setPendingQtyManual(orderId: string, idx: number, val: string, um: string): void {
+    const order = this.ordersService.orders().find(o => o.id === orderId);
+    const p = order?.pendingProducts?.[idx];
+    if (!p) return;
+    let newQty = Math.max(0, parseFloat(val) || 0);
+    if (!this.unitsService.allowDecimal(um)) newQty = Math.round(newQty);
+    this.ordersService.updatePendingProduct(orderId, idx, newQty);
+  }
+
   printOrder(order: Order, e: Event): void {
     e.stopPropagation();
     const status = order.superseded ? 'Înlocuită' : order.status === 'anulat' ? 'Anulată' :

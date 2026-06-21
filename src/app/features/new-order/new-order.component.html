@@ -348,7 +348,7 @@
                        (change)="setPendingQty(p, $any($event.target).value)"
                        (click)="$any($event.target).select()">
                 <button class="qty-btn" (click)="incPending(p)"
-                        [disabled]="s.finalQty <= 0 || (pendingQtyMap()[pkey(p)] ?? 0) >= s.finalQty">+</button>
+                        [disabled]="s.finalQty <= 0 || (pendingQtyMap()[pkey(p)] ?? 0) + 1 > s.finalQty">+</button>
               </div>
               @let warn = catalogsService.calcBufferWarning(p.catalogId, p.nr, pendingQtyMap()[pkey(p)] ?? 0);
               @if (warn.warn) {

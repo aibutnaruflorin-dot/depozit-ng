@@ -89,6 +89,26 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
+  updatePendingProduct(orderId: string, idx: number, newQty: number): void {
+    this._orders.update(orders => orders.map(o => {
+      if (o.id !== orderId) return o;
+      const pending = [...(o.pendingProducts ?? [])];
+      if (!pending[idx]) return o;
+      if (newQty <= 0) pending.splice(idx, 1);
+      else pending[idx] = { ...pending[idx], qty: newQty };
+      return { ...o, pendingProducts: pending };
+    }));
+    this.storage.set('app_orders', this._orders());
+  }
+
+  removePendingProduct(orderId: string, idx: number): void {
+    this._orders.update(orders => orders.map(o => {
+      if (o.id !== orderId) return o;
+      return { ...o, pendingProducts: (o.pendingProducts ?? []).filter((_, i) => i !== idx) };
+    }));
+    this.storage.set('app_orders', this._orders());
+  }
+
   cancelOrder(id: string): void {
     const order = this._orders().find(o => o.id === id);
     if (order && order.status !== 'anulat' && !order.superseded) {

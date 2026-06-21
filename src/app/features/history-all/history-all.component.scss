@@ -53,6 +53,21 @@
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
 
+.exp-pending-section {
+  margin: 10px 0 4px; padding: 10px 12px;
+  border: 1.5px dashed #f59e0b; border-radius: 8px; background: #fffbeb;
+  [data-theme="dark"] & { background: rgba(245,158,11,0.08); border-color: #d97706; }
+}
+.exp-pending-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; font-weight: 600; color: #b45309; margin-bottom: 8px;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+.exp-pending-row {
+  opacity: 0.85;
+  border-left: 3px solid #f59e0b !important;
+}
+
 .exp-events-journal {
   margin: 12px 0 4px; padding: 10px 12px;
   border: 1px solid var(--color-border, #e0e0e0); border-radius: 8px;
@@ -373,6 +388,7 @@ $_epc-cols: minmax(180px, 1fr) 120px 50px 145px 90px 130px 108px 108px 80px 130p
 .eq-btn {
   width: 28px; height: 28px; line-height: 28px;
   mat-icon { font-size: 16px; line-height: 16px; }
+  &.eq-btn--delete mat-icon { color: #c62828; }
 }
 .eq-input {
   width: 54px; text-align: center; border: 1px solid var(--color-border);

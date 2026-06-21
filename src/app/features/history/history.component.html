@@ -496,7 +496,7 @@
                                  (change)="setEditQty(order.id, j, p.qty, $any($event.target).value, p.um)"
                                  (click)="$any($event.target).select()">
                           <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)"
-                                  [disabled]="s.finalQty <= 0">
+                                  [disabled]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) + 1 > p.qty + s.finalQty">
                             <mat-icon>add</mat-icon>
                           </button>
                         </div>
@@ -597,7 +597,7 @@
                     <mat-icon>pending</mat-icon>
                     Produse neconfirmate (vizibile doar ție — apasă „Retrimite modificat" pentru a le trimite)
                   </div>
-                  @for (p of order.pendingProducts!; track p.nr) {
+                  @for (p of order.pendingProducts!; track p.nr; let pi = $index) {
                     <div class="exp-product-row exp-pending-row">
                       <div class="epc-name-cell">
                         <span class="epc-name">{{ p.name }}</span>
@@ -612,7 +612,24 @@
                       <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
                       <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
                       <span class="epc-masa">—</span>
-                      <span class="epc-qty-cell exp-qty-static">{{ p.qty }}</span>
+                      <div class="epc-qty-cell">
+                        <div class="exp-qty-controls">
+                          <button mat-icon-button class="eq-btn" (click)="decPending(order.id, pi, p.um)">
+                            <mat-icon>remove</mat-icon>
+                          </button>
+                          <input class="eq-input" type="number" min="0" [attr.step]="umStep(p.um)"
+                                 [value]="p.qty"
+                                 (change)="setPendingQtyManual(order.id, pi, $any($event.target).value, p.um)"
+                                 (click)="$any($event.target).select()">
+                          <button mat-icon-button class="eq-btn" (click)="incPending(order.id, pi, p.um)">
+                            <mat-icon>add</mat-icon>
+                          </button>
+                          <button mat-icon-button class="eq-btn eq-btn--delete" color="warn"
+                                  (click)="deletePending(order.id, pi, p.name)" matTooltip="Elimină">
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   }
                 </div>
