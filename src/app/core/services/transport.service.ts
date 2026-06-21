@@ -20,6 +20,12 @@ export class TransportService {
       .map(u => ({ id: String(u.id), nume: u.name, telefon: u.telefon ?? '' }))
   );
 
+  readonly helpers = computed<Driver[]>(() =>
+    this._users()
+      .filter(u => (u.role === 'ajutor_manipulant' || u.jobRole === 'ajutor_manipulant') && u.active !== false)
+      .map(u => ({ id: String(u.id), nume: u.name, telefon: u.telefon ?? '' }))
+  );
+
   readonly active = computed(() =>
     this._transports().filter(t => t.status !== 'livrat' && t.status !== 'anulat')
       .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))

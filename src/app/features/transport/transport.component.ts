@@ -871,12 +871,13 @@ export class TransportComponent implements OnInit {
 
   isHelperBusy(t: Transport): boolean {
     if (!t.helper) return false;
-    const driver = this.transportService.drivers().find(d => d.nume === t.helper);
-    if (!driver) return false;
+    const person = this.transportService.helpers().find(d => d.nume === t.helper)
+                ?? this.transportService.drivers().find(d => d.nume === t.helper);
+    if (!person) return false;
     const pA = new Date(t.oraPlecare).getTime(), sA = new Date(t.oraSosire).getTime();
     const eA = effectiveEndMs(pA, sA);
     return this.transportService.active()
-      .filter(other => other.id !== t.id && other.driverId === driver.id)
+      .filter(other => other.id !== t.id && other.helper === t.helper)
       .some(other => {
         const pB = new Date(other.oraPlecare).getTime(), sB = new Date(other.oraSosire).getTime();
         return pA < effectiveEndMs(pB, sB) && pB < eA;
