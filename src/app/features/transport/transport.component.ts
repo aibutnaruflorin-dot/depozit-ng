@@ -685,6 +685,7 @@ export class TransportComponent implements OnInit {
     }
     const phone = driver.telefon.replace(/\D/g, '');
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(this.tripWhatsAppMsg(t))}`, '_blank');
+    this.transportService.markWaSent(t.id, 'driver');
   }
 
   sendHelperWhatsApp(t: Transport): void {
@@ -696,6 +697,13 @@ export class TransportComponent implements OnInit {
     }
     const phone = (person.telefon as string).replace(/\D/g, '');
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(this.tripWhatsAppMsg(t))}`, '_blank');
+    this.transportService.markWaSent(t.id, 'helper');
+  }
+
+  fmtWaSent(iso: string | undefined): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return `${d.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}`;
   }
 
   cancelTransport(t: Transport): void {

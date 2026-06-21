@@ -23,4 +23,6 @@ export interface Transport {
   startedAt?: string;
   completedAt?: string;
   cancelledAt?: string;
+  waSentDriverAt?: string;
+  waSentHelperAt?: string;
 }

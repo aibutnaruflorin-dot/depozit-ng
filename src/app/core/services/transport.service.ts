@@ -114,6 +114,11 @@ export class TransportService {
     this.setStatus(id, 'anulat');
   }
 
+  markWaSent(id: string, target: 'driver' | 'helper'): void {
+    const now = new Date().toISOString();
+    this.updateTransport(id, target === 'driver' ? { waSentDriverAt: now } : { waSentHelperAt: now });
+  }
+
   deleteTransport(id: string): void {
     this._save('transports', this._transports().filter(t => t.id !== id));
   }

@@ -398,26 +398,24 @@
                 @if (t.status === 'anulat') {
                   <button mat-icon-button color="primary" (click)="reopenTransport(t)" matTooltip="Redeschide cursa"><mat-icon>lock_open</mat-icon></button>
                 }
-                @if (t.status === 'planificat') {
-                  <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
-                  <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()" matTooltip="WhatsApp șofer" style="color:#25d366">
-                    <mat-icon>local_shipping</mat-icon>
+                @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
+                  @if (t.status === 'planificat') {
+                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
+                  }
+                  <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()"
+                          [matTooltip]="t.waSentDriverAt ? 'WhatsApp șofer · trimis ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp șofer'"
+                          [style.color]="t.waSentDriverAt ? '#888' : '#25d366'">
+                    <mat-icon>{{ t.waSentDriverAt ? 'mark_chat_read' : 'local_shipping' }}</mat-icon>
                   </button>
                   @if (t.helper) {
-                    <button mat-icon-button (click)="sendHelperWhatsApp(t); $event.stopPropagation()" matTooltip="WhatsApp ajutor ({{ t.helper }})" style="color:#25d366">
-                      <mat-icon>person_add</mat-icon>
+                    <button mat-icon-button (click)="sendHelperWhatsApp(t); $event.stopPropagation()"
+                            [matTooltip]="t.waSentHelperAt ? 'WhatsApp ajutor · trimis ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ajutor (' + t.helper + ')'"
+                            [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
+                      <mat-icon>{{ t.waSentHelperAt ? 'mark_chat_read' : 'person_add' }}</mat-icon>
                     </button>
                   }
-                  <button mat-icon-button color="warn" (click)="cancelTransport(t); $event.stopPropagation()" matTooltip="Anulează cursa"><mat-icon>cancel</mat-icon></button>
-                }
-                @if (t.status === 'confirmat_sofer') {
-                  <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()" matTooltip="WhatsApp șofer" style="color:#25d366">
-                    <mat-icon>local_shipping</mat-icon>
-                  </button>
-                  @if (t.helper) {
-                    <button mat-icon-button (click)="sendHelperWhatsApp(t); $event.stopPropagation()" matTooltip="WhatsApp ajutor ({{ t.helper }})" style="color:#25d366">
-                      <mat-icon>person_add</mat-icon>
-                    </button>
+                  @if (t.status === 'planificat') {
+                    <button mat-icon-button color="warn" (click)="cancelTransport(t); $event.stopPropagation()" matTooltip="Anulează cursa"><mat-icon>cancel</mat-icon></button>
                   }
                 }
                 @if (isDeleteAllowed(t)) {
