@@ -324,7 +324,12 @@
                 </span>
               </span>
             </td>
-            <td>{{ getDriverName(t.driverId) }}</td>
+            <td>
+              {{ getDriverName(t.driverId) }}
+              @if (t.helper) {
+                <br><small class="muted"><mat-icon style="font-size:12px;height:12px;width:12px;vertical-align:middle">person_add</mat-icon> {{ t.helper }}</small>
+              }
+            </td>
             <td>
               <div class="times-cell">
                 <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
@@ -457,7 +462,12 @@
                   </span>
                 </span>
               </td>
-              <td>{{ getDriverName(t.driverId) }}</td>
+              <td>
+                {{ getDriverName(t.driverId) }}
+                @if (t.helper) {
+                  <br><small class="muted"><mat-icon style="font-size:12px;height:12px;width:12px;vertical-align:middle">person_add</mat-icon> {{ t.helper }}</small>
+                }
+              </td>
               <td>
                 <div class="times-cell">
                   <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
