@@ -1,4 +1,4 @@
-import { Component, computed, signal, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, computed, signal, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
 
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
@@ -46,7 +46,7 @@ import * as XLSX from 'xlsx';
 })
 export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('stickyTop') private stickyTopRef!: ElementRef<HTMLElement>;
-  readonly theadTop = signal('56px');
+  readonly theadTop = signal('200px');
   private resizeObs?: ResizeObserver;
   readonly PAGE_SIZE = 48;
 
@@ -152,7 +152,8 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
     public ordersService: OrdersService,
     private auth: AuthService,
     private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {}
@@ -160,7 +161,7 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.resizeObs = new ResizeObserver(entries => {
       const h = entries[0]?.contentRect.height ?? 0;
-      this.theadTop.set(`${56 + Math.round(h)}px`);
+      this.zone.run(() => this.theadTop.set(`${56 + Math.round(h)}px`));
     });
     this.resizeObs.observe(this.stickyTopRef.nativeElement);
   }

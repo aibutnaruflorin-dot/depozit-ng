@@ -85,7 +85,7 @@
     <button mat-stroked-button (click)="clearFilters()">Șterge filtrele</button>
   </div>
 } @else {
-  <div [style.--thead-top]="theadTop()">
+  <div [style]="{'--thead-top': theadTop()}">
   <p-table [value]="paged()" [tableStyle]="{'min-width':'960px'}"
            styleClass="p-datatable-sm p-datatable-striped">
 
