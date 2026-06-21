@@ -1,5 +1,13 @@
 import { Component, computed, signal, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
 
+const PAGE_SIZE_LS_KEY = 'depot.tablePageSize';
+function loadPageSize(): number {
+  try { const v = localStorage.getItem(PAGE_SIZE_LS_KEY); return v ? parseInt(v, 10) : 25; } catch { return 25; }
+}
+function savePageSize(n: number): void {
+  try { localStorage.setItem(PAGE_SIZE_LS_KEY, String(n)); } catch {}
+}
+
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
@@ -49,7 +57,7 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly tableScrollHeight = signal('calc(100vh - 260px)');
   private resizeObs?: ResizeObserver;
   readonly PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-  pageSize = signal(50);
+  pageSize = signal(loadPageSize());
 
   readonly CATALOG_COLS = [
     { key: 'categorie',   label: 'Categorie' },
@@ -320,6 +328,7 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentPage.set(e.page);
     if (e.rows && e.rows !== this.pageSize()) {
       this.pageSize.set(e.rows);
+      savePageSize(e.rows);
       this.currentPage.set(0);
     }
   }

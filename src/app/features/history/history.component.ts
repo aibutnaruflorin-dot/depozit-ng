@@ -1,5 +1,13 @@
 import { Component, computed, signal } from '@angular/core';
 
+const PAGE_SIZE_LS_KEY = 'depot.tablePageSize';
+function loadPageSize(): number {
+  try { const v = localStorage.getItem(PAGE_SIZE_LS_KEY); return v ? parseInt(v, 10) : 25; } catch { return 25; }
+}
+function savePageSize(n: number): void {
+  try { localStorage.setItem(PAGE_SIZE_LS_KEY, String(n)); } catch {}
+}
+
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
@@ -178,6 +186,9 @@ export class HistoryComponent {
     this.snackBar.open(`Comanda #${sent.orderNumber} a fost trimisă!`, 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
+  readonly PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+  pageSize = signal(loadPageSize());
+
   hideSuperseded = signal(true);
   filterNr     = signal('');
   filterClient = signal('');
@@ -291,6 +302,10 @@ export class HistoryComponent {
   sortIcon(field: string): string {
     if (this.sortField() !== field) return 'unfold_more';
     return this.sortOrder() === 1 ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  onPageRows(e: any): void {
+    if (e.rows && e.rows !== this.pageSize()) { this.pageSize.set(e.rows); savePageSize(e.rows); }
   }
 
   resetFilters(): void {

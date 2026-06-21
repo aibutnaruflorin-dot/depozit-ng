@@ -1,5 +1,13 @@
 import { Component, signal, computed, OnInit } from '@angular/core';
 
+const PAGE_SIZE_LS_KEY = 'depot.tablePageSize';
+function loadPageSize(): number {
+  try { const v = localStorage.getItem(PAGE_SIZE_LS_KEY); return v ? parseInt(v, 10) : 25; } catch { return 25; }
+}
+function savePageSize(n: number): void {
+  try { localStorage.setItem(PAGE_SIZE_LS_KEY, String(n)); } catch {}
+}
+
 function loadVisibleCols(lsKey: string, defaults: string[]): Set<string> {
   try {
     const raw = localStorage.getItem(lsKey);
@@ -53,6 +61,12 @@ export interface CartItem { product: Product; qty: number; }
   styleUrl:    './new-order.component.scss'
 })
 export class NewOrderComponent implements OnInit {
+  readonly PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+  pageSize = signal(loadPageSize());
+  onPageRows(e: any): void {
+    if (e.rows && e.rows !== this.pageSize()) { this.pageSize.set(e.rows); savePageSize(e.rows); }
+  }
+
   readonly today   = new Date();
 
   readonly NEW_ORDER_COLS = [

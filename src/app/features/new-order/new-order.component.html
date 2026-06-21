@@ -80,7 +80,8 @@
   } @else {
     <p-table [value]="suggestions()" [tableStyle]="{'min-width':'900px'}"
              styleClass="p-datatable-sm p-datatable-striped"
-             [paginator]="true" [rows]="25" [rowsPerPageOptions]="[10,25,50,100]">
+             [paginator]="true" [rows]="pageSize()" [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
+             (onPage)="onPageRows($event)">
 
       <ng-template pTemplate="header">
         <tr>
