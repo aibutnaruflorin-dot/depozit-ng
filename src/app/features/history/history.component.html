@@ -393,7 +393,7 @@
             <button mat-icon-button (click)="resendEmail(order, $event)" matTooltip="Trimite email">
               <mat-icon>email</mat-icon>
             </button>
-            @if (whatsappContacts().length > 0) {
+            @if (whatsappContacts().length > 0 || order.client?.phone) {
               <button mat-icon-button class="wa-btn" [matMenuTriggerFor]="waMenu"
                       (click)="$event.stopPropagation()" matTooltip="Trimite WhatsApp">
                 <img src="whatsapp.svg" alt="WhatsApp" class="wa-icon" />
@@ -404,7 +404,7 @@
                     <mat-icon>person</mat-icon>
                     <span>{{ order.client.name }} ({{ order.client.phone }})</span>
                   </button>
-                  <mat-divider />
+                  @if (whatsappContacts().length > 0) { <mat-divider /> }
                 }
                 @for (c of whatsappContacts(); track c.id) {
                   @if (c.type === 'group') {
@@ -420,12 +420,6 @@
                   }
                 }
               </mat-menu>
-            } @else if (order.client?.phone) {
-              <button mat-icon-button class="wa-btn"
-                      (click)="sendWhatsApp(order, order.client.phone, $event)"
-                      matTooltip="Trimite WhatsApp clientului">
-                <img src="whatsapp.svg" alt="WhatsApp" class="wa-icon" />
-              </button>
             } @else {
               <button mat-icon-button class="wa-btn" disabled
                       matTooltip="Clientul nu are telefon configurat">
