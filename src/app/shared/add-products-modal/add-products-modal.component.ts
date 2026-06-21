@@ -174,6 +174,15 @@ export class AddProductsModalComponent implements OnInit {
   setQty(p: Product, val: number | string): void {
     let qty = Math.max(0, parseFloat(String(val)) || 0);
     if (!this.unitsService.allowDecimal(p.um)) qty = Math.round(qty);
+    // Stock validation — clamp to available and warn
+    const available = this.catalogsService.getStock(p.catalogId, p.nr) ?? Infinity;
+    if (qty > available && available > 0) {
+      this.snackBar.open(`Stoc insuficient. Disponibil: ${available} ${p.um}`, '', { duration: 3000, panelClass: ['snack-warn'] });
+      qty = available;
+    } else if (qty > 0 && available <= 0) {
+      this.snackBar.open(`Produsul nu are stoc disponibil.`, '', { duration: 3000, panelClass: ['snack-warn'] });
+      qty = 0;
+    }
     const key = this.stagingKey(p);
     if (qty === 0) {
       this.staged.update(list => list.filter(s => this.stagingKey(s) !== key));

@@ -496,7 +496,7 @@
                                  (change)="setEditQty(order.id, j, p.qty, $any($event.target).value, p.um)"
                                  (click)="$any($event.target).select()">
                           <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)"
-                                  [disabled]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) + 1 > p.qty + s.finalQty">
+                                  [disabled]="s.finalQty <= 0">
                             <mat-icon>add</mat-icon>
                           </button>
                         </div>

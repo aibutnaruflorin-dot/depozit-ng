@@ -284,8 +284,12 @@ export class NewOrderComponent implements OnInit {
   }
   setPendingQty(p: Product, val: string | number): void {
     const max = p.qty;
-    let qty = Math.min(max, Math.max(0, parseFloat(String(val)) || 0));
-    if (!this.unitsService.allowDecimal(p.um)) qty = Math.round(qty);
+    let raw = Math.max(0, parseFloat(String(val)) || 0);
+    if (!this.unitsService.allowDecimal(p.um)) raw = Math.round(raw);
+    if (raw > max) {
+      this.snackBar.open(`Stoc insuficient. Disponibil: ${max} ${p.um}`, '', { duration: 3000, panelClass: ['snack-warn'] });
+    }
+    const qty = Math.min(max, raw);
     this._pendingQty.update(m => ({ ...m, [this.pkey(p)]: qty }));
   }
   incPending(p: Product): void { this.setPendingQty(p, this.getPendingQty(p) + 1); }
