@@ -390,6 +390,9 @@
             </td>
             <td>
               @if (auth.isAdmin()) {
+                @if (t.status === 'anulat') {
+                  <button mat-icon-button color="primary" (click)="reopenTransport(t)" matTooltip="Redeschide cursa"><mat-icon>lock_open</mat-icon></button>
+                }
                 @if (t.status === 'planificat') {
                   <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                   <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()" matTooltip="Trimite șoferului pe WhatsApp" style="color:#25d366">
@@ -517,7 +520,11 @@
               </td>
               <td class="actions-cell">
                 @if (auth.isAdmin()) {
-                  <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează / reprogramează"><mat-icon>edit</mat-icon></button>
+                  @if (t.status === 'anulat') {
+                    <button mat-icon-button color="primary" (click)="reopenTransport(t)" matTooltip="Redeschide cursa"><mat-icon>lock_open</mat-icon></button>
+                  } @else {
+                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează / reprogramează"><mat-icon>edit</mat-icon></button>
+                  }
                   <button mat-icon-button color="warn"
                           matTooltip="Șterge cursa"
                           (click)="deleteTransport(t)">

@@ -685,6 +685,11 @@ export class TransportComponent implements OnInit {
     this.snackBar.open('Cursa a fost anulată.', 'OK', { duration: 2500 });
   }
 
+  reopenTransport(t: Transport): void {
+    this.transportService.setStatus(t.id, 'planificat');
+    this.snackBar.open('Cursa a fost redeschisă.', '', { duration: 2000 });
+  }
+
   deleteTransport(t: Transport): void {
     if (!confirm('Ștergi această cursă? Comenzile vor reveni la statusul anterior.')) return;
     const affected = [...new Set(t.deliveries.map(d => d.orderId))];
