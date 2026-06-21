@@ -1,16 +1,22 @@
+/* ── Sticky wrapper: title + col-vis + chips ── */
+.catalog-sticky-top {
+  position: sticky; top: 56px; z-index: 10;
+  background: var(--color-bg);
+  margin: -1.5rem -2rem 0;
+  padding: 0 2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
 .page-header {
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  position: sticky; top: 56px; z-index: 9;
-  background: var(--color-bg);
+  padding: 0.75rem 0 0.6rem;
   border-bottom: 1px solid var(--color-border);
-  margin: -1.5rem -2rem 0;
-  padding: 0.75rem 2rem 0.6rem;
 }
 
 /* ── Column visibility dropdown ── */
 .cols-vis-bar {
   display: flex; align-items: center;
-  padding: 0.3rem 1rem;
+  padding: 0.3rem 0;
   border-bottom: 1px solid var(--color-border);
 }
 .cols-vis-wrap { position: relative; }
@@ -49,7 +55,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0;
 }
 .cat-chip-btn {
   display: inline-flex;
@@ -128,6 +134,14 @@
 
 /* Allow furnizor dropdown to overflow th */
 ::ng-deep .p-datatable th { overflow: visible !important; }
+
+/* Sticky table header below the sticky top block */
+::ng-deep .p-datatable table thead {
+  position: sticky;
+  top: var(--thead-top, 56px);
+  z-index: 9;
+  background: var(--color-bg);
+}
 .phc-furn-trigger {
   display: flex; align-items: center;
   border: 1px solid var(--color-border); border-radius: 4px;

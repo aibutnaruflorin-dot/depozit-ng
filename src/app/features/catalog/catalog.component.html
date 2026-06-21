@@ -1,3 +1,6 @@
+<!-- Sticky top block: title + col-vis + chips -->
+<div class="catalog-sticky-top" #stickyTop>
+
 <!-- Header -->
 <div class="page-header">
   <h1 class="page-title">
@@ -72,6 +75,7 @@
   </button>
 </div>
 
+</div><!-- /catalog-sticky-top -->
 
 <!-- Product list -->
 @if (filtered().length === 0) {
@@ -81,6 +85,7 @@
     <button mat-stroked-button (click)="clearFilters()">Șterge filtrele</button>
   </div>
 } @else {
+  <div [style.--thead-top]="theadTop()">
   <p-table [value]="paged()" [tableStyle]="{'min-width':'960px'}"
            styleClass="p-datatable-sm p-datatable-striped">
 
@@ -404,6 +409,7 @@
     </ng-template>
 
   </p-table>
+  </div>
 
   @if (filtered().length > PAGE_SIZE) {
     <p-paginator [rows]="PAGE_SIZE" [totalRecords]="filtered().length"
