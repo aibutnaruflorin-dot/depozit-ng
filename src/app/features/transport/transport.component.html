@@ -1007,6 +1007,7 @@
                     <th class="num-col">Rămas</th>
                     <th class="num-col price-col">f.TVA</th>
                     <th class="num-col price-col">c.TVA</th>
+                    <th class="num-col price-col">Masă</th>
                     <th class="num-col">Pe cursă</th>
                   </tr>
                 </thead>
@@ -1014,6 +1015,7 @@
                   @for (product of order.products; let i = $index; track i) {
                     @if (getRemainingQtyArr(order, editingId() ?? undefined)[i] > 0) {
                       @let pp = productPrice(product);
+                      @let pm = productMasa(product);
                       <tr>
                         <td>{{ product.name }} <small class="muted">{{ product.um }}</small></td>
                         <td class="num-col">{{ product.qty }}</td>
@@ -1021,6 +1023,7 @@
                         <td class="num-col remaining-col">{{ getRemainingQtyArr(order, editingId() ?? undefined)[i] }}</td>
                         <td class="num-col price-col muted">{{ pp.net | number:'1.2-2' }}</td>
                         <td class="num-col price-col">{{ pp.tva | number:'1.2-2' }}</td>
+                        <td class="num-col price-col muted">{{ pm > 0 ? (pm | number:'1.2-2') : '—' }}</td>
                         <td class="num-col">
                           <div class="qty-input-wrap">
                             <button class="qty-btn" (click)="setModalQty(order.id, i, getModalQty(order.id, i) - 1)">−</button>
@@ -1037,10 +1040,12 @@
                 </tbody>
                 <tfoot>
                   @let tv = modalOrderTotalValue(order.id, order);
+                  @let tw = modalOrderTotalWeight(order.id, order);
                   <tr>
                     <td colspan="4" class="totals-label">Total pe cursă:</td>
                     <td class="num-col price-col totals-label">{{ tv.net | number:'1.2-2' }}</td>
                     <td class="num-col price-col totals-val">{{ tv.tva | number:'1.2-2' }}</td>
+                    <td class="num-col price-col totals-label">{{ tw > 0 ? fmtWeight(tw) : '—' }}</td>
                     <td></td>
                   </tr>
                 </tfoot>

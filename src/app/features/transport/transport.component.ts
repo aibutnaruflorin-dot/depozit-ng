@@ -431,6 +431,16 @@ export class TransportComponent implements OnInit {
     }, { net: 0, tva: 0 });
   }
 
+  productMasa(p: { masaNeta?: number; catalogId?: string; nr: number | string }): number {
+    return p.masaNeta ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta ?? 0;
+  }
+
+  modalOrderTotalWeight(orderId: string, order: Order): number {
+    return order.products.reduce((s, p, i) => {
+      return s + this.productMasa(p) * this.getModalQty(orderId, i);
+    }, 0);
+  }
+
   // ── Delivered / remaining qty ─────────────────────────────────────────────
 
   getDeliveredQtyArr(order: Order): number[] {
