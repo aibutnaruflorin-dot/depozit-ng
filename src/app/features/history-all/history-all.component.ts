@@ -172,17 +172,11 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
   }
 
-  canReopenAdd(order: Order): boolean {
+  canReopen(order: Order): boolean {
     const closed = ['anulat', 'livrat', 'in_livrare'];
     if (!closed.includes(order.status) || order.superseded) return false;
     const s = this.auth.session();
     return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
-  }
-
-  reopenAndAdd(order: Order): void {
-    this.reopenOrder(order);
-    this.addProductsOrderId.set(order.id);
-    this.expandRow(order.id);
   }
 
   readonly PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -519,6 +513,7 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
   reopenOrder(order: Order): void {
     this.ordersService.reopenOrder(order.id);
     this.snackBar.open('Comanda redeschisă.', 'OK', { duration: 2500 });
+    this.expandRow(order.id);
   }
 
   finalizeOrder(order: Order): void {
