@@ -1,6 +1,7 @@
 <!-- ══ MAIN CONTENT (shifts left when cart open) ══ -->
 <div class="page-content" [class.cart-open]="showCart()">
 
+  <div class="new-order-sticky-top" #stickyTop>
   <!-- HEADER -->
   <div class="page-header no-header">
     <h1 class="page-title">
@@ -70,6 +71,7 @@
       <span class="mode-label">{{ displayMode() === 'mixed' ? 'Amestecat' : 'Grupat' }}</span>
     </button>
   </div>
+  </div><!-- /new-order-sticky-top -->
 
   <!-- LISTA PRODUSE -->
   @if (suggestions().length === 0) {
@@ -80,6 +82,7 @@
   } @else {
     <p-table [value]="suggestions()" [tableStyle]="{'min-width':'900px'}"
              styleClass="p-datatable-sm p-datatable-striped"
+             [scrollable]="true" [scrollHeight]="tableScrollHeight()"
              [paginator]="true" [rows]="pageSize()" [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
              (onPage)="onPageRows($event)">
 

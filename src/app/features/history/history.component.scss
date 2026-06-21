@@ -1,11 +1,18 @@
+/* ── Sticky top wrapper ── */
+.page-sticky-top {
+  position: sticky; top: 56px; z-index: 10;
+  background: var(--color-bg);
+  margin: -1.5rem -2rem 0;
+  padding: 0 2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
 /* ── Page header ── */
 .page-header {
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  position: sticky; top: 56px; z-index: 9;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
-  margin: -1.5rem -2rem 0;
-  padding: 0.75rem 2rem 0.6rem;
+  padding: 0.75rem 0 0.6rem;
 }
 .page-title {
   display: flex; align-items: center; gap: 0.5rem;
@@ -23,7 +30,7 @@
 /* ── Column visibility dropdown ── */
 .cols-vis-bar {
   display: flex; align-items: center;
-  padding: 0.3rem 1rem;
+  padding: 0.3rem 0;
   border-bottom: 1px solid var(--color-border);
 }
 .cols-vis-wrap { position: relative; }
@@ -160,6 +167,8 @@
   }
   &:focus-within ::ng-deep .mat-mdc-text-field-wrapper { border-color: var(--color-primary) !important; }
 }
+
+::ng-deep .p-datatable .p-datatable-thead > tr > th { background: var(--color-bg); }
 
 /* ── Sort ── */
 .col-header-sort {

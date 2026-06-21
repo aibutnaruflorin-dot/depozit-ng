@@ -1,3 +1,4 @@
+<div class="page-sticky-top" #stickyTop>
 <div class="page-header">
   <h1 class="page-title">
     <mat-icon>bar_chart</mat-icon>
@@ -49,11 +50,13 @@
     }
   </div>
 </div>
+</div><!-- /page-sticky-top -->
 
 <p-table [value]="sortedFiltered()" [paginator]="true" [rows]="pageSize()" [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
          (onPage)="onPageRows($event)"
          styleClass="p-datatable-sm p-datatable-striped"
-         [tableStyle]="{'min-width':'700px'}">
+         [tableStyle]="{'min-width':'700px'}"
+         [scrollable]="true" [scrollHeight]="tableScrollHeight()">
 
   <ng-template pTemplate="header">
     <tr>

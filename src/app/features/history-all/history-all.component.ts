@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, signal, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
 
 const PAGE_SIZE_LS_KEY = 'depot.tablePageSize';
 function loadPageSize(): number {
@@ -89,7 +89,20 @@ function sortByFamily(orders: Order[]): Order[] {
   templateUrl: './history-all.component.html',
   styleUrl:    './history-all.component.scss'
 })
-export class HistoryAllComponent {
+export class HistoryAllComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('stickyTop') private stickyTopRef!: ElementRef<HTMLElement>;
+  readonly tableScrollHeight = signal('calc(100vh - 220px)');
+  private resizeObs?: ResizeObserver;
+
+  ngAfterViewInit(): void {
+    this.resizeObs = new ResizeObserver(entries => {
+      const h = entries[0]?.contentRect.height ?? 0;
+      this.zone.run(() => this.tableScrollHeight.set(`calc(100vh - ${56 + Math.round(h) + 80}px)`));
+    });
+    this.resizeObs.observe(this.stickyTopRef.nativeElement);
+  }
+  ngOnDestroy(): void { this.resizeObs?.disconnect(); }
+
   readonly HISTORY_ALL_COLS = [
     { key: 'data',     label: 'Data' },
     { key: 'telefon',  label: 'Telefon' },
@@ -282,7 +295,8 @@ export class HistoryAllComponent {
     private ordersService: OrdersService,
     private storage: StorageService,
     private snackBar: MatSnackBar,
-    public  unitsService: UnitsService
+    public  unitsService: UnitsService,
+    private zone: NgZone
   ) {}
 
   private _localDate(d: Date): string {

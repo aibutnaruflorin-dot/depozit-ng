@@ -1,4 +1,4 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, signal, computed, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
 
 const PAGE_SIZE_LS_KEY = 'depot.tablePageSize';
 function loadPageSize(): number {
@@ -60,7 +60,11 @@ export interface CartItem { product: Product; qty: number; }
   templateUrl: './new-order.component.html',
   styleUrl:    './new-order.component.scss'
 })
-export class NewOrderComponent implements OnInit {
+export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('stickyTop') private stickyTopRef!: ElementRef<HTMLElement>;
+  readonly tableScrollHeight = signal('calc(100vh - 260px)');
+  private resizeObs?: ResizeObserver;
+
   readonly PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
   pageSize = signal(loadPageSize());
   onPageRows(e: any): void {
@@ -136,8 +140,18 @@ export class NewOrderComponent implements OnInit {
     private ordersService: OrdersService,
     private snackBar: MatSnackBar,
     private router: Router,
-    public  unitsService: UnitsService
+    public  unitsService: UnitsService,
+    private zone: NgZone
   ) {}
+
+  ngAfterViewInit(): void {
+    this.resizeObs = new ResizeObserver(entries => {
+      const h = entries[0]?.contentRect.height ?? 0;
+      this.zone.run(() => this.tableScrollHeight.set(`calc(100vh - ${56 + Math.round(h) + 80}px)`));
+    });
+    this.resizeObs.observe(this.stickyTopRef.nativeElement);
+  }
+  ngOnDestroy(): void { this.resizeObs?.disconnect(); }
 
   ngOnInit(): void {
     const product = (window.history.state as any)?.product;

@@ -1,7 +1,7 @@
 /* ── Column visibility dropdown ── */
 .cols-vis-bar {
   display: flex; align-items: center;
-  padding: 0.3rem 1rem;
+  padding: 0.3rem 0;
   border-bottom: 1px solid var(--color-border);
 }
 .cols-vis-wrap { position: relative; }
@@ -41,13 +41,21 @@
   &.cart-open { padding-right: 430px; }
 }
 
+/* ── Sticky top wrapper ── */
+.new-order-sticky-top {
+  position: sticky; top: 56px; z-index: 10;
+  background: var(--color-bg);
+  margin: -1.5rem -2rem 0;
+  padding: 0 2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
 /* ── Header ── */
 .no-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1rem 0.5rem;
-  position: sticky; top: 56px; z-index: 9;
+  padding: 0.75rem 0 0.5rem;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
 }
@@ -150,7 +158,7 @@
 }
 .col-furn-wrap { position: relative; }
 ::ng-deep .p-datatable th { overflow: visible !important; }
-::ng-deep .p-datatable .p-datatable-thead > tr > th { padding: 6px 8px !important; }
+::ng-deep .p-datatable .p-datatable-thead > tr > th { padding: 6px 8px !important; background: var(--color-bg); }
 ::ng-deep .p-datatable .p-datatable-tbody > tr > td { padding: 4px 8px !important; }
 .phc-furn-trigger {
   display: flex; align-items: center;

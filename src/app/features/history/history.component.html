@@ -1,3 +1,4 @@
+<div class="page-sticky-top" #stickyTop>
 <div class="page-header">
   <h1 class="page-title">
     <mat-icon>list_alt</mat-icon>
@@ -49,6 +50,7 @@
     }
   </div>
 </div>
+</div><!-- /page-sticky-top -->
 
 @if (myOrders().length === 0) {
   <div class="empty-state">
@@ -63,7 +65,8 @@
 } @else {
   <p-table [value]="sortedOrders()" [paginator]="true" [rows]="pageSize()" [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
            (onPage)="onPageRows($event)"
-           [tableStyle]="{'min-width':'640px'}" styleClass="p-datatable-sm p-datatable-striped">
+           [tableStyle]="{'min-width':'640px'}" styleClass="p-datatable-sm p-datatable-striped"
+           [scrollable]="true" [scrollHeight]="tableScrollHeight()">
 
     <ng-template pTemplate="header">
       <tr>
