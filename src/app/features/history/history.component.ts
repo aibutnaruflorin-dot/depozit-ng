@@ -405,6 +405,13 @@ export class HistoryComponent {
     document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
+  hasEditedQty(order: Order): boolean {
+    return order.products.some((p, i) => {
+      const edited = this._editQty()[this.ekey(order.id, i)];
+      return edited !== undefined && edited !== p.qty;
+    });
+  }
+
   ekey(orderId: string, idx: number): string { return `${orderId}::${idx}`; }
 
   getEditQty(orderId: string, idx: number, def: number): number {

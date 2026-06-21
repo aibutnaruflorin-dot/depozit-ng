@@ -327,8 +327,9 @@
         @if (colVisible('produse')) {
           <td>
             {{ order.products.length + (order.pendingProducts?.length ?? 0) }} art.
-            @if (order.pendingProducts?.length) {
-              <span class="events-badge pending-badge" [matTooltip]="(order.pendingProducts!.length) + ' produs(e) neconfirmate'">
+            @if (order.pendingProducts?.length || (order.status === 'trimis' && !order.superseded && hasEditedQty(order))) {
+              <span class="events-badge pending-badge"
+                    [matTooltip]="(order.pendingProducts?.length ? (order.pendingProducts!.length) + ' produs(e) adăugate + ' : '') + (hasEditedQty(order) ? 'cantități modificate' : '') + ' — neconfirmate'">
                 <mat-icon>pending</mat-icon>
               </span>
             }
