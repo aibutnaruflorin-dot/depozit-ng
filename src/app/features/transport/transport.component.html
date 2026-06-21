@@ -400,15 +400,25 @@
                 }
                 @if (t.status === 'planificat') {
                   <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
-                  <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()" matTooltip="Trimite șoferului pe WhatsApp" style="color:#25d366">
-                    <mat-icon>send</mat-icon>
+                  <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()" matTooltip="WhatsApp șofer" style="color:#25d366">
+                    <mat-icon>local_shipping</mat-icon>
                   </button>
+                  @if (t.helper) {
+                    <button mat-icon-button (click)="sendHelperWhatsApp(t); $event.stopPropagation()" matTooltip="WhatsApp ajutor ({{ t.helper }})" style="color:#25d366">
+                      <mat-icon>person_add</mat-icon>
+                    </button>
+                  }
                   <button mat-icon-button color="warn" (click)="cancelTransport(t); $event.stopPropagation()" matTooltip="Anulează cursa"><mat-icon>cancel</mat-icon></button>
                 }
                 @if (t.status === 'confirmat_sofer') {
-                  <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()" matTooltip="Retrimite WhatsApp" style="color:#25d366">
-                    <mat-icon>send</mat-icon>
+                  <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()" matTooltip="WhatsApp șofer" style="color:#25d366">
+                    <mat-icon>local_shipping</mat-icon>
                   </button>
+                  @if (t.helper) {
+                    <button mat-icon-button (click)="sendHelperWhatsApp(t); $event.stopPropagation()" matTooltip="WhatsApp ajutor ({{ t.helper }})" style="color:#25d366">
+                      <mat-icon>person_add</mat-icon>
+                    </button>
+                  }
                 }
                 @if (isDeleteAllowed(t)) {
                   <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Șterge"><mat-icon>delete_outline</mat-icon></button>

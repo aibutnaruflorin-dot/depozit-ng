@@ -660,17 +660,42 @@ export class TransportComponent implements OnInit {
     this.snackBar.open(msg, '', { duration: 2200 });
   }
 
+  private tripWhatsAppMsg(t: Transport): string {
+    const orders = this.ordersForTransport(t);
+    const lines = orders.map(o => `• ${o.client.name}${o.client.address ? ' — ' + o.client.address : ''}`).join('\n');
+    return `Cursa:\nPlecare: ${this.transportService.formatDateTime(t.oraPlecare)}\nSosire: ${this.transportService.formatDateTime(t.oraSosire)}\n${lines}`;
+  }
+
+  private findPersonByName(name: string): { telefon?: string } | undefined {
+    const all = [...this.transportService.helpers(), ...this.transportService.drivers()];
+    return all.find(d => d.nume === name);
+  }
+
+  helperHasPhone(t: Transport): boolean {
+    if (!t.helper) return false;
+    const p = this.findPersonByName(t.helper);
+    return !!(p as any)?.telefon;
+  }
+
   sendDriverWhatsApp(t: Transport): void {
     const driver = this.transportService.getDriver(t.driverId);
     if (!driver?.telefon) {
       this.snackBar.open('Șoferul nu are număr de telefon configurat.', 'OK', { duration: 3000 });
       return;
     }
-    const orders = this.ordersForTransport(t);
-    const lines = orders.map(o => `• ${o.client.name}${o.client.address ? ' — ' + o.client.address : ''}`).join('\n');
-    const msg = `Cursa ta:\nPlecare: ${this.transportService.formatDateTime(t.oraPlecare)}\nSosire: ${this.transportService.formatDateTime(t.oraSosire)}\n${lines}`;
     const phone = driver.telefon.replace(/\D/g, '');
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(this.tripWhatsAppMsg(t))}`, '_blank');
+  }
+
+  sendHelperWhatsApp(t: Transport): void {
+    if (!t.helper) return;
+    const person = this.findPersonByName(t.helper) as any;
+    if (!person?.telefon) {
+      this.snackBar.open(`${t.helper} nu are număr de telefon configurat.`, 'OK', { duration: 3000 });
+      return;
+    }
+    const phone = (person.telefon as string).replace(/\D/g, '');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(this.tripWhatsAppMsg(t))}`, '_blank');
   }
 
   cancelTransport(t: Transport): void {
