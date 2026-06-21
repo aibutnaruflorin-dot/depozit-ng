@@ -1019,7 +1019,7 @@
                         <td>{{ product.name }} <small class="muted">{{ product.um }}</small></td>
                         <td class="num-col">{{ product.qty }}</td>
                         <td class="num-col">{{ getDeliveredQtyArr(order)[i] || 0 }}</td>
-                        <td class="num-col remaining-col">{{ getRemainingQtyArr(order, editingId() ?? undefined)[i] }}</td>
+                        <td class="num-col remaining-col" [class.remaining-zero]="getRemainingQtyArr(order, editingId() ?? undefined)[i] - getModalQty(order.id, i) <= 0">{{ getRemainingQtyArr(order, editingId() ?? undefined)[i] - getModalQty(order.id, i) }}</td>
                         <td class="num-col price-col muted">{{ pp.net | number:'1.2-2' }}</td>
                         <td class="num-col price-col">{{ pp.tva | number:'1.2-2' }}</td>
                         <td class="num-col price-col muted">{{ pm > 0 ? (pm | number:'1.2-2') : '—' }}</td>
