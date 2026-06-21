@@ -784,11 +784,23 @@ export class SettingsComponent implements OnInit {
   saveVehicle(): void {
     if (this.vehicleForm.invalid) { this.vehicleForm.markAllAsTouched(); return; }
     const raw = this.vehicleForm.value;
+    const norm = (s: string) => (s ?? '').replace(/\s/g, '').toUpperCase();
+    const plate = norm(raw.numarInmatriculare);
+    const editingId = this.editingVehicleId();
+    const duplicate = this.transportService.vehicles().find(v =>
+      norm(v.numarInmatriculare) === plate && v.id !== editingId
+    );
+    if (duplicate) {
+      this.snackBar.open(
+        `Numărul "${raw.numarInmatriculare}" este deja folosit de "${duplicate.denumire}".`,
+        'OK', { duration: 4000, panelClass: ['snack-warn'] }
+      );
+      return;
+    }
     const tonajRaw = parseFloat(String(raw.tonajMaxim ?? ''));
     const val = { ...raw, tonajMaxim: isFinite(tonajRaw) && tonajRaw > 0 ? tonajRaw : undefined };
-    const id  = this.editingVehicleId();
-    if (id) {
-      this.transportService.updateVehicle(id, val);
+    if (editingId) {
+      this.transportService.updateVehicle(editingId, val);
     } else {
       this.transportService.addVehicle(val);
     }
