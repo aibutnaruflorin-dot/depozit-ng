@@ -255,8 +255,10 @@
             </td>
             <td>
               @if (o.deliveryDate || o.deliveryTime) {
-                <span class="delivery-term">
-                  <mat-icon>schedule</mat-icon>
+                @let overdue = isOrderDeadlineOverdue(o);
+                <span class="delivery-term" [class.delivery-term--overdue]="overdue"
+                      [matTooltip]="overdue ? 'Termen de livrare depășit!' : ''">
+                  <mat-icon>{{ overdue ? 'warning_amber' : 'schedule' }}</mat-icon>
                   {{ o.deliveryDate ? (o.deliveryDate | date:'dd.MM.yy') : '' }}
                   {{ o.deliveryTime ?? '' }}
                 </span>

@@ -393,6 +393,10 @@
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 0.82rem; font-weight: 600; color: var(--color-primary);
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  &--overdue {
+    color: #dc2626;
+    mat-icon { color: #f59e0b; }
+  }
 }
 
 /* ── Status stepper ─────────────────────────────────────────── */
