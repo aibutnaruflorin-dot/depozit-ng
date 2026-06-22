@@ -254,13 +254,21 @@ export class TransportComponent implements OnInit {
 
   readonly activeOnTime = computed(() =>
     this.transportService.transports()
-      .filter(t => t.status !== 'livrat' && new Date(t.oraSosire).getTime() >= Date.now())
+      .filter(t => {
+        if (t.status === 'livrat') return false;
+        if (new Date(t.oraSosire).getTime() < Date.now()) return false;
+        return !this.ordersForTransport(t).some(o => this.isOrderDeadlineOverdue(o));
+      })
       .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))
   );
 
   readonly activeOverdue = computed(() =>
     this.transportService.transports()
-      .filter(t => t.status !== 'livrat' && new Date(t.oraSosire).getTime() < Date.now())
+      .filter(t => {
+        if (t.status === 'livrat') return false;
+        if (new Date(t.oraSosire).getTime() < Date.now()) return true;
+        return this.ordersForTransport(t).some(o => this.isOrderDeadlineOverdue(o));
+      })
       .sort((a, b) => a.oraSosire.localeCompare(b.oraSosire))
   );
 
