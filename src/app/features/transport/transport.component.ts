@@ -24,8 +24,10 @@ import { Transport, TransportStatus, TripDelivery } from '../../core/models/tran
 import { Order } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { DragModalDirective } from '../../shared/drag-modal.directive';
+import { InitValueDirective } from '../../shared/init-textarea.directive';
 import { AddProductsModalComponent } from '../../shared/add-products-modal/add-products-modal.component';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatPaginatorModule } from '@angular/material/paginator';
 
 // ── Validators ────────────────────────────────────────────────────────────────
 
@@ -92,8 +94,8 @@ interface CalBar {
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatCardModule, MatDividerModule, MatTooltipModule,
     MatChipsModule, MatSnackBarModule, MatMenuModule,
-    MatDatepickerModule, MatAutocompleteModule,
-    DragModalDirective, AddProductsModalComponent
+    MatDatepickerModule, MatAutocompleteModule, MatPaginatorModule,
+    DragModalDirective, InitValueDirective, AddProductsModalComponent
   ],
   templateUrl: './transport.component.html',
   styleUrl: './transport.component.scss'
@@ -110,8 +112,12 @@ export class TransportComponent implements OnInit {
   readonly todayStr = new Date().toISOString().slice(0, 10);
 
   layoutMode  = signal<2|3>(2);
-  showHistoric = signal(false);
-  showCalendar = signal(false);
+  showHistoric      = signal(false);
+  showCalendar      = signal(false);
+  showOrders        = signal(true);
+  showActive        = signal(true);
+  showOverdueOrders = signal(true);
+  showOverdueTrips  = signal(true);
 
   selectedDelivery = signal<{
     order: Order;
@@ -284,6 +290,111 @@ export class TransportComponent implements OnInit {
   );
 
   showDeleted = signal(false);
+
+  readonly PAGE_SIZE = 5;
+
+  // ── Pagination ─────────────────────────────────────────────────────────────
+  pg_orders        = signal(0);
+  pg_active        = signal(0);
+  pg_overdueOrders = signal(0);
+  pg_overdueTrips  = signal(0);
+  pg_historic      = signal(0);
+  pg_deleted       = signal(0);
+
+  // ── Sort state ─────────────────────────────────────────────────────────────
+  sort_orders        = signal<{col: string; dir: 1|-1}>({ col: 'deliveryDate', dir: 1 });
+  sort_overdueOrders = signal<{col: string; dir: 1|-1}>({ col: 'deliveryDate', dir: 1 });
+  sort_active        = signal<{col: string; dir: 1|-1}>({ col: 'oraPlecare',   dir: 1 });
+  sort_overdueTrips  = signal<{col: string; dir: 1|-1}>({ col: 'oraSosire',    dir: 1 });
+
+  sortOrders(col: string): void {
+    const c = this.sort_orders();
+    this.sort_orders.set({ col, dir: c.col === col ? (c.dir * -1 as 1|-1) : 1 });
+    this.pg_orders.set(0);
+  }
+  sortOverdueOrders(col: string): void {
+    const c = this.sort_overdueOrders();
+    this.sort_overdueOrders.set({ col, dir: c.col === col ? (c.dir * -1 as 1|-1) : 1 });
+    this.pg_overdueOrders.set(0);
+  }
+  sortActive(col: string): void {
+    const c = this.sort_active();
+    this.sort_active.set({ col, dir: c.col === col ? (c.dir * -1 as 1|-1) : 1 });
+    this.pg_active.set(0);
+  }
+  sortOverdueTrips(col: string): void {
+    const c = this.sort_overdueTrips();
+    this.sort_overdueTrips.set({ col, dir: c.col === col ? (c.dir * -1 as 1|-1) : 1 });
+    this.pg_overdueTrips.set(0);
+  }
+
+  sortDelivery(key: string, col: string): void {
+    key === 'orders' ? this.sortOrders(col) : this.sortOverdueOrders(col);
+  }
+  getDeliverySortSt(key: string): {col: string; dir: 1|-1} {
+    return key === 'orders' ? this.sort_orders() : this.sort_overdueOrders();
+  }
+  sortIcon(st: {col: string; dir: 1|-1}, col: string): string {
+    if (st.col !== col) return 'unfold_more';
+    return st.dir === 1 ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  private _sortOrders(orders: Order[], st: {col: string; dir: 1|-1}): Order[] {
+    return [...orders].sort((a, b) => {
+      let va: any = 0, vb: any = 0;
+      switch (st.col) {
+        case 'orderNumber': va = a.orderNumber ?? 0; vb = b.orderNumber ?? 0; break;
+        case 'client': va = a.client.name.toLowerCase(); vb = b.client.name.toLowerCase(); break;
+        case 'deliveryDate': va = a.deliveryDate ?? '9'; vb = b.deliveryDate ?? '9'; break;
+        case 'value': va = this.orderPendingValue(a).tva; vb = this.orderPendingValue(b).tva; break;
+      }
+      return va < vb ? -st.dir : va > vb ? st.dir : 0;
+    });
+  }
+
+  private _sortTrips(trips: Transport[], st: {col: string; dir: 1|-1}): Transport[] {
+    return [...trips].sort((a, b) => {
+      let va: any = 0, vb: any = 0;
+      switch (st.col) {
+        case 'masina': va = this.getVehicleName(a.vehicleId); vb = this.getVehicleName(b.vehicleId); break;
+        case 'sofer': va = this.getDriverName(a.driverId); vb = this.getDriverName(b.driverId); break;
+        case 'oraPlecare': va = a.oraPlecare; vb = b.oraPlecare; break;
+        case 'oraSosire': va = a.oraSosire; vb = b.oraSosire; break;
+        case 'status': va = a.status; vb = b.status; break;
+      }
+      return va < vb ? -st.dir : va > vb ? st.dir : 0;
+    });
+  }
+
+  // ── Sorted + paginated ─────────────────────────────────────────────────────
+  readonly deliveryOrdersOnTimePage = computed(() => {
+    const sorted = this._sortOrders(this.deliveryOrdersOnTime(), this.sort_orders());
+    const s = this.pg_orders() * this.PAGE_SIZE;
+    return sorted.slice(s, s + this.PAGE_SIZE);
+  });
+  readonly deliveryOrdersOverduePage = computed(() => {
+    const sorted = this._sortOrders(this.deliveryOrdersOverdue(), this.sort_overdueOrders());
+    const s = this.pg_overdueOrders() * this.PAGE_SIZE;
+    return sorted.slice(s, s + this.PAGE_SIZE);
+  });
+  readonly activeOnTimePage = computed(() => {
+    const sorted = this._sortTrips(this.activeOnTime(), this.sort_active());
+    const s = this.pg_active() * this.PAGE_SIZE;
+    return sorted.slice(s, s + this.PAGE_SIZE);
+  });
+  readonly activeOverduePage = computed(() => {
+    const sorted = this._sortTrips(this.activeOverdue(), this.sort_overdueTrips());
+    const s = this.pg_overdueTrips() * this.PAGE_SIZE;
+    return sorted.slice(s, s + this.PAGE_SIZE);
+  });
+  readonly historyPage = computed(() => {
+    const s = this.pg_historic() * this.PAGE_SIZE;
+    return this.transportService.history().slice(s, s + this.PAGE_SIZE);
+  });
+  readonly deletedPage = computed(() => {
+    const s = this.pg_deleted() * this.PAGE_SIZE;
+    return this.deletedTrips().slice(s, s + this.PAGE_SIZE);
+  });
 
   overlapIds = computed<Set<string>>(() => {
     const active = this.transportService.active();
@@ -901,6 +1012,41 @@ export class TransportComponent implements OnInit {
       d.orderId === orderId ? { ...d, observatii: note.trim() || undefined } : d
     );
     this.transportService.updateTransport(t.id, { deliveries });
+  }
+
+  orderTripStatus(o: Order): { label: string; cls: string } {
+    const t = this.transportService.transports()
+      .filter(tr => tr.status !== 'livrat' && tr.status !== 'anulat' && tr.status !== 'sters')
+      .find(tr => tr.deliveries.some(d => d.orderId === o.id));
+    if (!t) return { label: 'Neplanificat', cls: 'order-status--unplanned' };
+    if (t.status === 'in_livrare') return { label: 'În livrare', cls: 'status-active' };
+    const fullyPlanned = this.getRemainingQtyArr(o).every(q => q === 0);
+    return fullyPlanned
+      ? { label: 'Planificat', cls: 'status-planned' }
+      : { label: 'Parțial planificat', cls: 'order-status--partial' };
+  }
+
+  private _obsBuffer = new Map<string, string>();
+
+  setObsBuffer(tripId: string, orderId: string, val: string): void {
+    this._obsBuffer.set(`${tripId}::${orderId}`, val);
+  }
+
+  saveObsBuffer(t: Transport, orderId: string): void {
+    const key = `${t.id}::${orderId}`;
+    if (!this._obsBuffer.has(key)) return;
+    this.saveTripDeliveryNote(t, orderId, this._obsBuffer.get(key)!);
+  }
+
+  private _orderObsBuffer = new Map<string, string>();
+
+  setOrderObsBuffer(orderId: string, val: string): void {
+    this._orderObsBuffer.set(orderId, val);
+  }
+
+  saveOrderObsBuffer(orderId: string): void {
+    if (!this._orderObsBuffer.has(orderId)) return;
+    this.ordersService.updateOrderObservatii(orderId, this._orderObsBuffer.get(orderId)!);
   }
 
   selectedHelpers(): { orderNum: number | undefined; helper: string }[] {

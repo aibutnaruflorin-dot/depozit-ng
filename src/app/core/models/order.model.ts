@@ -39,4 +39,5 @@ export interface Order {
   revisedFromId?: string;
   superseded?: boolean;
   orderEvents?: OrderEvent[];
+  observatii?: string;
 }

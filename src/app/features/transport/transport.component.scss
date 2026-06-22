@@ -94,32 +94,93 @@
 }
 
 // Layout 2: calendar top + 2 panels bottom
-.layout-2 {
-  display: flex; flex-direction: column; gap: 1.25rem;
-}
-.l2-calendar {
+// Calendar wrappers
+.l2-calendar, .l3-cal-section {
   background: var(--color-surface);
   border: 1px solid var(--color-border); border-radius: 12px;
-  padding: 1rem;
+  padding: 1rem; margin-bottom: 1.25rem;
 }
-.l2-bottom {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start;
-}
-.l2-delivery, .l2-active {
+
+// ── Wide sections (colapsabile, una sub alta) ────────────────────
+.wide-section {
   background: var(--color-surface);
-  border: 1px solid var(--color-border); border-radius: 12px;
-  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+
+  > .panel-title {
+    padding: 0.75rem 1rem 0.6rem;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .empty-state { padding: 2.5rem 1.5rem; }
+
+  &--overdue {
+    border-color: #ffcdd2;
+    background: #fff9f9;
+  }
+}
+
+.section-table-wrap {
   overflow-x: auto;
 }
 
-// Layout 3: all tables
-.layout-3 { display: flex; flex-direction: column; gap: 1.25rem; }
-.l3-section {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border); border-radius: 12px;
-  padding: 1rem;
-  overflow-x: auto;
+.section-paginator,
+.q4-paginator {
+  border-top: 1px solid var(--color-border);
+  background: transparent;
 }
+
+.delivery-table--sections {
+  min-width: 1100px;
+  width: 100%;
+  table-layout: fixed;
+
+  /* Coloane fixe dreapta — identice în ambele secțiuni */
+  .col-valoare  { width: 120px; }
+  .col-masa     { width: 90px;  }
+  .col-obs      { width: 190px; }
+  .col-actiuni  { width: 130px; }
+
+  /* Coloane fixe stânga */
+  .col-nr       { width: 52px;  }
+  .col-vehicle  { width: 175px; }
+  .col-status   { width: 120px; }
+}
+
+.th-sort {
+  cursor: pointer; user-select: none; white-space: nowrap;
+  &:hover { color: var(--color-primary); }
+}
+
+.sort-icon {
+  font-size: 14px !important; width: 14px !important; height: 14px !important;
+  vertical-align: middle;
+  color: var(--color-text-muted);
+}
+
+.trip-vehicle-cell {
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 0.85rem;
+}
+
+.times-cell-v {
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 0.82rem; white-space: nowrap;
+}
+
+.obs-row {
+  & + & { margin-top: 4px; }
+}
+
+.warn-sm {
+  font-size: 14px !important; width: 14px !important; height: 14px !important;
+  color: #f59e0b; vertical-align: middle;
+}
+.text-center { text-align: center; }
+.small { font-size: 0.75rem; }
 
 // Historic section (all layouts)
 .historic-section {
@@ -321,6 +382,30 @@
 .orders-col  { min-width: 160px; vertical-align: top; }
 .delivery-col { min-width: 160px; vertical-align: top; }
 .notes-col   { min-width: 140px; vertical-align: top; }
+.nr-cell     { min-width: 52px; vertical-align: top; white-space: nowrap; }
+.client-details-cell { display: flex; flex-direction: column; gap: 3px; font-size: 0.82rem; }
+
+/* ── Order status badge (în comenzi) ────────────────────────── */
+.order-status-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+
+  &.order-status--unplanned {
+    background: #f3f4f6; border-color: #d1d5db; color: #6b7280;
+  }
+  &.order-status--partial {
+    background: #fff7ed; border-color: #fdba74; color: #c2410c;
+  }
+  &.status-planned  { background: #e8f0fe; border-color: #90caf9; color: #1565c0; }
+  &.status-active   { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+  &.status-done     { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+  &.status-confirmed { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+}
 
 .order-row-block {
   display: flex; flex-direction: column; gap: 3px;

@@ -36,94 +36,137 @@
     </div>
   }
 
-  <!-- ════════════════════════════════════════════════════════════
-       LAYOUT 2 — Calendar sus + Comenzi de planificat / Status Curse planificate jos
-       ════════════════════════════════════════════════════════════ -->
+  <!-- ── Calendar ── -->
   @if (layoutMode() === 2) {
-    <div class="layout-2">
-
-      <div class="l2-calendar">
-        <div class="panel-title">
-          <mat-icon>calendar_month</mat-icon> Planificare
-          <span class="panel-hint">Click pe celulă = cursă nouă</span>
-        </div>
+    <div class="l2-calendar">
+      <div class="panel-title">
+        <mat-icon>calendar_month</mat-icon> Planificare
+        <span class="panel-hint">Click pe celulă = cursă nouă</span>
+      </div>
+      <ng-container [ngTemplateOutlet]="calendarTpl"></ng-container>
+    </div>
+  } @else {
+    <div class="l3-cal-section">
+      <div class="panel-title panel-title--toggle" (click)="showCalendar.set(!showCalendar())">
+        <mat-icon>calendar_month</mat-icon> Planificare calendar
+        <mat-icon class="toggle-chevron">{{ showCalendar() ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </div>
+      @if (showCalendar()) {
         <ng-container [ngTemplateOutlet]="calendarTpl"></ng-container>
-      </div>
-
-      <div class="l2-bottom">
-
-        <div class="l2-delivery">
-          <div class="panel-title">
-            <mat-icon>local_shipping</mat-icon> Comenzi de planificat
-            @if (deliveryOrdersOnTime().length) { <span class="badge-pill">{{ deliveryOrdersOnTime().length }}</span> }
-          </div>
-          <ng-container [ngTemplateOutlet]="deliveryTableTpl"
-                        [ngTemplateOutletContext]="{ orders: deliveryOrdersOnTime() }"></ng-container>
-        </div>
-
-        <div class="l2-active">
-          <div class="panel-title">
-            <mat-icon>directions_car</mat-icon> Status Curse planificate
-            @if (activeOnTime().length) {
-              <span class="badge-pill badge-pill--warn">{{ activeOnTime().length }}</span>
-            }
-          </div>
-          <ng-container [ngTemplateOutlet]="activeTableTpl"></ng-container>
-        </div>
-
-      </div>
-
-    </div><!-- /layout-2 -->
-
-    <ng-container [ngTemplateOutlet]="overdueOrdersSection"></ng-container>
-    <ng-container [ngTemplateOutlet]="overdueSection"></ng-container>
-    <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
-    <ng-container [ngTemplateOutlet]="deletedSection"></ng-container>
+      }
+    </div>
   }
 
-  <!-- ════════════════════════════════════════════════════════════
-       LAYOUT 3 — Tabele (fără calendar)
-       ════════════════════════════════════════════════════════════ -->
-  @if (layoutMode() === 3) {
-    <div class="layout-3">
+  <!-- Sectiuni colapsabile - una sub alta -->
 
-      <div class="l3-section">
-        <div class="panel-title">
-          <mat-icon>local_shipping</mat-icon> Comenzi de planificat
-          @if (deliveryOrdersOnTime().length) { <span class="badge-pill">{{ deliveryOrdersOnTime().length }}</span> }
+  <!-- 1. Comenzi de planificat -->
+  <div class="wide-section">
+    <div class="panel-title panel-title--toggle" (click)="showOrders.set(!showOrders())">
+      <mat-icon>assignment</mat-icon> Comenzi de planificat
+      @if (deliveryOrdersOnTime().length) {
+        <span class="badge-pill">{{ deliveryOrdersOnTime().length }}</span>
+      }
+      <mat-icon class="toggle-chevron">{{ showOrders() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showOrders()) {
+      <ng-container [ngTemplateOutlet]="deliveryTableTpl"
+                    [ngTemplateOutletContext]="{ orders: deliveryOrdersOnTimePage(), sortKey: 'orders' }">
+      </ng-container>
+      @if (deliveryOrdersOnTime().length > PAGE_SIZE) {
+        <mat-paginator class="section-paginator"
+                       [length]="deliveryOrdersOnTime().length"
+                       [pageSize]="PAGE_SIZE"
+                       [pageIndex]="pg_orders()"
+                       (page)="pg_orders.set($event.pageIndex)"
+                       hidePageSize showFirstLastButtons>
+        </mat-paginator>
+      }
+    }
+  </div>
+
+  <!-- 2. Status Curse planificate -->
+  <div class="wide-section">
+    <div class="panel-title panel-title--toggle" (click)="showActive.set(!showActive())">
+      <mat-icon>directions_car</mat-icon> Status Curse planificate
+      @if (activeOnTime().length) {
+        <span class="badge-pill badge-pill--warn">{{ activeOnTime().length }}</span>
+      }
+      <mat-icon class="toggle-chevron">{{ showActive() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showActive()) {
+      <ng-container [ngTemplateOutlet]="activeTableTpl"></ng-container>
+      @if (activeOnTime().length > PAGE_SIZE) {
+        <mat-paginator class="section-paginator"
+                       [length]="activeOnTime().length"
+                       [pageSize]="PAGE_SIZE"
+                       [pageIndex]="pg_active()"
+                       (page)="pg_active.set($event.pageIndex)"
+                       hidePageSize showFirstLastButtons>
+        </mat-paginator>
+      }
+    }
+  </div>
+
+  <!-- 3. Comenzi neplanificate cu termen depasit -->
+  <div class="wide-section wide-section--overdue">
+    <div class="panel-title panel-title--toggle panel-title--overdue"
+         (click)="showOverdueOrders.set(!showOverdueOrders())">
+      <mat-icon>warning</mat-icon> Comenzi neplanificate cu termen depăşit
+      @if (deliveryOrdersOverdue().length) {
+        <span class="badge-pill badge-pill--overdue">{{ deliveryOrdersOverdue().length }}</span>
+      }
+      <mat-icon class="toggle-chevron">{{ showOverdueOrders() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showOverdueOrders()) {
+      @if (!deliveryOrdersOverdue().length) {
+        <div class="empty-state">
+          <mat-icon>check_circle_outline</mat-icon>
+          <p>Nicio comandă cu termen depăşit.</p>
         </div>
+      } @else {
         <ng-container [ngTemplateOutlet]="deliveryTableTpl"
-                      [ngTemplateOutletContext]="{ orders: deliveryOrdersOnTime() }"></ng-container>
-      </div>
-
-      <div class="l3-section">
-        <div class="panel-title">
-          <mat-icon>directions_car</mat-icon> Status Curse planificate
-          @if (activeOnTime().length) {
-            <span class="badge-pill badge-pill--warn">{{ activeOnTime().length }}</span>
-          }
-        </div>
-        <ng-container [ngTemplateOutlet]="activeTableTpl"></ng-container>
-      </div>
-
-      <!-- Calendar collapsibil in Layout 3 -->
-      <div class="l3-section">
-        <div class="panel-title panel-title--toggle" (click)="showCalendar.set(!showCalendar())">
-          <mat-icon>calendar_month</mat-icon> Planificare calendar
-          <mat-icon class="toggle-chevron">{{ showCalendar() ? 'expand_less' : 'expand_more' }}</mat-icon>
-        </div>
-        @if (showCalendar()) {
-          <ng-container [ngTemplateOutlet]="calendarTpl"></ng-container>
+                      [ngTemplateOutletContext]="{ orders: deliveryOrdersOverduePage(), sortKey: 'overdueOrders' }">
+        </ng-container>
+        @if (deliveryOrdersOverdue().length > PAGE_SIZE) {
+          <mat-paginator class="section-paginator"
+                         [length]="deliveryOrdersOverdue().length"
+                         [pageSize]="PAGE_SIZE"
+                         [pageIndex]="pg_overdueOrders()"
+                         (page)="pg_overdueOrders.set($event.pageIndex)"
+                         hidePageSize showFirstLastButtons>
+          </mat-paginator>
         }
-      </div>
+      }
+    }
+  </div>
 
-    </div><!-- /layout-3 -->
+  <!-- 4. Curse planificate intarziate -->
+  <div class="wide-section wide-section--overdue">
+    <div class="panel-title panel-title--toggle panel-title--overdue"
+         (click)="showOverdueTrips.set(!showOverdueTrips())">
+      <mat-icon>warning</mat-icon> Curse planificate întârziate
+      @if (activeOverdue().length) {
+        <span class="badge-pill badge-pill--overdue">{{ activeOverdue().length }}</span>
+      }
+      <mat-icon class="toggle-chevron">{{ showOverdueTrips() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showOverdueTrips()) {
+      <ng-container [ngTemplateOutlet]="overdueTripsBodyTpl"></ng-container>
+      @if (activeOverdue().length > PAGE_SIZE) {
+        <mat-paginator class="section-paginator"
+                       [length]="activeOverdue().length"
+                       [pageSize]="PAGE_SIZE"
+                       [pageIndex]="pg_overdueTrips()"
+                       (page)="pg_overdueTrips.set($event.pageIndex)"
+                       hidePageSize showFirstLastButtons>
+        </mat-paginator>
+      }
+    }
+  </div>
 
-    <ng-container [ngTemplateOutlet]="overdueOrdersSection"></ng-container>
-    <ng-container [ngTemplateOutlet]="overdueSection"></ng-container>
-    <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
-    <ng-container [ngTemplateOutlet]="deletedSection"></ng-container>
-  }
+  <!-- 5 & 6: Curse finalizate + Curse planificate sterse -->
+  <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
+  <ng-container [ngTemplateOutlet]="deletedSection"></ng-container>
 
 </div><!-- /transport-page -->
 
@@ -206,135 +249,118 @@
   }
 </ng-template>
 
-<!-- ── Comenzi de planificat – table ── -->
-<ng-template #deliveryTableTpl let-orders="orders">
+<!-- ── Comenzi de planificat / cu termen depăşit – tabel wide ── -->
+<ng-template #deliveryTableTpl let-orders="orders" let-sortKey="sortKey">
+  @let sst = getDeliverySortSt(sortKey ?? 'orders');
   @if (!orders.length) {
     <div class="empty-state">
       <mat-icon>check_circle_outline</mat-icon>
-      <p>Nicio comandă în așteptare de livrare.</p>
+      <p>Nicio comandă în aşteptare de livrare.</p>
     </div>
   } @else {
-    <table class="delivery-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Client</th>
-          <th>Telefon</th>
-          <th>Adresă livrare</th>
-          <th>Termen dorit</th>
-          <th>Produse</th>
-          <th>Valoare</th>
-          <th>Masă</th>
-          <th>Acțiuni</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (o of orders; track o.id) {
+    <div class="section-table-wrap">
+      <table class="delivery-table delivery-table--sections">
+        <thead>
           <tr>
-            <td><span class="order-num-badge">#{{ o.orderNumber ?? '?' }}</span></td>
-            <td>
-              <strong>{{ o.client.name }}</strong>
-              @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial livrat</span> }
-              @if (isPartiallyOnTrip(o)) { <span class="partial-badge partial-badge--on-trip">livrare parțială</span> }
-              <div class="order-client-note">
-                <mat-icon>notes</mat-icon>
-                <textarea class="order-note-edit"
-                          rows="1"
-                          placeholder="Adaugă observație…"
-                          [value]="o.client.note ?? ''"
-                          (click)="$event.stopPropagation()"
-                          (blur)="o.client.note !== $any($event.target).value && ordersService.updateOrderClient(o.id, { note: $any($event.target).value })"
-                          (keydown.enter)="$any($event.target).blur(); $event.preventDefault()"></textarea>
-              </div>
-            </td>
-            <td>
-              @if (o.client.phone) {
-                <a [href]="'tel:' + o.client.phone" class="tel-link">{{ o.client.phone }}</a>
-              } @else { <span class="muted">—</span> }
-            </td>
-            <td>
-              @if (o.client.address) {
-                <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link">
-                  <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                </a>
-              } @else { <span class="muted">—</span> }
-            </td>
-            <td>
-              @if (o.deliveryDate || o.deliveryTime) {
-                @let overdue = isOrderDeadlineOverdue(o);
-                <span class="delivery-term" [class.delivery-term--overdue]="overdue"
-                      [matTooltip]="overdue ? 'Termen de livrare depășit!' : ''">
-                  <mat-icon>{{ overdue ? 'warning_amber' : 'schedule' }}</mat-icon>
-                  {{ o.deliveryDate ? (o.deliveryDate | date:'dd.MM.yy') : '' }}
-                  {{ o.deliveryTime ?? '' }}
-                </span>
-              } @else { <span class="muted">—</span> }
-            </td>
-            <td>
-              <span class="delivery-progress">{{ deliveredProductCount(o) }} / {{ o.products.length }} art.</span>
-            </td>
-            <td class="value-cell">
-              @let ov = orderPendingValue(o);
-              @let rv = orderRemainingValue(o);
-              <span class="val-net">{{ ov.tva | number:'1.2-2' }} cu TVA</span>
-              @if (rv.tva < ov.tva) {
-                <span class="val-remaining">rest: {{ rv.tva | number:'1.2-2' }} cu TVA</span>
-              }
-            </td>
-            <td class="value-cell">
-              @let ow = orderTotalWeight(o);
-              @let dw = orderDeliveredWeight(o);
-              @if (ow > 0) {
-                <span class="val-weight">
-                  <mat-icon style="font-size:13px;width:13px;height:13px;vertical-align:middle">scale</mat-icon>
-                  {{ fmtWeight(dw) }} / {{ fmtWeight(ow) }}
-                </span>
-              } @else {
-                <span class="muted">—</span>
-              }
-            </td>
-            <td>
-              <div class="delivery-actions">
-                <button mat-flat-button color="primary" class="plan-btn"
-                        [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
-                        (click)="openCreateForOrder(o)">
-                  <mat-icon>add_road</mat-icon> Planifică
-                </button>
-                <button mat-icon-button (click)="addProductsOrderId.set(o.id)"
-                        matTooltip="Adaugă produse la comandă">
-                  <mat-icon>add_shopping_cart</mat-icon>
-                </button>
-              </div>
-            </td>
+            <th class="th-sort col-nr" (click)="sortDelivery(sortKey ?? 'orders', 'orderNumber')">
+              NR <mat-icon class="sort-icon">{{ sortIcon(sst, 'orderNumber') }}</mat-icon>
+            </th>
+            <th class="th-sort" (click)="sortDelivery(sortKey ?? 'orders', 'client')">
+              Client <mat-icon class="sort-icon">{{ sortIcon(sst, 'client') }}</mat-icon>
+            </th>
+            <th>Detalii client</th>
+            <th class="th-sort" (click)="sortDelivery(sortKey ?? 'orders', 'deliveryDate')">
+              Termen <mat-icon class="sort-icon">{{ sortIcon(sst, 'deliveryDate') }}</mat-icon>
+            </th>
+            <th class="col-status">Status</th>
+            <th class="th-sort col-valoare" (click)="sortDelivery(sortKey ?? 'orders', 'value')">
+              Valoare <mat-icon class="sort-icon">{{ sortIcon(sst, 'value') }}</mat-icon>
+            </th>
+            <th class="col-masa">Masă</th>
+            <th class="col-obs">Observații</th>
+            <th class="col-actiuni">Acțiuni</th>
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (o of orders; track o.id) {
+            <tr>
+              <td class="col-nr"><span class="order-num-badge">#{{ o.orderNumber ?? '?' }}</span></td>
+              <td>
+                <strong>{{ o.client.name }}</strong>
+                @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
+              </td>
+              <td>
+                <div class="client-details-cell">
+                  @if (o.client.phone) {
+                    <a [href]="'tel:' + o.client.phone" class="tel-link">{{ o.client.phone }}</a>
+                  }
+                  @if (o.client.address) {
+                    <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link">
+                      <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                    </a>
+                  }
+                  @if (!o.client.phone && !o.client.address) {
+                    <span class="muted">—</span>
+                  }
+                </div>
+              </td>
+              <td>
+                @if (o.deliveryDate || o.deliveryTime) {
+                  @let overdue = isOrderDeadlineOverdue(o);
+                  <span class="delivery-term" [class.delivery-term--overdue]="overdue">
+                    <mat-icon>{{ overdue ? 'warning_amber' : 'schedule' }}</mat-icon>
+                    {{ o.deliveryDate ? (o.deliveryDate | date:'dd.MM.yy') : '' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                  </span>
+                } @else { <span class="muted">—</span> }
+              </td>
+              <td class="col-status">
+                @let ots = orderTripStatus(o);
+                <span class="order-status-badge" [ngClass]="ots.cls">{{ ots.label }}</span>
+              </td>
+              <td>
+                @let ov = orderPendingValue(o);
+                @let rv = orderRemainingValue(o);
+                <span class="val-net">{{ ov.tva | number:'1.0-0' }} lei</span>
+                @if (rv.tva < ov.tva) {
+                  <span class="val-remaining small">rest: {{ rv.tva | number:'1.0-0' }}</span>
+                }
+              </td>
+              <td class="masa-cell col-masa">
+                @let w = orderTotalWeight(o);
+                @if (w > 0) {
+                  <span class="val-weight"><mat-icon>monitor_weight</mat-icon>{{ fmtWeight(w) }}</span>
+                } @else { <span class="muted">—</span> }
+              </td>
+              <td class="notes-col col-obs">
+                <textarea class="chip-note-input" rows="2"
+                          [appInitValue]="o.observatii ?? ''"
+                          (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
+                          (blur)="saveOrderObsBuffer(o.id)"
+                          placeholder="Notă comandă">
+                </textarea>
+              </td>
+              <td>
+                <div class="delivery-actions">
+                  <button mat-icon-button color="primary"
+                          [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
+                          (click)="openCreateForOrder(o)" matTooltip="Planifică">
+                    <mat-icon>add_road</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="addProductsOrderId.set(o.id)" matTooltip="Adaugă produse">
+                    <mat-icon>add_shopping_cart</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 </ng-template>
 
-<!-- ── Comenzi neplanificate cu termen depășit ── -->
-<ng-template #overdueOrdersSection>
-  <div class="overdue-section">
-    <div class="panel-title panel-title--overdue">
-      <mat-icon>warning</mat-icon> Comenzi neplanificate cu termen depășit
-      @if (deliveryOrdersOverdue().length) {
-        <span class="badge-pill badge-pill--overdue">{{ deliveryOrdersOverdue().length }}</span>
-      }
-    </div>
-    @if (!deliveryOrdersOverdue().length) {
-      <div class="empty-state">
-        <mat-icon>check_circle_outline</mat-icon>
-        <p>Nicio comandă cu termen depășit.</p>
-      </div>
-    } @else {
-      <ng-container [ngTemplateOutlet]="deliveryTableTpl"
-                    [ngTemplateOutletContext]="{ orders: deliveryOrdersOverdue() }"></ng-container>
-    }
-  </div>
-</ng-template>
 
-<!-- ── Status Curse planificate – table (termen viitor/curent) ── -->
+<!-- ── Status Curse planificate – tabel wide cu observații ── -->
 <ng-template #activeTableTpl>
   @if (!activeOnTime().length) {
     <div class="empty-state">
@@ -342,300 +368,251 @@
       <p>Nicio cursă planificată.</p>
     </div>
   } @else {
-    <table class="delivery-table">
-      <thead>
-        <tr>
-          <th>Mașină</th>
-          <th>Șofer</th>
-          <th>Plecare → Sosire</th>
-          <th>Comenzi</th>
-          <th>Adresă / Termen</th>
-          <th>Observații</th>
-          <th>Valoare</th>
-          <th>Masă</th>
-          <th>Status</th>
-          <th>Acțiuni</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (t of activeOnTime(); track t.id) {
-          <tr [class.row--active]="t.status==='in_livrare'" [class.row--overlap]="overlapIds().has(t.id)">
-            <td>
-              <span class="vehicle-cell">
-                <mat-icon>local_shipping</mat-icon>
-                <span>
-                  <strong>{{ getVehicleName(t.vehicleId) }}</strong><br>
-                  <small>{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
-                </span>
-              </span>
-            </td>
-            <td>
-              {{ getDriverName(t.driverId) }}
-              @if (t.helper) {
-                <br><small class="muted"><mat-icon style="font-size:12px;height:12px;width:12px;vertical-align:middle">person_add</mat-icon> {{ t.helper }}</small>
-              }
-            </td>
-            <td>
-              <div class="times-cell">
-                <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
-                <mat-icon class="arrow-icon">arrow_forward</mat-icon>
-                <span>{{ transportService.formatDateTime(t.oraSosire) }}</span>
-              </div>
-            </td>
-            <!-- COL: Comenzi -->
-            <td class="orders-col">
-              @for (o of ordersForTransport(t); track o.id) {
-                <div class="order-row-block order-row-block--clickable" (click)="openDelivery(t, o)">
-                  <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                  <strong class="order-row-name">{{ o.client.name }}</strong>
-                  <span class="muted small">· {{ deliveryItems(t, o.id).length }} art.</span>
-                  @if (isPartialTripForOrder(t, o)) {
-                    <span class="order-partial-tag">livrare parțială</span>
-                  }
-                </div>
-              }
-            </td>
-            <!-- COL: Adresă / Termen -->
-            <td class="delivery-col">
-              @for (o of ordersForTransport(t); track o.id) {
-                <div class="order-row-block">
-                  @if (o.client.phone) {
-                    <a [href]="'tel:' + o.client.phone" class="order-chip-phone" (click)="$event.stopPropagation()">
-                      <mat-icon>phone</mat-icon>{{ o.client.phone }}
-                    </a>
-                  }
-                  @if (o.client.address) {
-                    <span class="order-chip-addr">
-                      <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                    </span>
-                  }
-                  @if (o.deliveryDate) {
-                    @let dlWarn = tripOrderDeadlineWarn(t, o);
-                    <span class="order-chip-deadline" [class.order-chip-deadline--warn]="dlWarn"
-                          [matTooltip]="dlWarn ? 'Termen depășit față de plecare!' : ''">
-                      <mat-icon>{{ dlWarn ? 'warning_amber' : 'schedule' }}</mat-icon>
-                      {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                    </span>
-                  }
-                </div>
-              }
-            </td>
-            <!-- COL: Observații -->
-            <td class="notes-col">
-              @for (o of ordersForTransport(t); track o.id) {
-                @let del = getTripDelivery(t, o.id);
-                <div class="order-row-block">
-                  <textarea class="chip-note-input"
-                            rows="1"
-                            placeholder="Observații…"
-                            [value]="del?.observatii ?? ''"
-                            (click)="$event.stopPropagation()"
-                            (blur)="saveTripDeliveryNote(t, o.id, $any($event.target).value)"
-                            (keydown.enter)="$any($event.target).blur(); $event.preventDefault()"></textarea>
-                </div>
-              }
-            </td>
-            <td class="value-cell">
-              @let tv = tripValue(t);
-              <span class="val-net">{{ tv.net | number:'1.2-2' }} lei</span>
-              <span class="val-tva">{{ tv.tva | number:'1.2-2' }} cu TVA</span>
-            </td>
-            <td class="masa-cell">
-              @let tw = tripTotalWeight(t);
-              @if (tw > 0) {
-                <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
-                  <mat-icon>scale</mat-icon>
-                  {{ fmtWeight(tw) }}
-                  @if (tripWeightWarn(t)) {
-                    <mat-icon class="warn-icon" matTooltip="Tonaj depășit!">warning</mat-icon>
-                  }
-                </span>
-              } @else {
-                <span class="muted">—</span>
-              }
-            </td>
-            <td>
-              <span class="trip-status-badge"
-                    [class.trip-status--planificat]="t.status==='planificat'"
-                    [class.trip-status--confirmed]="t.status==='confirmat_sofer'"
-                    [class.trip-status--in-livrare]="t.status==='in_livrare'">
-                <mat-icon>{{ t.status === 'in_livrare' ? 'local_shipping' : t.status === 'confirmat_sofer' ? 'check_circle' : 'schedule' }}</mat-icon>
-                {{ statusLabel(t.status) }}
-              </span>
-            </td>
-            <td>
-              @if (auth.isAdmin()) {
-                @if (t.status === 'anulat') {
-                  <button mat-icon-button color="primary" (click)="reopenTransport(t)" matTooltip="Redeschide cursa"><mat-icon>lock_open</mat-icon></button>
-                }
-                @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
-                  @if (t.status === 'planificat') {
-                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
-                  }
-                  <button mat-icon-button (click)="sendDriverWhatsApp(t); $event.stopPropagation()"
-                          [matTooltip]="t.waSentDriverAt ? 'WhatsApp șofer · trimis ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp șofer'"
-                          [style.color]="t.waSentDriverAt ? '#888' : '#25d366'">
-                    <mat-icon>{{ t.waSentDriverAt ? 'mark_chat_read' : 'local_shipping' }}</mat-icon>
-                  </button>
-                  @if (t.helper) {
-                    <button mat-icon-button (click)="sendHelperWhatsApp(t); $event.stopPropagation()"
-                            [matTooltip]="t.waSentHelperAt ? 'WhatsApp ajutor · trimis ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ajutor (' + t.helper + ')'"
-                            [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
-                      <mat-icon>{{ t.waSentHelperAt ? 'mark_chat_read' : 'person_add' }}</mat-icon>
-                    </button>
-                  }
-                  @if (whatsappGroups().length) {
-                    <button mat-icon-button [matMenuTriggerFor]="activeGroupMenu" matTooltip="Trimite la grup WhatsApp" style="color:#25d366" (click)="$event.stopPropagation()">
-                      <mat-icon>group</mat-icon>
-                    </button>
-                    <mat-menu #activeGroupMenu="matMenu">
-                      @for (g of whatsappGroups(); track g.id) {
-                        <button mat-menu-item (click)="sendGroupWhatsApp(t, g)">
-                          <mat-icon>whatsapp</mat-icon>{{ g.name }}
-                        </button>
-                      }
-                    </mat-menu>
-                  }
-                  @if (t.status === 'planificat') {
-                    <button mat-icon-button color="warn" (click)="cancelTransport(t); $event.stopPropagation()" matTooltip="Anulează cursa"><mat-icon>cancel</mat-icon></button>
-                  }
-                }
-                <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Mută în Curse șterse"><mat-icon>delete_outline</mat-icon></button>
-              }
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  }
-</ng-template>
-
-<!-- ── Curse cu termen depășit ── -->
-<ng-template #overdueSection>
-  <div class="overdue-section">
-    <div class="panel-title panel-title--overdue">
-      <mat-icon>warning</mat-icon> Curse cu termen depășit
-      @if (activeOverdue().length) {
-        <span class="badge-pill badge-pill--overdue">{{ activeOverdue().length }}</span>
-      }
-    </div>
-    @if (!activeOverdue().length) {
-      <div class="empty-state">
-        <mat-icon>check_circle_outline</mat-icon>
-        <p>Nicio cursă cu termen depășit.</p>
-      </div>
-    } @else {
-      <table class="delivery-table">
+    <div class="section-table-wrap">
+      <table class="delivery-table delivery-table--sections">
         <thead>
           <tr>
-            <th>Mașină</th>
-            <th>Șofer</th>
-            <th>Plecare → Sosire</th>
-            <th>Comenzi</th>
-            <th>Adresă / Termen</th>
-            <th>Observații</th>
-            <th>Valoare</th>
-            <th>Masă</th>
-            <th>Status</th>
-            <th>Acțiuni</th>
+            <th class="col-nr">NR</th>
+            <th class="th-sort col-vehicle" (click)="sortActive('masina')">
+              Maşină / Şofer <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'masina') }}</mat-icon>
+            </th>
+            <th>Comenzi / Adresă</th>
+            <th class="th-sort" (click)="sortActive('oraPlecare')">
+              Program <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'oraPlecare') }}</mat-icon>
+            </th>
+            <th class="th-sort col-status" (click)="sortActive('status')">
+              Status <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'status') }}</mat-icon>
+            </th>
+            <th class="col-valoare">Valoare</th>
+            <th class="col-masa">Masă</th>
+            <th class="col-obs">Observații</th>
+            <th class="col-actiuni">Acțiuni</th>
           </tr>
         </thead>
         <tbody>
-          @for (t of activeOverdue(); track t.id) {
-            <tr class="row--overdue">
-              <td>
-                <span class="vehicle-cell">
-                  <mat-icon>local_shipping</mat-icon>
-                  <span>
-                    <strong>{{ getVehicleName(t.vehicleId) }}</strong><br>
-                    <small>{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
-                  </span>
-                </span>
-              </td>
-              <td>
-                {{ getDriverName(t.driverId) }}
-                @if (t.helper) {
-                  <br><small class="muted"><mat-icon style="font-size:12px;height:12px;width:12px;vertical-align:middle">person_add</mat-icon> {{ t.helper }}</small>
+          @for (t of activeOnTimePage(); track t.id) {
+            <tr [class.row--active]="t.status==='in_livrare'" [class.row--overlap]="overlapIds().has(t.id)">
+              <td class="nr-cell col-nr">
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div><span class="order-num-badge">#{{ o.orderNumber }}</span></div>
                 }
               </td>
-              <td>
-                <div class="times-cell">
-                  <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
-                  <mat-icon class="arrow-icon">arrow_forward</mat-icon>
-                  <span class="overdue-time">{{ transportService.formatDateTime(t.oraSosire) }}</span>
+              <td class="col-vehicle">
+                <div class="trip-vehicle-cell">
+                  <span class="vehicle-cell">
+                    <mat-icon>local_shipping</mat-icon>
+                    <span>
+                      <strong>{{ getVehicleName(t.vehicleId) }}</strong>
+                      <small class="muted">{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
+                    </span>
+                  </span>
+                  <span class="muted small">{{ getDriverName(t.driverId) }}</span>
+                  @if (t.helper) {
+                    <span class="muted small">
+                      <mat-icon style="font-size:12px;width:12px;height:12px;vertical-align:middle">person_add</mat-icon>
+                      {{ t.helper }}
+                    </span>
+                  }
                 </div>
               </td>
-              <!-- COL: Comenzi -->
-              <td class="orders-col">
+              <td>
                 @for (o of ordersForTransport(t); track o.id) {
-                  <div class="order-row-block order-row-block--clickable" (click)="openDelivery(t, o)">
-                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                    <strong class="order-row-name">{{ o.client.name }}</strong>
-                    <span class="muted small">· {{ deliveryItems(t, o.id).length }} art.</span>
-                    @if (isPartialTripForOrder(t, o)) {
-                      <span class="order-partial-tag">livrare parțială</span>
+                  <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
+                    <div class="order-chip-top">
+                      <span class="order-chip-name">{{ o.client.name }}</span>
+                      @if (tripOrderDeadlineWarn(t, o)) {
+                        <mat-icon class="warn-sm">warning_amber</mat-icon>
+                      }
+                    </div>
+                    @if (o.client.address || o.deliveryDate) {
+                      <div class="order-chip-meta">
+                        @if (o.client.address) {
+                          <span class="order-chip-addr">
+                            <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                          </span>
+                        }
+                        @if (o.deliveryDate) {
+                          <span class="order-chip-deadline" [class.order-chip-deadline--warn]="tripOrderDeadlineWarn(t, o)">
+                            <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                          </span>
+                        }
+                      </div>
                     }
                   </div>
                 }
               </td>
-              <!-- COL: Adresă / Termen -->
-              <td class="delivery-col">
-                @for (o of ordersForTransport(t); track o.id) {
-                  <div class="order-row-block">
-                    @if (o.client.phone) {
-                      <a [href]="'tel:' + o.client.phone" class="order-chip-phone" (click)="$event.stopPropagation()">
-                        <mat-icon>phone</mat-icon>{{ o.client.phone }}
-                      </a>
-                    }
-                    @if (o.client.address) {
-                      <span class="order-chip-addr">
-                        <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                      </span>
-                    }
-                    @if (o.deliveryDate) {
-                      @let dlWarn = tripOrderDeadlineWarn(t, o);
-                      <span class="order-chip-deadline" [class.order-chip-deadline--warn]="dlWarn"
-                            [matTooltip]="dlWarn ? 'Termen depășit față de plecare!' : ''">
-                        <mat-icon>{{ dlWarn ? 'warning_amber' : 'schedule' }}</mat-icon>
-                        {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                      </span>
-                    }
-                  </div>
-                }
+              <td>
+                <div class="times-cell-v">
+                  <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
+                  <span class="muted small">→ {{ transportService.formatDateTime(t.oraSosire) }}</span>
+                </div>
               </td>
-              <!-- COL: Observații -->
-              <td class="notes-col">
-                @for (o of ordersForTransport(t); track o.id) {
-                  @let del = getTripDelivery(t, o.id);
-                  <div class="order-row-block">
-                    <textarea class="chip-note-input"
-                              rows="1"
-                              placeholder="Observații…"
-                              [value]="del?.observatii ?? ''"
-                              (click)="$event.stopPropagation()"
-                              (blur)="saveTripDeliveryNote(t, o.id, $any($event.target).value)"
-                              (keydown.enter)="$any($event.target).blur(); $event.preventDefault()"></textarea>
-                  </div>
-                }
+              <td>
+                <span class="trip-status-badge"
+                      [class.trip-status--planificat]="t.status==='planificat'"
+                      [class.trip-status--confirmed]="t.status==='confirmat_sofer'"
+                      [class.trip-status--in-livrare]="t.status==='in_livrare'">
+                  <mat-icon>{{ t.status === 'in_livrare' ? 'local_shipping' : t.status === 'confirmat_sofer' ? 'check_circle' : 'schedule' }}</mat-icon>
+                  {{ statusLabel(t.status) }}
+                </span>
               </td>
-              <td class="value-cell">
-                @let ov = tripValue(t);
-                <span class="val-net">{{ ov.net | number:'1.2-2' }} lei</span>
-                <span class="val-tva">{{ ov.tva | number:'1.2-2' }} cu TVA</span>
+              <td class="value-cell col-valoare">
+                @let tv = tripValue(t);
+                <span class="val-net">{{ tv.net | number:'1.0-0' }} lei</span>
+                <span class="val-tva">{{ tv.tva | number:'1.0-0' }} cu TVA</span>
               </td>
-              <td class="masa-cell">
+              <td class="masa-cell col-masa">
                 @let tw = tripTotalWeight(t);
                 @if (tw > 0) {
                   <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
-                    <mat-icon>scale</mat-icon>
-                    {{ fmtWeight(tw) }}
-                    @if (tripWeightWarn(t)) {
-                      <mat-icon class="warn-icon" matTooltip="Tonaj depășit!">warning</mat-icon>
-                    }
+                    <mat-icon>monitor_weight</mat-icon>{{ fmtWeight(tw) }}
                   </span>
-                } @else {
-                  <span class="muted">—</span>
                 }
+              </td>
+              <td class="notes-col col-obs">
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="obs-row">
+                    <textarea class="chip-note-input" rows="2"
+                              [appInitValue]="getTripDelivery(t, o.id)?.observatii ?? ''"
+                              (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
+                              (blur)="saveObsBuffer(t, o.id)"
+                              [placeholder]="'Notă #' + o.orderNumber">
+                    </textarea>
+                  </div>
+                }
+              </td>
+              <td class="actions-cell col-actiuni">
+                @if (auth.isAdmin()) {
+                  @if (t.status === 'planificat') {
+                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
+                  }
+                  @if (t.status === 'planificat' || t.status === 'confirmat_sofer' || t.status === 'in_livrare') {
+                    <button mat-icon-button (click)="sendDriverWhatsApp(t)"
+                            [matTooltip]="t.waSentDriverAt ? 'WA şofer · ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp şofer'"
+                            [style.color]="t.waSentDriverAt ? '#888' : '#25d366'">
+                      <mat-icon>{{ t.waSentDriverAt ? 'mark_chat_read' : 'local_shipping' }}</mat-icon>
+                    </button>
+                    @if (t.helper) {
+                      <button mat-icon-button (click)="sendHelperWhatsApp(t)"
+                              [matTooltip]="t.waSentHelperAt ? 'WA ajutor · ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ' + t.helper"
+                              [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
+                        <mat-icon>{{ t.waSentHelperAt ? 'mark_chat_read' : 'person_add' }}</mat-icon>
+                      </button>
+                    }
+                    @if (whatsappGroups().length) {
+                      <button mat-icon-button [matMenuTriggerFor]="actGrpMenu" matTooltip="Grup WA" style="color:#25d366">
+                        <mat-icon>group</mat-icon>
+                      </button>
+                      <mat-menu #actGrpMenu="matMenu">
+                        @for (g of whatsappGroups(); track g.id) {
+                          <button mat-menu-item (click)="sendGroupWhatsApp(t, g)">
+                            <mat-icon>whatsapp</mat-icon>{{ g.name }}
+                          </button>
+                        }
+                      </mat-menu>
+                    }
+                    @if (t.status === 'planificat') {
+                      <button mat-icon-button color="warn" (click)="cancelTransport(t)" matTooltip="Anulează"><mat-icon>cancel</mat-icon></button>
+                    }
+                  }
+                  <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</ng-template>
+
+
+<!-- ── Curse planificate întârziate – tabel wide ── -->
+<ng-template #overdueTripsBodyTpl>
+  @if (!activeOverdue().length) {
+    <div class="empty-state">
+      <mat-icon>check_circle_outline</mat-icon>
+      <p>Nicio cursă planificată întârziată.</p>
+    </div>
+  } @else {
+    <div class="section-table-wrap">
+      <table class="delivery-table delivery-table--sections">
+        <thead>
+          <tr>
+            <th class="col-nr">NR</th>
+            <th class="th-sort col-vehicle" (click)="sortOverdueTrips('masina')">
+              Maşină / Şofer <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'masina') }}</mat-icon>
+            </th>
+            <th>Comenzi / Adresă</th>
+            <th class="th-sort" (click)="sortOverdueTrips('oraSosire')">
+              Program <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'oraSosire') }}</mat-icon>
+            </th>
+            <th class="th-sort col-status" (click)="sortOverdueTrips('status')">
+              Status <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'status') }}</mat-icon>
+            </th>
+            <th class="col-valoare">Valoare</th>
+            <th class="col-masa">Masă</th>
+            <th class="col-obs">Observații</th>
+            <th class="col-actiuni">Acțiuni</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of activeOverduePage(); track t.id) {
+            <tr class="row--overdue">
+              <td class="nr-cell col-nr">
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div><span class="order-num-badge">#{{ o.orderNumber }}</span></div>
+                }
+              </td>
+              <td class="col-vehicle">
+                <div class="trip-vehicle-cell">
+                  <span class="vehicle-cell">
+                    <mat-icon>local_shipping</mat-icon>
+                    <span>
+                      <strong>{{ getVehicleName(t.vehicleId) }}</strong>
+                      <small class="muted">{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
+                    </span>
+                  </span>
+                  <span class="muted small">{{ getDriverName(t.driverId) }}</span>
+                  @if (t.helper) {
+                    <span class="muted small">
+                      <mat-icon style="font-size:12px;width:12px;height:12px;vertical-align:middle">person_add</mat-icon>
+                      {{ t.helper }}
+                    </span>
+                  }
+                </div>
+              </td>
+              <td>
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
+                    <div class="order-chip-top">
+                      <span class="order-chip-name">{{ o.client.name }}</span>
+                      @if (tripOrderDeadlineWarn(t, o)) {
+                        <mat-icon class="warn-sm">warning_amber</mat-icon>
+                      }
+                    </div>
+                    @if (o.client.address || o.deliveryDate) {
+                      <div class="order-chip-meta">
+                        @if (o.client.address) {
+                          <span class="order-chip-addr">
+                            <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                          </span>
+                        }
+                        @if (o.deliveryDate) {
+                          <span class="order-chip-deadline order-chip-deadline--warn">
+                            <mat-icon>warning_amber</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </td>
+              <td>
+                <div class="times-cell-v">
+                  <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
+                  <span class="overdue-time small">→ {{ transportService.formatDateTime(t.oraSosire) }}</span>
+                </div>
               </td>
               <td>
                 <span class="trip-status-badge trip-status--overdue">
@@ -643,29 +620,52 @@
                   {{ t.status === 'in_livrare' ? 'În livrare' : 'Planificat' }}
                 </span>
               </td>
-              <td class="actions-cell">
+              <td class="value-cell col-valoare">
+                @let tv = tripValue(t);
+                <span class="val-net">{{ tv.net | number:'1.0-0' }} lei</span>
+                <span class="val-tva">{{ tv.tva | number:'1.0-0' }} cu TVA</span>
+              </td>
+              <td class="masa-cell col-masa">
+                @let tw = tripTotalWeight(t);
+                @if (tw > 0) {
+                  <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
+                    <mat-icon>monitor_weight</mat-icon>{{ fmtWeight(tw) }}
+                  </span>
+                }
+              </td>
+              <td class="notes-col col-obs">
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="obs-row">
+                    <textarea class="chip-note-input" rows="2"
+                              [appInitValue]="getTripDelivery(t, o.id)?.observatii ?? ''"
+                              (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
+                              (blur)="saveObsBuffer(t, o.id)"
+                              [placeholder]="'Notă #' + o.orderNumber">
+                    </textarea>
+                  </div>
+                }
+              </td>
+              <td class="actions-cell col-actiuni">
                 @if (auth.isAdmin()) {
-                  @if (t.status === 'anulat') {
-                    <button mat-icon-button color="primary" (click)="reopenTransport(t)" matTooltip="Redeschide cursa"><mat-icon>lock_open</mat-icon></button>
-                  } @else {
-                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează / reprogramează"><mat-icon>edit</mat-icon></button>
+                  @if (t.status !== 'anulat') {
+                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                     <button mat-icon-button (click)="sendDriverWhatsApp(t)"
-                            [matTooltip]="t.waSentDriverAt ? 'WhatsApp șofer · trimis ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp șofer'"
+                            [matTooltip]="t.waSentDriverAt ? 'WA şofer · ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp şofer'"
                             [style.color]="t.waSentDriverAt ? '#888' : '#25d366'">
                       <mat-icon>{{ t.waSentDriverAt ? 'mark_chat_read' : 'local_shipping' }}</mat-icon>
                     </button>
                     @if (t.helper) {
                       <button mat-icon-button (click)="sendHelperWhatsApp(t)"
-                              [matTooltip]="t.waSentHelperAt ? 'WhatsApp ajutor · trimis ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ajutor'"
+                              [matTooltip]="t.waSentHelperAt ? 'WA ajutor · ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ' + t.helper"
                               [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
                         <mat-icon>{{ t.waSentHelperAt ? 'mark_chat_read' : 'person_add' }}</mat-icon>
                       </button>
                     }
                     @if (whatsappGroups().length) {
-                      <button mat-icon-button [matMenuTriggerFor]="groupMenu" matTooltip="Trimite la grup WhatsApp" style="color:#25d366">
+                      <button mat-icon-button [matMenuTriggerFor]="ovdGrpMenu" matTooltip="Grup WA" style="color:#25d366">
                         <mat-icon>group</mat-icon>
                       </button>
-                      <mat-menu #groupMenu="matMenu">
+                      <mat-menu #ovdGrpMenu="matMenu">
                         @for (g of whatsappGroups(); track g.id) {
                           <button mat-menu-item (click)="sendGroupWhatsApp(t, g)">
                             <mat-icon>whatsapp</mat-icon>{{ g.name }}
@@ -674,17 +674,15 @@
                       </mat-menu>
                     }
                   }
-                  <button mat-icon-button color="warn" matTooltip="Mută în Curse șterse" (click)="deleteTransport(t)">
-                    <mat-icon>delete_outline</mat-icon>
-                  </button>
+                  <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
                 }
               </td>
             </tr>
           }
         </tbody>
       </table>
-    }
-  </div>
+    </div>
+  }
 </ng-template>
 
 <!-- ── Istoric (collapsibil) ── -->
@@ -714,7 +712,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (t of transportService.history(); track t.id) {
+            @for (t of historyPage(); track t.id) {
               <tr>
                 <td>
                   <span class="vehicle-cell">
@@ -761,7 +759,7 @@
                     </div>
                   }
                 </td>
-                <td class="value-cell">
+                <td class="value-cell col-valoare">
                   @let hv = tripValue(t);
                   <span class="val-net">{{ hv.net | number:'1.2-2' }} lei</span>
                   <span class="val-tva">{{ hv.tva | number:'1.2-2' }} cu TVA</span>
@@ -787,22 +785,35 @@
             }
           </tbody>
         </table>
+        @if (transportService.history().length > PAGE_SIZE) {
+          <mat-paginator class="q4-paginator"
+                         [length]="transportService.history().length"
+                         [pageSize]="PAGE_SIZE"
+                         [pageIndex]="pg_historic()"
+                         (page)="pg_historic.set($event.pageIndex)"
+                         hidePageSize showFirstLastButtons>
+          </mat-paginator>
+        }
         </div>
       }
     }
   </div>
 </ng-template>
 
-<!-- ── Curse șterse (soft-deleted) ── -->
+<!-- ── Curse planificate șterse ── -->
 <ng-template #deletedSection>
-  @if (deletedTrips().length) {
-    <div class="historic-section">
-      <div class="panel-title panel-title--toggle" (click)="showDeleted.set(!showDeleted())">
-        <mat-icon>delete_sweep</mat-icon> Curse șterse
+  <div class="historic-section">
+    <div class="panel-title panel-title--toggle" (click)="showDeleted.set(!showDeleted())">
+      <mat-icon>delete_sweep</mat-icon> Curse planificate șterse
+      @if (deletedTrips().length) {
         <span class="badge-pill badge-pill--muted">{{ deletedTrips().length }}</span>
-        <mat-icon class="toggle-chevron">{{ showDeleted() ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </div>
+      }
+      <mat-icon class="toggle-chevron">{{ showDeleted() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
       @if (showDeleted()) {
+        @if (!deletedTrips().length) {
+          <div class="empty-state"><mat-icon>delete_sweep</mat-icon><p>Nicio cursă ștearsă.</p></div>
+        } @else {
         <div class="historic-table-wrap">
           <table class="delivery-table">
             <thead>
@@ -816,7 +827,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (t of deletedTrips(); track t.id) {
+              @for (t of deletedPage(); track t.id) {
                 <tr style="opacity:0.7">
                   <td>
                     <span class="vehicle-cell">
@@ -846,7 +857,7 @@
                       </div>
                     }
                   </td>
-                  <td class="value-cell">
+                  <td class="value-cell col-valoare">
                     @let dv = tripValue(t);
                     <span class="val-net">{{ dv.net | number:'1.2-2' }} lei</span>
                     <span class="val-tva">{{ dv.tva | number:'1.2-2' }} cu TVA</span>
@@ -862,10 +873,19 @@
               }
             </tbody>
           </table>
+          @if (deletedTrips().length > PAGE_SIZE) {
+            <mat-paginator class="q4-paginator"
+                           [length]="deletedTrips().length"
+                           [pageSize]="PAGE_SIZE"
+                           [pageIndex]="pg_deleted()"
+                           (page)="pg_deleted.set($event.pageIndex)"
+                           hidePageSize showFirstLastButtons>
+            </mat-paginator>
+          }
         </div>
-      }
-    </div>
-  }
+        } <!-- /else -->
+      } <!-- /showDeleted -->
+  </div>
 </ng-template>
 
 <!-- ════════════════════════════════════════════════════════════════════

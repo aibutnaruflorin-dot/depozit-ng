@@ -165,6 +165,13 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
+  updateOrderObservatii(id: string, observatii: string): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id === id ? { ...o, observatii: observatii || undefined } : o)
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
   updateClientNote(orderId: string, note: string): void {
     this._orders.update(orders =>
       orders.map(o => o.id === orderId ? { ...o, client: { ...o.client, note } } : o)
