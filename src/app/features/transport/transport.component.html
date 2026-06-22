@@ -268,8 +268,8 @@
             <th class="th-sort" (click)="sortDelivery(sortKey ?? 'orders', 'client')">
               Client <mat-icon class="sort-icon">{{ sortIcon(sst, 'client') }}</mat-icon>
             </th>
-            <th>Detalii client</th>
-            <th class="th-sort" (click)="sortDelivery(sortKey ?? 'orders', 'deliveryDate')">
+            <th class="col-client-detail">Detalii client</th>
+            <th class="th-sort col-termen" (click)="sortDelivery(sortKey ?? 'orders', 'deliveryDate')">
               Termen <mat-icon class="sort-icon">{{ sortIcon(sst, 'deliveryDate') }}</mat-icon>
             </th>
             <th class="col-status">Status</th>
@@ -289,7 +289,7 @@
                 <strong>{{ o.client.name }}</strong>
                 @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
               </td>
-              <td>
+              <td class="col-client-detail">
                 <div class="client-details-cell">
                   @if (o.client.phone) {
                     <a [href]="'tel:' + o.client.phone" class="tel-link">{{ o.client.phone }}</a>
@@ -304,7 +304,7 @@
                   }
                 </div>
               </td>
-              <td>
+              <td class="col-termen">
                 @if (o.deliveryDate || o.deliveryTime) {
                   @let overdue = isOrderDeadlineOverdue(o);
                   <span class="delivery-term" [class.delivery-term--overdue]="overdue">
@@ -376,8 +376,8 @@
             <th class="th-sort col-vehicle" (click)="sortActive('masina')">
               Maşină / Şofer <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'masina') }}</mat-icon>
             </th>
-            <th>Detalii client</th>
-            <th class="th-sort" (click)="sortActive('oraPlecare')">
+            <th class="col-order-detail">Detalii client</th>
+            <th class="th-sort col-program" (click)="sortActive('oraPlecare')">
               Program <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'oraPlecare') }}</mat-icon>
             </th>
             <th class="th-sort col-status" (click)="sortActive('status')">
@@ -418,7 +418,7 @@
                   }
                 </div>
               </td>
-              <td>
+              <td class="col-order-detail">
                 @for (o of ordersForTransport(t); track o.id) {
                   <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                     <div class="order-chip-top">
@@ -448,7 +448,7 @@
                   </div>
                 }
               </td>
-              <td>
+              <td class="col-program">
                 <div class="times-cell-v">
                   <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
                   <span class="muted small">→ {{ transportService.formatDateTime(t.oraSosire) }}</span>
@@ -550,8 +550,8 @@
             <th class="th-sort col-vehicle" (click)="sortOverdueTrips('masina')">
               Maşină / Şofer <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'masina') }}</mat-icon>
             </th>
-            <th>Detalii client</th>
-            <th class="th-sort" (click)="sortOverdueTrips('oraSosire')">
+            <th class="col-order-detail">Detalii client</th>
+            <th class="th-sort col-program" (click)="sortOverdueTrips('oraSosire')">
               Program <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'oraSosire') }}</mat-icon>
             </th>
             <th class="th-sort col-status" (click)="sortOverdueTrips('status')">
@@ -592,7 +592,7 @@
                   }
                 </div>
               </td>
-              <td>
+              <td class="col-order-detail">
                 @for (o of ordersForTransport(t); track o.id) {
                   <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                     <div class="order-chip-top">
@@ -622,7 +622,7 @@
                   </div>
                 }
               </td>
-              <td>
+              <td class="col-program">
                 <div class="times-cell-v">
                   <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
                   <span class="overdue-time small">→ {{ transportService.formatDateTime(t.oraSosire) }}</span>

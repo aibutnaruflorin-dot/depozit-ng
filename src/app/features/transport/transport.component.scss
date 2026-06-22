@@ -134,20 +134,26 @@
 }
 
 .delivery-table--sections {
-  min-width: 1100px;
+  min-width: 1000px;
   width: 100%;
   table-layout: fixed;
 
   /* Coloane fixe dreapta — identice în ambele secțiuni */
-  .col-valoare  { width: 120px; }
-  .col-masa     { width: 90px;  }
-  .col-obs      { width: 190px; }
-  .col-actiuni  { width: 130px; }
+  .col-valoare        { width: 105px; }
+  .col-masa           { width: 72px;  }
+  .col-obs            { width: 150px; }
+  .col-actiuni        { width: 115px; }
 
   /* Coloane fixe stânga */
-  .col-nr       { width: 52px;  }
-  .col-vehicle  { width: 175px; }
-  .col-status   { width: 120px; }
+  .col-nr             { width: 44px;  }
+  .col-vehicle        { width: 145px; }
+  .col-status         { width: 108px; }
+
+  /* Coloane conținut — diferite per secțiune */
+  .col-client-detail  { width: 160px; }  /* Detalii client (secț. 1 — tel + adresă) */
+  .col-order-detail   { width: 178px; }  /* Detalii client (secț. 2 — order chips)  */
+  .col-termen         { width: 112px; }  /* Termen livrare (secț. 1)                */
+  .col-program        { width: 112px; }  /* Program plecare→sosire (secț. 2)         */
 }
 
 .th-sort {
