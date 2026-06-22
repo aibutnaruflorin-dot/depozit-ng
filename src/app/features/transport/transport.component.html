@@ -376,7 +376,7 @@
             <th class="th-sort col-vehicle" (click)="sortActive('masina')">
               Maşină / Şofer <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'masina') }}</mat-icon>
             </th>
-            <th>Comenzi / Adresă</th>
+            <th>Detalii client</th>
             <th class="th-sort" (click)="sortActive('oraPlecare')">
               Program <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'oraPlecare') }}</mat-icon>
             </th>
@@ -401,12 +401,15 @@
                 <div class="trip-vehicle-cell">
                   <span class="vehicle-cell">
                     <mat-icon>local_shipping</mat-icon>
-                    <span>
+                    <span style="display:flex;flex-direction:column;gap:1px">
                       <strong>{{ getVehicleName(t.vehicleId) }}</strong>
                       <small class="muted">{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
                     </span>
                   </span>
-                  <span class="muted small">{{ getDriverName(t.driverId) }}</span>
+                  <span class="muted small">
+                    <mat-icon style="font-size:12px;width:12px;height:12px;vertical-align:middle">drive_eta</mat-icon>
+                    {{ getDriverName(t.driverId) }}
+                  </span>
                   @if (t.helper) {
                     <span class="muted small">
                       <mat-icon style="font-size:12px;width:12px;height:12px;vertical-align:middle">person_add</mat-icon>
@@ -419,25 +422,29 @@
                 @for (o of ordersForTransport(t); track o.id) {
                   <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                     <div class="order-chip-top">
+                      <span class="order-num-badge">#{{ o.orderNumber }}</span>
                       <span class="order-chip-name">{{ o.client.name }}</span>
                       @if (tripOrderDeadlineWarn(t, o)) {
                         <mat-icon class="warn-sm">warning_amber</mat-icon>
                       }
                     </div>
-                    @if (o.client.address || o.deliveryDate) {
-                      <div class="order-chip-meta">
-                        @if (o.client.address) {
-                          <span class="order-chip-addr">
-                            <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                          </span>
-                        }
-                        @if (o.deliveryDate) {
-                          <span class="order-chip-deadline" [class.order-chip-deadline--warn]="tripOrderDeadlineWarn(t, o)">
-                            <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                          </span>
-                        }
-                      </div>
-                    }
+                    <div class="order-chip-meta">
+                      @if (o.client.phone) {
+                        <span class="order-chip-phone">
+                          <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                        </span>
+                      }
+                      @if (o.client.address) {
+                        <span class="order-chip-addr">
+                          <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                        </span>
+                      }
+                      @if (o.deliveryDate || o.deliveryTime) {
+                        <span class="order-chip-deadline" [class.order-chip-deadline--warn]="tripOrderDeadlineWarn(t, o)">
+                          <mat-icon>schedule</mat-icon>{{ o.deliveryDate ? (o.deliveryDate | date:'dd.MM.yy') : '' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                        </span>
+                      }
+                    </div>
                   </div>
                 }
               </td>
@@ -543,7 +550,7 @@
             <th class="th-sort col-vehicle" (click)="sortOverdueTrips('masina')">
               Maşină / Şofer <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'masina') }}</mat-icon>
             </th>
-            <th>Comenzi / Adresă</th>
+            <th>Detalii client</th>
             <th class="th-sort" (click)="sortOverdueTrips('oraSosire')">
               Program <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'oraSosire') }}</mat-icon>
             </th>
@@ -568,12 +575,15 @@
                 <div class="trip-vehicle-cell">
                   <span class="vehicle-cell">
                     <mat-icon>local_shipping</mat-icon>
-                    <span>
+                    <span style="display:flex;flex-direction:column;gap:1px">
                       <strong>{{ getVehicleName(t.vehicleId) }}</strong>
                       <small class="muted">{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
                     </span>
                   </span>
-                  <span class="muted small">{{ getDriverName(t.driverId) }}</span>
+                  <span class="muted small">
+                    <mat-icon style="font-size:12px;width:12px;height:12px;vertical-align:middle">drive_eta</mat-icon>
+                    {{ getDriverName(t.driverId) }}
+                  </span>
                   @if (t.helper) {
                     <span class="muted small">
                       <mat-icon style="font-size:12px;width:12px;height:12px;vertical-align:middle">person_add</mat-icon>
@@ -586,25 +596,29 @@
                 @for (o of ordersForTransport(t); track o.id) {
                   <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
                     <div class="order-chip-top">
+                      <span class="order-num-badge">#{{ o.orderNumber }}</span>
                       <span class="order-chip-name">{{ o.client.name }}</span>
                       @if (tripOrderDeadlineWarn(t, o)) {
                         <mat-icon class="warn-sm">warning_amber</mat-icon>
                       }
                     </div>
-                    @if (o.client.address || o.deliveryDate) {
-                      <div class="order-chip-meta">
-                        @if (o.client.address) {
-                          <span class="order-chip-addr">
-                            <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                          </span>
-                        }
-                        @if (o.deliveryDate) {
-                          <span class="order-chip-deadline order-chip-deadline--warn">
-                            <mat-icon>warning_amber</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                          </span>
-                        }
-                      </div>
-                    }
+                    <div class="order-chip-meta">
+                      @if (o.client.phone) {
+                        <span class="order-chip-phone">
+                          <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                        </span>
+                      }
+                      @if (o.client.address) {
+                        <span class="order-chip-addr">
+                          <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                        </span>
+                      }
+                      @if (o.deliveryDate || o.deliveryTime) {
+                        <span class="order-chip-deadline order-chip-deadline--warn">
+                          <mat-icon>warning_amber</mat-icon>{{ o.deliveryDate ? (o.deliveryDate | date:'dd.MM.yy') : '' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                        </span>
+                      }
+                    </div>
                   </div>
                 }
               </td>

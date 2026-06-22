@@ -423,7 +423,7 @@
 
 .order-row-name { font-size: 0.85rem; }
 
-.order-chip-addr, .order-chip-deadline {
+.order-chip-phone, .order-chip-addr, .order-chip-deadline {
   display: inline-flex; align-items: center; gap: 2px;
   font-size: 0.74rem; color: var(--color-text-muted, #888);
   mat-icon { font-size: 13px; width: 13px; height: 13px; }
