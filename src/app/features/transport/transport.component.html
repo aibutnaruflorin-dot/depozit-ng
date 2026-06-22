@@ -376,8 +376,11 @@
                         </span>
                       }
                       @if (o.deliveryDate) {
-                        <span class="order-chip-deadline">
-                          <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                        @let dlWarn = tripOrderDeadlineWarn(t, o);
+                        <span class="order-chip-deadline" [class.order-chip-deadline--warn]="dlWarn"
+                              [matTooltip]="dlWarn ? 'Termen depășit față de plecare!' : ''">
+                          <mat-icon>{{ dlWarn ? 'warning_amber' : 'schedule' }}</mat-icon>
+                          {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
                         </span>
                       }
                     </div>
@@ -535,8 +538,11 @@
                           </span>
                         }
                         @if (o.deliveryDate) {
-                          <span class="order-chip-deadline">
-                            <mat-icon>schedule</mat-icon>{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                          @let dlWarn = tripOrderDeadlineWarn(t, o);
+                          <span class="order-chip-deadline" [class.order-chip-deadline--warn]="dlWarn"
+                                [matTooltip]="dlWarn ? 'Termen depășit față de plecare!' : ''">
+                            <mat-icon>{{ dlWarn ? 'warning_amber' : 'schedule' }}</mat-icon>
+                            {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
                           </span>
                         }
                       </div>

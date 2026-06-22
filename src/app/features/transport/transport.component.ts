@@ -954,6 +954,19 @@ export class TransportComponent implements OnInit {
     return this.modalOrders().some(o => this.orderDeadlineStatus(o) === 'warn');
   }
 
+  tripOrderDeadlineWarn(t: Transport, order: Order): boolean {
+    if (!order.deliveryDate) return false;
+    const [y, mo, d] = order.deliveryDate.split('-').map(Number);
+    const deadline = new Date(y, mo - 1, d);
+    if (order.deliveryTime) {
+      const [h, m] = order.deliveryTime.split(':').map(Number);
+      deadline.setHours(h, m, 0, 0);
+    } else {
+      deadline.setHours(23, 59, 0, 0);
+    }
+    return new Date(t.oraPlecare).getTime() > deadline.getTime();
+  }
+
   statusLabel(s: string): string {
     switch (s) {
       case 'planificat':     return 'Planificat';
