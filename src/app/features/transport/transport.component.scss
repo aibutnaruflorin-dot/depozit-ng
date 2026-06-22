@@ -317,6 +317,27 @@
   display: flex; flex-wrap: wrap; gap: 8px; padding-left: 2px;
 }
 
+/* ── Split columns — Comenzi / Adresă & Termen / Observații ──── */
+.orders-col  { min-width: 160px; vertical-align: top; }
+.delivery-col { min-width: 160px; vertical-align: top; }
+.notes-col   { min-width: 140px; vertical-align: top; }
+
+.order-row-block {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 5px 0; font-size: 0.82rem;
+  & + & { border-top: 1px dashed var(--color-border); padding-top: 7px; margin-top: 4px; }
+}
+
+.order-row-block--clickable {
+  cursor: pointer; border-radius: 5px;
+  padding: 5px 5px; margin: 0 -5px;
+  transition: background .12s;
+  &:hover { background: rgba(0,0,0,.04); }
+  & + & { border-top: 1px dashed var(--color-border); padding-top: 7px; margin-top: 4px; }
+}
+
+.order-row-name { font-size: 0.85rem; }
+
 .order-chip-addr, .order-chip-deadline {
   display: inline-flex; align-items: center; gap: 2px;
   font-size: 0.74rem; color: var(--color-text-muted, #888);

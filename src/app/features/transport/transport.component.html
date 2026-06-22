@@ -319,7 +319,9 @@
           <th>Mașină</th>
           <th>Șofer</th>
           <th>Plecare → Sosire</th>
-          <th>Comenzi / Articole</th>
+          <th>Comenzi</th>
+          <th>Adresă / Termen</th>
+          <th>Observații</th>
           <th>Valoare</th>
           <th>Masă</th>
           <th>Status</th>
@@ -351,40 +353,49 @@
                 <span>{{ transportService.formatDateTime(t.oraSosire) }}</span>
               </div>
             </td>
-            <td>
+            <!-- COL: Comenzi -->
+            <td class="orders-col">
+              @for (o of ordersForTransport(t); track o.id) {
+                <div class="order-row-block order-row-block--clickable" (click)="openDelivery(t, o)">
+                  <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                  <strong class="order-row-name">{{ o.client.name }}</strong>
+                  <span class="muted small">· {{ deliveryItems(t, o.id).length }} art.</span>
+                  @if (isPartialTripForOrder(t, o)) {
+                    <span class="order-partial-tag">livrare parțială</span>
+                  }
+                </div>
+              }
+            </td>
+            <!-- COL: Adresă / Termen -->
+            <td class="delivery-col">
+              @for (o of ordersForTransport(t); track o.id) {
+                <div class="order-row-block">
+                  @if (o.client.phone) {
+                    <a [href]="'tel:' + o.client.phone" class="order-chip-phone" (click)="$event.stopPropagation()">
+                      <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                    </a>
+                  }
+                  @if (o.client.address) {
+                    <span class="order-chip-addr">
+                      <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                    </span>
+                  }
+                  @if (o.deliveryDate) {
+                    @let dlWarn = tripOrderDeadlineWarn(t, o);
+                    <span class="order-chip-deadline" [class.order-chip-deadline--warn]="dlWarn"
+                          [matTooltip]="dlWarn ? 'Termen depășit față de plecare!' : ''">
+                      <mat-icon>{{ dlWarn ? 'warning_amber' : 'schedule' }}</mat-icon>
+                      {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                    </span>
+                  }
+                </div>
+              }
+            </td>
+            <!-- COL: Observații -->
+            <td class="notes-col">
               @for (o of ordersForTransport(t); track o.id) {
                 @let del = getTripDelivery(t, o.id);
-                <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
-                  <div class="order-chip-top">
-                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                    <span class="order-chip-name">{{ o.client.name }}</span>
-                    <span class="muted small"> · {{ deliveryItems(t, o.id).length }} art.</span>
-                    @if (isPartialTripForOrder(t, o)) {
-                      <span class="order-partial-tag">livrare parțială</span>
-                    }
-                  </div>
-                  @if (o.client.address || o.deliveryDate || o.client.phone) {
-                    <div class="order-chip-meta">
-                      @if (o.client.phone) {
-                        <a [href]="'tel:' + o.client.phone" class="order-chip-phone" (click)="$event.stopPropagation()">
-                          <mat-icon>phone</mat-icon>{{ o.client.phone }}
-                        </a>
-                      }
-                      @if (o.client.address) {
-                        <span class="order-chip-addr">
-                          <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                        </span>
-                      }
-                      @if (o.deliveryDate) {
-                        @let dlWarn = tripOrderDeadlineWarn(t, o);
-                        <span class="order-chip-deadline" [class.order-chip-deadline--warn]="dlWarn"
-                              [matTooltip]="dlWarn ? 'Termen depășit față de plecare!' : ''">
-                          <mat-icon>{{ dlWarn ? 'warning_amber' : 'schedule' }}</mat-icon>
-                          {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                        </span>
-                      }
-                    </div>
-                  }
+                <div class="order-row-block">
                   <textarea class="chip-note-input"
                             rows="1"
                             placeholder="Observații…"
@@ -481,7 +492,9 @@
             <th>Mașină</th>
             <th>Șofer</th>
             <th>Plecare → Sosire</th>
-            <th>Comenzi / Articole</th>
+            <th>Comenzi</th>
+            <th>Adresă / Termen</th>
+            <th>Observații</th>
             <th>Valoare</th>
             <th>Masă</th>
             <th>Status</th>
@@ -513,40 +526,49 @@
                   <span class="overdue-time">{{ transportService.formatDateTime(t.oraSosire) }}</span>
                 </div>
               </td>
-              <td>
+              <!-- COL: Comenzi -->
+              <td class="orders-col">
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="order-row-block order-row-block--clickable" (click)="openDelivery(t, o)">
+                    <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                    <strong class="order-row-name">{{ o.client.name }}</strong>
+                    <span class="muted small">· {{ deliveryItems(t, o.id).length }} art.</span>
+                    @if (isPartialTripForOrder(t, o)) {
+                      <span class="order-partial-tag">livrare parțială</span>
+                    }
+                  </div>
+                }
+              </td>
+              <!-- COL: Adresă / Termen -->
+              <td class="delivery-col">
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="order-row-block">
+                    @if (o.client.phone) {
+                      <a [href]="'tel:' + o.client.phone" class="order-chip-phone" (click)="$event.stopPropagation()">
+                        <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                      </a>
+                    }
+                    @if (o.client.address) {
+                      <span class="order-chip-addr">
+                        <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                      </span>
+                    }
+                    @if (o.deliveryDate) {
+                      @let dlWarn = tripOrderDeadlineWarn(t, o);
+                      <span class="order-chip-deadline" [class.order-chip-deadline--warn]="dlWarn"
+                            [matTooltip]="dlWarn ? 'Termen depășit față de plecare!' : ''">
+                        <mat-icon>{{ dlWarn ? 'warning_amber' : 'schedule' }}</mat-icon>
+                        {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                      </span>
+                    }
+                  </div>
+                }
+              </td>
+              <!-- COL: Observații -->
+              <td class="notes-col">
                 @for (o of ordersForTransport(t); track o.id) {
                   @let del = getTripDelivery(t, o.id);
-                  <div class="order-chip order-chip--clickable" (click)="openDelivery(t, o)">
-                    <div class="order-chip-top">
-                      <span class="order-num-badge">#{{ o.orderNumber }}</span>
-                      <span class="order-chip-name">{{ o.client.name }}</span>
-                      <span class="muted small"> · {{ deliveryItems(t, o.id).length }} art.</span>
-                      @if (isPartialTripForOrder(t, o)) {
-                        <span class="order-partial-tag">livrare parțială</span>
-                      }
-                    </div>
-                    @if (o.client.address || o.deliveryDate || o.client.phone) {
-                      <div class="order-chip-meta">
-                        @if (o.client.phone) {
-                          <a [href]="'tel:' + o.client.phone" class="order-chip-phone" (click)="$event.stopPropagation()">
-                            <mat-icon>phone</mat-icon>{{ o.client.phone }}
-                          </a>
-                        }
-                        @if (o.client.address) {
-                          <span class="order-chip-addr">
-                            <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                          </span>
-                        }
-                        @if (o.deliveryDate) {
-                          @let dlWarn = tripOrderDeadlineWarn(t, o);
-                          <span class="order-chip-deadline" [class.order-chip-deadline--warn]="dlWarn"
-                                [matTooltip]="dlWarn ? 'Termen depășit față de plecare!' : ''">
-                            <mat-icon>{{ dlWarn ? 'warning_amber' : 'schedule' }}</mat-icon>
-                            {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                          </span>
-                        }
-                      </div>
-                    }
+                  <div class="order-row-block">
                     <textarea class="chip-note-input"
                               rows="1"
                               placeholder="Observații…"
