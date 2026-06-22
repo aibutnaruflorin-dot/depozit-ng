@@ -472,7 +472,7 @@ export class TransportComponent implements OnInit {
   getOnTripQtyArr(order: Order, excludeId?: string): number[] {
     const qty = new Array(order.products.length).fill(0);
     for (const t of this.transportService.transports()) {
-      if (t.status === 'livrat' || t.id === excludeId) continue;
+      if (t.status === 'livrat' || t.status === 'anulat' || t.id === excludeId) continue;
       const d = t.deliveries.find(d => d.orderId === order.id);
       if (!d) continue;
       for (const item of d.items) {
