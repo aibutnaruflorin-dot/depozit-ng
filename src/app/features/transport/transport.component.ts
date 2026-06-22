@@ -210,6 +210,14 @@ export class TransportComponent implements OnInit {
       .sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp));
   });
 
+  deliveryOrdersOnTime = computed<Order[]>(() =>
+    this.deliveryOrders().filter(o => !this.isOrderDeadlineOverdue(o))
+  );
+
+  deliveryOrdersOverdue = computed<Order[]>(() =>
+    this.deliveryOrders().filter(o => this.isOrderDeadlineOverdue(o))
+  );
+
   eligibleOrders = computed<Order[]>(() => {
     const editId = this.editingId() ?? undefined;
     return this.ordersService.orders().filter(o => {

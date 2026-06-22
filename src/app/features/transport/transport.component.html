@@ -55,9 +55,10 @@
         <div class="l2-delivery">
           <div class="panel-title">
             <mat-icon>local_shipping</mat-icon> Comenzi de planificat
-            @if (deliveryOrders().length) { <span class="badge-pill">{{ deliveryOrders().length }}</span> }
+            @if (deliveryOrdersOnTime().length) { <span class="badge-pill">{{ deliveryOrdersOnTime().length }}</span> }
           </div>
-          <ng-container [ngTemplateOutlet]="deliveryTableTpl"></ng-container>
+          <ng-container [ngTemplateOutlet]="deliveryTableTpl"
+                        [ngTemplateOutletContext]="{ orders: deliveryOrdersOnTime() }"></ng-container>
         </div>
 
         <div class="l2-active">
@@ -74,6 +75,7 @@
 
     </div><!-- /layout-2 -->
 
+    <ng-container [ngTemplateOutlet]="overdueOrdersSection"></ng-container>
     <ng-container [ngTemplateOutlet]="overdueSection"></ng-container>
     <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
   }
@@ -87,9 +89,10 @@
       <div class="l3-section">
         <div class="panel-title">
           <mat-icon>local_shipping</mat-icon> Comenzi de planificat
-          @if (deliveryOrders().length) { <span class="badge-pill">{{ deliveryOrders().length }}</span> }
+          @if (deliveryOrdersOnTime().length) { <span class="badge-pill">{{ deliveryOrdersOnTime().length }}</span> }
         </div>
-        <ng-container [ngTemplateOutlet]="deliveryTableTpl"></ng-container>
+        <ng-container [ngTemplateOutlet]="deliveryTableTpl"
+                      [ngTemplateOutletContext]="{ orders: deliveryOrdersOnTime() }"></ng-container>
       </div>
 
       <div class="l3-section">
@@ -115,6 +118,7 @@
 
     </div><!-- /layout-3 -->
 
+    <ng-container [ngTemplateOutlet]="overdueOrdersSection"></ng-container>
     <ng-container [ngTemplateOutlet]="overdueSection"></ng-container>
     <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
   }
@@ -201,8 +205,8 @@
 </ng-template>
 
 <!-- ── Comenzi de planificat – table ── -->
-<ng-template #deliveryTableTpl>
-  @if (!deliveryOrders().length) {
+<ng-template #deliveryTableTpl let-orders="orders">
+  @if (!orders.length) {
     <div class="empty-state">
       <mat-icon>check_circle_outline</mat-icon>
       <p>Nicio comandă în așteptare de livrare.</p>
@@ -223,7 +227,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (o of deliveryOrders(); track o.id) {
+        @for (o of orders; track o.id) {
           <tr>
             <td><span class="order-num-badge">#{{ o.orderNumber ?? '?' }}</span></td>
             <td>
@@ -305,6 +309,27 @@
       </tbody>
     </table>
   }
+</ng-template>
+
+<!-- ── Comenzi neplanificate cu termen depășit ── -->
+<ng-template #overdueOrdersSection>
+  <div class="overdue-section">
+    <div class="panel-title panel-title--overdue">
+      <mat-icon>warning</mat-icon> Comenzi neplanificate cu termen depășit
+      @if (deliveryOrdersOverdue().length) {
+        <span class="badge-pill badge-pill--overdue">{{ deliveryOrdersOverdue().length }}</span>
+      }
+    </div>
+    @if (!deliveryOrdersOverdue().length) {
+      <div class="empty-state">
+        <mat-icon>check_circle_outline</mat-icon>
+        <p>Nicio comandă cu termen depășit.</p>
+      </div>
+    } @else {
+      <ng-container [ngTemplateOutlet]="deliveryTableTpl"
+                    [ngTemplateOutletContext]="{ orders: deliveryOrdersOverdue() }"></ng-container>
+    }
+  </div>
 </ng-template>
 
 <!-- ── Status Curse planificate – table (termen viitor/curent) ── -->
