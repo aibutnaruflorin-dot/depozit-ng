@@ -265,10 +265,10 @@
             <th class="th-sort col-nr" (click)="sortDelivery(sortKey ?? 'orders', 'orderNumber')">
               NR <mat-icon class="sort-icon">{{ sortIcon(sst, 'orderNumber') }}</mat-icon>
             </th>
-            <th class="th-sort" (click)="sortDelivery(sortKey ?? 'orders', 'client')">
+            <th class="th-sort col-vehicle" (click)="sortDelivery(sortKey ?? 'orders', 'client')">
               Client <mat-icon class="sort-icon">{{ sortIcon(sst, 'client') }}</mat-icon>
             </th>
-            <th class="col-client-detail">Detalii client</th>
+            <th class="col-order-detail">Detalii client</th>
             <th class="th-sort col-termen" (click)="sortDelivery(sortKey ?? 'orders', 'deliveryDate')">
               Termen <mat-icon class="sort-icon">{{ sortIcon(sst, 'deliveryDate') }}</mat-icon>
             </th>
@@ -285,11 +285,11 @@
           @for (o of orders; track o.id) {
             <tr>
               <td class="col-nr"><span class="order-num-badge">#{{ o.orderNumber ?? '?' }}</span></td>
-              <td>
+              <td class="col-vehicle">
                 <strong>{{ o.client.name }}</strong>
                 @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
               </td>
-              <td class="col-client-detail">
+              <td class="col-order-detail">
                 <div class="client-details-cell">
                   @if (o.client.phone) {
                     <a [href]="'tel:' + o.client.phone" class="tel-link">{{ o.client.phone }}</a>

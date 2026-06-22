@@ -149,9 +149,8 @@
   .col-vehicle        { width: 145px; }
   .col-status         { width: 108px; }
 
-  /* Coloane conținut — diferite per secțiune */
-  .col-client-detail  { width: 160px; }  /* Detalii client (secț. 1 — tel + adresă) */
-  .col-order-detail   { width: 178px; }  /* Detalii client (secț. 2 — order chips)  */
+  /* Coloane conținut — identice în ambele secțiuni pentru aliniere */
+  .col-order-detail   { width: 178px; }  /* Detalii client (ambele secțiuni)        */
   .col-termen         { width: 112px; }  /* Termen livrare (secț. 1)                */
   .col-program        { width: 112px; }  /* Program plecare→sosire (secț. 2)         */
 }
