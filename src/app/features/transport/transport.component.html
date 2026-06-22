@@ -78,6 +78,7 @@
     <ng-container [ngTemplateOutlet]="overdueOrdersSection"></ng-container>
     <ng-container [ngTemplateOutlet]="overdueSection"></ng-container>
     <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
+    <ng-container [ngTemplateOutlet]="deletedSection"></ng-container>
   }
 
   <!-- ════════════════════════════════════════════════════════════
@@ -121,6 +122,7 @@
     <ng-container [ngTemplateOutlet]="overdueOrdersSection"></ng-container>
     <ng-container [ngTemplateOutlet]="overdueSection"></ng-container>
     <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
+    <ng-container [ngTemplateOutlet]="deletedSection"></ng-container>
   }
 
 </div><!-- /transport-page -->
@@ -482,13 +484,23 @@
                       <mat-icon>{{ t.waSentHelperAt ? 'mark_chat_read' : 'person_add' }}</mat-icon>
                     </button>
                   }
+                  @if (whatsappGroups().length) {
+                    <button mat-icon-button [matMenuTriggerFor]="activeGroupMenu" matTooltip="Trimite la grup WhatsApp" style="color:#25d366" (click)="$event.stopPropagation()">
+                      <mat-icon>group</mat-icon>
+                    </button>
+                    <mat-menu #activeGroupMenu="matMenu">
+                      @for (g of whatsappGroups(); track g.id) {
+                        <button mat-menu-item (click)="sendGroupWhatsApp(t, g)">
+                          <mat-icon>whatsapp</mat-icon>{{ g.name }}
+                        </button>
+                      }
+                    </mat-menu>
+                  }
                   @if (t.status === 'planificat') {
                     <button mat-icon-button color="warn" (click)="cancelTransport(t); $event.stopPropagation()" matTooltip="Anulează cursa"><mat-icon>cancel</mat-icon></button>
                   }
                 }
-                @if (isDeleteAllowed(t)) {
-                  <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Șterge"><mat-icon>delete_outline</mat-icon></button>
-                }
+                <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Mută în Curse șterse"><mat-icon>delete_outline</mat-icon></button>
               }
             </td>
           </tr>
@@ -637,10 +649,32 @@
                     <button mat-icon-button color="primary" (click)="reopenTransport(t)" matTooltip="Redeschide cursa"><mat-icon>lock_open</mat-icon></button>
                   } @else {
                     <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează / reprogramează"><mat-icon>edit</mat-icon></button>
+                    <button mat-icon-button (click)="sendDriverWhatsApp(t)"
+                            [matTooltip]="t.waSentDriverAt ? 'WhatsApp șofer · trimis ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp șofer'"
+                            [style.color]="t.waSentDriverAt ? '#888' : '#25d366'">
+                      <mat-icon>{{ t.waSentDriverAt ? 'mark_chat_read' : 'local_shipping' }}</mat-icon>
+                    </button>
+                    @if (t.helper) {
+                      <button mat-icon-button (click)="sendHelperWhatsApp(t)"
+                              [matTooltip]="t.waSentHelperAt ? 'WhatsApp ajutor · trimis ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ajutor'"
+                              [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
+                        <mat-icon>{{ t.waSentHelperAt ? 'mark_chat_read' : 'person_add' }}</mat-icon>
+                      </button>
+                    }
+                    @if (whatsappGroups().length) {
+                      <button mat-icon-button [matMenuTriggerFor]="groupMenu" matTooltip="Trimite la grup WhatsApp" style="color:#25d366">
+                        <mat-icon>group</mat-icon>
+                      </button>
+                      <mat-menu #groupMenu="matMenu">
+                        @for (g of whatsappGroups(); track g.id) {
+                          <button mat-menu-item (click)="sendGroupWhatsApp(t, g)">
+                            <mat-icon>whatsapp</mat-icon>{{ g.name }}
+                          </button>
+                        }
+                      </mat-menu>
+                    }
                   }
-                  <button mat-icon-button color="warn"
-                          matTooltip="Șterge cursa"
-                          (click)="deleteTransport(t)">
+                  <button mat-icon-button color="warn" matTooltip="Mută în Curse șterse" (click)="deleteTransport(t)">
                     <mat-icon>delete_outline</mat-icon>
                   </button>
                 }
@@ -757,6 +791,81 @@
       }
     }
   </div>
+</ng-template>
+
+<!-- ── Curse șterse (soft-deleted) ── -->
+<ng-template #deletedSection>
+  @if (deletedTrips().length) {
+    <div class="historic-section">
+      <div class="panel-title panel-title--toggle" (click)="showDeleted.set(!showDeleted())">
+        <mat-icon>delete_sweep</mat-icon> Curse șterse
+        <span class="badge-pill badge-pill--muted">{{ deletedTrips().length }}</span>
+        <mat-icon class="toggle-chevron">{{ showDeleted() ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </div>
+      @if (showDeleted()) {
+        <div class="historic-table-wrap">
+          <table class="delivery-table">
+            <thead>
+              <tr>
+                <th>Mașină</th>
+                <th>Șofer</th>
+                <th>Plecare → Sosire</th>
+                <th>Comenzi</th>
+                <th>Valoare</th>
+                <th>Acțiuni</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of deletedTrips(); track t.id) {
+                <tr style="opacity:0.7">
+                  <td>
+                    <span class="vehicle-cell">
+                      <mat-icon>local_shipping</mat-icon>
+                      <span>
+                        <strong>{{ getVehicleName(t.vehicleId) }}</strong><br>
+                        <small>{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
+                      </span>
+                    </span>
+                  </td>
+                  <td>{{ getDriverName(t.driverId) }}</td>
+                  <td>
+                    <div class="times-cell">
+                      <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
+                      <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                      <span>{{ transportService.formatDateTime(t.oraSosire) }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    @for (o of ordersForTransport(t); track o.id) {
+                      <div class="order-chip">
+                        <div class="order-chip-top">
+                          <span class="order-num-badge">#{{ o.orderNumber }}</span>
+                          <span class="order-chip-name">{{ o.client.name }}</span>
+                          <span class="muted small"> · {{ deliveryItems(t, o.id).length }} art.</span>
+                        </div>
+                      </div>
+                    }
+                  </td>
+                  <td class="value-cell">
+                    @let dv = tripValue(t);
+                    <span class="val-net">{{ dv.net | number:'1.2-2' }} lei</span>
+                    <span class="val-tva">{{ dv.tva | number:'1.2-2' }} cu TVA</span>
+                  </td>
+                  <td>
+                    @if (auth.isAdmin()) {
+                      <button mat-icon-button color="primary" (click)="restoreTransport(t)" matTooltip="Redeschide cursa">
+                        <mat-icon>restore</mat-icon>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
 </ng-template>
 
 <!-- ════════════════════════════════════════════════════════════════════

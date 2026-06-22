@@ -36,7 +36,7 @@ export class TransportService {
   });
 
   readonly active = computed(() =>
-    this._transports().filter(t => t.status !== 'livrat' && t.status !== 'anulat')
+    this._transports().filter(t => t.status !== 'livrat' && t.status !== 'anulat' && t.status !== 'sters')
       .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))
   );
   readonly history = computed(() =>

@@ -9,7 +9,7 @@ export interface TripDelivery {
   observatii?: string;
 }
 
-export type TransportStatus = 'planificat' | 'confirmat_sofer' | 'in_livrare' | 'livrat' | 'anulat';
+export type TransportStatus = 'planificat' | 'confirmat_sofer' | 'in_livrare' | 'livrat' | 'anulat' | 'sters';
 
 export interface Transport {
   id: string;

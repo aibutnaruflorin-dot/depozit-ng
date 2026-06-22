@@ -19,10 +19,13 @@ import { TransportService } from '../../core/services/transport.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
+import { StorageService } from '../../core/services/storage.service';
 import { Transport, TransportStatus, TripDelivery } from '../../core/models/transport.model';
 import { Order } from '../../core/models/order.model';
+import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { DragModalDirective } from '../../shared/drag-modal.directive';
 import { AddProductsModalComponent } from '../../shared/add-products-modal/add-products-modal.component';
+import { MatMenuModule } from '@angular/material/menu';
 
 // ── Validators ────────────────────────────────────────────────────────────────
 
@@ -88,7 +91,7 @@ interface CalBar {
     MatIconModule, MatButtonModule, MatTabsModule,
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatCardModule, MatDividerModule, MatTooltipModule,
-    MatChipsModule, MatSnackBarModule,
+    MatChipsModule, MatSnackBarModule, MatMenuModule,
     MatDatepickerModule, MatAutocompleteModule,
     DragModalDirective, AddProductsModalComponent
   ],
@@ -255,7 +258,7 @@ export class TransportComponent implements OnInit {
   readonly activeOnTime = computed(() =>
     this.transportService.transports()
       .filter(t => {
-        if (t.status === 'livrat') return false;
+        if (t.status === 'livrat' || t.status === 'sters') return false;
         if (new Date(t.oraSosire).getTime() < Date.now()) return false;
         return !this.ordersForTransport(t).some(o => this.isOrderDeadlineOverdue(o));
       })
@@ -265,16 +268,22 @@ export class TransportComponent implements OnInit {
   readonly activeOverdue = computed(() =>
     this.transportService.transports()
       .filter(t => {
-        if (t.status === 'livrat') return false;
+        if (t.status === 'livrat' || t.status === 'sters') return false;
         if (new Date(t.oraSosire).getTime() < Date.now()) return true;
         return this.ordersForTransport(t).some(o => this.isOrderDeadlineOverdue(o));
       })
       .sort((a, b) => a.oraSosire.localeCompare(b.oraSosire))
   );
 
-  isDeleteAllowed(t: Transport): boolean {
-    return new Date(t.oraSosire).getTime() < Date.now() - 24 * 3_600_000;
-  }
+  readonly whatsappGroups = signal<WhatsAppContact[]>([]);
+
+  readonly deletedTrips = computed(() =>
+    this.transportService.transports()
+      .filter(t => t.status === 'sters')
+      .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare))
+  );
+
+  showDeleted = signal(false);
 
   overlapIds = computed<Set<string>>(() => {
     const active = this.transportService.active();
@@ -307,7 +316,8 @@ export class TransportComponent implements OnInit {
     public  ordersService: OrdersService,
     public  auth: AuthService,
     private snackBar: MatSnackBar,
-    public  catalogsService: CatalogsService
+    public  catalogsService: CatalogsService,
+    private storage: StorageService
   ) {
     this.form = this.fb.group({
       vehicleId:   ['', Validators.required],
@@ -320,7 +330,10 @@ export class TransportComponent implements OnInit {
     }, { validators: [plecareNotInPast, sosireAfterPlecare] });
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    const contacts = this.storage.get<WhatsAppContact[]>('app_whatsapp_contacts') ?? [];
+    this.whatsappGroups.set(contacts.filter(c => c.type === 'group'));
+  }
 
   // ── Modal open/close ──────────────────────────────────────────────────────
 
@@ -766,6 +779,11 @@ export class TransportComponent implements OnInit {
     this.transportService.markWaSent(t.id, 'helper');
   }
 
+  sendGroupWhatsApp(t: Transport, group: WhatsAppContact): void {
+    const phone = group.phone.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(this.tripWhatsAppMsg(t))}`, '_blank');
+  }
+
   fmtWaSent(iso: string | undefined): string {
     if (!iso) return '';
     const d = new Date(iso);
@@ -790,9 +808,9 @@ export class TransportComponent implements OnInit {
   }
 
   deleteTransport(t: Transport): void {
-    if (!confirm('Ștergi această cursă? Comenzile vor reveni la statusul anterior.')) return;
+    if (!confirm('Muți această cursă în Curse șterse? Comenzile vor reveni la statusul anterior.')) return;
+    this.transportService.setStatus(t.id, 'sters');
     const affected = [...new Set(t.deliveries.map(d => d.orderId))];
-    this.transportService.deleteTransport(t.id);
     for (const orderId of affected) {
       const order = this.getOrder(orderId);
       if (!order) continue;
@@ -804,7 +822,12 @@ export class TransportComponent implements OnInit {
         this.ordersService.updateOrderStatus(orderId, 'acceptat');
       }
     }
-    this.snackBar.open('Cursa a fost ștearsă.', '', { duration: 2000 });
+    this.snackBar.open('Cursa a fost mutată în Curse șterse.', '', { duration: 2200 });
+  }
+
+  restoreTransport(t: Transport): void {
+    this.transportService.setStatus(t.id, 'planificat');
+    this.snackBar.open('Cursa a fost redeschisă.', '', { duration: 2000 });
   }
 
   // ── Calendar helpers ──────────────────────────────────────────────────────
