@@ -518,9 +518,6 @@
                         }
                       </mat-menu>
                     }
-                    @if (t.status === 'planificat') {
-                      <button mat-icon-button color="warn" (click)="cancelTransport(t)" matTooltip="Anulează"><mat-icon>cancel</mat-icon></button>
-                    }
                   }
                   <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
                 }
@@ -880,6 +877,11 @@
                     @if (auth.isAdmin()) {
                       <button mat-icon-button color="primary" (click)="restoreTransport(t)" matTooltip="Redeschide cursa">
                         <mat-icon>restore</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="notifyDriverDeleted(t)"
+                              matTooltip="Notifică șofer că cursa a fost ștearsă"
+                              style="color:#25d366">
+                        <mat-icon>local_shipping</mat-icon>
                       </button>
                     }
                   </td>

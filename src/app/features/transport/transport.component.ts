@@ -901,16 +901,15 @@ export class TransportComponent implements OnInit {
     return `${d.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}`;
   }
 
-  cancelTransport(t: Transport): void {
-    if (!confirm('Anulezi această cursă? Șoferul va fi notificat prin WhatsApp.')) return;
-    this.transportService.cancelTrip(t.id);
+  notifyDriverDeleted(t: Transport): void {
     const driver = this.transportService.getDriver(t.driverId);
-    if (driver?.telefon) {
-      const msg = `Cursa ta din ${this.transportService.formatDateTime(t.oraPlecare)} a fost ANULATĂ.`;
-      const phone = driver.telefon.replace(/\D/g, '');
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    if (!driver?.telefon) {
+      this.snackBar.open('Șoferul nu are număr de telefon.', 'OK', { duration: 2500 });
+      return;
     }
-    this.snackBar.open('Cursa a fost anulată.', 'OK', { duration: 2500 });
+    const msg = `Cursa ta din ${this.transportService.formatDateTime(t.oraPlecare)} a fost ANULATĂ.`;
+    const phone = driver.telefon.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
   reopenTransport(t: Transport): void {
