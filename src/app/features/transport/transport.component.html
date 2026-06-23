@@ -771,9 +771,9 @@
         <table class="delivery-table delivery-table--wide">
           <thead>
             <tr>
-              <th>Mașină</th>
-              <th>Șofer</th>
-              <th>Plecare → Sosire</th>
+              <th class="th-sort" (click)="sortHistoric('masina')">Mașină <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'masina') }}</mat-icon></th>
+              <th class="th-sort" (click)="sortHistoric('sofer')">Șofer <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'sofer') }}</mat-icon></th>
+              <th class="th-sort" (click)="sortHistoric('oraPlecare')">Plecare → Sosire <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'oraPlecare') }}</mat-icon></th>
               <th>Comenzi / Articole</th>
               <th>Valoare</th>
               <th>Log tranziții</th>
@@ -886,9 +886,9 @@
           <table class="delivery-table">
             <thead>
               <tr>
-                <th>Mașină</th>
-                <th>Șofer</th>
-                <th>Plecare → Sosire</th>
+                <th class="th-sort" (click)="sortDeleted('masina')">Mașină <mat-icon class="sort-icon">{{ sortIcon(sort_deleted(), 'masina') }}</mat-icon></th>
+                <th class="th-sort" (click)="sortDeleted('sofer')">Șofer <mat-icon class="sort-icon">{{ sortIcon(sort_deleted(), 'sofer') }}</mat-icon></th>
+                <th class="th-sort" (click)="sortDeleted('oraPlecare')">Plecare → Sosire <mat-icon class="sort-icon">{{ sortIcon(sort_deleted(), 'oraPlecare') }}</mat-icon></th>
                 <th>Comenzi</th>
                 <th>Valoare</th>
                 <th>Acțiuni</th>
@@ -979,19 +979,19 @@
           <table class="delivery-table delivery-table--sections">
             <thead>
               <tr>
-                <th class="col-nr">NR</th>
-                <th class="col-vehicle">Client</th>
+                <th class="th-sort col-nr" (click)="sortOrderHistory('orderNumber')">NR <mat-icon class="sort-icon">{{ sortIcon(sort_orderHistory(), 'orderNumber') }}</mat-icon></th>
+                <th class="th-sort col-vehicle" (click)="sortOrderHistory('client')">Client <mat-icon class="sort-icon">{{ sortIcon(sort_orderHistory(), 'client') }}</mat-icon></th>
                 <th class="col-order-detail">Detalii client</th>
-                <th class="col-termen">Termen</th>
-                <th class="col-status">Status</th>
-                <th class="col-valoare">Valoare</th>
-                <th class="col-masa">Masă</th>
+                <th class="th-sort col-termen" (click)="sortOrderHistory('deliveryDate')">Termen <mat-icon class="sort-icon">{{ sortIcon(sort_orderHistory(), 'deliveryDate') }}</mat-icon></th>
+                <th class="th-sort col-status" (click)="sortOrderHistory('status')">Status <mat-icon class="sort-icon">{{ sortIcon(sort_orderHistory(), 'status') }}</mat-icon></th>
+                <th class="th-sort col-valoare" (click)="sortOrderHistory('valoare')">Valoare <mat-icon class="sort-icon">{{ sortIcon(sort_orderHistory(), 'valoare') }}</mat-icon></th>
+                <th class="th-sort col-masa" (click)="sortOrderHistory('masa')">Masă <mat-icon class="sort-icon">{{ sortIcon(sort_orderHistory(), 'masa') }}</mat-icon></th>
                 <th class="col-obs">Observații</th>
                 <th class="col-actiuni"></th>
               </tr>
             </thead>
             <tbody>
-              @for (o of orderHistoryList(); track o.id) {
+              @for (o of orderHistoryPage(); track o.id) {
                 <tr class="order-history-row" (click)="toggleHistoryExpand(o.id)" style="cursor:pointer">
                   <td class="col-nr" (click)="openBestTripForOrder(o); $event.stopPropagation()">
                     <span class="order-num-badge order-num-badge--link">#{{ o.orderNumber }}</span>
@@ -1102,6 +1102,15 @@
               }
             </tbody>
           </table>
+          @if (orderHistoryList().length > PAGE_SIZE) {
+            <mat-paginator class="section-paginator"
+                           [length]="orderHistoryList().length"
+                           [pageSize]="PAGE_SIZE"
+                           [pageIndex]="pg_orderHistory()"
+                           (page)="pg_orderHistory.set($event.pageIndex)"
+                           hidePageSize showFirstLastButtons>
+            </mat-paginator>
+          }
         </div>
       }
     }

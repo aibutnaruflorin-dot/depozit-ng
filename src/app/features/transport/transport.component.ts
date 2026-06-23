@@ -284,15 +284,18 @@ export class TransportComponent implements OnInit {
   readonly whatsappGroups = signal<WhatsAppContact[]>([]);
 
   readonly deletedTrips = computed(() =>
-    this.transportService.transports()
-      .filter(t => t.status === 'sters')
-      .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare))
+    this.transportService.transports().filter(t => t.status === 'sters')
   );
 
   showDeleted          = signal(false);
   showOrderHistory     = signal(false);
   expandedOrderIds     = signal<Set<string>>(new Set());
   expandedHistoryIds   = signal<Set<string>>(new Set());
+
+  sort_historic      = signal<{col: string; dir: 1|-1}>({ col: 'oraPlecare', dir: -1 });
+  sort_deleted       = signal<{col: string; dir: 1|-1}>({ col: 'oraPlecare', dir: -1 });
+  sort_orderHistory  = signal<{col: string; dir: 1|-1}>({ col: 'deliveryDate', dir: 1 });
+  pg_orderHistory    = signal(0);
 
   readonly PAGE_SIZE = 5;
 
@@ -355,6 +358,37 @@ export class TransportComponent implements OnInit {
     });
   }
 
+  sortHistoric(col: string): void {
+    const c = this.sort_historic();
+    this.sort_historic.set({ col, dir: c.col === col ? (c.dir * -1 as 1|-1) : 1 });
+    this.pg_historic.set(0);
+  }
+  sortDeleted(col: string): void {
+    const c = this.sort_deleted();
+    this.sort_deleted.set({ col, dir: c.col === col ? (c.dir * -1 as 1|-1) : 1 });
+    this.pg_deleted.set(0);
+  }
+  sortOrderHistory(col: string): void {
+    const c = this.sort_orderHistory();
+    this.sort_orderHistory.set({ col, dir: c.col === col ? (c.dir * -1 as 1|-1) : 1 });
+    this.pg_orderHistory.set(0);
+  }
+
+  private _sortOrderHistory(orders: Order[], st: {col: string; dir: 1|-1}): Order[] {
+    return [...orders].sort((a, b) => {
+      let va: any = '', vb: any = '';
+      switch (st.col) {
+        case 'orderNumber': va = a.orderNumber ?? 0; vb = b.orderNumber ?? 0; break;
+        case 'client':      va = a.client.name;      vb = b.client.name;      break;
+        case 'deliveryDate': va = a.deliveryDate ?? a.timestamp; vb = b.deliveryDate ?? b.timestamp; break;
+        case 'valoare':     va = this.orderPendingValue(a).tva; vb = this.orderPendingValue(b).tva; break;
+        case 'masa':        va = this.orderTotalWeight(a);       vb = this.orderTotalWeight(b);       break;
+        case 'status':      va = a.status; vb = b.status; break;
+      }
+      return va < vb ? -st.dir : va > vb ? st.dir : 0;
+    });
+  }
+
   private _sortTrips(trips: Transport[], st: {col: string; dir: 1|-1}): Transport[] {
     return [...trips].sort((a, b) => {
       let va: any = 0, vb: any = 0;
@@ -391,12 +425,19 @@ export class TransportComponent implements OnInit {
     return sorted.slice(s, s + this.PAGE_SIZE);
   });
   readonly historyPage = computed(() => {
+    const sorted = this._sortTrips(this.transportService.history(), this.sort_historic());
     const s = this.pg_historic() * this.PAGE_SIZE;
-    return this.transportService.history().slice(s, s + this.PAGE_SIZE);
+    return sorted.slice(s, s + this.PAGE_SIZE);
   });
   readonly deletedPage = computed(() => {
+    const sorted = this._sortTrips(this.deletedTrips(), this.sort_deleted());
     const s = this.pg_deleted() * this.PAGE_SIZE;
-    return this.deletedTrips().slice(s, s + this.PAGE_SIZE);
+    return sorted.slice(s, s + this.PAGE_SIZE);
+  });
+  readonly orderHistoryPage = computed(() => {
+    const sorted = this._sortOrderHistory(this.orderHistoryList(), this.sort_orderHistory());
+    const s = this.pg_orderHistory() * this.PAGE_SIZE;
+    return sorted.slice(s, s + this.PAGE_SIZE);
   });
 
   overlapIds = computed<Set<string>>(() => {
