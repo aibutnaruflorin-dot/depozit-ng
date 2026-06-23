@@ -416,7 +416,13 @@
   font-size: 0.82rem;
   mat-icon { font-size: 15px; width: 15px; height: 15px; color: var(--color-text-muted); }
   &--pending mat-icon { color: #f59e0b; }
+  &--clickable {
+    cursor: pointer; border-radius: 6px; padding: 3px 6px; margin: 0 -6px;
+    &:hover { background: var(--color-surface); }
+  }
 }
+.link-look { cursor: pointer; color: var(--color-primary); text-decoration: underline dotted; }
+.order-num-badge--link { cursor: pointer; &:hover { opacity: 0.75; } }
 .order-remaining-item {
   background: #fff7ed; border: 1px solid #fdba74; color: #c2410c;
   border-radius: 4px; padding: 1px 6px; font-size: 0.78rem;

@@ -1048,6 +1048,36 @@ export class TransportComponent implements OnInit {
     return this.getTripDelivery(t, orderId)?.items.reduce((s, i) => s + i.qty, 0) ?? 0;
   }
 
+  tripOrderWeight(t: import('../../core/models/transport.model').Transport, o: Order): number {
+    const d = this.getTripDelivery(t, o.id);
+    if (!d) return 0;
+    return d.items.reduce((s, item) => {
+      const p = o.products[item.productIndex];
+      return s + (p?.masaNeta ?? 0) * item.qty;
+    }, 0);
+  }
+
+  tripOrderValue(t: import('../../core/models/transport.model').Transport, o: Order): { net: number; tva: number } {
+    const d = this.getTripDelivery(t, o.id);
+    if (!d) return { net: 0, tva: 0 };
+    let net = 0, tva = 0;
+    for (const item of d.items) {
+      const p = o.products[item.productIndex];
+      if (!p) continue;
+      const pr = this.productPrice(p);
+      net += pr.net * item.qty;
+      tva += pr.tva * item.qty;
+    }
+    return { net, tva };
+  }
+
+  openBestTripForOrder(o: Order): void {
+    const trips = this.tripsForOrderHistory(o.id);
+    if (!trips.length) return;
+    const t = trips.find(tr => tr.status !== 'livrat') ?? trips[trips.length - 1];
+    this.openDelivery(t, o);
+  }
+
   getTripDelivery(t: Transport, orderId: string): import('../../core/models/transport.model').TripDelivery | undefined {
     return t.deliveries.find(d => d.orderId === orderId);
   }
