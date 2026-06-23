@@ -209,8 +209,7 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
   }
 
   canReopen(order: Order): boolean {
-    const closed = ['anulat', 'livrat', 'in_livrare'];
-    if (!closed.includes(order.status) || order.superseded) return false;
+    if (order.status !== 'anulat' || order.superseded) return false;
     const s = this.auth.session();
     return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
   }
