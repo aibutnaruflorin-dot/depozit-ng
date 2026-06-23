@@ -1298,7 +1298,7 @@ export class TransportComponent implements OnInit {
 
   statusLabel(s: string): string {
     switch (s) {
-      case 'planificat':     return 'Planificat';
+      case 'planificat':     return 'Așteptare confirmare';
       case 'confirmat_sofer': return 'Confirmat șofer';
       case 'in_livrare':    return 'În livrare';
       case 'livrat':        return 'Livrat';

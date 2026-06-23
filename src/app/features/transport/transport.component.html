@@ -728,7 +728,7 @@
               <td>
                 <span class="trip-status-badge trip-status--overdue">
                   <mat-icon>warning</mat-icon>
-                  {{ t.status === 'in_livrare' ? 'În livrare' : 'Planificat' }}
+                  {{ statusLabel(t.status) }}
                 </span>
               </td>
               <td class="value-cell col-valoare">
