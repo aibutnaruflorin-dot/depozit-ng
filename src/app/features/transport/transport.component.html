@@ -975,29 +975,44 @@
       @if (!orderHistoryList().length) {
         <div class="empty-state"><mat-icon>history_edu</mat-icon><p>Niciun istoric disponibil.</p></div>
       } @else {
-        <div class="historic-table-wrap">
-          <table class="delivery-table">
+        <div class="section-table-wrap">
+          <table class="delivery-table delivery-table--sections">
             <thead>
               <tr>
-                <th style="width:52px">NR</th>
-                <th>Client</th>
-                <th style="width:130px">Termen</th>
-                <th style="width:80px">Masă</th>
-                <th style="width:105px">Valoare</th>
-                <th style="width:130px">Status</th>
-                <th style="width:32px"></th>
+                <th class="col-nr">NR</th>
+                <th class="col-vehicle">Client</th>
+                <th class="col-order-detail">Detalii client</th>
+                <th class="col-termen">Termen</th>
+                <th class="col-status">Status</th>
+                <th class="col-valoare">Valoare</th>
+                <th class="col-masa">Masă</th>
+                <th class="col-obs">Observații</th>
+                <th class="col-actiuni"></th>
               </tr>
             </thead>
             <tbody>
               @for (o of orderHistoryList(); track o.id) {
                 <tr class="order-history-row" (click)="toggleHistoryExpand(o.id)" style="cursor:pointer">
-                  <td (click)="openBestTripForOrder(o); $event.stopPropagation()">
+                  <td class="col-nr" (click)="openBestTripForOrder(o); $event.stopPropagation()">
                     <span class="order-num-badge order-num-badge--link">#{{ o.orderNumber }}</span>
                   </td>
-                  <td (click)="openBestTripForOrder(o); $event.stopPropagation()">
+                  <td class="col-vehicle" (click)="openBestTripForOrder(o); $event.stopPropagation()">
                     <strong class="link-look">{{ o.client.name }}</strong>
                   </td>
-                  <td>
+                  <td class="col-order-detail">
+                    <div class="client-details-cell">
+                      @if (o.client.phone) {
+                        <a [href]="'tel:' + o.client.phone" class="tel-link" (click)="$event.stopPropagation()">{{ o.client.phone }}</a>
+                      }
+                      @if (o.client.address) {
+                        <a [href]="mapsLink(o.client.address)" target="_blank" class="addr-link" (click)="$event.stopPropagation()">
+                          <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                        </a>
+                      }
+                      @if (!o.client.phone && !o.client.address) { <span class="muted">—</span> }
+                    </div>
+                  </td>
+                  <td class="col-termen">
                     @if (o.deliveryDate) {
                       @let ov = isOrderDeadlineOverdue(o);
                       <span class="delivery-term" [class.delivery-term--overdue]="ov">
@@ -1006,17 +1021,7 @@
                       </span>
                     } @else { <span class="muted">—</span> }
                   </td>
-                  <td>
-                    @let tw = orderTotalWeight(o);
-                    @if (tw > 0) {
-                      <span class="val-weight"><mat-icon>monitor_weight</mat-icon>{{ fmtWeight(tw) }}</span>
-                    } @else { <span class="muted">—</span> }
-                  </td>
-                  <td>
-                    @let ov2 = orderPendingValue(o);
-                    <span class="val-net">{{ ov2.tva | number:'1.0-0' }} lei</span>
-                  </td>
-                  <td>
+                  <td class="col-status">
                     @if (o.status === 'livrat') {
                       <span class="order-status-badge status-done">Livrat</span>
                     } @else if (o.status === 'livrat_partial') {
@@ -1026,7 +1031,25 @@
                       <span class="order-status-badge" [ngClass]="ots.cls">{{ ots.label }}</span>
                     }
                   </td>
-                  <td>
+                  <td class="col-valoare">
+                    @let ov2 = orderPendingValue(o);
+                    <span class="val-net">{{ ov2.tva | number:'1.0-0' }} lei</span>
+                  </td>
+                  <td class="masa-cell col-masa">
+                    @let tw = orderTotalWeight(o);
+                    @if (tw > 0) {
+                      <span class="val-weight"><mat-icon>monitor_weight</mat-icon>{{ fmtWeight(tw) }}</span>
+                    } @else { <span class="muted">—</span> }
+                  </td>
+                  <td class="notes-col col-obs" (click)="$event.stopPropagation()">
+                    <textarea class="chip-note-input" rows="2"
+                              [appInitValue]="o.observatii ?? ''"
+                              (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
+                              (blur)="saveOrderObsBuffer(o.id)"
+                              placeholder="Notă comandă">
+                    </textarea>
+                  </td>
+                  <td class="col-actiuni" style="text-align:center">
                     <mat-icon class="muted" style="font-size:18px;width:18px;height:18px;vertical-align:middle">
                       {{ expandedHistoryIds().has(o.id) ? 'expand_less' : 'expand_more' }}
                     </mat-icon>
@@ -1034,7 +1057,7 @@
                 </tr>
                 @if (expandedHistoryIds().has(o.id)) {
                   <tr class="order-expand-row">
-                    <td colspan="7" class="order-expand-cell">
+                    <td colspan="9" class="order-expand-cell">
                       <div class="order-expand-panel">
                         @let allTrips = tripsForOrderHistory(o.id);
                         @if (!allTrips.length) {
