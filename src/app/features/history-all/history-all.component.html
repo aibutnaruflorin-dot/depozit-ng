@@ -700,7 +700,7 @@
                   <mat-icon>edit_note</mat-icon>
                   Finalizează cu modificări
                 </button>
-              } @else {
+              } @else if (canReopen(order)) {
                 <button mat-stroked-button class="btn-reopen-order" (click)="reopenOrder(order)">
                   <mat-icon>lock_open</mat-icon>
                   Redeschide
