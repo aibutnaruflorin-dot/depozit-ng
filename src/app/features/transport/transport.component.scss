@@ -142,7 +142,7 @@
   .col-valoare        { width: 105px; }
   .col-masa           { width: 72px;  }
   .col-obs            { width: 150px; }
-  .col-actiuni        { width: 115px; }
+  .col-actiuni        { width: 60px;  }
 
   /* Coloane fixe stânga */
   .col-nr             { width: 44px;  }
@@ -218,7 +218,21 @@
   color: #991b1b;
   mat-icon { color: #dc2626; }
 }
-.actions-cell { white-space: nowrap; }
+.actions-cell,
+.delivery-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 2px 0;
+
+  button[mat-icon-button] {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  }
+}
 
 /* ── Sidebar sections ────────────────────────────────────────── */
 .side-section {
