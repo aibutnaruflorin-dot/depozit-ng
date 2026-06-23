@@ -67,8 +67,9 @@
 }
 
 .sec-icon { font-size: 20px; width: 20px; height: 20px; }
-.sec-icon--active { color: #2e7d32; }
-.sec-icon--plan   { color: var(--color-primary); }
+.sec-icon--active    { color: #2e7d32; }
+.sec-icon--plan      { color: var(--color-primary); }
+.sec-icon--confirmed { color: #0277bd; }
 
 /* ── Badges ── */
 .badge-pill {
@@ -77,8 +78,9 @@
   border-radius: 10px; font-size: 0.72rem; font-weight: 700;
   background: var(--color-primary); color: #fff;
 }
-.badge-pill--warn  { background: #e65100; }
-.badge-pill--muted { background: var(--color-border); color: var(--color-text-muted); }
+.badge-pill--warn      { background: #e65100; }
+.badge-pill--muted     { background: var(--color-border); color: var(--color-text-muted); }
+.badge-pill--confirmed { background: #0277bd; }
 
 /* ── Table ── */
 .trips-table {

@@ -62,6 +62,7 @@ import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
 import { UnitsService } from '../../core/services/units.service';
+import { TransportService } from '../../core/services/transport.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -268,14 +269,19 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     if (livrare === 'cu')   orders = orders.filter(o => !!o.cuLivrare);
     if (livrare === 'fara') orders = orders.filter(o => !o.cuLivrare);
     if (address)         orders = orders.filter(o => (o.client?.address ?? '').toLowerCase().includes(address));
-    if (status) orders = orders.filter(o =>
-      status === 'În așteptare'   ? (o.status === 'trimis' && !o.superseded) :
-      status === 'Acceptată'      ? o.status === 'acceptat' :
-      status === 'Anulată'        ? o.status === 'anulat' :
-      status === 'Planificată'    ? o.status === 'planificat' :
-      status === 'În livrare'     ? o.status === 'in_livrare' :
-      status === 'Livrată'        ? o.status === 'livrat' : true
-    );
+    if (status) orders = orders.filter(o => {
+      if (status === 'În așteptare')       return o.status === 'trimis' && !o.superseded;
+      if (status === 'Anulată')            return o.status === 'anulat';
+      if (o.status === 'trimis' || o.status === 'anulat') return false;
+      const ts = this.transportService.deriveOrderPlanningStatus(o);
+      if (status === 'Neplanificat')       return ts.key === 'neplanificat';
+      if (status === 'Planificat parțial') return ts.key === 'planificat_partial';
+      if (status === 'Planificat')         return ts.key === 'planificat';
+      if (status === 'Livrare parțială')   return ts.key === 'livrare_partiala';
+      if (status === 'În livrare')         return ts.key === 'in_livrare';
+      if (status === 'Livrat')             return ts.key === 'livrat';
+      return true;
+    });
     if (dateRange.start) {
       const from = this._localDate(dateRange.start);
       orders = orders.filter(o => this._localDate(new Date(o.timestamp)) >= from);
@@ -338,7 +344,8 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     private storage: StorageService,
     private snackBar: MatSnackBar,
     public  unitsService: UnitsService,
-    private zone: NgZone
+    private zone: NgZone,
+    public  transportService: TransportService
   ) {}
 
   private _localDate(d: Date): string {
@@ -614,9 +621,10 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
   }
 
   private _orderStatusLabel(o: Order): string {
-    return o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
-           o.status === 'livrat' ? 'Livrată' : o.status === 'in_livrare' ? 'În livrare' :
-           o.status === 'planificat' ? 'Planificată' : o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
+    if (o.superseded) return 'Înlocuită';
+    if (o.status === 'anulat') return 'Anulată';
+    if (o.status === 'trimis') return 'În așteptare';
+    return this.transportService.deriveOrderPlanningStatus(o).label;
   }
 
   private _csvRow(cols: string[], o: Order, p: any): string[] {

@@ -72,14 +72,12 @@
       <ng-container [ngTemplateOutlet]="deliveryTableTpl"
                     [ngTemplateOutletContext]="{ orders: deliveryOrdersOnTimePage(), sortKey: 'orders' }">
       </ng-container>
-      @if (deliveryOrdersOnTime().length > PAGE_SIZE) {
-        <mat-paginator class="section-paginator"
-                       [length]="deliveryOrdersOnTime().length"
-                       [pageSize]="PAGE_SIZE"
-                       [pageIndex]="pg_orders()"
-                       (page)="pg_orders.set($event.pageIndex)"
-                       hidePageSize showFirstLastButtons>
-        </mat-paginator>
+      @if (deliveryOrdersOnTime().length > pageSize()) {
+        <p-paginator [rows]="pageSize()" [totalRecords]="deliveryOrdersOnTime().length"
+                     [first]="pg_orders() * pageSize()"
+                     [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
+                     (onPageChange)="pgChange($event, pg_orders)">
+        </p-paginator>
       }
     }
   </div>
@@ -95,14 +93,12 @@
     </div>
     @if (showActive()) {
       <ng-container [ngTemplateOutlet]="activeTableTpl"></ng-container>
-      @if (activeOnTime().length > PAGE_SIZE) {
-        <mat-paginator class="section-paginator"
-                       [length]="activeOnTime().length"
-                       [pageSize]="PAGE_SIZE"
-                       [pageIndex]="pg_active()"
-                       (page)="pg_active.set($event.pageIndex)"
-                       hidePageSize showFirstLastButtons>
-        </mat-paginator>
+      @if (activeOnTime().length > pageSize()) {
+        <p-paginator [rows]="pageSize()" [totalRecords]="activeOnTime().length"
+                     [first]="pg_active() * pageSize()"
+                     [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
+                     (onPageChange)="pgChange($event, pg_active)">
+        </p-paginator>
       }
     }
   </div>
@@ -127,14 +123,12 @@
         <ng-container [ngTemplateOutlet]="deliveryTableTpl"
                       [ngTemplateOutletContext]="{ orders: deliveryOrdersOverduePage(), sortKey: 'overdueOrders' }">
         </ng-container>
-        @if (deliveryOrdersOverdue().length > PAGE_SIZE) {
-          <mat-paginator class="section-paginator"
-                         [length]="deliveryOrdersOverdue().length"
-                         [pageSize]="PAGE_SIZE"
-                         [pageIndex]="pg_overdueOrders()"
-                         (page)="pg_overdueOrders.set($event.pageIndex)"
-                         hidePageSize showFirstLastButtons>
-          </mat-paginator>
+        @if (deliveryOrdersOverdue().length > pageSize()) {
+          <p-paginator [rows]="pageSize()" [totalRecords]="deliveryOrdersOverdue().length"
+                       [first]="pg_overdueOrders() * pageSize()"
+                       [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
+                       (onPageChange)="pgChange($event, pg_overdueOrders)">
+          </p-paginator>
         }
       }
     }
@@ -152,14 +146,12 @@
     </div>
     @if (showOverdueTrips()) {
       <ng-container [ngTemplateOutlet]="overdueTripsBodyTpl"></ng-container>
-      @if (activeOverdue().length > PAGE_SIZE) {
-        <mat-paginator class="section-paginator"
-                       [length]="activeOverdue().length"
-                       [pageSize]="PAGE_SIZE"
-                       [pageIndex]="pg_overdueTrips()"
-                       (page)="pg_overdueTrips.set($event.pageIndex)"
-                       hidePageSize showFirstLastButtons>
-        </mat-paginator>
+      @if (activeOverdue().length > pageSize()) {
+        <p-paginator [rows]="pageSize()" [totalRecords]="activeOverdue().length"
+                     [first]="pg_overdueTrips() * pageSize()"
+                     [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
+                     (onPageChange)="pgChange($event, pg_overdueTrips)">
+        </p-paginator>
       }
     }
   </div>
@@ -261,6 +253,17 @@
   } @else {
     <div class="section-table-wrap">
       <table class="delivery-table delivery-table--sections">
+        <colgroup>
+          <col style="width:44px">
+          <col style="width:145px">
+          <col style="width:178px">
+          <col style="width:112px">
+          <col style="width:108px">
+          <col style="width:105px">
+          <col style="width:72px">
+          <col style="width:150px">
+          <col style="width:60px">
+        </colgroup>
         <thead>
           <tr>
             <th class="th-sort col-nr" (click)="sortDelivery(sortKey ?? 'orders', 'orderNumber')">
@@ -273,11 +276,15 @@
             <th class="th-sort col-termen" (click)="sortDelivery(sortKey ?? 'orders', 'deliveryDate')">
               Termen <mat-icon class="sort-icon">{{ sortIcon(sst, 'deliveryDate') }}</mat-icon>
             </th>
-            <th class="col-status">Status</th>
+            <th class="th-sort col-status" (click)="sortDelivery(sortKey ?? 'orders', 'status')">
+              Status <mat-icon class="sort-icon">{{ sortIcon(sst, 'status') }}</mat-icon>
+            </th>
             <th class="th-sort col-valoare" (click)="sortDelivery(sortKey ?? 'orders', 'value')">
               Valoare <mat-icon class="sort-icon">{{ sortIcon(sst, 'value') }}</mat-icon>
             </th>
-            <th class="col-masa">Masă</th>
+            <th class="th-sort col-masa" (click)="sortDelivery(sortKey ?? 'orders', 'masa')">
+              Masă <mat-icon class="sort-icon">{{ sortIcon(sst, 'masa') }}</mat-icon>
+            </th>
             <th class="col-obs">Observații</th>
             <th class="col-actiuni">Acțiuni</th>
           </tr>
@@ -340,21 +347,19 @@
                           placeholder="Notă comandă">
                 </textarea>
               </td>
-              <td class="col-actiuni">
-                <div class="delivery-actions">
-                  <button mat-icon-button color="primary"
-                          [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
-                          (click)="openCreateForOrder(o)" matTooltip="Planifică">
-                    <mat-icon>add_road</mat-icon>
-                  </button>
-                  <button mat-icon-button (click)="addProductsOrderId.set(o.id)" matTooltip="Adaugă produse">
-                    <mat-icon>add_shopping_cart</mat-icon>
-                  </button>
-                  <button mat-icon-button (click)="toggleOrderExpand(o.id)"
-                          [matTooltip]="expandedOrderIds().has(o.id) ? 'Ascunde detalii' : 'Detalii planificare'">
-                    <mat-icon>{{ expandedOrderIds().has(o.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                  </button>
-                </div>
+              <td class="actions-cell col-actiuni">
+                <button mat-icon-button color="primary"
+                        [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
+                        (click)="openCreateForOrder(o)" matTooltip="Planifică">
+                  <mat-icon>add_road</mat-icon>
+                </button>
+                <button mat-icon-button (click)="addProductsOrderId.set(o.id)" matTooltip="Adaugă produse">
+                  <mat-icon>add_shopping_cart</mat-icon>
+                </button>
+                <button mat-icon-button (click)="toggleOrderExpand(o.id)"
+                        [matTooltip]="expandedOrderIds().has(o.id) ? 'Ascunde detalii' : 'Detalii planificare'">
+                  <mat-icon>{{ expandedOrderIds().has(o.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
               </td>
             </tr>
             @if (expandedOrderIds().has(o.id)) {
@@ -427,6 +432,17 @@
   } @else {
     <div class="section-table-wrap">
       <table class="delivery-table delivery-table--sections">
+        <colgroup>
+          <col style="width:44px">
+          <col style="width:145px">
+          <col style="width:178px">
+          <col style="width:112px">
+          <col style="width:108px">
+          <col style="width:105px">
+          <col style="width:72px">
+          <col style="width:150px">
+          <col style="width:60px">
+        </colgroup>
         <thead>
           <tr>
             <th class="col-nr">NR</th>
@@ -440,8 +456,12 @@
             <th class="th-sort col-status" (click)="sortActive('status')">
               Status <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'status') }}</mat-icon>
             </th>
-            <th class="col-valoare">Valoare</th>
-            <th class="col-masa">Masă</th>
+            <th class="th-sort col-valoare" (click)="sortActive('valoare')">
+              Valoare <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'valoare') }}</mat-icon>
+            </th>
+            <th class="th-sort col-masa" (click)="sortActive('masa')">
+              Masă <mat-icon class="sort-icon">{{ sortIcon(sort_active(), 'masa') }}</mat-icon>
+            </th>
             <th class="col-obs">Observații</th>
             <th class="col-actiuni">Acțiuni</th>
           </tr>
@@ -554,13 +574,19 @@
                     <button mat-icon-button (click)="sendDriverWhatsApp(t)"
                             [matTooltip]="t.waSentDriverAt ? 'WA şofer · ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp şofer'"
                             [style.color]="t.waSentDriverAt ? '#888' : '#25d366'">
-                      <mat-icon>{{ t.waSentDriverAt ? 'mark_chat_read' : 'local_shipping' }}</mat-icon>
+                      <span class="wa-icon-wrap">
+                        <mat-icon>local_shipping</mat-icon>
+                        @if (t.waSentDriverAt) { <mat-icon class="wa-check">check</mat-icon> }
+                      </span>
                     </button>
                     @if (t.helper) {
                       <button mat-icon-button (click)="sendHelperWhatsApp(t)"
                               [matTooltip]="t.waSentHelperAt ? 'WA ajutor · ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ' + t.helper"
                               [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
-                        <mat-icon>{{ t.waSentHelperAt ? 'mark_chat_read' : 'person_add' }}</mat-icon>
+                        <span class="wa-icon-wrap">
+                        <mat-icon>person_add</mat-icon>
+                        @if (t.waSentHelperAt) { <mat-icon class="wa-check">check</mat-icon> }
+                      </span>
                       </button>
                     }
                     @if (whatsappGroups().length) {
@@ -576,7 +602,9 @@
                       </mat-menu>
                     }
                   }
-                  <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
+                  @if (t.status === 'planificat') {
+                    <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
+                  }
                 }
               </td>
             </tr>
@@ -598,6 +626,17 @@
   } @else {
     <div class="section-table-wrap">
       <table class="delivery-table delivery-table--sections">
+        <colgroup>
+          <col style="width:44px">
+          <col style="width:145px">
+          <col style="width:178px">
+          <col style="width:112px">
+          <col style="width:108px">
+          <col style="width:105px">
+          <col style="width:72px">
+          <col style="width:150px">
+          <col style="width:60px">
+        </colgroup>
         <thead>
           <tr>
             <th class="col-nr">NR</th>
@@ -611,8 +650,12 @@
             <th class="th-sort col-status" (click)="sortOverdueTrips('status')">
               Status <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'status') }}</mat-icon>
             </th>
-            <th class="col-valoare">Valoare</th>
-            <th class="col-masa">Masă</th>
+            <th class="th-sort col-valoare" (click)="sortOverdueTrips('valoare')">
+              Valoare <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'valoare') }}</mat-icon>
+            </th>
+            <th class="th-sort col-masa" (click)="sortOverdueTrips('masa')">
+              Masă <mat-icon class="sort-icon">{{ sortIcon(sort_overdueTrips(), 'masa') }}</mat-icon>
+            </th>
             <th class="col-obs">Observații</th>
             <th class="col-actiuni">Acțiuni</th>
           </tr>
@@ -720,13 +763,19 @@
                     <button mat-icon-button (click)="sendDriverWhatsApp(t)"
                             [matTooltip]="t.waSentDriverAt ? 'WA şofer · ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp şofer'"
                             [style.color]="t.waSentDriverAt ? '#888' : '#25d366'">
-                      <mat-icon>{{ t.waSentDriverAt ? 'mark_chat_read' : 'local_shipping' }}</mat-icon>
+                      <span class="wa-icon-wrap">
+                        <mat-icon>local_shipping</mat-icon>
+                        @if (t.waSentDriverAt) { <mat-icon class="wa-check">check</mat-icon> }
+                      </span>
                     </button>
                     @if (t.helper) {
                       <button mat-icon-button (click)="sendHelperWhatsApp(t)"
                               [matTooltip]="t.waSentHelperAt ? 'WA ajutor · ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ' + t.helper"
                               [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
-                        <mat-icon>{{ t.waSentHelperAt ? 'mark_chat_read' : 'person_add' }}</mat-icon>
+                        <span class="wa-icon-wrap">
+                        <mat-icon>person_add</mat-icon>
+                        @if (t.waSentHelperAt) { <mat-icon class="wa-check">check</mat-icon> }
+                      </span>
                       </button>
                     }
                     @if (whatsappGroups().length) {
@@ -742,7 +791,9 @@
                       </mat-menu>
                     }
                   }
-                  <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
+                  @if (t.status === 'planificat') {
+                    <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
+                  }
                 }
               </td>
             </tr>
@@ -755,7 +806,7 @@
 
 <!-- ── Istoric (collapsibil) ── -->
 <ng-template #historicSection>
-  <div class="historic-section">
+  <div class="wide-section">
     <div class="panel-title panel-title--toggle" (click)="showHistoric.set(!showHistoric())">
       <mat-icon>history</mat-icon> Curse finalizate
       @if (transportService.history().length) {
@@ -775,7 +826,7 @@
               <th class="th-sort" (click)="sortHistoric('sofer')">Șofer <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'sofer') }}</mat-icon></th>
               <th class="th-sort" (click)="sortHistoric('oraPlecare')">Plecare → Sosire <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'oraPlecare') }}</mat-icon></th>
               <th>Comenzi / Articole</th>
-              <th>Valoare</th>
+              <th class="th-sort" (click)="sortHistoric('valoare')">Valoare <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'valoare') }}</mat-icon></th>
               <th>Log tranziții</th>
             </tr>
           </thead>
@@ -853,15 +904,11 @@
             }
           </tbody>
         </table>
-        @if (transportService.history().length > PAGE_SIZE) {
-          <mat-paginator class="q4-paginator"
-                         [length]="transportService.history().length"
-                         [pageSize]="PAGE_SIZE"
-                         [pageIndex]="pg_historic()"
-                         (page)="pg_historic.set($event.pageIndex)"
-                         hidePageSize showFirstLastButtons>
-          </mat-paginator>
-        }
+        <p-paginator [rows]="pageSize()" [totalRecords]="transportService.history().length"
+                     [first]="pg_historic() * pageSize()"
+                     [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
+                     (onPageChange)="pgChange($event, pg_historic)">
+        </p-paginator>
         </div>
       }
     }
@@ -870,7 +917,7 @@
 
 <!-- ── Curse planificate șterse ── -->
 <ng-template #deletedSection>
-  <div class="historic-section">
+  <div class="wide-section">
     <div class="panel-title panel-title--toggle" (click)="showDeleted.set(!showDeleted())">
       <mat-icon>delete_sweep</mat-icon> Curse planificate șterse
       @if (deletedTrips().length) {
@@ -890,7 +937,7 @@
                 <th class="th-sort" (click)="sortDeleted('sofer')">Șofer <mat-icon class="sort-icon">{{ sortIcon(sort_deleted(), 'sofer') }}</mat-icon></th>
                 <th class="th-sort" (click)="sortDeleted('oraPlecare')">Plecare → Sosire <mat-icon class="sort-icon">{{ sortIcon(sort_deleted(), 'oraPlecare') }}</mat-icon></th>
                 <th>Comenzi</th>
-                <th>Valoare</th>
+                <th class="th-sort" (click)="sortDeleted('valoare')">Valoare <mat-icon class="sort-icon">{{ sortIcon(sort_deleted(), 'valoare') }}</mat-icon></th>
                 <th>Acțiuni</th>
               </tr>
             </thead>
@@ -946,15 +993,11 @@
               }
             </tbody>
           </table>
-          @if (deletedTrips().length > PAGE_SIZE) {
-            <mat-paginator class="q4-paginator"
-                           [length]="deletedTrips().length"
-                           [pageSize]="PAGE_SIZE"
-                           [pageIndex]="pg_deleted()"
-                           (page)="pg_deleted.set($event.pageIndex)"
-                           hidePageSize showFirstLastButtons>
-            </mat-paginator>
-          }
+          <p-paginator [rows]="pageSize()" [totalRecords]="deletedTrips().length"
+                       [first]="pg_deleted() * pageSize()"
+                       [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
+                       (onPageChange)="pgChange($event, pg_deleted)">
+          </p-paginator>
         </div>
         } <!-- /else -->
       } <!-- /showDeleted -->
@@ -963,7 +1006,7 @@
 
 <!-- ── Istoric planificări comenzi ── -->
 <ng-template #orderHistorySection>
-  <div class="historic-section">
+  <div class="wide-section">
     <div class="panel-title panel-title--toggle" (click)="showOrderHistory.set(!showOrderHistory())">
       <mat-icon>history_edu</mat-icon> Istoric planificări comenzi
       @if (orderHistoryList().length) {
@@ -977,6 +1020,17 @@
       } @else {
         <div class="section-table-wrap">
           <table class="delivery-table delivery-table--sections">
+            <colgroup>
+              <col style="width:44px">
+              <col style="width:145px">
+              <col style="width:178px">
+              <col style="width:112px">
+              <col style="width:108px">
+              <col style="width:105px">
+              <col style="width:72px">
+              <col style="width:150px">
+              <col style="width:60px">
+            </colgroup>
             <thead>
               <tr>
                 <th class="th-sort col-nr" (click)="sortOrderHistory('orderNumber')">NR <mat-icon class="sort-icon">{{ sortIcon(sort_orderHistory(), 'orderNumber') }}</mat-icon></th>
@@ -1102,15 +1156,11 @@
               }
             </tbody>
           </table>
-          @if (orderHistoryList().length > PAGE_SIZE) {
-            <mat-paginator class="section-paginator"
-                           [length]="orderHistoryList().length"
-                           [pageSize]="PAGE_SIZE"
-                           [pageIndex]="pg_orderHistory()"
-                           (page)="pg_orderHistory.set($event.pageIndex)"
-                           hidePageSize showFirstLastButtons>
-            </mat-paginator>
-          }
+          <p-paginator [rows]="pageSize()" [totalRecords]="orderHistoryList().length"
+                       [first]="pg_orderHistory() * pageSize()"
+                       [rowsPerPageOptions]="PAGE_SIZE_OPTIONS"
+                       (onPageChange)="pgChange($event, pg_orderHistory)">
+          </p-paginator>
         </div>
       }
     }

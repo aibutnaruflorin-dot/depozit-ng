@@ -1,4 +1,4 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, signal, computed, OnInit, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -27,7 +27,7 @@ import { DragModalDirective } from '../../shared/drag-modal.directive';
 import { InitValueDirective } from '../../shared/init-textarea.directive';
 import { AddProductsModalComponent } from '../../shared/add-products-modal/add-products-modal.component';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatPaginatorModule } from '@angular/material/paginator';
+import { PaginatorModule } from 'primeng/paginator';
 
 // ── Validators ────────────────────────────────────────────────────────────────
 
@@ -94,7 +94,7 @@ interface CalBar {
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatCardModule, MatDividerModule, MatTooltipModule,
     MatChipsModule, MatSnackBarModule, MatMenuModule,
-    MatDatepickerModule, MatAutocompleteModule, MatPaginatorModule,
+    MatDatepickerModule, MatAutocompleteModule, PaginatorModule,
     DragModalDirective, InitValueDirective, AddProductsModalComponent
   ],
   templateUrl: './transport.component.html',
@@ -297,7 +297,8 @@ export class TransportComponent implements OnInit {
   sort_orderHistory  = signal<{col: string; dir: 1|-1}>({ col: 'deliveryDate', dir: 1 });
   pg_orderHistory    = signal(0);
 
-  readonly PAGE_SIZE = 5;
+  readonly PAGE_SIZE_OPTIONS = [5, 10, 15, 20, 50, 100];
+  pageSize = signal(5);
 
   // ── Pagination ─────────────────────────────────────────────────────────────
   pg_orders        = signal(0);
@@ -334,6 +335,16 @@ export class TransportComponent implements OnInit {
     this.pg_overdueTrips.set(0);
   }
 
+  pgChange(e: { page?: number; rows?: number }, pg: WritableSignal<number>): void {
+    if (e.rows && e.rows !== this.pageSize()) {
+      this.pageSize.set(e.rows);
+      [this.pg_orders, this.pg_active, this.pg_overdueOrders, this.pg_overdueTrips,
+       this.pg_historic, this.pg_deleted, this.pg_orderHistory].forEach(s => s.set(0));
+    } else {
+      pg.set(e.page ?? 0);
+    }
+  }
+
   sortDelivery(key: string, col: string): void {
     key === 'orders' ? this.sortOrders(col) : this.sortOverdueOrders(col);
   }
@@ -353,6 +364,8 @@ export class TransportComponent implements OnInit {
         case 'client': va = a.client.name.toLowerCase(); vb = b.client.name.toLowerCase(); break;
         case 'deliveryDate': va = a.deliveryDate ?? '9'; vb = b.deliveryDate ?? '9'; break;
         case 'value': va = this.orderPendingValue(a).tva; vb = this.orderPendingValue(b).tva; break;
+        case 'status': va = a.status; vb = b.status; break;
+        case 'masa': va = this.orderTotalWeight(a); vb = this.orderTotalWeight(b); break;
       }
       return va < vb ? -st.dir : va > vb ? st.dir : 0;
     });
@@ -398,6 +411,8 @@ export class TransportComponent implements OnInit {
         case 'oraPlecare': va = a.oraPlecare; vb = b.oraPlecare; break;
         case 'oraSosire': va = a.oraSosire; vb = b.oraSosire; break;
         case 'status': va = a.status; vb = b.status; break;
+        case 'valoare': va = this.tripValue(a).tva; vb = this.tripValue(b).tva; break;
+        case 'masa': va = this.tripTotalWeight(a); vb = this.tripTotalWeight(b); break;
       }
       return va < vb ? -st.dir : va > vb ? st.dir : 0;
     });
@@ -406,38 +421,38 @@ export class TransportComponent implements OnInit {
   // ── Sorted + paginated ─────────────────────────────────────────────────────
   readonly deliveryOrdersOnTimePage = computed(() => {
     const sorted = this._sortOrders(this.deliveryOrdersOnTime(), this.sort_orders());
-    const s = this.pg_orders() * this.PAGE_SIZE;
-    return sorted.slice(s, s + this.PAGE_SIZE);
+    const ps = this.pageSize(); const s = this.pg_orders() * ps;
+    return sorted.slice(s, s + ps);
   });
   readonly deliveryOrdersOverduePage = computed(() => {
     const sorted = this._sortOrders(this.deliveryOrdersOverdue(), this.sort_overdueOrders());
-    const s = this.pg_overdueOrders() * this.PAGE_SIZE;
-    return sorted.slice(s, s + this.PAGE_SIZE);
+    const ps = this.pageSize(); const s = this.pg_overdueOrders() * ps;
+    return sorted.slice(s, s + ps);
   });
   readonly activeOnTimePage = computed(() => {
     const sorted = this._sortTrips(this.activeOnTime(), this.sort_active());
-    const s = this.pg_active() * this.PAGE_SIZE;
-    return sorted.slice(s, s + this.PAGE_SIZE);
+    const ps = this.pageSize(); const s = this.pg_active() * ps;
+    return sorted.slice(s, s + ps);
   });
   readonly activeOverduePage = computed(() => {
     const sorted = this._sortTrips(this.activeOverdue(), this.sort_overdueTrips());
-    const s = this.pg_overdueTrips() * this.PAGE_SIZE;
-    return sorted.slice(s, s + this.PAGE_SIZE);
+    const ps = this.pageSize(); const s = this.pg_overdueTrips() * ps;
+    return sorted.slice(s, s + ps);
   });
   readonly historyPage = computed(() => {
     const sorted = this._sortTrips(this.transportService.history(), this.sort_historic());
-    const s = this.pg_historic() * this.PAGE_SIZE;
-    return sorted.slice(s, s + this.PAGE_SIZE);
+    const ps = this.pageSize(); const s = this.pg_historic() * ps;
+    return sorted.slice(s, s + ps);
   });
   readonly deletedPage = computed(() => {
     const sorted = this._sortTrips(this.deletedTrips(), this.sort_deleted());
-    const s = this.pg_deleted() * this.PAGE_SIZE;
-    return sorted.slice(s, s + this.PAGE_SIZE);
+    const ps = this.pageSize(); const s = this.pg_deleted() * ps;
+    return sorted.slice(s, s + ps);
   });
   readonly orderHistoryPage = computed(() => {
     const sorted = this._sortOrderHistory(this.orderHistoryList(), this.sort_orderHistory());
-    const s = this.pg_orderHistory() * this.PAGE_SIZE;
-    return sorted.slice(s, s + this.PAGE_SIZE);
+    const ps = this.pageSize(); const s = this.pg_orderHistory() * ps;
+    return sorted.slice(s, s + ps);
   });
 
   overlapIds = computed<Set<string>>(() => {

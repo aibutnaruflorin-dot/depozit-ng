@@ -213,11 +213,13 @@
                     (click)="$event.stopPropagation()">
               <option value="">Toate</option>
               <option value="În așteptare">În așteptare</option>
-              <option value="Acceptată">Acceptată</option>
-              <option value="Planificată">Planificată</option>
-              <option value="În livrare">În livrare</option>
-              <option value="Livrată">Livrată</option>
               <option value="Anulată">Anulată</option>
+              <option value="Neplanificat">Neplanificat</option>
+              <option value="Planificat parțial">Planificat parțial</option>
+              <option value="Planificat">Planificat</option>
+              <option value="Livrare parțială">Livrare parțială</option>
+              <option value="În livrare">În livrare</option>
+              <option value="Livrat">Livrat</option>
             </select>
           </div>
         </th>
@@ -363,16 +365,11 @@
             <p-tag value="Înlocuită" severity="danger" />
           } @else if (order.status === 'anulat') {
             <p-tag value="Anulată" severity="danger" />
-          } @else if (order.status === 'livrat') {
-            <p-tag value="Livrată" severity="info" />
-          } @else if (order.status === 'in_livrare') {
-            <p-tag value="În livrare" severity="warn" />
-          } @else if (order.status === 'planificat') {
-            <p-tag value="Planificată" severity="secondary" />
-          } @else if (order.status === 'acceptat') {
-            <p-tag value="Acceptată" severity="success" />
-          } @else {
+          } @else if (order.status === 'trimis') {
             <p-tag value="În așteptare" severity="warn" />
+          } @else {
+            @let ts = transportService.deriveOrderPlanningStatus(order);
+            <p-tag [value]="ts.label" [severity]="ts.severity" />
           }
         </td>
       }

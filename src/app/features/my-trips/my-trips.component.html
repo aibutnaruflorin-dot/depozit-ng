@@ -155,6 +155,20 @@
       }
     </div>
 
+    <!-- Curse confirmate (acceptate de șofer, în așteptare start) -->
+    @if (confirmed().length) {
+      <div class="section">
+        <div class="section-title">
+          <mat-icon class="sec-icon sec-icon--confirmed">check_circle</mat-icon>
+          Curse acceptate
+          <span class="badge-pill badge-pill--confirmed">{{ confirmed().length }}</span>
+        </div>
+        <ng-container [ngTemplateOutlet]="tripTableTpl"
+                      [ngTemplateOutletContext]="{ trips: confirmed() }">
+        </ng-container>
+      </div>
+    }
+
     <!-- Curse finalizate -->
     <div class="section section--historic">
       <div class="section-title section-title--toggle" (click)="showHistoric.set(!showHistoric())">
@@ -340,35 +354,54 @@
           <td class="stepper-cell">
             <div class="trip-stepper">
 
-              <!-- Step 1: Start livrare -->
+              <!-- Step 1: Planificat -->
               <button class="step-item"
                       [class.step--current]="t.status === 'planificat'"
-                      [class.step--done]="t.status === 'in_livrare' || t.status === 'livrat'"
+                      [class.step--done]="t.status === 'confirmat_sofer' || t.status === 'in_livrare' || t.status === 'livrat'"
                       (click)="setTripStatus(t, 'planificat')"
                       matTooltip="Setează: Planificat">
                 <div class="step-circle">
-                  @if (t.status === 'in_livrare' || t.status === 'livrat') {
+                  @if (t.status === 'confirmat_sofer' || t.status === 'in_livrare' || t.status === 'livrat') {
                     <mat-icon>check</mat-icon>
                   } @else { <span>1</span> }
                 </div>
-                <span class="step-label">Start livrare</span>
+                <span class="step-label">Planificat</span>
+              </button>
+
+              <div class="step-connector"
+                   [class.step-connector--done]="t.status === 'confirmat_sofer' || t.status === 'in_livrare' || t.status === 'livrat'">
+              </div>
+
+              <!-- Step 2: Confirmat șofer -->
+              <button class="step-item"
+                      [class.step--current]="t.status === 'confirmat_sofer'"
+                      [class.step--done]="t.status === 'in_livrare' || t.status === 'livrat'"
+                      [class.step--future]="t.status === 'planificat'"
+                      (click)="setTripStatus(t, 'confirmat_sofer')"
+                      matTooltip="Setează: Confirmat șofer">
+                <div class="step-circle">
+                  @if (t.status === 'in_livrare' || t.status === 'livrat') {
+                    <mat-icon>check</mat-icon>
+                  } @else { <span>2</span> }
+                </div>
+                <span class="step-label">Confirmat</span>
               </button>
 
               <div class="step-connector"
                    [class.step-connector--done]="t.status === 'in_livrare' || t.status === 'livrat'">
               </div>
 
-              <!-- Step 2: În curs de livrare -->
+              <!-- Step 3: În livrare -->
               <button class="step-item"
                       [class.step--current]="t.status === 'in_livrare'"
                       [class.step--done]="t.status === 'livrat'"
-                      [class.step--future]="t.status === 'planificat'"
+                      [class.step--future]="t.status === 'planificat' || t.status === 'confirmat_sofer'"
                       (click)="setTripStatus(t, 'in_livrare')"
                       matTooltip="Setează: În livrare">
                 <div class="step-circle">
                   @if (t.status === 'livrat') {
                     <mat-icon>check</mat-icon>
-                  } @else { <span>2</span> }
+                  } @else { <span>3</span> }
                 </div>
                 <span class="step-label">În livrare</span>
               </button>
@@ -377,16 +410,16 @@
                    [class.step-connector--done]="t.status === 'livrat'">
               </div>
 
-              <!-- Step 3: Finalizare -->
+              <!-- Step 4: Finalizare -->
               <button class="step-item"
                       [class.step--current]="t.status === 'livrat'"
-                      [class.step--future]="t.status === 'planificat' || t.status === 'in_livrare'"
+                      [class.step--future]="t.status === 'planificat' || t.status === 'confirmat_sofer' || t.status === 'in_livrare'"
                       (click)="setTripStatus(t, 'livrat')"
                       matTooltip="Setează: Finalizat">
                 <div class="step-circle">
                   @if (t.status === 'livrat') {
                     <mat-icon>check</mat-icon>
-                  } @else { <span>3</span> }
+                  } @else { <span>4</span> }
                 </div>
                 <span class="step-label">Finalizare</span>
               </button>
@@ -423,6 +456,13 @@
                 <span class="log-label">Planificat</span>
                 <span class="log-time">{{ fmtTs(t.createdAt) }}</span>
               </div>
+              @if (t.confirmedAt) {
+                <div class="log-entry">
+                  <mat-icon class="log-icon log-icon--done">check_circle</mat-icon>
+                  <span class="log-label">Confirmat șofer</span>
+                  <span class="log-time">{{ fmtTs(t.confirmedAt) }}</span>
+                </div>
+              }
               <div class="log-entry">
                 <mat-icon class="log-icon log-icon--done">check_circle</mat-icon>
                 <span class="log-label">Start livrare</span>

@@ -4,6 +4,7 @@ import { Vehicle } from '../models/vehicle.model';
 import { Driver } from '../models/driver.model';
 import { Transport, TransportStatus } from '../models/transport.model';
 import { User } from '../models/user.model';
+import { Order } from '../models/order.model';
 
 @Injectable({ providedIn: 'root' })
 export class TransportService {
@@ -104,10 +105,47 @@ export class TransportService {
   setStatus(id: string, status: TransportStatus): void {
     const now = new Date().toISOString();
     const changes: Partial<Omit<Transport, 'id' | 'createdAt'>> = { status };
-    if (status === 'in_livrare') changes.startedAt  = now;
-    if (status === 'livrat')     changes.completedAt = now;
-    if (status === 'anulat')     changes.cancelledAt = now;
+    if (status === 'confirmat_sofer') changes.confirmedAt  = now;
+    if (status === 'in_livrare')      changes.startedAt    = now;
+    if (status === 'livrat')          changes.completedAt  = now;
+    if (status === 'anulat')          changes.cancelledAt  = now;
     this.updateTransport(id, changes);
+  }
+
+  deriveOrderPlanningStatus(order: Order): { key: string; label: string; severity: 'warn' | 'success' | 'secondary' | 'info' | 'danger' | 'contrast' } {
+    if (order.status === 'livrat') {
+      return { key: 'livrat', label: 'Livrat', severity: 'success' };
+    }
+    const activeTrips = this._transports().filter(t =>
+      t.status !== 'anulat' && t.status !== 'sters' && t.status !== 'livrat' &&
+      t.deliveries.some(d => d.orderId === order.id)
+    );
+    if (!activeTrips.length) {
+      return { key: 'neplanificat', label: 'Neplanificat', severity: 'secondary' };
+    }
+    const hasItemTracking = activeTrips.some(t =>
+      (t.deliveries.find(d => d.orderId === order.id)?.items.length ?? 0) > 0
+    );
+    let allCovered = !hasItemTracking;
+    if (hasItemTracking && order.products.length > 0) {
+      allCovered = true;
+      for (let i = 0; i < order.products.length; i++) {
+        const needed = order.products[i].qty;
+        const covered = activeTrips.reduce((sum, t) => {
+          const d = t.deliveries.find(del => del.orderId === order.id);
+          const item = d?.items.find(it => it.productIndex === i);
+          return sum + (item?.qty ?? 0);
+        }, 0);
+        if (covered < needed) { allCovered = false; break; }
+      }
+    }
+    if (!allCovered) {
+      return { key: 'planificat_partial', label: 'Planificat parțial', severity: 'warn' };
+    }
+    const inLivrareCount = activeTrips.filter(t => t.status === 'in_livrare').length;
+    if (inLivrareCount === 0) return { key: 'planificat', label: 'Planificat', severity: 'info' };
+    if (inLivrareCount < activeTrips.length) return { key: 'livrare_partiala', label: 'Livrare parțială', severity: 'warn' };
+    return { key: 'in_livrare', label: 'În livrare', severity: 'contrast' };
   }
 
   cancelTrip(id: string): void {

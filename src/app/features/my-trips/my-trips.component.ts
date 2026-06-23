@@ -63,6 +63,14 @@ export class MyTripsComponent {
       .filter(t => String(t.driverId) === myId && t.status === 'planificat');
   });
 
+  readonly confirmed = computed(() => {
+    const myId = this.myDriverId();
+    if (!myId) return [];
+    return this.transportService.transports()
+      .filter(t => String(t.driverId) === myId && t.status === 'confirmat_sofer')
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  });
+
   readonly active = computed(() => {
     const myId = this.myDriverId();
     if (!myId) return [];

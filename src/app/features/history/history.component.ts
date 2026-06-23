@@ -59,6 +59,7 @@ import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
 import { UnitsService } from '../../core/services/units.service';
+import { TransportService } from '../../core/services/transport.service';
 import { Order } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { MatButtonModule } from '@angular/material/button';
@@ -270,7 +271,8 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     private snackBar: MatSnackBar,
     private storage: StorageService,
     public  unitsService: UnitsService,
-    private zone: NgZone
+    private zone: NgZone,
+    public  transportService: TransportService
   ) {}
 
   readonly myOrders = computed(() => {
@@ -300,12 +302,20 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     if (livrare === 'cu')   orders = orders.filter(o => !!o.cuLivrare);
     if (livrare === 'fara') orders = orders.filter(o => !o.cuLivrare);
     if (address)         orders = orders.filter(o => (o.client.address ?? '').toLowerCase().includes(address));
-    if (status) orders = orders.filter(o =>
-      status === 'Ciornă'       ? o.status === 'draft' :
-      status === 'În așteptare' ? (o.status === 'trimis' && !o.superseded) :
-      status === 'Acceptată'    ? o.status === 'acceptat' :
-      status === 'Anulată'      ? o.status === 'anulat' : true
-    );
+    if (status) orders = orders.filter(o => {
+      if (status === 'Ciornă')             return o.status === 'draft';
+      if (status === 'În așteptare')       return o.status === 'trimis' && !o.superseded;
+      if (status === 'Anulată')            return o.status === 'anulat';
+      if (o.status === 'draft' || o.status === 'trimis' || o.status === 'anulat') return false;
+      const ts = this.transportService.deriveOrderPlanningStatus(o);
+      if (status === 'Neplanificat')       return ts.key === 'neplanificat';
+      if (status === 'Planificat parțial') return ts.key === 'planificat_partial';
+      if (status === 'Planificat')         return ts.key === 'planificat';
+      if (status === 'Livrare parțială')   return ts.key === 'livrare_partiala';
+      if (status === 'În livrare')         return ts.key === 'in_livrare';
+      if (status === 'Livrat')             return ts.key === 'livrat';
+      return true;
+    });
     if (dateRange.start) {
       const from = this._localDate(dateRange.start);
       orders = orders.filter(o => this._localDate(new Date(o.timestamp)) >= from);
@@ -491,8 +501,11 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   }
 
   private _orderStatusLabel(o: Order): string {
-    return o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
-           o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
+    if (o.superseded) return 'Înlocuită';
+    if (o.status === 'anulat') return 'Anulată';
+    if (o.status === 'draft') return 'Ciornă';
+    if (o.status === 'trimis') return 'În așteptare';
+    return this.transportService.deriveOrderPlanningStatus(o).label;
   }
 
   private _csvRow(cols: string[], o: Order, p: any): string[] {

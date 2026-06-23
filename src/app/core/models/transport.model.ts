@@ -22,6 +22,7 @@ export interface Transport {
   status: TransportStatus;
   createdAt: string;
   startedAt?: string;
+  confirmedAt?: string;
   completedAt?: string;
   cancelledAt?: string;
   waSentDriverAt?: string;
