@@ -993,15 +993,22 @@
                   <td><strong>{{ o.client.name }}</strong></td>
                   <td>
                     @if (o.deliveryDate) {
-                      <span class="muted small">{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
+                      @let ov = isOrderDeadlineOverdue(o);
+                      <span class="delivery-term" [class.delivery-term--overdue]="ov">
+                        <mat-icon>{{ ov ? 'warning_amber' : 'schedule' }}</mat-icon>
+                        {{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                      </span>
                     } @else { <span class="muted">—</span> }
                   </td>
                   <td>
-                    <span class="order-status-badge"
-                          [class.status-done]="o.status === 'livrat'"
-                          [class.order-status--partial]="o.status === 'livrat_partial'">
-                      {{ o.status === 'livrat' ? 'Livrat' : o.status === 'livrat_partial' ? 'Parțial livrat' : 'În curs' }}
-                    </span>
+                    @if (o.status === 'livrat') {
+                      <span class="order-status-badge status-done">Livrat</span>
+                    } @else if (o.status === 'livrat_partial') {
+                      <span class="order-status-badge order-status--partial">Parțial livrat</span>
+                    } @else {
+                      @let ots = orderTripStatus(o);
+                      <span class="order-status-badge" [ngClass]="ots.cls">{{ ots.label }}</span>
+                    }
                   </td>
                   <td>
                     <mat-icon class="muted" style="font-size:18px;width:18px;height:18px;vertical-align:middle">
@@ -1013,15 +1020,31 @@
                   <tr class="order-expand-row">
                     <td colspan="5" class="order-expand-cell">
                       <div class="order-expand-panel">
-                        @for (t of completedTripsForOrder(o.id); track t.id) {
+                        @let allTrips = tripsForOrderHistory(o.id);
+                        @if (!allTrips.length) {
                           <div class="order-trip-line">
-                            <mat-icon style="color:#16a34a">check_circle</mat-icon>
+                            <mat-icon style="color:#9ca3af">pending_actions</mat-icon>
+                            <span class="muted small">Nicio planificare.</span>
+                          </div>
+                        }
+                        @for (t of allTrips; track t.id) {
+                          <div class="order-trip-line">
+                            <mat-icon [style.color]="t.status === 'livrat' ? '#16a34a' : '#3b82f6'">
+                              {{ t.status === 'livrat' ? 'check_circle' : 'local_shipping' }}
+                            </mat-icon>
                             <strong>{{ getVehicleName(t.vehicleId) }}</strong>
                             <small class="muted">{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
                             <span class="muted">·</span>
                             <span class="muted small">{{ transportService.formatDateTime(t.oraPlecare) }}</span>
                             <span class="muted">·</span>
-                            <span class="muted small">{{ tripOrderQtyTotal(t, o.id) }} buc livrate</span>
+                            <span class="trip-status-badge"
+                                  [class.trip-status--planificat]="t.status==='planificat'"
+                                  [class.trip-status--confirmed]="t.status==='confirmat_sofer'"
+                                  [class.trip-status--in-livrare]="t.status==='in_livrare'">
+                              {{ statusLabel(t.status) }}
+                            </span>
+                            <span class="muted">·</span>
+                            <span class="muted small">{{ tripOrderQtyTotal(t, o.id) }} buc</span>
                           </div>
                         }
                       </div>

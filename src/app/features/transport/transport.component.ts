@@ -1005,22 +1005,16 @@ export class TransportComponent implements OnInit {
       .map(id => this.getOrder(id)).filter((o): o is Order => !!o);
   }
 
-  readonly orderHistoryList = computed<Order[]>(() => {
-    const completedOrderIds = new Set<string>();
-    for (const t of this.transportService.transports()) {
-      if (t.status === 'livrat') {
-        for (const d of t.deliveries) completedOrderIds.add(d.orderId);
-      }
-    }
-    return this.ordersService.orders()
-      .filter(o => o.cuLivrare && completedOrderIds.has(o.id))
-      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-  });
+  readonly orderHistoryList = computed<Order[]>(() =>
+    this.ordersService.orders()
+      .filter(o => o.cuLivrare && !o.superseded && o.status !== 'anulat')
+      .sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp))
+  );
 
-  completedTripsForOrder(orderId: string): import('../../core/models/transport.model').Transport[] {
+  tripsForOrderHistory(orderId: string): import('../../core/models/transport.model').Transport[] {
     return this.transportService.transports()
-      .filter(t => t.status === 'livrat' && t.deliveries.some(d => d.orderId === orderId))
-      .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare));
+      .filter(t => t.status !== 'sters' && t.deliveries.some(d => d.orderId === orderId))
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
   }
 
   toggleHistoryExpand(orderId: string): void {
