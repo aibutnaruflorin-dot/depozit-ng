@@ -404,6 +404,24 @@
 .nr-cell     { min-width: 52px; vertical-align: top; white-space: nowrap; }
 .client-details-cell { display: flex; flex-direction: column; gap: 3px; font-size: 0.82rem; }
 
+/* ── Expandable order row ────────────────────────────────────── */
+.order-expand-row td { padding: 0 !important; }
+.order-expand-cell { background: var(--color-surface, #f8f9fa); border-bottom: 2px solid var(--color-border); }
+.order-expand-panel {
+  padding: 8px 12px 10px 48px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.order-trip-line {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.82rem;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; color: var(--color-text-muted); }
+  &--pending mat-icon { color: #f59e0b; }
+}
+.order-remaining-item {
+  background: #fff7ed; border: 1px solid #fdba74; color: #c2410c;
+  border-radius: 4px; padding: 1px 6px; font-size: 0.78rem;
+}
+
 /* ── Order status badge (în comenzi) ────────────────────────── */
 .order-status-badge {
   display: inline-flex; align-items: center;

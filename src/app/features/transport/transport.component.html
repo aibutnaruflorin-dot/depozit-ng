@@ -349,9 +349,65 @@
                   <button mat-icon-button (click)="addProductsOrderId.set(o.id)" matTooltip="Adaugă produse">
                     <mat-icon>add_shopping_cart</mat-icon>
                   </button>
+                  <button mat-icon-button (click)="toggleOrderExpand(o.id)"
+                          [matTooltip]="expandedOrderIds().has(o.id) ? 'Ascunde detalii' : 'Detalii planificare'">
+                    <mat-icon>{{ expandedOrderIds().has(o.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
                 </div>
               </td>
             </tr>
+            @if (expandedOrderIds().has(o.id)) {
+              <tr class="order-expand-row">
+                <td colspan="9" class="order-expand-cell">
+                  <div class="order-expand-panel">
+                    @let trips = tripsForOrder(o.id);
+                    @for (t of trips; track t.id) {
+                      <div class="order-trip-line">
+                        <mat-icon>local_shipping</mat-icon>
+                        <strong>{{ getVehicleName(t.vehicleId) }}</strong>
+                        <small class="muted">{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
+                        <span class="muted">·</span>
+                        <span>{{ transportService.formatDateTime(t.oraPlecare) }}</span>
+                        <span class="muted">·</span>
+                        <span class="trip-status-badge"
+                              [class.trip-status--planificat]="t.status==='planificat'"
+                              [class.trip-status--confirmed]="t.status==='confirmat_sofer'"
+                              [class.trip-status--in-livrare]="t.status==='in_livrare'">
+                          {{ statusLabel(t.status) }}
+                        </span>
+                        <span class="muted">·</span>
+                        <span class="muted small">{{ tripOrderQtyTotal(t, o.id) }} buc</span>
+                      </div>
+                    }
+                    @if (!trips.length) {
+                      <div class="order-trip-line">
+                        <mat-icon style="color:#9ca3af">pending_actions</mat-icon>
+                        <span class="muted small">Nicio cursă planificată încă.</span>
+                      </div>
+                    }
+                    @let rem = getRemainingQtyArr(o);
+                    @if (rem.some(q => q > 0)) {
+                      <div class="order-trip-line order-trip-line--pending">
+                        <mat-icon>pending_actions</mat-icon>
+                        <span class="small">Neplanificat:</span>
+                        @for (r of rem; track $index) {
+                          @if (r > 0) {
+                            <span class="order-remaining-item">{{ r }} × {{ o.products[$index]?.name }}</span>
+                          }
+                        }
+                      </div>
+                    } @else {
+                      @if (trips.length) {
+                        <div class="order-trip-line">
+                          <mat-icon style="color:#16a34a">check_circle</mat-icon>
+                          <span class="muted small">Toate cantitățile sunt planificate.</span>
+                        </div>
+                      }
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>

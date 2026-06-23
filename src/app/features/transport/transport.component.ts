@@ -289,7 +289,8 @@ export class TransportComponent implements OnInit {
       .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare))
   );
 
-  showDeleted = signal(false);
+  showDeleted       = signal(false);
+  expandedOrderIds  = signal<Set<string>>(new Set());
 
   readonly PAGE_SIZE = 5;
 
@@ -1000,6 +1001,28 @@ export class TransportComponent implements OnInit {
   ordersForTransport(t: Transport): Order[] {
     return [...new Set(t.deliveries.map(d => d.orderId))]
       .map(id => this.getOrder(id)).filter((o): o is Order => !!o);
+  }
+
+  toggleOrderExpand(orderId: string): void {
+    this.expandedOrderIds.update(ids => {
+      const next = new Set(ids);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  }
+
+  tripsForOrder(orderId: string): import('../../core/models/transport.model').Transport[] {
+    return this.transportService.transports()
+      .filter(t =>
+        t.status !== 'livrat' && t.status !== 'sters' && t.status !== 'anulat' &&
+        t.deliveries.some(d => d.orderId === orderId)
+      )
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  }
+
+  tripOrderQtyTotal(t: import('../../core/models/transport.model').Transport, orderId: string): number {
+    return this.getTripDelivery(t, orderId)?.items.reduce((s, i) => s + i.qty, 0) ?? 0;
   }
 
   getTripDelivery(t: Transport, orderId: string): import('../../core/models/transport.model').TripDelivery | undefined {
