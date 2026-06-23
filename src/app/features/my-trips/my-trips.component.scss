@@ -283,7 +283,14 @@
   font-size: 0.85rem; color: #991b1b;
   mat-icon { color: #ef4444; flex-shrink: 0; }
 }
-.duration-cell { white-space: nowrap; font-weight: 600; color: var(--color-primary); }
+.duration-cell {
+  white-space: nowrap; vertical-align: top;
+  font-weight: 600; color: var(--color-primary);
+}
+.duration-total {
+  font-weight: 400; font-size: 0.78rem;
+  color: var(--color-text-muted); cursor: default;
+}
 
 /* ── Wide table for finalizate ── */
 .trips-table--wide { min-width: 900px; }
@@ -302,6 +309,9 @@
 }
 .log-label { color: var(--color-text-muted); min-width: 80px; }
 .log-time  { font-weight: 600; color: var(--color-text); }
+.log-separator { border-top: 1px dashed #e5e7eb; margin: 4px 0; }
+.log-entry--dur { opacity: .85; }
+.log-icon--dur  { color: #6366f1; }
 
 /* ── Weight cell ── */
 .weight-cell { vertical-align: middle; white-space: nowrap; }

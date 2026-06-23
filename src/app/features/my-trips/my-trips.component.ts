@@ -231,6 +231,15 @@ export class MyTripsComponent {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   }
 
+  tripTotalDuration(t: Transport): string {
+    if (!t.completedAt) return '—';
+    const ms = new Date(t.completedAt).getTime() - new Date(t.createdAt).getTime();
+    if (ms <= 0) return '—';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
   confirmReceipt(t: Transport): void {
     this.transportService.setStatus(t.id, 'confirmat_sofer');
     this.snackBar.open('Ai confirmat primirea sarcinii!', 'OK', { duration: 2500, panelClass: ['snack-success'] });

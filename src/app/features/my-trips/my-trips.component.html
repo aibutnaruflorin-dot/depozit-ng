@@ -449,7 +449,13 @@
             </td>
           }
           @if (t.status === 'livrat') {
-            <td class="duration-cell">{{ tripDuration(t) }}</td>
+            <td class="duration-cell">
+              <div>{{ tripDuration(t) }}</div>
+              <div class="duration-total"
+                   matTooltip="Timpul de când s-a planificat cursa în sistem până la livrat de șofer">
+                {{ tripTotalDuration(t) }}
+              </div>
+            </td>
             <td class="log-cell">
               <div class="log-entry">
                 <mat-icon class="log-icon log-icon--done">check_circle</mat-icon>
@@ -473,6 +479,22 @@
                 <span class="log-label">Finalizat</span>
                 <span class="log-time">{{ fmtTs(t.completedAt) }}</span>
               </div>
+              <div class="log-separator"></div>
+              @if (t.startedAt && t.completedAt) {
+                <div class="log-entry log-entry--dur">
+                  <mat-icon class="log-icon log-icon--dur">timer</mat-icon>
+                  <span class="log-label">Durata livrare</span>
+                  <span class="log-time">{{ tripDuration(t) }}</span>
+                </div>
+              }
+              @if (t.completedAt) {
+                <div class="log-entry log-entry--dur"
+                     matTooltip="Timpul de când s-a planificat cursa în sistem până la livrat de șofer">
+                  <mat-icon class="log-icon log-icon--dur">schedule</mat-icon>
+                  <span class="log-label">Durata totală</span>
+                  <span class="log-time">{{ tripTotalDuration(t) }}</span>
+                </div>
+              }
             </td>
           }
         </tr>

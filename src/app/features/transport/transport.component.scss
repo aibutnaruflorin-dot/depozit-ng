@@ -1263,6 +1263,9 @@
 }
 .log-label { color: var(--color-text-muted); min-width: 82px; }
 .log-time  { font-weight: 600; color: var(--color-text); }
+.log-separator { border-top: 1px dashed #e5e7eb; margin: 4px 0; }
+.log-entry--dur { opacity: .85; }
+.log-icon--dur  { color: #6366f1; }
 
 /* ── Delivery detail modal ───────────────────────────────────── */
 .dlv-overlay {

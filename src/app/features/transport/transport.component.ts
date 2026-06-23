@@ -149,6 +149,15 @@ export class TransportComponent implements OnInit {
     return this.transportService.formatDateTime(iso);
   }
 
+  fmtDuration(from: string | undefined, to: string | undefined): string {
+    if (!from || !to) return '—';
+    const ms = new Date(to).getTime() - new Date(from).getTime();
+    if (ms <= 0) return '—';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
   showModal = signal(false);
   editingId = signal<string | null>(null);
 
