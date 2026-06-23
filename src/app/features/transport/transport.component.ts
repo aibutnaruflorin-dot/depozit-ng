@@ -289,8 +289,10 @@ export class TransportComponent implements OnInit {
       .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare))
   );
 
-  showDeleted       = signal(false);
-  expandedOrderIds  = signal<Set<string>>(new Set());
+  showDeleted          = signal(false);
+  showOrderHistory     = signal(false);
+  expandedOrderIds     = signal<Set<string>>(new Set());
+  expandedHistoryIds   = signal<Set<string>>(new Set());
 
   readonly PAGE_SIZE = 5;
 
@@ -1001,6 +1003,33 @@ export class TransportComponent implements OnInit {
   ordersForTransport(t: Transport): Order[] {
     return [...new Set(t.deliveries.map(d => d.orderId))]
       .map(id => this.getOrder(id)).filter((o): o is Order => !!o);
+  }
+
+  readonly orderHistoryList = computed<Order[]>(() => {
+    const completedOrderIds = new Set<string>();
+    for (const t of this.transportService.transports()) {
+      if (t.status === 'livrat') {
+        for (const d of t.deliveries) completedOrderIds.add(d.orderId);
+      }
+    }
+    return this.ordersService.orders()
+      .filter(o => o.cuLivrare && completedOrderIds.has(o.id))
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  });
+
+  completedTripsForOrder(orderId: string): import('../../core/models/transport.model').Transport[] {
+    return this.transportService.transports()
+      .filter(t => t.status === 'livrat' && t.deliveries.some(d => d.orderId === orderId))
+      .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare));
+  }
+
+  toggleHistoryExpand(orderId: string): void {
+    this.expandedHistoryIds.update(ids => {
+      const next = new Set(ids);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
   }
 
   toggleOrderExpand(orderId: string): void {

@@ -164,9 +164,10 @@
     }
   </div>
 
-  <!-- 5 & 6: Curse finalizate + Curse planificate sterse -->
+  <!-- 5, 6, 7: Curse finalizate + Curse șterse + Istoric comenzi -->
   <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
   <ng-container [ngTemplateOutlet]="deletedSection"></ng-container>
+  <ng-container [ngTemplateOutlet]="orderHistorySection"></ng-container>
 
 </div><!-- /transport-page -->
 
@@ -957,6 +958,82 @@
         </div>
         } <!-- /else -->
       } <!-- /showDeleted -->
+  </div>
+</ng-template>
+
+<!-- ── Istoric planificări comenzi ── -->
+<ng-template #orderHistorySection>
+  <div class="historic-section">
+    <div class="panel-title panel-title--toggle" (click)="showOrderHistory.set(!showOrderHistory())">
+      <mat-icon>history_edu</mat-icon> Istoric planificări comenzi
+      @if (orderHistoryList().length) {
+        <span class="badge-pill badge-pill--muted">{{ orderHistoryList().length }}</span>
+      }
+      <mat-icon class="toggle-chevron">{{ showOrderHistory() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showOrderHistory()) {
+      @if (!orderHistoryList().length) {
+        <div class="empty-state"><mat-icon>history_edu</mat-icon><p>Niciun istoric disponibil.</p></div>
+      } @else {
+        <div class="historic-table-wrap">
+          <table class="delivery-table">
+            <thead>
+              <tr>
+                <th style="width:52px">NR</th>
+                <th>Client</th>
+                <th style="width:130px">Termen</th>
+                <th style="width:130px">Status comandă</th>
+                <th style="width:32px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (o of orderHistoryList(); track o.id) {
+                <tr class="order-history-row" (click)="toggleHistoryExpand(o.id)" style="cursor:pointer">
+                  <td><span class="order-num-badge">#{{ o.orderNumber }}</span></td>
+                  <td><strong>{{ o.client.name }}</strong></td>
+                  <td>
+                    @if (o.deliveryDate) {
+                      <span class="muted small">{{ o.deliveryDate | date:'dd.MM.yy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
+                    } @else { <span class="muted">—</span> }
+                  </td>
+                  <td>
+                    <span class="order-status-badge"
+                          [class.status-done]="o.status === 'livrat'"
+                          [class.order-status--partial]="o.status === 'livrat_partial'">
+                      {{ o.status === 'livrat' ? 'Livrat' : o.status === 'livrat_partial' ? 'Parțial livrat' : 'În curs' }}
+                    </span>
+                  </td>
+                  <td>
+                    <mat-icon class="muted" style="font-size:18px;width:18px;height:18px;vertical-align:middle">
+                      {{ expandedHistoryIds().has(o.id) ? 'expand_less' : 'expand_more' }}
+                    </mat-icon>
+                  </td>
+                </tr>
+                @if (expandedHistoryIds().has(o.id)) {
+                  <tr class="order-expand-row">
+                    <td colspan="5" class="order-expand-cell">
+                      <div class="order-expand-panel">
+                        @for (t of completedTripsForOrder(o.id); track t.id) {
+                          <div class="order-trip-line">
+                            <mat-icon style="color:#16a34a">check_circle</mat-icon>
+                            <strong>{{ getVehicleName(t.vehicleId) }}</strong>
+                            <small class="muted">{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
+                            <span class="muted">·</span>
+                            <span class="muted small">{{ transportService.formatDateTime(t.oraPlecare) }}</span>
+                            <span class="muted">·</span>
+                            <span class="muted small">{{ tripOrderQtyTotal(t, o.id) }} buc livrate</span>
+                          </div>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
   </div>
 </ng-template>
 
