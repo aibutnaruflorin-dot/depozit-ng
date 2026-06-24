@@ -297,7 +297,6 @@ export class TransportComponent implements OnInit {
 
   showDeleted          = signal(false);
   showOrderHistory     = signal(false);
-  expandedOrderIds     = signal<Set<string>>(new Set());
   expandedHistoryIds   = signal<Set<string>>(new Set());
 
   sort_historic      = signal<{col: string; dir: 1|-1}>({ col: 'oraPlecare', dir: -1 });
@@ -1083,15 +1082,6 @@ export class TransportComponent implements OnInit {
 
   toggleHistoryExpand(orderId: string): void {
     this.expandedHistoryIds.update(ids => {
-      const next = new Set(ids);
-      if (next.has(orderId)) next.delete(orderId);
-      else next.add(orderId);
-      return next;
-    });
-  }
-
-  toggleOrderExpand(orderId: string): void {
-    this.expandedOrderIds.update(ids => {
       const next = new Set(ids);
       if (next.has(orderId)) next.delete(orderId);
       else next.add(orderId);
