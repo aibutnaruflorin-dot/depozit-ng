@@ -1,39 +1,34 @@
-<!-- Sticky header -->
+<!-- ── Header ────────────────────────────────────────────── -->
 <div class="mc-header">
-  <div class="mc-title-row">
-    <mat-icon class="mc-title-icon">inventory_2</mat-icon>
-    <span class="mc-title">Catalog</span>
-    <span class="mc-count">{{ filtered().length }}</span>
-    @if (hasActiveFilters()) {
-      <button class="mc-clear-btn" (click)="clearFilters()">
-        <mat-icon>filter_alt_off</mat-icon>
-      </button>
-    }
-  </div>
-
-  <!-- Search -->
-  <div class="mc-search-wrap">
-    <mat-icon class="mc-search-icon">search</mat-icon>
-    <input class="mc-search-input"
-           type="search"
-           placeholder="Caută produs…"
-           [value]="search()"
-           (input)="search.set($any($event.target).value)">
-    @if (search()) {
-      <button class="mc-search-clear" (click)="search.set('')">
-        <mat-icon>close</mat-icon>
-      </button>
-    }
+  <div class="mc-search-row">
+    <div class="mc-search-wrap">
+      <mat-icon class="mc-search-icon">search</mat-icon>
+      <input class="mc-search-input" type="search" placeholder="Caută produs…"
+             [value]="search()"
+             (input)="search.set($any($event.target).value)">
+      @if (search()) {
+        <button class="mc-icon-btn" (click)="search.set('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </div>
+    <button class="mc-filter-btn" [class.mc-filter-active]="activeFilterCount() > 0"
+            (click)="showFilters.set(true)">
+      <mat-icon>tune</mat-icon>
+      @if (activeFilterCount() > 0) {
+        <span class="mc-filter-badge">{{ activeFilterCount() }}</span>
+      }
+    </button>
   </div>
 
   <!-- Catalog chips -->
-  <div class="mc-catalog-chips">
-    <button class="mc-chip" [class.mc-chip-active]="allSelected()"
-            (click)="selectedCatIds.set([]); selectedCategory.set('')">
+  <div class="mc-chips-row">
+    <button class="mc-chip" [class.active]="allSelected()"
+            (click)="selectedCatIds.set([]); selectedCategory.set(''); selectedFurnizor.set('')">
       Toate
     </button>
     @for (cat of catalogsService.catalogs(); track cat.id) {
-      <button class="mc-chip" [class.mc-chip-active]="selectedCatIds().includes(cat.id)"
+      <button class="mc-chip" [class.active]="selectedCatIds().includes(cat.id)"
               [style.--chip-color]="cat.color"
               (click)="toggleCatalog(cat.id)">
         <span class="mc-chip-dot" [style.background]="cat.color"></span>
@@ -41,74 +36,113 @@
       </button>
     }
   </div>
-
-  <!-- Category filter (compact pill) -->
-  @if (categories().length > 0) {
-    <div class="mc-cat-row">
-      <button class="mc-cat-pill" [class.mc-cat-active]="!selectedCategory()"
-              (click)="selectCategory('')">
-        Toate
-      </button>
-      @for (c of categories(); track c) {
-        <button class="mc-cat-pill" [class.mc-cat-active]="selectedCategory() === c"
-                (click)="selectCategory(c)">
-          {{ c }}
-        </button>
-      }
-    </div>
-  }
 </div>
 
-<!-- Product cards -->
+<!-- ── Listă produse ─────────────────────────────────────── -->
 <div class="mc-list">
   @if (filtered().length === 0) {
     <div class="mc-empty">
       <mat-icon>search_off</mat-icon>
       <p>Niciun produs găsit.</p>
-      <button mat-stroked-button (click)="clearFilters()">Șterge filtrele</button>
+      <button class="mc-clear-btn-sm" (click)="clearFilters(); search.set('')">
+        Șterge filtrele
+      </button>
     </div>
   } @else {
+    <div class="mc-count-row">
+      {{ filtered().length }} produse
+    </div>
     @for (p of filtered(); track p.catalogId + p.nr) {
-      <div class="mc-card" [style.border-left-color]="catalogColor(p.catalogId)">
-
-        <div class="mc-card-top">
-          <span class="mc-prod-name">{{ p.name }}</span>
-          <span class="mc-cat-badge" [style.color]="catalogColor(p.catalogId)"
-                [style.background]="catalogColor(p.catalogId) + '18'">
-            {{ catalogName(p.catalogId) }}
-          </span>
-        </div>
-
-        <div class="mc-card-mid">
-          @if (p.category) {
-            <span class="mc-pill mc-pill-cat">{{ p.category }}</span>
-          }
-          <span class="mc-pill mc-pill-um">{{ p.um }}</span>
-        </div>
-
-        <div class="mc-card-bottom">
-          <div class="mc-stock-block">
-            <span class="mc-stock-label">Stoc</span>
-            <span class="mc-stock-val" [class]="stockClass(p.qty)">
-              {{ p.qty }}
-            </span>
+      <div class="mc-row" [style.border-left-color]="catalogColor(p.catalogId)">
+        <div class="mc-row-body">
+          <div class="mc-row-name">{{ p.name }}</div>
+          <div class="mc-row-meta">
+            <span class="mc-stock" [class]="stockClass(p.qty)">{{ stockLabel(p) }}</span>
+            @if (formatPrice(p)) {
+              <span class="mc-sep">·</span>
+              <span class="mc-price">{{ formatPrice(p) }}</span>
+            }
           </div>
-
-          @if ((p.importedQty ?? p.qty) !== p.qty) {
-            <div class="mc-stock-block">
-              <span class="mc-stock-label">Import</span>
-              <span class="mc-stock-val mc-stock-import">{{ p.importedQty ?? p.qty }}</span>
-            </div>
-          }
-
-          <button class="mc-order-btn" (click)="goToNewOrder(p)"
-                  matTooltip="Adaugă la comandă">
-            <mat-icon>add_shopping_cart</mat-icon>
-            Comandă
-          </button>
         </div>
-
+        <button class="mc-add-btn" (click)="goToNewOrder(p)">
+          <mat-icon>add_shopping_cart</mat-icon>
+        </button>
       </div>
     }
+    <!-- spacer pentru bottom nav -->
+    <div style="height: 72px"></div>
   }
 </div>
+
+<!-- ── Bottom Sheet Filtre ───────────────────────────────── -->
+@if (showFilters()) {
+  <div class="mc-sheet-backdrop" (click)="showFilters.set(false)"></div>
+  <div class="mc-sheet">
+    <div class="mc-sheet-handle"></div>
+    <div class="mc-sheet-title">
+      Filtre
+      @if (activeFilterCount() > 0) {
+        <button class="mc-sheet-clear" (click)="clearFilters()">Șterge tot</button>
+      }
+    </div>
+
+    <div class="mc-sheet-body">
+      <!-- Categorie -->
+      <div class="mc-field">
+        <label class="mc-field-label">Categorie</label>
+        <select class="mc-field-select"
+                [value]="selectedCategory()"
+                (change)="selectedCategory.set($any($event.target).value)">
+          <option value="">Toate categoriile</option>
+          @for (c of categories(); track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Furnizor -->
+      <div class="mc-field">
+        <label class="mc-field-label">Furnizor</label>
+        <select class="mc-field-select"
+                [value]="selectedFurnizor()"
+                (change)="selectedFurnizor.set($any($event.target).value)">
+          <option value="">Toți furnizorii</option>
+          @for (f of furnizors(); track f) {
+            <option [value]="f">{{ f }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Stoc -->
+      <label class="mc-toggle-row">
+        <span class="mc-toggle-label">Doar produse cu stoc disponibil</span>
+        <div class="mc-toggle" [class.mc-toggle-on]="onlyInStock()"
+             (click)="onlyInStock.update(v => !v)">
+          <div class="mc-toggle-thumb"></div>
+        </div>
+      </label>
+    </div>
+
+    <div class="mc-sheet-footer">
+      <button class="mc-sheet-apply" (click)="applyFilters()">
+        Aplică · {{ filtered().length }} produse
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── Bottom Navigation ─────────────────────────────────── -->
+<nav class="mc-bottom-nav">
+  <a class="mc-nav-item mc-nav-active" routerLink="/app/m-catalog">
+    <mat-icon>inventory_2</mat-icon>
+    <span>Catalog</span>
+  </a>
+  <a class="mc-nav-item" routerLink="/app/new-order">
+    <mat-icon>add_shopping_cart</mat-icon>
+    <span>Comandă</span>
+  </a>
+  <a class="mc-nav-item" routerLink="/app/account">
+    <mat-icon>person</mat-icon>
+    <span>Profil</span>
+  </a>
+</nav>
