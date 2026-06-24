@@ -1,4 +1,16 @@
-import { Component, signal, computed, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { Component, signal, computed, effect, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
+
+const CART_LS_KEY = 'depot.newOrderCart';
+function loadCart(): CartItem[] {
+  try { const raw = localStorage.getItem(CART_LS_KEY); if (raw) return JSON.parse(raw); } catch {}
+  return [];
+}
+function saveCart(items: CartItem[]): void {
+  try { localStorage.setItem(CART_LS_KEY, JSON.stringify(items)); } catch {}
+}
+function clearCartStorage(): void {
+  try { localStorage.removeItem(CART_LS_KEY); } catch {}
+}
 
 const PAGE_SIZE_LS_KEY = 'depot.tablePageSize';
 function loadPageSize(): number {
@@ -142,7 +154,9 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     public  unitsService: UnitsService,
     private zone: NgZone
-  ) {}
+  ) {
+    effect(() => saveCart(this.cart()));
+  }
 
   ngAfterViewInit(): void {
     this.resizeObs = new ResizeObserver(entries => {
@@ -154,11 +168,22 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void { this.resizeObs?.disconnect(); }
 
   ngOnInit(): void {
+    const saved = loadCart();
+    if (saved.length > 0) {
+      this.cart.set(saved);
+      const pendingMap: Record<string, number> = {};
+      for (const item of saved) pendingMap[this.pkey(item.product)] = item.qty;
+      this._pendingQty.set(pendingMap);
+      this.showCart.set(true);
+    }
+
     const product = (window.history.state as any)?.product;
     if (product) {
       const key = this.pkey(product);
-      this._pendingQty.update(m => ({ ...m, [key]: 1 }));
-      this.cart.update(c => [...c, { product, qty: 1 }]);
+      if (!this.cart().some(i => this.pkey(i.product) === key)) {
+        this._pendingQty.update(m => ({ ...m, [key]: 1 }));
+        this.cart.update(c => [...c, { product, qty: 1 }]);
+      }
       this.showCart.set(true);
     }
   }
@@ -419,7 +444,11 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   cancelRemove(): void { this.confirmDeleteKey.set(null); }
 
   clearCart(): void {
-    if (confirm('Ștergi toate produsele din coș?')) this.cart.set([]);
+    if (confirm('Ștergi toate produsele din coș?')) {
+      this.cart.set([]);
+      this._pendingQty.set({});
+      clearCartStorage();
+    }
   }
 
   /* ── Submit ── */
@@ -500,6 +529,7 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.cart.set([]);
+    clearCartStorage();
     this.nameCtrl.reset();
     this.phoneCtrl.reset();
     this.addressCtrl.reset();
