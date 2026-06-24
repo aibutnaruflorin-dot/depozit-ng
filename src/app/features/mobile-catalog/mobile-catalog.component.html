@@ -1,0 +1,114 @@
+<!-- Sticky header -->
+<div class="mc-header">
+  <div class="mc-title-row">
+    <mat-icon class="mc-title-icon">inventory_2</mat-icon>
+    <span class="mc-title">Catalog</span>
+    <span class="mc-count">{{ filtered().length }}</span>
+    @if (hasActiveFilters()) {
+      <button class="mc-clear-btn" (click)="clearFilters()">
+        <mat-icon>filter_alt_off</mat-icon>
+      </button>
+    }
+  </div>
+
+  <!-- Search -->
+  <div class="mc-search-wrap">
+    <mat-icon class="mc-search-icon">search</mat-icon>
+    <input class="mc-search-input"
+           type="search"
+           placeholder="Caută produs…"
+           [value]="search()"
+           (input)="search.set($any($event.target).value)">
+    @if (search()) {
+      <button class="mc-search-clear" (click)="search.set('')">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </div>
+
+  <!-- Catalog chips -->
+  <div class="mc-catalog-chips">
+    <button class="mc-chip" [class.mc-chip-active]="allSelected()"
+            (click)="selectedCatIds.set([]); selectedCategory.set('')">
+      Toate
+    </button>
+    @for (cat of catalogsService.catalogs(); track cat.id) {
+      <button class="mc-chip" [class.mc-chip-active]="selectedCatIds().includes(cat.id)"
+              [style.--chip-color]="cat.color"
+              (click)="toggleCatalog(cat.id)">
+        <span class="mc-chip-dot" [style.background]="cat.color"></span>
+        {{ cat.name }}
+      </button>
+    }
+  </div>
+
+  <!-- Category filter (compact pill) -->
+  @if (categories().length > 0) {
+    <div class="mc-cat-row">
+      <button class="mc-cat-pill" [class.mc-cat-active]="!selectedCategory()"
+              (click)="selectCategory('')">
+        Toate
+      </button>
+      @for (c of categories(); track c) {
+        <button class="mc-cat-pill" [class.mc-cat-active]="selectedCategory() === c"
+                (click)="selectCategory(c)">
+          {{ c }}
+        </button>
+      }
+    </div>
+  }
+</div>
+
+<!-- Product cards -->
+<div class="mc-list">
+  @if (filtered().length === 0) {
+    <div class="mc-empty">
+      <mat-icon>search_off</mat-icon>
+      <p>Niciun produs găsit.</p>
+      <button mat-stroked-button (click)="clearFilters()">Șterge filtrele</button>
+    </div>
+  } @else {
+    @for (p of filtered(); track p.catalogId + p.nr) {
+      <div class="mc-card" [style.border-left-color]="catalogColor(p.catalogId)">
+
+        <div class="mc-card-top">
+          <span class="mc-prod-name">{{ p.name }}</span>
+          <span class="mc-cat-badge" [style.color]="catalogColor(p.catalogId)"
+                [style.background]="catalogColor(p.catalogId) + '18'">
+            {{ catalogName(p.catalogId) }}
+          </span>
+        </div>
+
+        <div class="mc-card-mid">
+          @if (p.category) {
+            <span class="mc-pill mc-pill-cat">{{ p.category }}</span>
+          }
+          <span class="mc-pill mc-pill-um">{{ p.um }}</span>
+        </div>
+
+        <div class="mc-card-bottom">
+          <div class="mc-stock-block">
+            <span class="mc-stock-label">Stoc</span>
+            <span class="mc-stock-val" [class]="stockClass(p.qty)">
+              {{ p.qty }}
+            </span>
+          </div>
+
+          @if ((p.importedQty ?? p.qty) !== p.qty) {
+            <div class="mc-stock-block">
+              <span class="mc-stock-label">Import</span>
+              <span class="mc-stock-val mc-stock-import">{{ p.importedQty ?? p.qty }}</span>
+            </div>
+          }
+
+          <button class="mc-order-btn" (click)="goToNewOrder(p)"
+                  matTooltip="Adaugă la comandă">
+            <mat-icon>add_shopping_cart</mat-icon>
+            Comandă
+          </button>
+        </div>
+
+      </div>
+    }
+  }
+</div>

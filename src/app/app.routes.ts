@@ -14,6 +14,7 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'catalog', pathMatch: 'full' },
       { path: 'catalog',     canActivate: [pageGuard], data: { pageId: 'catalog' },      loadComponent: () => import('./features/catalog/catalog.component').then(m => m.CatalogComponent) },
+      { path: 'm-catalog',  canActivate: [pageGuard], data: { pageId: 'catalog' },      loadComponent: () => import('./features/mobile-catalog/mobile-catalog.component').then(m => m.MobileCatalogComponent) },
       { path: 'new-order',   canActivate: [pageGuard], data: { pageId: 'comenzi_noi' }, loadComponent: () => import('./features/new-order/new-order.component').then(m => m.NewOrderComponent) },
       { path: 'history-me',  canActivate: [pageGuard], data: { pageId: 'comenzi' },     loadComponent: () => import('./features/history/history.component').then(m => m.HistoryComponent) },
       { path: 'history-all', canActivate: [pageGuard], data: { pageId: 'istoric' },     loadComponent: () => import('./features/history-all/history-all.component').then(m => m.HistoryAllComponent) },
