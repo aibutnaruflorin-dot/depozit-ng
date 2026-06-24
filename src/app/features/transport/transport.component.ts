@@ -1024,7 +1024,7 @@ export class TransportComponent implements OnInit {
     const { dayStart, dayEnd, isToday } = day;
     const duration = dayEnd - dayStart;
     return this.transportService.transports()
-      .filter(t => t.vehicleId === vehicleId && t.status !== 'livrat')
+      .filter(t => t.vehicleId === vehicleId && t.status !== 'livrat' && t.status !== 'anulat' && t.status !== 'sters')
       .filter(t => {
         const pT = new Date(t.oraPlecare).getTime();
         const sT = new Date(t.oraSosire).getTime();
@@ -1399,7 +1399,7 @@ export class TransportComponent implements OnInit {
   private _checkOverlap(plecare: string, sosire: string, vehicleId: string, driverId: string, excludeId?: string): { vehicle: boolean; driver: boolean; driverTrip?: Transport; vehicleTrip?: Transport } {
     const pA = new Date(plecare).getTime(), sA = new Date(sosire).getTime();
     const eA = effectiveEndMs(pA, sA);
-    const others = this.transportService.transports().filter(t => t.status !== 'livrat' && t.id !== excludeId);
+    const others = this.transportService.transports().filter(t => t.status !== 'livrat' && t.status !== 'anulat' && t.status !== 'sters' && t.id !== excludeId);
     let vehicle = false, driver = false;
     let driverTrip: Transport | undefined, vehicleTrip: Transport | undefined;
     for (const t of others) {
