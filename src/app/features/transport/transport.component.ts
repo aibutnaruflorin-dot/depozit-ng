@@ -111,7 +111,6 @@ export class TransportComponent implements OnInit {
   readonly today = new Date();
   readonly todayStr = new Date().toISOString().slice(0, 10);
 
-  layoutMode  = signal<2|3>(2);
   showHistoric      = signal(false);
   showCalendar      = signal(false);
   showOrders        = signal(true);

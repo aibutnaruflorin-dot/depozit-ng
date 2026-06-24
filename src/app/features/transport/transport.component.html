@@ -7,18 +7,6 @@
       @if (deliveryOrders().length) { <span class="count-badge">{{ deliveryOrders().length }}</span> }
     </h1>
 
-    <!-- Layout switcher -->
-    <div class="layout-switcher">
-      <button class="lsw-btn" [class.lsw-btn--on]="layoutMode()===2"
-              (click)="layoutMode.set(2)" matTooltip="Calendar sus + Tabele jos">
-        <mat-icon>table_rows</mat-icon><span>Calendar sus</span>
-      </button>
-      <button class="lsw-btn" [class.lsw-btn--on]="layoutMode()===3"
-              (click)="layoutMode.set(3)" matTooltip="Tabele – fără calendar">
-        <mat-icon>format_list_bulleted</mat-icon><span>Tabele</span>
-      </button>
-    </div>
-
     <div class="page-actions">
       @if (auth.isAdmin()) {
         <button mat-stroked-button (click)="openCreate()"
@@ -37,25 +25,13 @@
   }
 
   <!-- ── Calendar ── -->
-  @if (layoutMode() === 2) {
-    <div class="l2-calendar">
-      <div class="panel-title">
-        <mat-icon>calendar_month</mat-icon> Planificare
-        <span class="panel-hint">Click pe celulă = cursă nouă</span>
-      </div>
-      <ng-container [ngTemplateOutlet]="calendarTpl"></ng-container>
+  <div class="l2-calendar">
+    <div class="panel-title">
+      <mat-icon>calendar_month</mat-icon> Planificare
+      <span class="panel-hint">Click pe celulă = cursă nouă</span>
     </div>
-  } @else {
-    <div class="l3-cal-section">
-      <div class="panel-title panel-title--toggle" (click)="showCalendar.set(!showCalendar())">
-        <mat-icon>calendar_month</mat-icon> Planificare calendar
-        <mat-icon class="toggle-chevron">{{ showCalendar() ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </div>
-      @if (showCalendar()) {
-        <ng-container [ngTemplateOutlet]="calendarTpl"></ng-container>
-      }
-    </div>
-  }
+    <ng-container [ngTemplateOutlet]="calendarTpl"></ng-container>
+  </div>
 
   <!-- Sectiuni colapsabile - una sub alta -->
 
