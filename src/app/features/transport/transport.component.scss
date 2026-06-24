@@ -233,15 +233,18 @@
 .delivery-actions {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 0;
   padding: 2px 0;
 
   button[mat-icon-button] {
+    --mdc-icon-button-state-layer-size: 28px;
+    --mdc-icon-button-icon-size: 18px;
     width: 28px;
     height: 28px;
+    padding: 0;
     line-height: 28px;
     mat-icon { font-size: 18px; width: 18px; height: 18px; }
   }
