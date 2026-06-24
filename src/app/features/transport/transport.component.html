@@ -316,7 +316,7 @@
                 } @else { <span class="muted">—</span> }
               </td>
               <td class="notes-col col-obs">
-                <textarea class="chip-note-input" rows="2"
+                <textarea class="chip-note-input" rows="1"
                           [appInitValue]="o.observatii ?? ''"
                           (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
                           (blur)="saveOrderObsBuffer(o.id)"
