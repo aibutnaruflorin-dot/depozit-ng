@@ -860,9 +860,21 @@ export class TransportComponent implements OnInit {
     const overlap    = this._checkOverlap(oraPlecare, oraSosire, val.vehicleId, val.driverId, editId);
 
     if (overlap.vehicle || overlap.driver) {
+      const conflictTrip = overlap.driverTrip ?? overlap.vehicleTrip;
       const who = overlap.vehicle && overlap.driver ? 'Mașina și șoferul'
         : overlap.vehicle ? 'Mașina' : 'Șoferul';
-      this.snackBar.open(`${who} nu este disponibil în această perioadă.`, 'OK', { duration: 5000 });
+      let msg = `${who} nu este disponibil în această perioadă.`;
+      if (conflictTrip) {
+        const clients = [...new Set(conflictTrip.deliveries.map(d => {
+          const o = this.ordersService.orders().find(ord => ord.id === d.orderId);
+          return o?.client.name ?? '';
+        }).filter(Boolean))].join(', ');
+        const plecareFmt = this.transportService.formatDateTime(conflictTrip.oraPlecare);
+        const sosireFmt  = this.transportService.formatDateTime(conflictTrip.oraSosire);
+        msg += ` Cursă existentă: ${plecareFmt} → ${sosireFmt}`;
+        if (clients) msg += ` (${clients})`;
+      }
+      this.snackBar.open(msg, 'OK', { duration: 8000 });
       return;
     }
 
@@ -1384,20 +1396,21 @@ export class TransportComponent implements OnInit {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
-  private _checkOverlap(plecare: string, sosire: string, vehicleId: string, driverId: string, excludeId?: string): { vehicle: boolean; driver: boolean } {
+  private _checkOverlap(plecare: string, sosire: string, vehicleId: string, driverId: string, excludeId?: string): { vehicle: boolean; driver: boolean; driverTrip?: Transport; vehicleTrip?: Transport } {
     const pA = new Date(plecare).getTime(), sA = new Date(sosire).getTime();
     const eA = effectiveEndMs(pA, sA);
     const others = this.transportService.transports().filter(t => t.status !== 'livrat' && t.id !== excludeId);
     let vehicle = false, driver = false;
+    let driverTrip: Transport | undefined, vehicleTrip: Transport | undefined;
     for (const t of others) {
       const pB = new Date(t.oraPlecare).getTime(), sB = new Date(t.oraSosire).getTime();
       const eB = effectiveEndMs(pB, sB);
       if (pA < eB && pB < eA) {
-        if (t.vehicleId === vehicleId) vehicle = true;
-        if (t.driverId  === driverId)  driver  = true;
+        if (t.vehicleId === vehicleId && !vehicleTrip) { vehicle = true; vehicleTrip = t; }
+        if (t.driverId  === driverId  && !driverTrip)  { driver  = true; driverTrip  = t; }
       }
     }
-    return { vehicle, driver };
+    return { vehicle, driver, driverTrip, vehicleTrip };
   }
 
   private _busyInForm(): { vehicleIds: Set<string>; driverIds: Set<string> } {
