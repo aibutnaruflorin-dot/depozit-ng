@@ -10,12 +10,15 @@ import { SupabaseService } from './core/services/supabase.service';
 export class App implements OnInit {
   constructor(private supabase: SupabaseService) {}
 
-  async ngOnInit(): Promise<void> {
-    const remote = await this.supabase.loadAll();
-    for (const [key, value] of Object.entries(remote)) {
-      if (value !== null && value !== undefined) {
-        try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  ngOnInit(): void {
+    // Non-blocking: app renders immediately from localStorage,
+    // Supabase data merges in the background
+    this.supabase.loadAll().then(remote => {
+      for (const [key, value] of Object.entries(remote)) {
+        if (value !== null && value !== undefined) {
+          try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+        }
       }
-    }
+    }).catch(() => {});
   }
 }
