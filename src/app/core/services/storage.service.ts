@@ -1,9 +1,12 @@
 import { Injectable } from '@angular/core';
 import { User } from '../models/user.model';
 import { DEFAULT_PERMISSIONS } from '../models/app-permission.model';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
+  constructor(private supabase: SupabaseService) {}
+
   get<T>(key: string): T | null {
     try {
       const val = localStorage.getItem(key);
@@ -16,6 +19,9 @@ export class StorageService {
   set(key: string, val: unknown): void {
     try {
       localStorage.setItem(key, JSON.stringify(val));
+      if (this.supabase.isSyncKey(key)) {
+        this.supabase.upsert(key, val);
+      }
     } catch (e) {
       console.error('StorageService.set failed', key, e);
     }
