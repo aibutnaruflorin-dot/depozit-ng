@@ -38,5 +38,6 @@ export const routes: Routes = [
       { path: 'about',       loadComponent: () => import('./features/about/about.component').then(m => m.AboutComponent) },
     ]
   },
+  { path: 'm', redirectTo: '/app/m-catalog', pathMatch: 'full' },
   { path: '**', redirectTo: '/app/catalog' }
 ];
