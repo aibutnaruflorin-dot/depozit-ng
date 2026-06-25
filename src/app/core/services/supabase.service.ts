@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 const SYNC_KEYS = [
   'app_users', 'app_orders', 'app_catalogs', 'app_transports',
   'app_vehicles', 'app_permissions', 'app_whatsapp_contacts',
-  'app_stockLog', 'app_units', 'app_drivers'
+  'app_stock_log', 'app_units', 'app_drivers'
 ];
 
 @Injectable({ providedIn: 'root' })
@@ -17,7 +17,7 @@ export class SupabaseService {
   }
 
   isSyncKey(key: string): boolean {
-    return SYNC_KEYS.includes(key) || key.startsWith('app_products_');
+    return SYNC_KEYS.includes(key) || key.startsWith('app_products_') || key.startsWith('app_catalog_');
   }
 
   async loadAll(): Promise<Record<string, any>> {
