@@ -1,0 +1,190 @@
+<div class="mn-wrap">
+
+  <!-- Header -->
+  <div class="mn-header">
+    <div class="mn-header-row">
+      <span class="mn-title">Comandă Nouă</span>
+      @if (cartCount() > 0) {
+        <button class="mn-cart-btn" (click)="showCart.set(true)">
+          <mat-icon>shopping_cart</mat-icon>
+          <span class="mn-cart-badge">{{ cartCount() }}</span>
+        </button>
+      }
+    </div>
+    <div class="mn-search-row">
+      <div class="mn-search-wrap">
+        <mat-icon class="mn-search-icon">search</mat-icon>
+        <input class="mn-search-input" type="search" placeholder="Caută produs…"
+               [value]="search()" (input)="search.set($any($event.target).value)">
+        @if (search()) {
+          <button class="mn-icon-btn" (click)="search.set('')"><mat-icon>close</mat-icon></button>
+        }
+      </div>
+    </div>
+    <div class="mn-chips">
+      <button class="mn-chip" [class.active]="allSelected()"
+              (click)="selectedCatIds.set([])">Toate</button>
+      @for (cat of catalogsService.catalogs(); track cat.id) {
+        <button class="mn-chip" [class.active]="selectedCatIds().includes(cat.id)"
+                [style.--chip-color]="cat.color" (click)="toggleCatalog(cat.id)">
+          <span class="mn-chip-dot" [style.background]="cat.color"></span>{{ cat.name }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Product List -->
+  <div class="mn-list">
+    @if (filtered().length === 0) {
+      <div class="mn-empty">
+        <mat-icon>search_off</mat-icon>
+        <p>Niciun produs găsit.</p>
+      </div>
+    } @else {
+      <div class="mn-count">{{ filtered().length }} produse</div>
+      @for (p of filtered(); track p.catalogId + p.nr) {
+        <div class="mn-card" [style.border-left-color]="catalogColor(p.catalogId)">
+          <div class="mn-card-main">
+            <div class="mn-prod-name">{{ p.name }}</div>
+            <div class="mn-prod-meta">
+              <span>{{ p.category }}</span>
+              <span class="mn-sep">·</span>
+              <span>{{ p.um }}</span>
+              @if (p.pretCuTVA != null) {
+                <span class="mn-sep">·</span>
+                <span class="mn-price">{{ p.pretCuTVA | number:'1.2-2' }} lei</span>
+              }
+            </div>
+            <div class="mn-stock-row">
+              <span class="mn-stock-dot" [class]="stockDotClass(p.qty)"></span>
+              <span class="mn-stock-text" [class]="stockDotClass(p.qty)">{{ p.qty }} {{ p.um }}</span>
+            </div>
+          </div>
+          <div class="mn-qty-ctrl">
+            @if (qtyOf(p) > 0) {
+              <button class="mn-qty-btn" (click)="dec(p)">
+                <mat-icon>{{ qtyOf(p) === 1 ? 'delete_outline' : 'remove' }}</mat-icon>
+              </button>
+              <span class="mn-qty-val">{{ qtyOf(p) }}</span>
+            }
+            <button class="mn-qty-add" [class.has-qty]="qtyOf(p) > 0" (click)="inc(p)">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+        </div>
+      }
+      <div style="height:80px"></div>
+    }
+  </div>
+
+  <!-- Sticky Total Bar -->
+  @if (cartCount() > 0) {
+    <div class="mn-total-bar" (click)="showCart.set(true)">
+      <div class="mn-total-info">
+        <span class="mn-total-items">{{ cartCount() }} produse</span>
+        <span class="mn-total-price">{{ totalCuTVA() | number:'1.2-2' }} lei cu TVA</span>
+      </div>
+      <button class="mn-open-cart-btn">
+        <mat-icon>shopping_cart</mat-icon>
+        Coș
+      </button>
+    </div>
+  }
+
+  <!-- Cart Bottom Sheet -->
+  @if (showCart()) {
+    <div class="mn-backdrop" (click)="showCart.set(false)"></div>
+    <div class="mn-sheet">
+      <div class="mn-sheet-handle"></div>
+
+      <div class="mn-sheet-head">
+        <span class="mn-sheet-title">Coș ({{ cartCount() }})</span>
+        <button class="mn-icon-btn" (click)="showCart.set(false)"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <!-- Cart items -->
+      <div class="mn-cart-items">
+        @for (item of cart(); track item.product.catalogId + item.product.nr) {
+          <div class="mn-cart-item">
+            <div class="mn-ci-color" [style.background]="catalogColor(item.product.catalogId)"></div>
+            <div class="mn-ci-main">
+              <div class="mn-ci-name">{{ item.product.name }}</div>
+              <div class="mn-ci-sub">
+                <span>{{ item.qty }} × {{ item.product.pretCuTVA | number:'1.2-2' }} lei</span>
+                <span class="mn-ci-total">{{ (item.qty * (item.product.pretCuTVA ?? 0)) | number:'1.2-2' }} lei</span>
+              </div>
+            </div>
+            <button class="mn-ci-remove" (click)="removeFromCart(item.product)">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Totals -->
+      <div class="mn-totals">
+        <div class="mn-total-row">
+          <span>Total fără TVA</span>
+          <span>{{ totalFaraTVA() | number:'1.2-2' }} lei</span>
+        </div>
+        <div class="mn-total-row mn-total-final">
+          <span>Total cu TVA</span>
+          <span>{{ totalCuTVA() | number:'1.2-2' }} lei</span>
+        </div>
+      </div>
+
+      <div class="mn-divider"></div>
+
+      <!-- Client form -->
+      <div class="mn-form">
+        <div class="mn-form-label">Date client</div>
+
+        <div class="mn-field" [class.error]="nameCtrl.invalid && nameCtrl.touched">
+          <label class="mn-field-label">Nume client *</label>
+          <input class="mn-field-input" type="text" placeholder="Numele clientului"
+                 [formControl]="nameCtrl">
+          @if (nameCtrl.invalid && nameCtrl.touched) {
+            <span class="mn-field-err">Câmp obligatoriu</span>
+          }
+        </div>
+
+        <div class="mn-field">
+          <label class="mn-field-label">Telefon</label>
+          <input class="mn-field-input" type="tel" placeholder="07xx xxx xxx"
+                 [formControl]="phoneCtrl">
+        </div>
+
+        <label class="mn-toggle-row" (click)="cuLivrare.update(v => !v)">
+          <span>Cu livrare</span>
+          <div class="mn-toggle" [class.on]="cuLivrare()">
+            <div class="mn-toggle-thumb"></div>
+          </div>
+        </label>
+
+        @if (cuLivrare()) {
+          <div class="mn-field">
+            <label class="mn-field-label">Adresă livrare</label>
+            <input class="mn-field-input" type="text" placeholder="Strada, nr, localitate"
+                   [formControl]="addressCtrl">
+          </div>
+        }
+
+        <div class="mn-field">
+          <label class="mn-field-label">Observații</label>
+          <textarea class="mn-field-input mn-textarea" rows="2" placeholder="Note opționale"
+                    [formControl]="noteCtrl"></textarea>
+        </div>
+      </div>
+
+      <div class="mn-sheet-footer">
+        <button class="mn-btn-secondary" (click)="clearCart()">Golește coșul</button>
+        <button class="mn-btn-primary" (click)="submit()">
+          <mat-icon>save</mat-icon>
+          Salvează comanda
+        </button>
+      </div>
+    </div>
+  }
+
+  <app-mobile-nav />
+</div>

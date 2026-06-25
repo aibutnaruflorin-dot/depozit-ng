@@ -1,0 +1,49 @@
+<div class="mab-wrap">
+  <div class="mab-header">
+    <a class="mab-back" routerLink="/app/m-settings">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+    <span class="mab-title">Despre aplicație</span>
+  </div>
+
+  <div class="mab-body">
+    <div class="mab-logo-section">
+      <div class="mab-logo-circle">
+        <mat-icon>store</mat-icon>
+      </div>
+      <div class="mab-app-name">D2C App</div>
+      <div class="mab-version">Versiunea {{ version }}</div>
+    </div>
+
+    <div class="mab-info-card">
+      <div class="mab-info-row">
+        <mat-icon>business</mat-icon>
+        <div>
+          <div class="mab-info-label">Companie</div>
+          <div class="mab-info-value">Depozitu2Constructii</div>
+        </div>
+      </div>
+      <div class="mab-info-row">
+        <mat-icon>code</mat-icon>
+        <div>
+          <div class="mab-info-label">Platformă</div>
+          <div class="mab-info-value">Angular 21 · PWA</div>
+        </div>
+      </div>
+      <div class="mab-info-row">
+        <mat-icon>copyright</mat-icon>
+        <div>
+          <div class="mab-info-label">An</div>
+          <div class="mab-info-value">{{ year }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mab-desc">
+      Aplicație internă pentru gestionarea comenzilor, transportului și a catalogului de produse.
+    </div>
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

@@ -1,0 +1,56 @@
+<div class="ms-wrap">
+  <div class="ms-header"><span class="ms-title">Setări</span></div>
+
+  @if (auth.isAdmin() || auth.isKeyUser()) {
+    <div class="ms-section">
+      <div class="ms-section-title">Administrare</div>
+      <div class="ms-menu">
+        <a class="ms-menu-item" routerLink="/app/settings">
+          <mat-icon>settings</mat-icon>
+          <span>Setări generale</span>
+          <mat-icon class="ms-chevron">chevron_right</mat-icon>
+        </a>
+        <a class="ms-menu-item" routerLink="/app/users">
+          <mat-icon>people</mat-icon>
+          <span>Utilizatori</span>
+          <mat-icon class="ms-chevron">chevron_right</mat-icon>
+        </a>
+      </div>
+    </div>
+  }
+
+  <div class="ms-section">
+    <div class="ms-section-title">Cont</div>
+    <div class="ms-menu">
+      <a class="ms-menu-item" routerLink="/app/m-account">
+        <mat-icon>person</mat-icon>
+        <span>Profilul meu</span>
+        <mat-icon class="ms-chevron">chevron_right</mat-icon>
+      </a>
+      <a class="ms-menu-item" routerLink="/app/m-security">
+        <mat-icon>shield</mat-icon>
+        <span>Securitate</span>
+        <mat-icon class="ms-chevron">chevron_right</mat-icon>
+      </a>
+    </div>
+  </div>
+
+  <div class="ms-section">
+    <div class="ms-section-title">Ajutor</div>
+    <div class="ms-menu">
+      <a class="ms-menu-item" routerLink="/app/m-manual">
+        <mat-icon>menu_book</mat-icon>
+        <span>Manual utilizare</span>
+        <mat-icon class="ms-chevron">chevron_right</mat-icon>
+      </a>
+      <a class="ms-menu-item" routerLink="/app/m-about">
+        <mat-icon>info</mat-icon>
+        <span>Despre aplicație</span>
+        <mat-icon class="ms-chevron">chevron_right</mat-icon>
+      </a>
+    </div>
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

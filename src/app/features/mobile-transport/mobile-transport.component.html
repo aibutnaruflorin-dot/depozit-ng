@@ -1,0 +1,61 @@
+<div class="mt-wrap">
+
+  <div class="mt-header">
+    <span class="mt-title">Transport</span>
+    <div class="mt-tabs">
+      <button class="mt-tab" [class.active]="activeTab() === 'active'"
+              (click)="activeTab.set('active')">
+        Active <span class="mt-cnt">{{ active().length }}</span>
+      </button>
+      <button class="mt-tab" [class.active]="activeTab() === 'done'"
+              (click)="activeTab.set('done')">
+        Livrate <span class="mt-cnt">{{ done().length }}</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-list">
+    @if (displayList().length === 0) {
+      <div class="mt-empty">
+        <mat-icon>local_shipping</mat-icon>
+        <p>Nicio cursă {{ activeTab() === 'done' ? 'livrată' : 'activă' }}.</p>
+      </div>
+    } @else {
+      @for (t of displayList(); track t.id) {
+        <div class="mt-card" (click)="toggleExpand(t.id)">
+          <div class="mt-card-top">
+            <div class="mt-trip-info">
+              <mat-icon class="mt-icon">local_shipping</mat-icon>
+              <span class="mt-vehicle">{{ vehicleName(t) }}</span>
+              <span class="mt-driver">{{ driverName(t) }}</span>
+            </div>
+            <span class="mt-chip" [class]="statusClass(t)">{{ statusLabel(t) }}</span>
+          </div>
+          <div class="mt-card-meta">
+            <mat-icon class="mt-meta-icon">schedule</mat-icon>
+            <span>{{ t.oraPlecare }} – {{ t.oraSosire }}</span>
+            <span class="mt-sep">·</span>
+            <span>{{ t.deliveries.length }} {{ t.deliveries.length === 1 ? 'comandă' : 'comenzi' }}</span>
+          </div>
+
+          @if (expandedId() === t.id) {
+            <div class="mt-expanded" (click)="$event.stopPropagation()">
+              @for (o of ordersForTransport(t); track o.id) {
+                <div class="mt-order-row">
+                  <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+                  <span class="mt-order-client">{{ o.client.name }}</span>
+                  @if (o.cuLivrare) {
+                    <mat-icon class="mt-deliv-icon">home</mat-icon>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+      <div style="height:72px"></div>
+    }
+  </div>
+
+  <app-mobile-nav />
+</div>

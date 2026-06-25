@@ -1,0 +1,96 @@
+<div class="mm-wrap">
+
+  <div class="mm-header">
+    <span class="mm-title">Cursele Mele</span>
+  </div>
+
+  <div class="mm-body">
+    @if (isNotDriver()) {
+      <div class="mm-empty">
+        <mat-icon>directions_car</mat-icon>
+        <p>Nu ai nicio cursă asignată.</p>
+      </div>
+    } @else {
+
+      <!-- Active trips -->
+      @if (current().length > 0) {
+        <div class="mm-section-label">Curse active ({{ current().length }})</div>
+        @for (t of current(); track t.id) {
+          <div class="mm-trip-card" (click)="toggleExpand(t.id)">
+            <!-- Progress bar -->
+            <div class="mm-progress">
+              @for (step of STEP_LABELS; track $index) {
+                <div class="mm-step" [class.done]="$index <= stepIndex(t)" [class.active]="$index === stepIndex(t)">
+                  <div class="mm-step-dot"></div>
+                  @if ($index < STEP_LABELS.length - 1) { <div class="mm-step-line"></div> }
+                </div>
+              }
+            </div>
+            <div class="mm-step-names">
+              @for (step of STEP_LABELS; track $index) {
+                <span [class.active]="$index === stepIndex(t)" [class.done]="$index < stepIndex(t)">{{ step }}</span>
+              }
+            </div>
+
+            <div class="mm-trip-info">
+              <mat-icon class="mm-car-icon">local_shipping</mat-icon>
+              <span class="mm-vehicle">{{ vehicleName(t) }}</span>
+              <span class="mm-time">{{ t.oraPlecare }} – {{ t.oraSosire }}</span>
+            </div>
+
+            @if (expandedId() === t.id) {
+              <div class="mm-expanded" (click)="$event.stopPropagation()">
+                @for (o of ordersForTransport(t); track o.id) {
+                  <div class="mm-order-row">
+                    <span class="mm-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+                    <span class="mm-order-client">{{ o.client.name }}</span>
+                    @if (o.cuLivrare && o.client.address) {
+                      <span class="mm-order-addr">{{ o.client.address }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @if (stepIndex(t) < 3) {
+              <button class="mm-advance-btn" (click)="$event.stopPropagation(); advance(t)">
+                {{ STEP_ACTIONS[stepIndex(t)] }}
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            }
+          </div>
+        }
+      }
+
+      <!-- History toggle -->
+      @if (history().length > 0) {
+        <button class="mm-history-toggle" (click)="showHistory.update(v => !v)">
+          <mat-icon>{{ showHistory() ? 'expand_less' : 'expand_more' }}</mat-icon>
+          Curse livrate ({{ history().length }})
+        </button>
+
+        @if (showHistory()) {
+          @for (t of history(); track t.id) {
+            <div class="mm-trip-card done">
+              <div class="mm-trip-info">
+                <mat-icon class="mm-car-icon">check_circle</mat-icon>
+                <span class="mm-vehicle">{{ vehicleName(t) }}</span>
+                <span class="mm-time">{{ t.oraPlecare }}</span>
+                <span class="mm-hist-badge">Livrat</span>
+              </div>
+              <div class="mm-hist-orders">
+                @for (o of ordersForTransport(t); track o.id) {
+                  <span class="mm-hist-client">{{ o.client.name }}</span>
+                }
+              </div>
+            </div>
+          }
+        }
+      }
+
+      <div style="height:72px"></div>
+    }
+  </div>
+
+  <app-mobile-nav />
+</div>

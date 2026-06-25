@@ -1,0 +1,32 @@
+<div class="mman-wrap">
+  <div class="mman-header">
+    <a class="mman-back" routerLink="/app/m-settings"><mat-icon>arrow_back</mat-icon></a>
+    <span class="mman-title">Manual utilizare</span>
+  </div>
+
+  <div class="mman-body">
+    <div class="mman-intro">
+      Ghid rapid pentru utilizarea aplicației D2C pe mobil.
+    </div>
+
+    <div class="mman-sections">
+      @for (sec of sections(); track $index) {
+        <div class="mman-item">
+          <button class="mman-item-head" (click)="toggle($index)">
+            <div class="mman-icon-wrap">
+              <mat-icon>{{ sec.icon }}</mat-icon>
+            </div>
+            <span class="mman-item-title">{{ sec.title }}</span>
+            <mat-icon class="mman-expand-icon">{{ sec.open ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+          @if (sec.open) {
+            <div class="mman-item-body">{{ sec.content }}</div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

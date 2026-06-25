@@ -1,0 +1,46 @@
+<!-- Bottom Nav -->
+<nav class="m-nav">
+  <a class="m-nav-item" routerLink="/app/m-catalog" routerLinkActive="active">
+    <mat-icon>sell</mat-icon>
+    <span>Catalog</span>
+  </a>
+  <a class="m-nav-item" routerLink="/app/m-new-order" routerLinkActive="active">
+    <mat-icon>add_shopping_cart</mat-icon>
+    <span>Comandă</span>
+  </a>
+  <a class="m-nav-item" routerLink="/app/m-history-me" routerLinkActive="active">
+    <mat-icon>receipt_long</mat-icon>
+    <span>Comenzi</span>
+  </a>
+  <a class="m-nav-item" [routerLink]="transportRoute()" routerLinkActive="active">
+    <mat-icon>local_shipping</mat-icon>
+    <span>Transport</span>
+  </a>
+  <button class="m-nav-item" [class.active]="showMore()" (click)="showMore.update(v => !v)">
+    <mat-icon>menu</mat-icon>
+    <span>Mai mult</span>
+  </button>
+</nav>
+
+<!-- More sheet -->
+@if (showMore()) {
+  <div class="m-more-backdrop" (click)="showMore.set(false)"></div>
+  <div class="m-more-sheet">
+    <div class="m-more-handle"></div>
+    <button class="m-more-item" (click)="navigateTo('/app/m-account')">
+      <mat-icon>person</mat-icon> Contul meu
+    </button>
+    <button class="m-more-item" (click)="navigateTo('/app/m-settings')">
+      <mat-icon>settings</mat-icon> Setări
+    </button>
+    <button class="m-more-item" (click)="navigateTo('/app/m-security')">
+      <mat-icon>security</mat-icon> Securitate
+    </button>
+    <button class="m-more-item" (click)="navigateTo('/app/m-manual')">
+      <mat-icon>menu_book</mat-icon> Manual
+    </button>
+    <button class="m-more-item" (click)="navigateTo('/app/m-about')">
+      <mat-icon>info</mat-icon> Despre aplicație
+    </button>
+  </div>
+}

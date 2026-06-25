@@ -1,0 +1,88 @@
+<div class="ma-wrap">
+
+  <div class="ma-header">
+    <span class="ma-title">Contul meu</span>
+  </div>
+
+  <!-- Profile Card -->
+  <div class="ma-profile-card">
+    <div class="ma-avatar">{{ (auth.session()?.name ?? 'U').charAt(0).toUpperCase() }}</div>
+    <div class="ma-profile-info">
+      <div class="ma-name">{{ auth.session()?.name }}</div>
+      <div class="ma-username">{{ auth.session()?.username }}</div>
+      <div class="ma-role-badge">{{ roleLabel() }}</div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="ma-section">
+    <div class="ma-section-title">Contul meu</div>
+    <div class="ma-menu">
+      <button class="ma-menu-item" (click)="showPassForm.update(v => !v)">
+        <mat-icon>lock</mat-icon>
+        <span>Schimbă parola</span>
+        <mat-icon class="ma-chevron">{{ showPassForm() ? 'expand_less' : 'chevron_right' }}</mat-icon>
+      </button>
+    </div>
+
+    @if (showPassForm()) {
+      <form [formGroup]="form" (ngSubmit)="save()" class="ma-pass-form">
+        <div class="ma-field">
+          <label class="ma-field-label">Parola curentă</label>
+          <div class="ma-pass-wrap">
+            <input class="ma-field-input" [type]="hideOld ? 'password' : 'text'"
+                   formControlName="oldPass" placeholder="Parola actuală">
+            <button type="button" class="ma-eye-btn" (click)="hideOld = !hideOld">
+              <mat-icon>{{ hideOld ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="ma-field">
+          <label class="ma-field-label">Parola nouă</label>
+          <div class="ma-pass-wrap">
+            <input class="ma-field-input" [type]="hideNew ? 'password' : 'text'"
+                   formControlName="newPass" placeholder="Parola nouă">
+            <button type="button" class="ma-eye-btn" (click)="hideNew = !hideNew">
+              <mat-icon>{{ hideNew ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+          </div>
+          @if (strength().label) {
+            <div class="ma-strength-bar">
+              <div class="ma-strength-fill" [class]="'level-' + strength().level"></div>
+            </div>
+            <div class="ma-strength-label" [class]="'level-' + strength().level">{{ strength().label }}</div>
+          }
+        </div>
+
+        <div class="ma-field">
+          <label class="ma-field-label">Confirmă parola</label>
+          <div class="ma-pass-wrap">
+            <input class="ma-field-input" [type]="hideConf ? 'password' : 'text'"
+                   formControlName="confirm" placeholder="Repetă parola nouă">
+            <button type="button" class="ma-eye-btn" (click)="hideConf = !hideConf">
+              <mat-icon>{{ hideConf ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        @if (msg()) {
+          <div class="ma-msg" [class.ok]="msgOk()">{{ msg() }}</div>
+        }
+
+        <button type="submit" class="ma-btn-primary">Salvează parola</button>
+      </form>
+    }
+  </div>
+
+  <!-- Logout -->
+  <div class="ma-section">
+    <button class="ma-logout-btn" (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      Deconectare
+    </button>
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

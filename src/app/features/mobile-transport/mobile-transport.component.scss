@@ -1,0 +1,60 @@
+:host { display: block; }
+.mt-wrap { background: #F5F6FA; min-height: 100vh; padding-bottom: 64px; }
+
+.mt-header {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--color-surface); padding: 12px 14px 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.mt-title { font-size: 1.1rem; font-weight: 700; color: var(--color-text); display: block; margin-bottom: 8px; }
+.mt-tabs { display: flex; gap: 8px; padding-bottom: 10px; }
+.mt-tab {
+  border: 1.5px solid var(--color-border); background: none; border-radius: 20px;
+  padding: 5px 14px; font-size: .82rem; font-weight: 500; cursor: pointer;
+  color: var(--color-text-muted); display: flex; align-items: center; gap: 5px;
+  &.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+}
+.mt-cnt {
+  background: rgba(255,255,255,.25); border-radius: 10px; padding: 0 6px; font-size: .7rem; font-weight: 700;
+  .mt-tab:not(.active) & { background: var(--color-border); color: var(--color-text-muted); }
+}
+
+.mt-list { padding: 8px 12px; }
+.mt-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 16px; color: var(--color-text-muted); gap: 8px;
+  mat-icon { font-size: 44px; width: 44px; height: 44px; }
+  p { margin: 0; font-size: .9rem; }
+}
+
+.mt-card {
+  background: var(--color-surface); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06); cursor: pointer;
+}
+.mt-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.mt-trip-info { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.mt-icon { font-size: 18px; width: 18px; height: 18px; color: var(--color-primary); }
+.mt-vehicle { font-size: .9rem; font-weight: 700; color: var(--color-text); }
+.mt-driver { font-size: .78rem; color: var(--color-text-muted); }
+.mt-card-meta { display: flex; align-items: center; gap: 5px; font-size: .75rem; color: var(--color-text-muted); }
+.mt-meta-icon { font-size: 14px; width: 14px; height: 14px; }
+.mt-sep { opacity: .5; }
+
+.mt-chip {
+  border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700; flex-shrink: 0;
+  &.chip-plan    { background: #E0E7FF; color: #3730A3; }
+  &.chip-confirm { background: #FEF3C7; color: #92400E; }
+  &.chip-active  { background: #DBEAFE; color: #1E40AF; }
+  &.chip-done    { background: #D1FAE5; color: #065F46; }
+  &.chip-cancel  { background: #FEE2E2; color: #991B1B; }
+}
+
+.mt-expanded {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--color-border);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.mt-order-row { display: flex; align-items: center; gap: 8px; }
+.mt-order-nr { font-size: .8rem; font-weight: 700; color: var(--color-text-muted); flex-shrink: 0; }
+.mt-order-client { font-size: .88rem; color: var(--color-text); flex: 1; }
+.mt-deliv-icon { font-size: 15px; width: 15px; height: 15px; color: var(--color-primary); }

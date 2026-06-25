@@ -1,0 +1,30 @@
+:host { display: block; }
+.ms-wrap { background: #F5F6FA; min-height: 100vh; padding-bottom: 64px; }
+
+.ms-header {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--color-surface); padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.ms-title { font-size: 1.1rem; font-weight: 700; color: var(--color-text); }
+
+.ms-section { padding: 16px 12px 0; }
+.ms-section-title {
+  font-size: .72rem; font-weight: 700; color: var(--color-text-muted);
+  text-transform: uppercase; letter-spacing: .04em; padding-left: 4px; margin-bottom: 6px;
+}
+
+.ms-menu {
+  background: var(--color-surface); border-radius: 12px; overflow: hidden;
+}
+.ms-menu-item {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  border: none; background: none; padding: 14px 16px; cursor: pointer;
+  font-size: .9rem; color: var(--color-text); text-align: left;
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+  &:last-child { border-bottom: none; }
+  mat-icon { color: var(--color-text-muted); font-size: 20px; width: 20px; height: 20px; }
+  &:active { background: #F5F6FA; }
+}
+.ms-chevron { margin-left: auto !important; font-size: 18px !important; width: 18px !important; height: 18px !important; }

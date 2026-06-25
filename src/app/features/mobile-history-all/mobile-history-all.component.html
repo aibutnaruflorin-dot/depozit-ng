@@ -1,0 +1,108 @@
+<div class="mha-wrap">
+
+  <!-- Header -->
+  <div class="mha-header">
+    <div class="mha-header-row">
+      <span class="mha-title">Toate Comenzile</span>
+      <button class="mha-search-btn" (click)="showSearch.update(v => !v)">
+        <mat-icon>{{ showSearch() ? 'close' : 'search' }}</mat-icon>
+      </button>
+    </div>
+
+    @if (showSearch()) {
+      <div class="mha-search-row">
+        <div class="mha-search-wrap">
+          <mat-icon class="mha-search-icon">person_search</mat-icon>
+          <input class="mha-search-input" type="search" placeholder="Agent…"
+                 [value]="filterAgent()" (input)="filterAgent.set($any($event.target).value)">
+        </div>
+        <div class="mha-search-wrap">
+          <mat-icon class="mha-search-icon">search</mat-icon>
+          <input class="mha-search-input" type="search" placeholder="Client…"
+                 [value]="filterClient()" (input)="filterClient.set($any($event.target).value)">
+        </div>
+      </div>
+    }
+
+    <div class="mha-tabs">
+      @for (tab of TABS; track tab.key) {
+        <button class="mha-tab" [class.active]="activeTab() === tab.key"
+                (click)="activeTab.set(tab.key)">
+          {{ tab.label }}
+          @if (counts()[tab.key] > 0) {
+            <span class="mha-tab-count">{{ counts()[tab.key] }}</span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="mha-list">
+    @if (filtered().length === 0) {
+      <div class="mha-empty">
+        <mat-icon>inbox</mat-icon>
+        <p>Nicio comandă.</p>
+      </div>
+    } @else {
+      <div class="mha-count">{{ filtered().length }} din {{ allOrders().length }} comenzi</div>
+      @for (o of filtered(); track o.id) {
+        <div class="mha-card" (click)="toggleExpand(o.id)">
+          <div class="mha-card-top">
+            <div class="mha-card-left">
+              <span class="mha-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+              <span class="mha-client">{{ o.client.name }}</span>
+            </div>
+            <span class="mha-chip" [class]="statusClass(o)">{{ statusLabel(o) }}</span>
+          </div>
+          <div class="mha-card-meta">
+            <mat-icon class="mha-meta-icon">person</mat-icon>
+            <span>{{ o.agent?.name }}</span>
+            <span class="mha-sep">·</span>
+            <span>{{ shortDate(o.timestamp) }}</span>
+            @if (o.cuLivrare) {
+              <span class="mha-sep">·</span>
+              <mat-icon class="mha-meta-icon">local_shipping</mat-icon>
+            }
+            @if (orderTotal(o) > 0) {
+              <span class="mha-meta-total">{{ orderTotal(o) | number:'1.2-2' }} lei</span>
+            }
+          </div>
+
+          @if (expandedId() === o.id) {
+            <div class="mha-expanded" (click)="$event.stopPropagation()">
+              @if (o.client.phone) {
+                <div class="mha-detail-row">
+                  <mat-icon>phone</mat-icon>
+                  <a [href]="'tel:' + o.client.phone">{{ o.client.phone }}</a>
+                </div>
+              }
+              @if (o.client.address) {
+                <div class="mha-detail-row">
+                  <mat-icon>location_on</mat-icon>
+                  <span>{{ o.client.address }}</span>
+                </div>
+              }
+              <div class="mha-products">
+                @for (p of o.products; track p.nr) {
+                  <div class="mha-prod-row">
+                    <span class="mha-prod-name">{{ p.name }}</span>
+                    <span class="mha-prod-qty">{{ p.qty }} {{ p.um }}</span>
+                  </div>
+                }
+              </div>
+              @if (['draft','trimis','acceptat'].includes(o.status)) {
+                <button class="mha-cancel-btn" (click)="cancelOrder(o, $event)">
+                  <mat-icon>cancel</mat-icon> Anulează
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+      <div style="height:72px"></div>
+    }
+  </div>
+
+  <app-mobile-nav />
+</div>

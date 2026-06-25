@@ -1,0 +1,103 @@
+:host { display: block; }
+.mm-wrap { background: #F5F6FA; min-height: 100vh; padding-bottom: 64px; }
+
+.mm-header {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--color-surface); padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.mm-title { font-size: 1.1rem; font-weight: 700; color: var(--color-text); }
+
+.mm-body { padding: 12px 12px 0; }
+
+.mm-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 16px; color: var(--color-text-muted); gap: 8px;
+  mat-icon { font-size: 44px; width: 44px; height: 44px; }
+  p { margin: 0; font-size: .9rem; }
+}
+
+.mm-section-label {
+  font-size: .75rem; font-weight: 700; color: var(--color-text-muted);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px;
+}
+
+.mm-trip-card {
+  background: var(--color-surface); border-radius: 12px;
+  padding: 14px 14px 12px; margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06); cursor: pointer;
+  &.done { opacity: .8; }
+}
+
+/* ── Progress Bar ───────────────────── */
+.mm-progress {
+  display: flex; align-items: center; margin-bottom: 4px;
+}
+.mm-step {
+  display: flex; align-items: center; flex: 1;
+  &:last-child { flex: 0; }
+}
+.mm-step-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--color-border); background: #fff; flex-shrink: 0; z-index: 1;
+  .mm-step.done & { background: var(--color-primary); border-color: var(--color-primary); }
+  .mm-step.active & { background: var(--color-primary); border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(1,105,111,.2); }
+}
+.mm-step-line {
+  flex: 1; height: 2px; background: var(--color-border);
+  .mm-step.done & { background: var(--color-primary); }
+}
+.mm-step-names {
+  display: flex; justify-content: space-between; margin-bottom: 12px;
+  span {
+    font-size: .65rem; color: var(--color-text-muted); flex: 1; text-align: center;
+    &:first-child { text-align: left; }
+    &:last-child  { text-align: right; }
+    &.active { color: var(--color-primary); font-weight: 700; }
+    &.done   { color: var(--color-primary); }
+  }
+}
+
+.mm-trip-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.mm-car-icon { font-size: 18px; width: 18px; height: 18px; color: var(--color-primary); }
+.mm-vehicle { font-size: .9rem; font-weight: 700; color: var(--color-text); }
+.mm-time { font-size: .78rem; color: var(--color-text-muted); margin-left: auto; }
+.mm-hist-badge {
+  font-size: .7rem; font-weight: 700; background: #D1FAE5; color: #065F46;
+  border-radius: 20px; padding: 2px 8px;
+}
+
+.mm-expanded {
+  background: #F8FAFA; border-radius: 8px; padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;
+}
+.mm-order-row { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+.mm-order-nr { font-size: .78rem; font-weight: 700; color: var(--color-text-muted); flex-shrink: 0; }
+.mm-order-client { font-size: .85rem; font-weight: 600; color: var(--color-text); }
+.mm-order-addr { font-size: .75rem; color: var(--color-text-muted); width: 100%; padding-left: 44px; }
+
+.mm-advance-btn {
+  width: 100%; background: var(--color-primary); color: #fff;
+  border: none; border-radius: 10px; padding: 12px;
+  font-size: .9rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:active { background: var(--color-primary-hover); }
+}
+
+.mm-history-toggle {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: 1.5px solid var(--color-border); border-radius: 10px;
+  padding: 9px 14px; font-size: .85rem; font-weight: 600; cursor: pointer;
+  color: var(--color-text-muted); width: 100%; margin-bottom: 10px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+.mm-hist-orders {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.mm-hist-client {
+  font-size: .78rem; background: var(--color-surface-2, #F0F2F5);
+  border-radius: 6px; padding: 3px 8px; color: var(--color-text-muted);
+}

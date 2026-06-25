@@ -1,0 +1,107 @@
+<div class="mh-wrap">
+
+  <!-- Header -->
+  <div class="mh-header">
+    <div class="mh-header-row">
+      <span class="mh-title">Comenzile Mele</span>
+      <button class="mh-new-btn" (click)="newOrder()">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+    <div class="mh-tabs">
+      @for (tab of TABS; track tab.key) {
+        <button class="mh-tab" [class.active]="activeTab() === tab.key"
+                (click)="activeTab.set(tab.key)">
+          {{ tab.label }}
+          @if (counts()[tab.key] > 0) {
+            <span class="mh-tab-count">{{ counts()[tab.key] }}</span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Order List -->
+  <div class="mh-list">
+    @if (filtered().length === 0) {
+      <div class="mh-empty">
+        <mat-icon>receipt_long</mat-icon>
+        <p>Nicio comandă.</p>
+        <button class="mh-btn-primary" (click)="newOrder()">
+          <mat-icon>add</mat-icon> Comandă nouă
+        </button>
+      </div>
+    } @else {
+      @for (o of filtered(); track o.id) {
+        <div class="mh-card" (click)="toggleExpand(o.id)">
+          <div class="mh-card-top">
+            <div class="mh-card-left">
+              <span class="mh-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+              <span class="mh-client">{{ o.client.name }}</span>
+            </div>
+            <span class="mh-chip" [class]="statusClass(o)">{{ statusLabel(o) }}</span>
+          </div>
+          <div class="mh-card-meta">
+            <span>{{ shortDate(o.timestamp) }}</span>
+            <span class="mh-sep">·</span>
+            <span>{{ o.products.length }} produse</span>
+            @if (o.cuLivrare) {
+              <span class="mh-sep">·</span>
+              <mat-icon class="mh-meta-icon">local_shipping</mat-icon>
+            }
+            @if (orderTotal(o) > 0) {
+              <span class="mh-meta-total">{{ orderTotal(o) | number:'1.2-2' }} lei</span>
+            }
+          </div>
+
+          <!-- Expanded Details -->
+          @if (expandedId() === o.id) {
+            <div class="mh-expanded" (click)="$event.stopPropagation()">
+              @if (o.client.phone) {
+                <div class="mh-detail-row">
+                  <mat-icon>phone</mat-icon>
+                  <a [href]="'tel:' + o.client.phone">{{ o.client.phone }}</a>
+                </div>
+              }
+              @if (o.client.address) {
+                <div class="mh-detail-row">
+                  <mat-icon>location_on</mat-icon>
+                  <span>{{ o.client.address }}</span>
+                </div>
+              }
+              @if (o.client.note) {
+                <div class="mh-detail-row">
+                  <mat-icon>notes</mat-icon>
+                  <span>{{ o.client.note }}</span>
+                </div>
+              }
+              <div class="mh-products">
+                @for (p of o.products; track p.nr) {
+                  <div class="mh-prod-row">
+                    <span class="mh-prod-name">{{ p.name }}</span>
+                    <span class="mh-prod-qty">{{ p.qty }} {{ p.um }}</span>
+                  </div>
+                }
+              </div>
+              <div class="mh-actions">
+                @if (canSend(o)) {
+                  <button class="mh-act-btn primary" (click)="sendDraft(o, $event)">
+                    <mat-icon>send</mat-icon> Trimite comanda
+                  </button>
+                }
+                @if (canCancel(o)) {
+                  <button class="mh-act-btn danger" (click)="cancelOrder(o, $event)">
+                    <mat-icon>cancel</mat-icon> Anulează
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+      <div style="height:72px"></div>
+    }
+  </div>
+
+  <app-mobile-nav />
+</div>
