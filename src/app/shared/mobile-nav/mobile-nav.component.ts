@@ -16,14 +16,13 @@ export class MobileNavComponent {
 
   constructor(public auth: AuthService, private router: Router) {}
 
-  readonly isDriver = computed(() => this.auth.session()?.role === 'sofer');
-
-  transportRoute(): string {
-    return this.isDriver() ? '/app/m-my-trips' : '/app/m-transport';
-  }
-
   navigateTo(path: string): void {
     this.showMore.set(false);
     this.router.navigate([path]);
+  }
+
+  logout(): void {
+    this.showMore.set(false);
+    this.auth.logout();
   }
 }

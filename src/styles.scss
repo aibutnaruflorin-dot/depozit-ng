@@ -123,6 +123,15 @@ h1, h2, h3, h4 { font-family: 'Inter', system-ui, sans-serif; }
 .snack-error   .mdc-snackbar__surface { background: #a12c7b !important; }
 .snack-warn    .mdc-snackbar__surface { background: #b06a00 !important; }
 
+/* Snackbar centrat pe ecran (pagini mobile) */
+.cdk-global-overlay-wrapper:has(.snack-center) {
+  align-items: center !important;
+}
+.snack-center {
+  margin: 0 16px !important;
+  .mdc-snackbar__surface { border-radius: 12px !important; }
+}
+
 /* ──────────────────────────────────────
    Material overrides (teal theme)
    ────────────────────────────────────── */

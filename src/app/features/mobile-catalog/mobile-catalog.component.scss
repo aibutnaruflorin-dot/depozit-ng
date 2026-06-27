@@ -1,194 +1,285 @@
 :host { display: block; }
 
+$primary: #1B7A6E;
+$primary-dark: #155E56;
+$primary-light: #E8F5F3;
+$text-1: #111827;
+$text-2: #6B7280;
+$text-3: #9CA3AF;
+$border: #E5E7EB;
+$surface: #FFFFFF;
+$bg: #F5F6FA;
+
 .mc-wrap {
-  background: #F5F6FA;
+  background: $bg;
   min-height: 100vh;
   padding-bottom: 64px;
 }
 
-/* ── Header ─────────────────────────── */
+/* ── Header verde ──────────────────── */
 .mc-header {
   position: sticky; top: 0; z-index: 50;
-  background: var(--color-surface);
-  padding: 10px 12px 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08);
-  display: flex; flex-direction: column; gap: 8px;
+  background: $primary;
+  height: 56px;
+  display: flex; align-items: center;
+  padding: 0 12px; gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
 }
-
-.mc-search-row { display: flex; gap: 8px; align-items: center; }
-
-.mc-search-wrap {
-  flex: 1; display: flex; align-items: center;
-  background: #F0F2F5; border-radius: 10px;
-  padding: 0 10px; height: 44px; gap: 8px;
+.mc-header-logo {
+  color: rgba(255,255,255,.85);
+  font-size: 20px; width: 20px; height: 20px;
+  flex-shrink: 0;
 }
-.mc-search-icon { color: var(--color-text-muted); font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; }
-.mc-search-input {
-  flex: 1; border: none; background: transparent;
-  font-size: .95rem; outline: none; color: var(--color-text);
-  &::placeholder { color: var(--color-text-muted); }
+.mc-header-title {
+  flex: 1;
+  font-size: 17px; font-weight: 600; color: #fff;
 }
-.mc-icon-btn {
-  background: none; border: none; cursor: pointer; padding: 0;
-  color: var(--color-text-muted); display: flex; align-items: center;
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.mc-header-count {
+  font-size: 13px; font-weight: 400; opacity: .7;
 }
-
-.mc-filter-btn {
-  position: relative; width: 44px; height: 44px;
-  border-radius: 10px; background: #F0F2F5; border: none;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  color: var(--color-text-muted); flex-shrink: 0;
-  &.active { background: var(--color-primary); color: #fff; }
+.mc-header-btn {
+  position: relative;
+  width: 38px; height: 38px;
+  background: rgba(255,255,255,.15);
+  border: none; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; flex-shrink: 0;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  &:active { background: rgba(255,255,255,.25); }
+  &.active { background: rgba(255,255,255,.3); }
 }
-.mc-badge {
+.mc-header-badge {
   position: absolute; top: 4px; right: 4px;
-  background: #EF4444; color: #fff; font-size: .6rem; font-weight: 700;
+  background: #EF4444; color: #fff;
+  font-size: 9px; font-weight: 700;
   width: 14px; height: 14px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
 }
 
+/* ── Search bar ─────────────────────── */
+.mc-search-bar {
+  margin: 10px 16px 0;
+  display: flex; align-items: center;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 10px;
+  height: 44px; padding: 0 12px; gap: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.mc-search-icon { color: $text-3; font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+.mc-search-input {
+  flex: 1; border: none; background: transparent;
+  font-size: 14px; outline: none; color: $text-1;
+  &::placeholder { color: $text-3; }
+}
+.mc-search-clear {
+  background: none; border: none; cursor: pointer; padding: 0;
+  color: $text-3; display: flex; align-items: center;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+/* ── Chips ──────────────────────────── */
 .mc-chips {
-  display: flex; gap: 6px; overflow-x: auto;
-  scrollbar-width: none; padding-bottom: 2px;
+  display: flex; gap: 6px;
+  padding: 10px 16px 0;
+  overflow-x: auto; scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 }
 .mc-chip {
-  flex-shrink: 0; border: 1.5px solid var(--color-border);
-  background: var(--color-surface); border-radius: 20px;
-  padding: 4px 12px; font-size: .8rem; font-weight: 500;
-  cursor: pointer; display: flex; align-items: center; gap: 5px;
-  color: var(--color-text-muted); white-space: nowrap;
+  flex-shrink: 0;
+  border: 1.5px solid $border;
+  background: $surface;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  color: $text-2; white-space: nowrap;
+  transition: all .15s;
   &.active {
-    border-color: var(--chip-color, var(--color-primary));
-    background: var(--chip-color, var(--color-primary));
+    border-color: var(--chip-color, #{$primary});
+    background: var(--chip-color, #{$primary});
     color: #fff;
     .mc-chip-dot { background: rgba(255,255,255,.8) !important; }
   }
 }
+.mc-chip-zero.active {
+  border-color: #EF4444;
+  background: #EF4444;
+}
 .mc-chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
-/* ── List ───────────────────────────── */
-.mc-list { padding: 4px 0 0; }
-.mc-count { padding: 6px 14px; font-size: .75rem; color: var(--color-text-muted); }
+/* ── Sort row ───────────────────────── */
+.mc-sort-row {
+  display: flex; align-items: center;
+  padding: 8px 16px 4px;
+}
+.mc-sort-label { font-size: 11px; color: $text-3; flex: 1; }
+.mc-filter-link {
+  display: flex; align-items: center; gap: 4px;
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 500; color: $primary;
+  position: relative;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+.mc-filter-badge {
+  background: $primary; color: #fff;
+  border-radius: 10px; padding: 1px 5px;
+  font-size: 10px; font-weight: 700;
+}
+
+/* ── Product cards ──────────────────── */
+.mc-list { padding-top: 4px; }
 
 .mc-card {
-  display: flex; align-items: center;
-  background: var(--color-surface);
-  border-left: 3px solid var(--color-border);
+  background: $surface;
   border-bottom: 1px solid #F0F0F0;
-  padding: 11px 10px 11px 13px; gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  &:active { background: #F9FAFB; }
 }
-.mc-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
 .mc-prod-name {
-  font-size: .88rem; font-weight: 600; color: var(--color-text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 13px; font-weight: 600; color: $text-1;
+  line-height: 1.35; margin-bottom: 5px;
 }
-.mc-prod-meta {
-  display: flex; align-items: center; gap: 4px;
-  font-size: .72rem; color: var(--color-text-muted);
-  white-space: nowrap; overflow: hidden;
+
+.mc-bottom-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
-.mc-meta-cat { color: var(--color-text-muted); }
-.mc-meta-furn { overflow: hidden; text-overflow: ellipsis; }
-.mc-meta-sep { flex-shrink: 0; }
-.mc-meta-um { flex-shrink: 0; }
+.mc-bottom-left { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.mc-bottom-right { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 
-.mc-card-bottom { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
-
-.mc-stock-group { display: flex; align-items: center; gap: 5px; }
+.mc-stock-row { display: flex; align-items: center; gap: 5px; }
 .mc-stock-dot {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
   &.dot-ok   { background: #10B981; }
-  &.dot-low  { background: #F59E0B; }
   &.dot-zero { background: #EF4444; }
 }
-.mc-stock-val {
-  font-size: .78rem; font-weight: 700;
-  &.stock-ok   { color: #059669; }
-  &.stock-low  { color: #D97706; }
-  &.stock-zero { color: #DC2626; }
-}
-.mc-price {
-  font-size: .78rem; color: var(--color-text-muted);
-  margin-left: auto;
+.mc-stock-label { font-size: 12px; font-weight: 600; color: $text-2; }
+.mc-masa { font-size: 11px; color: $text-3; }
+.mc-furnizor {
+  font-size: 11px; color: $text-3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-.mc-order-btn {
-  flex-shrink: 0; width: 44px; height: 44px;
-  border-radius: 10px; background: var(--color-primary);
-  border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-  color: #fff; -webkit-tap-highlight-color: transparent;
-  mat-icon { font-size: 20px; width: 20px; height: 20px; }
-  &:active { background: var(--color-primary-hover); }
-}
+.mc-price-main { font-size: 14px; font-weight: 700; color: $primary; }
+.mc-arrow { color: $text-3; font-size: 18px; width: 18px; height: 18px; }
 
-/* Empty */
+/* ── Empty ──────────────────────────── */
 .mc-empty {
   display: flex; flex-direction: column; align-items: center;
-  padding: 60px 16px; color: var(--color-text-muted); gap: 8px;
+  padding: 60px 16px; color: $text-3; gap: 8px;
   mat-icon { font-size: 44px; width: 44px; height: 44px; }
   p { margin: 0; font-size: .9rem; }
 }
+.mc-btn-outline {
+  background: none; border: 1.5px solid $primary; color: $primary;
+  border-radius: 8px; padding: 8px 18px; font-size: .85rem; cursor: pointer;
+}
 
-/* ── Filter Sheet ───────────────────── */
+/* ── Product Detail Sheet ────────────── */
+.mc-detail-sheet {
+  position: fixed; bottom: 64px; left: 0; right: 0; z-index: 211;
+  background: $surface; border-radius: 20px 20px 0 0;
+  padding: 8px 16px 20px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.15);
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: calc(85vh - 64px); overflow-y: auto;
+}
+.mc-ds-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+}
+.mc-ds-name {
+  font-size: 1rem; font-weight: 700; color: $text-1; line-height: 1.35; flex: 1;
+}
+.mc-ds-close {
+  background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
+  color: $text-3; display: flex; align-items: center;
+  mat-icon { font-size: 22px; width: 22px; height: 22px; }
+}
+.mc-ds-meta {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .78rem; color: $text-2; margin-top: -4px;
+}
+.mc-ds-sep { flex-shrink: 0; }
+.mc-ds-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1px solid $border; border-radius: 10px; overflow: hidden;
+}
+.mc-ds-block {
+  padding: 9px 12px;
+  border-right: 1px solid $border; border-bottom: 1px solid $border;
+  &:nth-child(even) { border-right: none; }
+  &.mc-ds-block-full { grid-column: 1 / -1; border-right: none; }
+  &.mc-ds-block-last { border-bottom: none; }
+}
+.mc-ds-label {
+  font-size: .68rem; color: $text-3; margin-bottom: 2px;
+  text-transform: uppercase; letter-spacing: .03em;
+}
+.mc-ds-price { font-size: 1rem; font-weight: 700; color: $primary; }
+.mc-ds-val { font-size: .9rem; font-weight: 600; color: $text-1; }
+.mc-ds-stock {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .9rem; font-weight: 600; color: $text-1;
+}
+
+/* ── Filter Bottom Sheet ─────────────── */
 .mc-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100;
+  position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 210;
 }
 .mc-sheet {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 101;
-  background: var(--color-surface); border-radius: 20px 20px 0 0;
-  padding: 12px 16px 32px;
+  position: fixed; bottom: 64px; left: 0; right: 0; z-index: 211;
+  background: $surface; border-radius: 20px 20px 0 0;
+  padding: 12px 16px 24px;
   display: flex; flex-direction: column; gap: 16px;
   box-shadow: 0 -4px 20px rgba(0,0,0,.12);
+  max-height: calc(85vh - 64px); overflow-y: auto;
 }
 .mc-sheet-handle {
-  width: 36px; height: 4px; background: var(--color-border);
+  width: 36px; height: 4px; background: $border;
   border-radius: 2px; margin: 0 auto;
 }
 .mc-sheet-title {
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 1rem; font-weight: 700; color: var(--color-text);
+  font-size: 1rem; font-weight: 700; color: $text-1;
 }
 .mc-sheet-clear {
-  background: none; border: none; color: var(--color-primary); font-size: .85rem; cursor: pointer;
+  background: none; border: none; color: $primary; font-size: .85rem; cursor: pointer;
 }
 .mc-sheet-body { display: flex; flex-direction: column; gap: 14px; }
-
 .mc-field { display: flex; flex-direction: column; gap: 5px; }
 .mc-field-label {
-  font-size: .72rem; color: var(--color-text-muted); font-weight: 600;
+  font-size: .72rem; color: $text-2; font-weight: 600;
   text-transform: uppercase; letter-spacing: .04em;
 }
 .mc-field-select {
   appearance: none; background: #F4F4F4; border: none;
   border-radius: 10px; padding: 12px 14px;
-  font-size: .92rem; color: var(--color-text); outline: none; width: 100%;
+  font-size: .92rem; color: $text-1; outline: none; width: 100%;
 }
-
 .mc-toggle-row {
-  display: flex; align-items: center; justify-content: space-between; cursor: pointer;
-  font-size: .9rem; color: var(--color-text);
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; font-size: .9rem; color: $text-1;
 }
 .mc-toggle {
-  width: 46px; height: 26px; border-radius: 13px; background: var(--color-border);
+  width: 46px; height: 26px; border-radius: 13px; background: $border;
   position: relative; transition: background .2s; flex-shrink: 0;
-  &.on { background: var(--color-primary); .mc-toggle-thumb { left: 22px; } }
+  &.on { background: $primary;
+    .mc-toggle-thumb { left: 22px; }
+  }
 }
 .mc-toggle-thumb {
   position: absolute; top: 3px; left: 3px;
   width: 20px; height: 20px; background: #fff; border-radius: 50%;
   transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
-
 .mc-sheet-footer { padding-top: 4px; }
 .mc-btn-primary {
-  width: 100%; background: var(--color-primary); color: #fff;
-  border: none; border-radius: 12px; padding: 14px; font-size: .95rem; font-weight: 700;
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
-  &:active { background: var(--color-primary-hover); }
-}
-.mc-btn-outline {
-  background: none; border: 1.5px solid var(--color-primary); color: var(--color-primary);
-  border-radius: 8px; padding: 8px 18px; font-size: .85rem; cursor: pointer;
+  width: 100%; background: $primary; color: #fff;
+  border: none; border-radius: 12px; padding: 14px;
+  font-size: .95rem; font-weight: 700; cursor: pointer;
+  &:active { background: $primary-dark; }
 }

@@ -1,75 +1,103 @@
 <div class="mc-wrap">
 
-  <!-- Header -->
+  <!-- Header verde -->
   <div class="mc-header">
-    <div class="mc-search-row">
-      <div class="mc-search-wrap">
-        <mat-icon class="mc-search-icon">search</mat-icon>
-        <input class="mc-search-input" type="search" placeholder="Caută produs, cod extern…"
-               [value]="search()" (input)="search.set($any($event.target).value)">
-        @if (search()) {
-          <button class="mc-icon-btn" (click)="search.set('')"><mat-icon>close</mat-icon></button>
-        }
-      </div>
-      <button class="mc-filter-btn" [class.active]="activeFilterCount() > 0"
-              (click)="showFilters.set(true)">
-        <mat-icon>tune</mat-icon>
-        @if (activeFilterCount() > 0) {
-          <span class="mc-badge">{{ activeFilterCount() }}</span>
-        }
-      </button>
+    <mat-icon class="mc-header-logo">warehouse</mat-icon>
+    <div class="mc-header-title">
+      Catalog Produse
+      <span class="mc-header-count">({{ filtered().length }})</span>
     </div>
-
-    <div class="mc-chips">
-      <button class="mc-chip" [class.active]="allSelected()"
-              (click)="selectedCatIds.set([]); selectedCategory.set(''); selectedFurnizor.set('')">
-        Toate
-      </button>
-      @for (cat of catalogsService.catalogs(); track cat.id) {
-        <button class="mc-chip" [class.active]="selectedCatIds().includes(cat.id)"
-                [style.--chip-color]="cat.color" (click)="toggleCatalog(cat.id)">
-          <span class="mc-chip-dot" [style.background]="cat.color"></span>{{ cat.name }}
-        </button>
+    <button class="mc-header-btn" [class.active]="activeFilterCount() > 0"
+            (click)="showFilters.set(true)" title="Filtre">
+      <mat-icon>tune</mat-icon>
+      @if (activeFilterCount() > 0) {
+        <span class="mc-header-badge">{{ activeFilterCount() }}</span>
       }
-    </div>
+    </button>
   </div>
 
-  <!-- List -->
+  <!-- Search bar -->
+  <div class="mc-search-bar">
+    <mat-icon class="mc-search-icon">search</mat-icon>
+    <input class="mc-search-input" type="search"
+           placeholder="Caută produs, cod extern…"
+           [value]="search()"
+           (input)="search.set($any($event.target).value)">
+    @if (search()) {
+      <button class="mc-search-clear" (click)="search.set('')">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </div>
+
+  <!-- Chips -->
+  <div class="mc-chips">
+    <button class="mc-chip" [class.active]="allSelected()" (click)="selectAll()">
+      Toate
+    </button>
+    @for (cat of catalogsService.catalogs(); track cat.id) {
+      <button class="mc-chip" [class.active]="selectedCatIds().includes(cat.id)"
+              [style.--chip-color]="cat.color" (click)="toggleCatalog(cat.id)">
+        <span class="mc-chip-dot" [style.background]="cat.color"></span>
+        {{ cat.name }}
+      </button>
+    }
+    <button class="mc-chip mc-chip-zero" [class.active]="onlyZeroStock()"
+            (click)="toggleZeroStock()">
+      <span class="mc-chip-dot" style="background:#EF4444"></span>
+      Stoc 0
+    </button>
+  </div>
+
+  <!-- Sort row -->
+  <div class="mc-sort-row">
+    <span class="mc-sort-label">{{ filtered().length }} produse</span>
+    <button class="mc-filter-link" (click)="showFilters.set(true)">
+      <mat-icon>filter_list</mat-icon>
+      Filtre
+      @if (activeFilterCount() > 0) {
+        <span class="mc-filter-badge">{{ activeFilterCount() }}</span>
+      }
+    </button>
+  </div>
+
+  <!-- Lista produse -->
   <div class="mc-list">
     @if (filtered().length === 0) {
       <div class="mc-empty">
         <mat-icon>search_off</mat-icon>
         <p>Niciun produs găsit.</p>
-        <button class="mc-btn-outline" (click)="clearFilters()">Șterge filtrele</button>
+        <button class="mc-btn-outline" (click)="clearFilters(); search.set(''); onlyZeroStock.set(false)">
+          Șterge filtrele
+        </button>
       </div>
     } @else {
-      <div class="mc-count">{{ filtered().length }} produse</div>
       @for (p of filtered(); track p.catalogId + p.nr) {
-        <div class="mc-card" [style.border-left-color]="catalogColor(p.catalogId)">
-          <div class="mc-card-main">
-            <div class="mc-prod-name">{{ p.name }}</div>
-            <div class="mc-prod-meta">
-              <span class="mc-meta-cat">{{ p.category }}</span>
-              <span class="mc-meta-sep">·</span>
-              <span class="mc-meta-um">{{ p.um }}</span>
+        <div class="mc-card" (click)="openDetail(p)">
+
+          <div class="mc-prod-name">{{ p.name }}</div>
+
+          <div class="mc-bottom-row">
+            <div class="mc-bottom-left">
+              <div class="mc-stock-row">
+                <span class="mc-stock-dot" [class]="stockDotClass(p.qty)"></span>
+                <span class="mc-stock-label">{{ p.qty }} {{ p.um }}</span>
+                @if (p.masaNeta != null) {
+                  <span class="mc-masa">· {{ p.masaNeta | number:'1.0-2' }} kg</span>
+                }
+              </div>
               @if (p.furnizor) {
-                <span class="mc-meta-sep">·</span>
-                <span class="mc-meta-furn">{{ p.furnizor }}</span>
+                <div class="mc-furnizor">{{ p.furnizor }}</div>
               }
             </div>
-            <div class="mc-card-bottom">
-              <div class="mc-stock-group">
-                <span class="mc-stock-dot" [class]="stockDotClass(p.qty)"></span>
-                <span class="mc-stock-val" [class]="stockClass(p.qty)">{{ p.qty }} {{ p.um }}</span>
-              </div>
+            <div class="mc-bottom-right">
               @if (p.pretCuTVA != null) {
-                <span class="mc-price">{{ p.pretCuTVA | number:'1.2-2' }} lei</span>
+                <span class="mc-price-main">{{ p.pretCuTVA | number:'1.2-2' }} lei</span>
               }
+              <mat-icon class="mc-arrow">chevron_right</mat-icon>
             </div>
           </div>
-          <button class="mc-order-btn" (click)="goToNewOrder(p)">
-            <mat-icon>add_shopping_cart</mat-icon>
-          </button>
+
         </div>
       }
       <div style="height:72px"></div>
@@ -106,7 +134,8 @@
         </div>
         <label class="mc-toggle-row">
           <span>Doar produse cu stoc disponibil</span>
-          <div class="mc-toggle" [class.on]="onlyInStock()" (click)="onlyInStock.update(v=>!v)">
+          <div class="mc-toggle" [class.on]="onlyInStock()"
+               (click)="onlyInStock.update(v => !v); onlyZeroStock.set(false)">
             <div class="mc-toggle-thumb"></div>
           </div>
         </label>
@@ -115,6 +144,53 @@
         <button class="mc-btn-primary" (click)="showFilters.set(false)">
           Aplică · {{ filtered().length }} produse
         </button>
+      </div>
+    </div>
+  }
+
+  <!-- Product Detail Sheet -->
+  @if (selectedProduct(); as p) {
+    <div class="mc-backdrop" (click)="closeDetail()"></div>
+    <div class="mc-detail-sheet">
+      <div class="mc-sheet-handle"></div>
+
+      <div class="mc-ds-header">
+        <div class="mc-ds-name">{{ p.name }}</div>
+        <button class="mc-ds-close" (click)="closeDetail()"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="mc-ds-meta">
+        <span>{{ p.category }}</span>
+        @if (p.furnizor) { <span class="mc-ds-sep">·</span><span>{{ p.furnizor }}</span> }
+      </div>
+
+      <div class="mc-ds-grid">
+        <div class="mc-ds-block">
+          <div class="mc-ds-label">Preț cu TVA</div>
+          <div class="mc-ds-price">{{ p.pretCuTVA != null ? (p.pretCuTVA | number:'1.2-2') + ' lei' : '—' }}</div>
+        </div>
+        <div class="mc-ds-block">
+          <div class="mc-ds-label">Preț fără TVA</div>
+          <div class="mc-ds-val">{{ p.pretFaraTVA != null ? (p.pretFaraTVA | number:'1.2-2') + ' lei' : '—' }}</div>
+        </div>
+        <div class="mc-ds-block">
+          <div class="mc-ds-label">Stoc</div>
+          <div class="mc-ds-stock">
+            <span class="mc-stock-dot" [class]="stockDotClass(p.qty)"></span>
+            <span>{{ p.qty }} {{ p.um }}</span>
+          </div>
+        </div>
+        <div class="mc-ds-block">
+          <div class="mc-ds-label">Masă</div>
+          <div class="mc-ds-val">{{ p.masaNeta != null ? (p.masaNeta | number:'1.0-3') + ' kg' : '—' }}</div>
+        </div>
+        <div class="mc-ds-block mc-ds-block-full">
+          <div class="mc-ds-label">Furnizor</div>
+          <div class="mc-ds-val">{{ p.furnizor || '—' }}</div>
+        </div>
+        <div class="mc-ds-block mc-ds-block-full mc-ds-block-last">
+          <div class="mc-ds-label">Catalog</div>
+          <div class="mc-ds-val">{{ catalogName(p.catalogId) }}</div>
+        </div>
       </div>
     </div>
   }

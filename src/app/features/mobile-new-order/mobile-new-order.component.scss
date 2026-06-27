@@ -161,9 +161,9 @@
   position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 110;
 }
 .mn-sheet {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 111;
+  position: fixed; bottom: 64px; left: 0; right: 0; z-index: 111;
   background: var(--color-surface); border-radius: 20px 20px 0 0;
-  max-height: 90vh; overflow-y: auto;
+  max-height: calc(92vh - 64px); overflow-y: auto;
   display: flex; flex-direction: column; gap: 0;
   box-shadow: 0 -4px 20px rgba(0,0,0,.12);
 }
@@ -212,6 +212,7 @@
 .mn-form-label { font-size: .8rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .04em; }
 
 .mn-field { display: flex; flex-direction: column; gap: 5px; }
+.mn-field-row { display: flex; gap: 10px; .mn-field { flex: 1; } }
 .mn-field-label { font-size: .75rem; color: var(--color-text-muted); font-weight: 500; }
 .mn-field-input {
   border: 1.5px solid var(--color-border); border-radius: 10px;
@@ -238,9 +239,85 @@
   transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
 
+/* ── Quick-add Sheet ────────────────── */
+.mn-qs-sheet {
+  position: fixed; bottom: 64px; left: 0; right: 0; z-index: 112;
+  background: var(--color-surface); border-radius: 20px 20px 0 0;
+  padding: 8px 16px 20px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.15);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.mn-qs-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+}
+.mn-qs-name {
+  font-size: 1rem; font-weight: 700; color: var(--color-text);
+  line-height: 1.35; flex: 1;
+}
+.mn-qs-close {
+  background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
+  color: var(--color-text-muted); display: flex; align-items: center;
+  mat-icon { font-size: 22px; width: 22px; height: 22px; }
+}
+.mn-qs-meta {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .78rem; color: var(--color-text-muted);
+  margin-top: -6px;
+}
+.mn-qs-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden;
+}
+.mn-qs-block {
+  padding: 9px 12px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  &:nth-child(even) { border-right: none; }
+  &.mn-qs-block-full {
+    grid-column: 1 / -1; border-right: none;
+    &:last-child { border-bottom: none; }
+  }
+}
+.mn-qs-label { font-size: .68rem; color: var(--color-text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: .03em; }
+.mn-qs-price { font-size: 1rem; font-weight: 700; color: var(--color-primary); }
+.mn-qs-val { font-size: .9rem; font-weight: 600; color: var(--color-text); }
+.mn-qs-stock {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .9rem; font-weight: 600; color: var(--color-text);
+}
+.mn-qs-qty-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.mn-qs-stepper { display: flex; align-items: center; gap: 12px; }
+.mn-qs-step-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1.5px solid var(--color-border); background: var(--color-surface);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--color-text);
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  &:disabled { opacity: .35; cursor: default; }
+}
+.mn-qs-qty-val {
+  font-size: 1rem; font-weight: 700; color: var(--color-text); min-width: 60px; text-align: center;
+}
+.mn-qs-add-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px;
+  background: var(--color-primary); color: #fff;
+  border: none; border-radius: 12px;
+  font-size: .95rem; font-weight: 700; cursor: pointer;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  &:active { background: var(--color-primary-hover); }
+  &.mn-qs-add-btn-disabled { background: var(--color-border); color: var(--color-text-muted); cursor: default; }
+}
+.mn-qs-zero {
+  text-align: center; font-size: .85rem; color: #EF4444; font-weight: 500;
+  margin-bottom: -4px;
+}
+
 /* Footer */
 .mn-sheet-footer {
-  display: flex; gap: 10px; padding: 16px 16px 32px;
+  display: flex; gap: 10px; padding: 16px;
   flex-shrink: 0;
 }
 .mn-btn-secondary {

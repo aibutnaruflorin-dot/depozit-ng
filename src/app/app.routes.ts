@@ -14,7 +14,8 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'catalog', pathMatch: 'full' },
       { path: 'catalog',     canActivate: [pageGuard], data: { pageId: 'catalog' },      loadComponent: () => import('./features/catalog/catalog.component').then(m => m.CatalogComponent) },
-      { path: 'm-catalog',      canActivate: [pageGuard], data: { pageId: 'catalog' },      loadComponent: () => import('./features/mobile-catalog/mobile-catalog.component').then(m => m.MobileCatalogComponent) },
+      { path: 'm-catalog',        canActivate: [pageGuard], data: { pageId: 'catalog' }, loadComponent: () => import('./features/mobile-catalog/mobile-catalog.component').then(m => m.MobileCatalogComponent) },
+      { path: 'm-catalog-detail', canActivate: [pageGuard], data: { pageId: 'catalog' }, loadComponent: () => import('./features/mobile-catalog-detail/mobile-catalog-detail.component').then(m => m.MobileCatalogDetailComponent) },
       { path: 'm-new-order',   canActivate: [pageGuard], data: { pageId: 'comenzi_noi' }, loadComponent: () => import('./features/mobile-new-order/mobile-new-order.component').then(m => m.MobileNewOrderComponent) },
       { path: 'm-history-me',  canActivate: [pageGuard], data: { pageId: 'comenzi' },     loadComponent: () => import('./features/mobile-history-me/mobile-history-me.component').then(m => m.MobileHistoryMeComponent) },
       { path: 'm-history-all', canActivate: [pageGuard], data: { pageId: 'istoric' },     loadComponent: () => import('./features/mobile-history-all/mobile-history-all.component').then(m => m.MobileHistoryAllComponent) },

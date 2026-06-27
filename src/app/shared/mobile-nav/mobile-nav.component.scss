@@ -82,4 +82,14 @@
   mat-icon { color: var(--color-text-muted); font-size: 20px; width: 20px; height: 20px; }
 
   &:active { background: var(--color-surface-2); }
+
+  &.m-more-item-danger {
+    color: #DC2626;
+    mat-icon { color: #DC2626; }
+  }
+}
+.m-more-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 0;
 }

@@ -44,7 +44,7 @@
       <div class="mn-count">{{ filtered().length }} produse</div>
       @for (p of filtered(); track p.catalogId + p.nr) {
         <div class="mn-card" [style.border-left-color]="catalogColor(p.catalogId)">
-          <div class="mn-card-main">
+          <div class="mn-card-main" (click)="openSheet(p)">
             <div class="mn-prod-name">{{ p.name }}</div>
             <div class="mn-prod-meta">
               <span>{{ p.category }}</span>
@@ -53,6 +53,10 @@
               @if (p.pretCuTVA != null) {
                 <span class="mn-sep">·</span>
                 <span class="mn-price">{{ p.pretCuTVA | number:'1.2-2' }} lei</span>
+              }
+              @if (p.masaNeta != null) {
+                <span class="mn-sep">·</span>
+                <span>{{ p.masaNeta | number:'1.0-2' }} kg</span>
               }
             </div>
             <div class="mn-stock-row">
@@ -127,6 +131,12 @@
           <span>Total fără TVA</span>
           <span>{{ totalFaraTVA() | number:'1.2-2' }} lei</span>
         </div>
+        @if (totalMasa() > 0) {
+          <div class="mn-total-row">
+            <span>Masă totală</span>
+            <span>{{ totalMasa() | number:'1.0-2' }} kg</span>
+          </div>
+        }
         <div class="mn-total-row mn-total-final">
           <span>Total cu TVA</span>
           <span>{{ totalCuTVA() | number:'1.2-2' }} lei</span>
@@ -144,14 +154,18 @@
           <input class="mn-field-input" type="text" placeholder="Numele clientului"
                  [formControl]="nameCtrl">
           @if (nameCtrl.invalid && nameCtrl.touched) {
-            <span class="mn-field-err">Câmp obligatoriu</span>
+            <span class="mn-field-err">Numele este obligatoriu.</span>
           }
         </div>
 
-        <div class="mn-field">
-          <label class="mn-field-label">Telefon</label>
-          <input class="mn-field-input" type="tel" placeholder="07xx xxx xxx"
-                 [formControl]="phoneCtrl">
+        <div class="mn-field" [class.error]="phoneCtrl.invalid && phoneCtrl.touched">
+          <label class="mn-field-label">Telefon {{ cuLivrare() ? '*' : '' }}</label>
+          <input class="mn-field-input" type="tel" inputmode="numeric" maxlength="10"
+                 placeholder="07xx xxx xxx" [formControl]="phoneCtrl"
+                 (input)="phoneCtrl.setValue($any($event.target).value.replace(/\D/g,'').slice(0,10), {emitEvent:false}); $any($event.target).value = phoneCtrl.value">
+          @if (phoneCtrl.touched && phoneCtrl.hasError('pattern')) {
+            <span class="mn-field-err">Introduceți exact 10 cifre.</span>
+          }
         </div>
 
         <label class="mn-toggle-row" (click)="cuLivrare.update(v => !v)">
@@ -166,6 +180,16 @@
             <label class="mn-field-label">Adresă livrare</label>
             <input class="mn-field-input" type="text" placeholder="Strada, nr, localitate"
                    [formControl]="addressCtrl">
+          </div>
+          <div class="mn-field-row">
+            <div class="mn-field">
+              <label class="mn-field-label">Termen livrare *</label>
+              <input class="mn-field-input" type="date" [min]="today" [formControl]="deliveryDateCtrl">
+            </div>
+            <div class="mn-field">
+              <label class="mn-field-label">Ora livrare *</label>
+              <input class="mn-field-input" type="time" [formControl]="deliveryTimeCtrl">
+            </div>
           </div>
         }
 
@@ -183,6 +207,78 @@
           Salvează comanda
         </button>
       </div>
+    </div>
+  }
+
+  <!-- Quick-add Sheet -->
+  @if (selectedProduct(); as p) {
+    <div class="mn-backdrop" (click)="closeSheet()"></div>
+    <div class="mn-qs-sheet">
+      <div class="mn-sheet-handle"></div>
+
+      <div class="mn-qs-header">
+        <div class="mn-qs-name">{{ p.name }}</div>
+        <button class="mn-qs-close" (click)="closeSheet()"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="mn-qs-meta">
+        <span>{{ p.category }}</span>
+        @if (p.furnizor) { <span class="mn-sep">·</span><span>{{ p.furnizor }}</span> }
+      </div>
+
+      <div class="mn-qs-grid">
+        <div class="mn-qs-block">
+          <div class="mn-qs-label">Preț cu TVA</div>
+          <div class="mn-qs-price">{{ p.pretCuTVA != null ? (p.pretCuTVA | number:'1.2-2') + ' lei' : '—' }}</div>
+        </div>
+        <div class="mn-qs-block">
+          <div class="mn-qs-label">Preț fără TVA</div>
+          <div class="mn-qs-val">{{ p.pretFaraTVA != null ? (p.pretFaraTVA | number:'1.2-2') + ' lei' : '—' }}</div>
+        </div>
+        <div class="mn-qs-block">
+          <div class="mn-qs-label">Stoc</div>
+          <div class="mn-qs-stock">
+            <span class="mn-stock-dot" [class]="stockDotClass(p.qty)"></span>
+            <span>{{ p.qty }} {{ p.um }}</span>
+          </div>
+        </div>
+        <div class="mn-qs-block">
+          <div class="mn-qs-label">Masă</div>
+          <div class="mn-qs-val">{{ p.masaNeta != null ? (p.masaNeta | number:'1.0-3') + ' kg' : '—' }}</div>
+        </div>
+        <div class="mn-qs-block mn-qs-block-full">
+          <div class="mn-qs-label">Furnizor</div>
+          <div class="mn-qs-val">{{ p.furnizor || '—' }}</div>
+        </div>
+        <div class="mn-qs-block mn-qs-block-full">
+          <div class="mn-qs-label">Catalog</div>
+          <div class="mn-qs-val">{{ catalogName(p.catalogId) }}</div>
+        </div>
+      </div>
+
+      @if (p.qty > 0) {
+        <div class="mn-qs-qty-row">
+          <div class="mn-qs-label">Cantitate</div>
+          <div class="mn-qs-stepper">
+            <button class="mn-qs-step-btn" (click)="sheetDec()" [disabled]="sheetQty() <= 1">
+              <mat-icon>remove</mat-icon>
+            </button>
+            <span class="mn-qs-qty-val">{{ sheetQty() }} {{ p.um }}</span>
+            <button class="mn-qs-step-btn" (click)="sheetInc()">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+        </div>
+        <button class="mn-qs-add-btn" (click)="addFromSheet()">
+          <mat-icon>add_shopping_cart</mat-icon>
+          Adaugă {{ sheetQty() }} în coș
+        </button>
+      } @else {
+        <div class="mn-qs-zero">Stoc epuizat</div>
+        <button class="mn-qs-add-btn mn-qs-add-btn-disabled" disabled>
+          <mat-icon>remove_shopping_cart</mat-icon>
+          Stoc indisponibil
+        </button>
+      }
     </div>
   }
 

@@ -3,7 +3,7 @@
   <!-- ══════ SIDEBAR ══════ -->
   <mat-sidenav #sidenav
     [mode]="isMobile ? 'over' : 'side'"
-    [opened]="!isMobile"
+    [opened]="!isMobile && !isMobileRoute"
     class="app-sidenav">
 
     <!-- Brand -->
@@ -76,26 +76,25 @@
   <!-- ══════ MAIN CONTENT ══════ -->
   <mat-sidenav-content class="app-content">
 
-    <!-- Top toolbar -->
-    <mat-toolbar class="app-toolbar">
-      @if (isMobile) {
-        <button mat-icon-button (click)="sidenav.open()" aria-label="Deschide meniu">
-          <mat-icon>menu</mat-icon>
+    <!-- Top toolbar — ascuns pe rutele mobile -->
+    @if (!isMobileRoute) {
+      <mat-toolbar class="app-toolbar">
+        @if (isMobile) {
+          <button mat-icon-button (click)="sidenav.open()" aria-label="Deschide meniu">
+            <mat-icon>menu</mat-icon>
+          </button>
+        }
+        <span class="toolbar-spacer"></span>
+        <button mat-icon-button (click)="toggleTheme()"
+          [matTooltip]="darkMode() ? 'Mod luminos' : 'Mod întunecat'"
+          aria-label="Comută tema">
+          <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
         </button>
-      }
-
-      <span class="toolbar-spacer"></span>
-
-      <!-- Dark mode toggle -->
-      <button mat-icon-button (click)="toggleTheme()"
-        [matTooltip]="darkMode() ? 'Mod luminos' : 'Mod întunecat'"
-        aria-label="Comută tema">
-        <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-      </button>
-    </mat-toolbar>
+      </mat-toolbar>
+    }
 
     <!-- Page content -->
-    <div class="page-content">
+    <div class="page-content" [class.mobile-route]="isMobileRoute">
       <router-outlet />
     </div>
   </mat-sidenav-content>

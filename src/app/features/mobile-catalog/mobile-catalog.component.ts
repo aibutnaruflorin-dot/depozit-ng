@@ -1,7 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,15 +20,15 @@ export class MobileCatalogComponent {
   selectedCategory = signal('');
   selectedFurnizor = signal('');
   onlyInStock      = signal(false);
+  onlyZeroStock    = signal(false);
   showFilters      = signal(false);
 
   constructor(
     public catalogsService: CatalogsService,
-    public auth: AuthService,
-    private router: Router
+    public auth: AuthService
   ) {}
 
-  readonly allSelected = computed(() => this.selectedCatIds().length === 0);
+  readonly allSelected = computed(() => this.selectedCatIds().length === 0 && !this.onlyZeroStock());
   readonly categories  = computed(() => this.catalogsService.categoriesFor(this.selectedCatIds()));
   readonly furnizors   = computed(() => this.catalogsService.furnizorsFor(this.selectedCatIds()));
 
@@ -38,12 +37,16 @@ export class MobileCatalogComponent {
     const cat   = this.selectedCategory();
     const furn  = this.selectedFurnizor();
     const stock = this.onlyInStock();
+    const zero  = this.onlyZeroStock();
     return this.catalogsService.productsFor(this.selectedCatIds()).filter(p => {
-      const matchQ    = !q    || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
-      const matchCat  = !cat  || p.category === cat;
-      const matchFurn = !furn || (p.furnizor ?? '') === furn;
+      const matchQ     = !q     || p.name.toLowerCase().includes(q)
+                                 || String(p.codExtern ?? '').toLowerCase().includes(q)
+                                 || String(p.nr).includes(q);
+      const matchCat   = !cat   || p.category === cat;
+      const matchFurn  = !furn  || (p.furnizor ?? '') === furn;
       const matchStock = !stock || p.qty > 0;
-      return matchQ && matchCat && matchFurn && matchStock;
+      const matchZero  = !zero  || p.qty === 0;
+      return matchQ && matchCat && matchFurn && matchStock && matchZero;
     });
   });
 
@@ -61,6 +64,19 @@ export class MobileCatalogComponent {
     this.selectedFurnizor.set('');
   }
 
+  toggleZeroStock(): void {
+    const next = !this.onlyZeroStock();
+    this.onlyZeroStock.set(next);
+    if (next) this.onlyInStock.set(false);
+  }
+
+  selectAll(): void {
+    this.selectedCatIds.set([]);
+    this.selectedCategory.set('');
+    this.selectedFurnizor.set('');
+    this.onlyZeroStock.set(false);
+  }
+
   clearFilters(): void {
     this.selectedCategory.set('');
     this.selectedFurnizor.set('');
@@ -71,19 +87,27 @@ export class MobileCatalogComponent {
     return this.catalogsService.borderColor(catalogId);
   }
 
-  goToNewOrder(product: Product): void {
-    this.router.navigate(['/app/m-new-order'], { state: { product } });
+  catalogName(catalogId: string): string {
+    return this.catalogsService.catalogs().find(c => c.id === catalogId)?.name ?? catalogId;
+  }
+
+  selectedProduct = signal<Product | null>(null);
+
+  openDetail(product: Product): void {
+    this.selectedProduct.set(product);
+  }
+
+  closeDetail(): void {
+    this.selectedProduct.set(null);
   }
 
   stockDotClass(qty: number): string {
-    if (qty === 0) return 'dot-zero';
-    if (qty <= 5)  return 'dot-low';
-    return 'dot-ok';
+    return qty === 0 ? 'dot-zero' : 'dot-ok';
   }
 
-  stockClass(qty: number): string {
-    if (qty === 0) return 'stock-zero';
-    if (qty <= 5)  return 'stock-low';
-    return 'stock-ok';
+  tvaPercent(p: Product): string {
+    if (!p.pretCuTVA || !p.pretFaraTVA || p.pretFaraTVA === 0) return '—';
+    const pct = Math.round((p.pretCuTVA / p.pretFaraTVA - 1) * 100);
+    return pct + '%';
   }
 }

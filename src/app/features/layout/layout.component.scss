@@ -141,6 +141,12 @@ mat-list-item.active mat-icon { color: var(--color-primary); }
   box-sizing: border-box;
 }
 
+.page-content.mobile-route {
+  padding: 0;
+  height: 100%;
+}
+
 @media (max-width: 768px) {
   .page-content { padding: 1rem; }
+  .page-content.mobile-route { padding: 0; }
 }

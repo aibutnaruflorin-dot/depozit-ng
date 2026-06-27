@@ -95,6 +95,10 @@ export class LayoutComponent implements OnInit {
     });
   }
 
+  get isMobileRoute(): boolean {
+    return this.activeRoute.includes('/m-');
+  }
+
   isActive(route: string): boolean {
     return this.activeRoute === route;
   }

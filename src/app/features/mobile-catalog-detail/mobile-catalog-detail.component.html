@@ -1,0 +1,117 @@
+@if (product) {
+<div class="mcd-wrap">
+
+  <!-- Header -->
+  <div class="mcd-header">
+    <button class="mcd-back" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <span class="mcd-header-title">{{ product.category }}</span>
+  </div>
+
+  <div class="mcd-scroll">
+
+    <!-- Nume + categorie -->
+    <div class="mcd-card">
+      <div class="mcd-name">{{ product.name }}</div>
+      <div class="mcd-badges">
+        <span class="mcd-badge mcd-badge-gray">{{ product.category }}</span>
+        <span class="mcd-badge mcd-badge-teal">{{ product.um }}</span>
+      </div>
+    </div>
+
+    <!-- Preț + stoc -->
+    <div class="mcd-card mcd-card-price">
+      <div class="mcd-section-label">Preț & Stoc</div>
+      <div class="mcd-two-col">
+        <div class="mcd-col mcd-col-border">
+          <div class="mcd-col-label">Preț cu TVA</div>
+          <div class="mcd-price-main">
+            {{ product.pretCuTVA != null ? (product.pretCuTVA | number:'1.2-2') + ' lei' : '—' }}
+          </div>
+        </div>
+        <div class="mcd-col">
+          <div class="mcd-col-label">Fără TVA</div>
+          <div class="mcd-price-sub">
+            {{ product.pretFaraTVA != null ? (product.pretFaraTVA | number:'1.2-2') + ' lei' : '—' }}
+          </div>
+        </div>
+      </div>
+      <div class="mcd-two-col mcd-two-col-border">
+        <div class="mcd-col mcd-col-border">
+          <div class="mcd-col-label">Stoc disponibil</div>
+          <div class="mcd-stock-row">
+            <span class="mcd-stock-dot" [class]="stockDotClass(product.qty)"></span>
+            <span class="mcd-stock-val">{{ product.qty }} {{ product.um }}</span>
+          </div>
+          <div class="mcd-stock-status" [class]="stockDotClass(product.qty)">
+            {{ stockLabel(product.qty) }}
+          </div>
+        </div>
+        <div class="mcd-col">
+          <div class="mcd-col-label">Cotă TVA</div>
+          <div class="mcd-col-val">{{ tvaPercent(product) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Date tehnice -->
+    <div class="mcd-card">
+      <div class="mcd-section-label">Date Tehnice</div>
+
+      <div class="mcd-row">
+        <mat-icon class="mcd-row-icon">scale</mat-icon>
+        <div class="mcd-row-body">
+          <div class="mcd-row-label">Masă / Greutate</div>
+          <div class="mcd-row-val">
+            {{ product.masaNeta != null ? (product.masaNeta | number:'1.0-3') + ' kg' : '—' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mcd-row">
+        <mat-icon class="mcd-row-icon">qr_code</mat-icon>
+        <div class="mcd-row-body">
+          <div class="mcd-row-label">Cod extern / EAN</div>
+          <div class="mcd-row-val mcd-mono">{{ product.codExtern || '—' }}</div>
+        </div>
+      </div>
+
+      <div class="mcd-row">
+        <mat-icon class="mcd-row-icon">factory</mat-icon>
+        <div class="mcd-row-body">
+          <div class="mcd-row-label">Furnizor</div>
+          <div class="mcd-row-val">{{ product.furnizor || '—' }}</div>
+        </div>
+      </div>
+
+      <div class="mcd-row mcd-row-last">
+        <mat-icon class="mcd-row-icon">menu_book</mat-icon>
+        <div class="mcd-row-body">
+          <div class="mcd-row-label">Catalog</div>
+          <div class="mcd-row-val">{{ catalogName(product.catalogId) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mcd-bottom-spacer"></div>
+  </div>
+
+</div>
+<app-mobile-nav />
+} @else {
+  <div class="mcd-wrap mcd-missing">
+    <div class="mcd-header">
+      <button class="mcd-back" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <span class="mcd-header-title">Detalii Produs</span>
+    </div>
+    <div class="mcd-empty">
+      <mat-icon>error_outline</mat-icon>
+      <p>Produsul nu a fost găsit.</p>
+      <button class="mcd-btn-back" (click)="goBack()">Înapoi la catalog</button>
+    </div>
+  </div>
+  <app-mobile-nav />
+}

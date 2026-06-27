@@ -1,0 +1,152 @@
+:host { display: block; }
+
+$primary: #1B7A6E;
+$primary-dark: #155E56;
+$primary-light: #E8F5F3;
+$text-1: #111827;
+$text-2: #6B7280;
+$text-3: #9CA3AF;
+$border: #E5E7EB;
+$surface: #FFFFFF;
+$bg: #F5F6FA;
+
+.mcd-wrap {
+  background: $bg;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+/* ── Header ─────────────────────────── */
+.mcd-header {
+  position: sticky; top: 0; z-index: 50;
+  background: $primary;
+  height: 56px;
+  display: flex; align-items: center;
+  padding: 0 12px; gap: 10px;
+  flex-shrink: 0;
+}
+.mcd-back {
+  width: 38px; height: 38px;
+  background: rgba(255,255,255,.15);
+  border: none; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; flex-shrink: 0;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  &:active { background: rgba(255,255,255,.25); }
+}
+.mcd-header-title {
+  font-size: 17px; font-weight: 600; color: #fff;
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Scroll ─────────────────────────── */
+.mcd-scroll {
+  flex: 1; overflow-y: auto;
+  padding: 12px 16px 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.mcd-bottom-spacer {
+  height: calc(64px + 16px);  /* nav 64px + gap */
+  flex-shrink: 0;
+}
+
+/* ── Cards ──────────────────────────── */
+.mcd-card {
+  background: $surface;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  overflow: hidden;
+}
+.mcd-section-label {
+  padding: 10px 16px 6px;
+  font-size: 11px; font-weight: 600; color: $text-3;
+  text-transform: uppercase; letter-spacing: .5px;
+  border-bottom: 1px solid $border;
+}
+
+/* Nume + badges */
+.mcd-name {
+  font-size: 15px; font-weight: 700; color: $text-1;
+  line-height: 1.4; padding: 16px 16px 10px;
+}
+.mcd-badges {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 0 16px 16px;
+}
+.mcd-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.mcd-badge-gray { background: #F3F4F6; color: $text-2; }
+.mcd-badge-teal { background: $primary-light; color: $primary-dark; }
+
+/* Preț */
+.mcd-card-price .mcd-section-label { border-bottom: 1px solid $border; }
+.mcd-two-col {
+  display: flex;
+  &.mcd-two-col-border { border-top: 1px solid $border; }
+}
+.mcd-col {
+  flex: 1; padding: 14px 16px;
+  &.mcd-col-border { border-right: 1px solid $border; }
+}
+.mcd-col-label {
+  font-size: 11px; color: $text-3; margin-bottom: 4px;
+}
+.mcd-price-main {
+  font-size: 22px; font-weight: 700; color: $primary;
+}
+.mcd-price-sub {
+  font-size: 16px; font-weight: 600; color: $text-2;
+}
+.mcd-col-val {
+  font-size: 15px; font-weight: 600; color: $text-1;
+}
+
+/* Stoc */
+.mcd-stock-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 3px;
+}
+.mcd-stock-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  &.dot-ok   { background: #10B981; }
+  &.dot-low  { background: #F59E0B; }
+  &.dot-zero { background: #EF4444; }
+}
+.mcd-stock-val { font-size: 15px; font-weight: 700; color: $text-1; }
+.mcd-stock-status {
+  font-size: 11px; font-weight: 500;
+  &.dot-ok   { color: #059669; }
+  &.dot-low  { color: #D97706; }
+  &.dot-zero { color: #DC2626; }
+}
+
+/* Rânduri date tehnice */
+.mcd-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid $border;
+}
+.mcd-row-last { border-bottom: none; }
+.mcd-row-icon {
+  font-size: 18px; width: 18px; height: 18px;
+  color: $text-3; margin-top: 2px; flex-shrink: 0;
+}
+.mcd-row-body { flex: 1; }
+.mcd-row-label { font-size: 11px; color: $text-3; margin-bottom: 3px; }
+.mcd-row-val { font-size: 14px; font-weight: 600; color: $text-1; }
+.mcd-mono { font-family: monospace; }
+
+
+/* Empty / missing */
+.mcd-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 16px; color: $text-3; gap: 12px;
+  mat-icon { font-size: 48px; width: 48px; height: 48px; }
+  p { font-size: 14px; }
+}
+.mcd-btn-back {
+  background: none; border: 1.5px solid $primary; color: $primary;
+  border-radius: 8px; padding: 10px 20px; font-size: 14px; cursor: pointer;
+}
