@@ -40,7 +40,10 @@ export class LoginComponent implements OnDestroy {
     private router: Router
   ) {
     this.storage.init();
-    if (this.auth.isLoggedIn()) this.router.navigate(['/app/catalog']);
+    if (this.auth.isLoggedIn()) {
+      const isMobile = window.innerWidth < 768;
+      this.router.navigate([isMobile ? '/app/m-catalog' : '/app/catalog']);
+    }
     this.form = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required]
@@ -118,7 +121,8 @@ export class LoginComponent implements OnDestroy {
       if (session?.mustChangePassword) {
         this.router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
       } else {
-        this.router.navigate(['/app/catalog']);
+        const isMobile = window.innerWidth < 768;
+        this.router.navigate([isMobile ? '/app/m-catalog' : '/app/catalog']);
       }
     } else {
       const attempts    = lk.attempts + 1;
