@@ -77,12 +77,30 @@
               }
               <div class="mh-products">
                 @for (p of o.products; track p.nr) {
-                  <div class="mh-prod-row">
+                  <div class="mh-prod-row" [class.mh-prod-removed]="o.status === 'draft' && getEditQty(o.id, $index, p.qty) === 0">
                     <span class="mh-prod-name">{{ p.name }}</span>
-                    <span class="mh-prod-qty">{{ p.qty }} {{ p.um }}</span>
+                    @if (o.status === 'draft') {
+                      <div class="mh-prod-stepper">
+                        <button class="mh-ps-btn" (click)="decEditQty(o.id, $index, p.qty); $event.stopPropagation()">
+                          <mat-icon>{{ getEditQty(o.id, $index, p.qty) <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
+                        </button>
+                        <span class="mh-ps-qty">{{ getEditQty(o.id, $index, p.qty) }} {{ p.um }}</span>
+                        <button class="mh-ps-btn" (click)="incEditQty(o.id, $index, p.qty); $event.stopPropagation()">
+                          <mat-icon>add</mat-icon>
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="mh-prod-qty">{{ p.qty }} {{ p.um }}</span>
+                    }
                   </div>
                 }
               </div>
+              @if (o.status === 'draft' && hasEditedQty(o)) {
+                <div class="mh-qty-changed-banner">
+                  <mat-icon>edit</mat-icon>
+                  Cantități modificate — apasă „Trimite" pentru a le aplica
+                </div>
+              }
               <div class="mh-actions">
                 @if (canSend(o)) {
                   <button class="mh-act-btn primary" (click)="sendDraft(o, $event)">

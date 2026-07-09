@@ -21,6 +21,7 @@ type StatusTab = 'toate' | 'draft' | 'asteapta' | 'activ' | 'livrat' | 'anulat';
 export class MobileHistoryMeComponent {
   activeTab  = signal<StatusTab>('toate');
   expandedId = signal<string | null>(null);
+  _editQty   = signal<Record<string, number>>({});
 
   readonly TABS: { key: StatusTab; label: string }[] = [
     { key: 'toate',   label: 'Toate'      },
@@ -103,8 +104,48 @@ export class MobileHistoryMeComponent {
   canSend(o: Order): boolean { return o.status === 'draft'; }
   canCancel(o: Order): boolean { return ['draft','trimis','acceptat'].includes(o.status); }
 
+  ekey(orderId: string, idx: number): string {
+    return `${orderId}:${idx}`;
+  }
+
+  getEditQty(orderId: string, idx: number, defaultQty: number): number {
+    return this._editQty()[this.ekey(orderId, idx)] ?? defaultQty;
+  }
+
+  setEditQty(orderId: string, idx: number, qty: number): void {
+    if (qty < 0) return;
+    this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: qty }));
+  }
+
+  incEditQty(orderId: string, idx: number, currentQty: number): void {
+    this.setEditQty(orderId, idx, this.getEditQty(orderId, idx, currentQty) + 1);
+  }
+
+  decEditQty(orderId: string, idx: number, currentQty: number): void {
+    this.setEditQty(orderId, idx, Math.max(0, this.getEditQty(orderId, idx, currentQty) - 1));
+  }
+
+  hasEditedQty(order: Order): boolean {
+    return order.products.some((_, i) => this._editQty()[this.ekey(order.id, i)] !== undefined);
+  }
+
   sendDraft(o: Order, e: Event): void {
     e.stopPropagation();
+    if (this.hasEditedQty(o)) {
+      const editedProducts = o.products
+        .map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }))
+        .filter(p => p.qty > 0);
+      if (editedProducts.length === 0) {
+        this.snackBar.open('Adaugă cel puțin un produs cu cantitate > 0.', '', { duration: 2500 });
+        return;
+      }
+      this.ordersService.updateDraftProducts(o.id, editedProducts);
+      this._editQty.update(m => {
+        const n = { ...m };
+        o.products.forEach((_, i) => delete n[this.ekey(o.id, i)]);
+        return n;
+      });
+    }
     const result = this.ordersService.submitDraftOrder(o.id);
     if (!result.ok) {
       const list = result.insufficient.map(i => `${i.name}: ${i.available}/${i.requested}`).join(', ');

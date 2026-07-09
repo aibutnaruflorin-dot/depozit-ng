@@ -109,6 +109,24 @@
 .mh-prod-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mh-prod-name { font-size: .82rem; color: var(--color-text); flex: 1; }
 .mh-prod-qty { font-size: .82rem; font-weight: 600; color: var(--color-text-muted); flex-shrink: 0; }
+.mh-prod-removed { opacity: .4; }
+
+.mh-prod-stepper { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.mh-ps-btn {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid var(--color-border); background: var(--color-surface);
+  color: var(--color-text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+.mh-ps-qty { min-width: 44px; text-align: center; font-size: .82rem; font-weight: 600; color: var(--color-text); }
+
+.mh-qty-changed-banner {
+  display: flex; align-items: center; gap: 6px;
+  background: #FEF3C7; color: #92400E; border-radius: 8px;
+  padding: 8px 10px; font-size: .78rem; font-weight: 500;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; }
+}
 
 .mh-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .mh-act-btn {
