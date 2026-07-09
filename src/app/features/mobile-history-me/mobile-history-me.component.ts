@@ -80,7 +80,7 @@ export class MobileHistoryMeComponent {
 
   statusLabel(o: Order): string {
     if (o.status === 'draft')   return 'Ciornă';
-    if (o.status === 'trimis')  return 'Trimis';
+    if (o.status === 'trimis')  return 'În aşteptare';
     if (o.status === 'anulat')  return 'Anulat';
     if (o.status === 'livrat')  return 'Livrat';
     return this.transportService.deriveOrderPlanningStatus(o).label;
@@ -130,9 +130,10 @@ export class MobileHistoryMeComponent {
   openDetail(o: Order): void { this.detailId.set(o.id); }
   closeDetail(): void { this.detailId.set(null); }
 
-  canSend(o: Order): boolean   { return o.status === 'draft'; }
-  canCancel(o: Order): boolean { return ['draft','trimis','acceptat'].includes(o.status); }
-  canReopen(o: Order): boolean { return o.status === 'anulat'; }
+  canSend(o: Order): boolean        { return o.status === 'draft'; }
+  canAddProducts(o: Order): boolean { return ['draft','trimis','acceptat'].includes(o.status); }
+  canCancel(o: Order): boolean      { return ['draft','trimis','acceptat'].includes(o.status); }
+  canReopen(o: Order): boolean      { return o.status === 'anulat'; }
 
   ekey(orderId: string, idx: number): string { return `${orderId}:${idx}`; }
 
@@ -201,7 +202,9 @@ export class MobileHistoryMeComponent {
 
   addProducts(o: Order): void {
     this.closeDetail();
-    this.router.navigate(['/app/m-new-order'], { state: { addToOrderId: o.id } });
+    this.router.navigate(['/app/m-new-order'], {
+      state: { addToOrderId: o.id, addPending: o.status !== 'draft' }
+    });
   }
 
   newOrder(): void { this.router.navigate(['/app/m-new-order']); }
