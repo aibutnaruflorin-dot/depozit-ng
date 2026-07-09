@@ -132,6 +132,13 @@ export class MobileNewOrderComponent implements OnInit {
     return qty === 0 ? 'dot-zero' : 'dot-ok';
   }
 
+  stockBreakdown(p: Product): string | null {
+    const { bufferQty, importedQty } = this.catalogsService.getStockThreeCol(p.catalogId, p.nr);
+    if (bufferQty === 0) return null;
+    const sign = bufferQty > 0 ? '+' : '';
+    return `${importedQty} imp · ${sign}${bufferQty} ajust.`;
+  }
+
   openSheet(p: Product): void {
     this.sheetQty.set(1);
     this.selectedProduct.set(p);
