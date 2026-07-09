@@ -49,13 +49,22 @@ export class MobileNewOrderComponent implements OnInit {
   deliveryTimeCtrl = new FormControl('');
   noteCtrl         = new FormControl('');
 
+  readonly addToOrderId: string | null;
+
+  readonly addToOrder = computed(() => {
+    if (!this.addToOrderId) return null;
+    return this.ordersService.orders().find(o => o.id === this.addToOrderId) ?? null;
+  });
+
   constructor(
     public catalogsService: CatalogsService,
     private ordersService: OrdersService,
     private auth: AuthService,
     private snackBar: MatSnackBar,
-    private router: Router
+    public router: Router
   ) {
+    const nav = this.router.getCurrentNavigation();
+    this.addToOrderId = (nav?.extras?.state as any)?.addToOrderId ?? null;
     effect(() => saveCart(this.cart()));
   }
 
@@ -214,6 +223,32 @@ export class MobileNewOrderComponent implements OnInit {
   }
 
   submit(): void {
+    if (this.addToOrderId) {
+      if (this.cart().length === 0) {
+        this.snackBar.open('Adaugă cel puțin un produs.', '', { duration: 2500, panelClass: ['snack-warn', 'snack-center'] });
+        return;
+      }
+      const existing = this.ordersService.orders().find(o => o.id === this.addToOrderId);
+      if (!existing || existing.status !== 'draft') {
+        this.snackBar.open('Ciornă indisponibilă.', '', { duration: 2500 }); return;
+      }
+      const maxNr = existing.products.reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0);
+      const newProds: OrderProduct[] = this.cart().map((item, i) => ({
+        nr: maxNr + i + 1, name: item.product.name, um: item.product.um,
+        qty: item.qty, category: item.product.category, catalogId: item.product.catalogId,
+        furnizor: item.product.furnizor, codExtern: item.product.codExtern,
+        pretFaraTVA: item.product.pretFaraTVA, pretCuTVA: item.product.pretCuTVA,
+        masaNeta: item.product.masaNeta,
+      }));
+      this.ordersService.updateDraftProducts(this.addToOrderId, [...existing.products, ...newProds]);
+      this.cart.set([]); clearCartStorage(); this.showCart.set(false);
+      this.snackBar.open(`${newProds.length} produse adăugate la ciornă!`, 'OK', {
+        duration: 3000, panelClass: ['snack-success']
+      });
+      this.router.navigate(['/app/m-history-me']);
+      return;
+    }
+
     this.nameCtrl.markAsTouched();
     this.phoneCtrl.markAsTouched();
 

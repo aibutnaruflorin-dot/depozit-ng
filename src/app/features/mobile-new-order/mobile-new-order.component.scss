@@ -6,6 +6,17 @@
   padding-bottom: 64px;
 }
 
+/* ── Add-mode banner ────────────────── */
+.mn-add-mode-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: #EFF6FF; color: #1D4ED8;
+  padding: 10px 14px; font-size: .82rem;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+  span { flex: 1; }
+  strong { font-weight: 700; }
+  button { color: #1D4ED8; }
+}
+
 /* ── Header ─────────────────────────── */
 .mn-header {
   position: sticky; top: 0; z-index: 50;

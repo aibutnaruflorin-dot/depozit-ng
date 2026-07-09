@@ -4,9 +4,10 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { TransportService } from '../../core/services/transport.service';
+import { CatalogsService } from '../../core/services/catalogs.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Order } from '../../core/models/order.model';
+import { Order, OrderProduct } from '../../core/models/order.model';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
 type StatusTab = 'toate' | 'draft' | 'asteapta' | 'activ' | 'livrat' | 'anulat';
@@ -19,23 +20,24 @@ type StatusTab = 'toate' | 'draft' | 'asteapta' | 'activ' | 'livrat' | 'anulat';
   styleUrl: './mobile-history-me.component.scss'
 })
 export class MobileHistoryMeComponent {
-  activeTab  = signal<StatusTab>('toate');
-  expandedId = signal<string | null>(null);
-  _editQty   = signal<Record<string, number>>({});
+  activeTab = signal<StatusTab>('toate');
+  detailId  = signal<string | null>(null);
+  _editQty  = signal<Record<string, number>>({});
 
   readonly TABS: { key: StatusTab; label: string }[] = [
-    { key: 'toate',   label: 'Toate'      },
-    { key: 'draft',   label: 'Ciornă'     },
-    { key: 'asteapta',label: 'Trimise'    },
-    { key: 'activ',   label: 'Active'     },
-    { key: 'livrat',  label: 'Livrat'     },
-    { key: 'anulat',  label: 'Anulat'     },
+    { key: 'toate',    label: 'Toate'   },
+    { key: 'draft',    label: 'Ciornă'  },
+    { key: 'asteapta', label: 'Trimise' },
+    { key: 'activ',    label: 'Active'  },
+    { key: 'livrat',   label: 'Livrat'  },
+    { key: 'anulat',   label: 'Anulat'  },
   ];
 
   constructor(
     public auth: AuthService,
     public ordersService: OrdersService,
     public transportService: TransportService,
+    public catalogsService: CatalogsService,
     private snackBar: MatSnackBar,
     private router: Router
   ) {}
@@ -70,6 +72,12 @@ export class MobileHistoryMeComponent {
     };
   });
 
+  readonly currentDetailOrder = computed(() => {
+    const id = this.detailId();
+    if (!id) return null;
+    return this.ordersService.orders().find(o => o.id === id) ?? null;
+  });
+
   statusLabel(o: Order): string {
     if (o.status === 'draft')   return 'Ciornă';
     if (o.status === 'trimis')  return 'Trimis';
@@ -93,20 +101,40 @@ export class MobileHistoryMeComponent {
     return o.products.reduce((s, p) => s + (p.pretCuTVA ?? 0) * p.qty, 0);
   }
 
+  orderTotalFaraTVA(o: Order): number {
+    return o.products.reduce((s, p) => s + (p.pretFaraTVA ?? 0) * p.qty, 0);
+  }
+
+  orderMasa(o: Order): number {
+    return o.products.reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0);
+  }
+
   shortDate(iso: string): string {
-    return new Date(iso).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleString('ro-RO', {
+      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+    });
   }
 
-  toggleExpand(id: string): void {
-    this.expandedId.update(v => v === id ? null : id);
+  getStockInfo(p: OrderProduct): { finalQty: number; bufferQty: number } | null {
+    if (!p.catalogId) return null;
+    const s = this.catalogsService.getStockThreeCol(p.catalogId, p.nr);
+    return s ? { finalQty: s.finalQty, bufferQty: s.bufferQty } : null;
   }
 
-  canSend(o: Order): boolean { return o.status === 'draft'; }
+  stockDotClass(qty: number): string {
+    if (qty <= 0) return 'dot-zero';
+    if (qty <= 5) return 'dot-low';
+    return 'dot-ok';
+  }
+
+  openDetail(o: Order): void { this.detailId.set(o.id); }
+  closeDetail(): void { this.detailId.set(null); }
+
+  canSend(o: Order): boolean   { return o.status === 'draft'; }
   canCancel(o: Order): boolean { return ['draft','trimis','acceptat'].includes(o.status); }
+  canReopen(o: Order): boolean { return o.status === 'anulat'; }
 
-  ekey(orderId: string, idx: number): string {
-    return `${orderId}:${idx}`;
-  }
+  ekey(orderId: string, idx: number): string { return `${orderId}:${idx}`; }
 
   getEditQty(orderId: string, idx: number, defaultQty: number): number {
     return this._editQty()[this.ekey(orderId, idx)] ?? defaultQty;
@@ -129,8 +157,7 @@ export class MobileHistoryMeComponent {
     return order.products.some((_, i) => this._editQty()[this.ekey(order.id, i)] !== undefined);
   }
 
-  sendDraft(o: Order, e: Event): void {
-    e.stopPropagation();
+  sendDraft(o: Order): void {
     if (this.hasEditedQty(o)) {
       const editedProducts = o.products
         .map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }))
@@ -156,13 +183,25 @@ export class MobileHistoryMeComponent {
     const text = this.ordersService.generateText(sent);
     window.open(this.ordersService.generateMailto(sent, text), '_blank');
     this.snackBar.open(`Comanda #${sent.orderNumber} trimisă!`, 'OK', { duration: 3000, panelClass: ['snack-success'] });
+    this.closeDetail();
   }
 
-  cancelOrder(o: Order, e: Event): void {
-    e.stopPropagation();
+  cancelOrder(o: Order): void {
     if (!confirm(`Anulezi comanda #${o.orderNumber ?? '?'} pentru ${o.client.name}?`)) return;
     this.ordersService.cancelOrder(o.id);
     this.snackBar.open('Comanda anulată.', '', { duration: 2500 });
+    this.closeDetail();
+  }
+
+  reopenOrder(o: Order): void {
+    this.ordersService.reopenOrder(o.id);
+    this.snackBar.open('Comanda redeschisă.', '', { duration: 2500 });
+    this.closeDetail();
+  }
+
+  addProducts(o: Order): void {
+    this.closeDetail();
+    this.router.navigate(['/app/m-new-order'], { state: { addToOrderId: o.id } });
   }
 
   newOrder(): void { this.router.navigate(['/app/m-new-order']); }

@@ -33,13 +33,16 @@
       </div>
     } @else {
       @for (o of filtered(); track o.id) {
-        <div class="mh-card" (click)="toggleExpand(o.id)">
+        <div class="mh-card" (click)="openDetail(o)">
           <div class="mh-card-top">
             <div class="mh-card-left">
               <span class="mh-order-nr">#{{ o.orderNumber ?? '—' }}</span>
               <span class="mh-client">{{ o.client.name }}</span>
             </div>
-            <span class="mh-chip" [class]="statusClass(o)">{{ statusLabel(o) }}</span>
+            <div class="mh-card-right">
+              <span class="mh-chip" [class]="statusClass(o)">{{ statusLabel(o) }}</span>
+              <mat-icon class="mh-card-arrow">chevron_right</mat-icon>
+            </div>
           </div>
           <div class="mh-card-meta">
             <span>{{ shortDate(o.timestamp) }}</span>
@@ -53,73 +56,212 @@
               <span class="mh-meta-total">{{ orderTotal(o) | number:'1.2-2' }} lei</span>
             }
           </div>
-
-          <!-- Expanded Details -->
-          @if (expandedId() === o.id) {
-            <div class="mh-expanded" (click)="$event.stopPropagation()">
-              @if (o.client.phone) {
-                <div class="mh-detail-row">
-                  <mat-icon>phone</mat-icon>
-                  <a [href]="'tel:' + o.client.phone">{{ o.client.phone }}</a>
-                </div>
-              }
-              @if (o.client.address) {
-                <div class="mh-detail-row">
-                  <mat-icon>location_on</mat-icon>
-                  <span>{{ o.client.address }}</span>
-                </div>
-              }
-              @if (o.client.note) {
-                <div class="mh-detail-row">
-                  <mat-icon>notes</mat-icon>
-                  <span>{{ o.client.note }}</span>
-                </div>
-              }
-              <div class="mh-products">
-                @for (p of o.products; track p.nr) {
-                  <div class="mh-prod-row" [class.mh-prod-removed]="o.status === 'draft' && getEditQty(o.id, $index, p.qty) === 0">
-                    <span class="mh-prod-name">{{ p.name }}</span>
-                    @if (o.status === 'draft') {
-                      <div class="mh-prod-stepper">
-                        <button class="mh-ps-btn" (click)="decEditQty(o.id, $index, p.qty); $event.stopPropagation()">
-                          <mat-icon>{{ getEditQty(o.id, $index, p.qty) <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
-                        </button>
-                        <span class="mh-ps-qty">{{ getEditQty(o.id, $index, p.qty) }} {{ p.um }}</span>
-                        <button class="mh-ps-btn" (click)="incEditQty(o.id, $index, p.qty); $event.stopPropagation()">
-                          <mat-icon>add</mat-icon>
-                        </button>
-                      </div>
-                    } @else {
-                      <span class="mh-prod-qty">{{ p.qty }} {{ p.um }}</span>
-                    }
-                  </div>
-                }
-              </div>
-              @if (o.status === 'draft' && hasEditedQty(o)) {
-                <div class="mh-qty-changed-banner">
-                  <mat-icon>edit</mat-icon>
-                  Cantități modificate — apasă „Trimite" pentru a le aplica
-                </div>
-              }
-              <div class="mh-actions">
-                @if (canSend(o)) {
-                  <button class="mh-act-btn primary" (click)="sendDraft(o, $event)">
-                    <mat-icon>send</mat-icon> Trimite comanda
-                  </button>
-                }
-                @if (canCancel(o)) {
-                  <button class="mh-act-btn danger" (click)="cancelOrder(o, $event)">
-                    <mat-icon>cancel</mat-icon> Anulează
-                  </button>
-                }
-              </div>
-            </div>
-          }
         </div>
       }
       <div style="height:72px"></div>
     }
   </div>
+
+  <!-- Detail Bottom Sheet -->
+  @if (currentDetailOrder(); as o) {
+    <div class="mh-detail-backdrop" (click)="closeDetail()"></div>
+    <div class="mh-detail-sheet">
+
+      <!-- Top bar: handle + close -->
+      <div class="mh-ds-topbar">
+        <div class="mh-ds-handle"></div>
+        <button class="mh-ds-close" (click)="closeDetail()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Sticky header -->
+      <div class="mh-ds-header">
+        <div class="mh-ds-header-info">
+          <span class="mh-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+          <span class="mh-ds-client">{{ o.client.name }}</span>
+        </div>
+        <span class="mh-chip" [class]="statusClass(o)">{{ statusLabel(o) }}</span>
+      </div>
+
+      <!-- Scrollable body -->
+      <div class="mh-ds-body">
+
+        <!-- Date + meta -->
+        <div class="mh-ds-meta-row">
+          <mat-icon>schedule</mat-icon>
+          <span>{{ shortDate(o.timestamp) }}</span>
+          @if (o.cuLivrare) {
+            <mat-icon class="mh-meta-icon">local_shipping</mat-icon>
+            @if (o.deliveryDate) { <span>Livrare {{ o.deliveryDate }}</span> }
+          }
+        </div>
+
+        <!-- Client contact -->
+        @if (o.client.phone || o.client.address || o.client.note) {
+          <div class="mh-ds-section">
+            @if (o.client.phone) {
+              <div class="mh-ds-row">
+                <mat-icon>phone</mat-icon>
+                <a [href]="'tel:' + o.client.phone">{{ o.client.phone }}</a>
+              </div>
+            }
+            @if (o.client.address) {
+              <div class="mh-ds-row">
+                <mat-icon>location_on</mat-icon>
+                <span>{{ o.client.address }}</span>
+              </div>
+            }
+            @if (o.client.note) {
+              <div class="mh-ds-row">
+                <mat-icon>chat_bubble_outline</mat-icon>
+                <span>{{ o.client.note }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Observatii -->
+        @if (o.observatii) {
+          <div class="mh-ds-section">
+            <div class="mh-ds-section-label">Observații</div>
+            <div class="mh-ds-obs">{{ o.observatii }}</div>
+          </div>
+        }
+
+        <!-- Products -->
+        <div class="mh-ds-section">
+          <div class="mh-ds-section-label">Produse ({{ o.products.length }})</div>
+          @for (p of o.products; track p.nr) {
+            <div class="mh-ds-prod"
+                 [class.mh-ds-prod-removed]="o.status === 'draft' && getEditQty(o.id, $index, p.qty) === 0">
+
+              <!-- Name -->
+              <div class="mh-ds-prod-name">{{ p.name }}</div>
+
+              <!-- Tags: category, UM, furnizor, cod extern -->
+              <div class="mh-ds-prod-tags">
+                @if (p.category) { <span class="mh-ds-tag">{{ p.category }}</span> }
+                @if (p.um)       { <span class="mh-ds-tag">{{ p.um }}</span> }
+                @if (p.furnizor) { <span class="mh-ds-tag mh-ds-tag-dim">{{ p.furnizor }}</span> }
+                @if (p.codExtern){ <span class="mh-ds-tag mh-ds-tag-dim">{{ p.codExtern }}</span> }
+              </div>
+
+              <!-- Prices + masa -->
+              @if (p.pretFaraTVA != null || p.pretCuTVA != null || p.masaNeta != null) {
+                <div class="mh-ds-prod-prices">
+                  @if (p.pretFaraTVA != null) {
+                    <div class="mh-ds-price-item">
+                      <span class="mh-ds-price-label">fără TVA</span>
+                      <span>{{ p.pretFaraTVA | number:'1.2-2' }} lei</span>
+                    </div>
+                  }
+                  @if (p.pretCuTVA != null) {
+                    <div class="mh-ds-price-item">
+                      <span class="mh-ds-price-label">cu TVA</span>
+                      <span class="mh-ds-price-tva">{{ p.pretCuTVA | number:'1.2-2' }} lei</span>
+                    </div>
+                  }
+                  @if (p.masaNeta != null) {
+                    <div class="mh-ds-price-item">
+                      <span class="mh-ds-price-label">masă/buc</span>
+                      <span>{{ p.masaNeta | number:'1.0-3' }} kg</span>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Stock + qty row -->
+              <div class="mh-ds-prod-bottom">
+                @if (getStockInfo(p); as s) {
+                  <div class="mh-ds-stoc">
+                    <span class="mh-ds-stoc-dot" [class]="stockDotClass(s.finalQty)"></span>
+                    <span>Stoc: {{ s.finalQty }}</span>
+                    @if (s.bufferQty !== 0) {
+                      <span class="mh-ds-stoc-buf">{{ s.bufferQty > 0 ? '+' : '' }}{{ s.bufferQty }}</span>
+                    }
+                  </div>
+                } @else {
+                  <span></span>
+                }
+
+                @if (o.status === 'draft') {
+                  <div class="mh-prod-stepper">
+                    <button class="mh-ps-btn" (click)="decEditQty(o.id, $index, p.qty)">
+                      <mat-icon>{{ getEditQty(o.id, $index, p.qty) <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
+                    </button>
+                    <span class="mh-ps-qty">{{ getEditQty(o.id, $index, p.qty) }} {{ p.um }}</span>
+                    <button class="mh-ps-btn" (click)="incEditQty(o.id, $index, p.qty)">
+                      <mat-icon>add</mat-icon>
+                    </button>
+                  </div>
+                } @else {
+                  <span class="mh-ds-qty-val">{{ p.qty }} {{ p.um }}</span>
+                }
+              </div>
+
+            </div>
+          }
+        </div>
+
+        <!-- Totals -->
+        @if (orderTotal(o) > 0 || orderMasa(o) > 0) {
+          <div class="mh-ds-section mh-ds-totals">
+            @if (orderMasa(o) > 0) {
+              <div class="mh-ds-total-row">
+                <span>Masă totală</span>
+                <span>{{ orderMasa(o) | number:'1.0-2' }} kg</span>
+              </div>
+            }
+            @if (orderTotalFaraTVA(o) > 0) {
+              <div class="mh-ds-total-row">
+                <span>Total fără TVA</span>
+                <span>{{ orderTotalFaraTVA(o) | number:'1.2-2' }} lei</span>
+              </div>
+            }
+            @if (orderTotal(o) > 0) {
+              <div class="mh-ds-total-row mh-ds-total-final">
+                <span>Total cu TVA</span>
+                <span>{{ orderTotal(o) | number:'1.2-2' }} lei</span>
+              </div>
+            }
+          </div>
+        }
+
+      </div><!-- end body -->
+
+      <!-- Changed qty banner -->
+      @if (o.status === 'draft' && hasEditedQty(o)) {
+        <div class="mh-qty-changed-banner">
+          <mat-icon>edit</mat-icon>
+          Cantități modificate — apasă „Trimite" pentru a le aplica
+        </div>
+      }
+
+      <!-- Action footer -->
+      <div class="mh-ds-footer">
+        @if (canSend(o)) {
+          <button class="mh-act-btn primary" (click)="sendDraft(o)">
+            <mat-icon>send</mat-icon> Trimite comanda
+          </button>
+          <button class="mh-act-btn secondary" (click)="addProducts(o)">
+            <mat-icon>add_circle_outline</mat-icon> Adaugă produse
+          </button>
+        }
+        @if (canCancel(o)) {
+          <button class="mh-act-btn danger" (click)="cancelOrder(o)">
+            <mat-icon>cancel</mat-icon> Anulează
+          </button>
+        }
+        @if (canReopen(o)) {
+          <button class="mh-act-btn secondary" (click)="reopenOrder(o)">
+            <mat-icon>refresh</mat-icon> Redeschide
+          </button>
+        }
+      </div>
+
+    </div>
+  }
 
   <app-mobile-nav />
 </div>

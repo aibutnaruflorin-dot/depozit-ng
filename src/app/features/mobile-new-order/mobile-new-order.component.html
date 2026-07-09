@@ -1,9 +1,20 @@
 <div class="mn-wrap">
 
+  <!-- Add-to-order banner -->
+  @if (addToOrderId && addToOrder(); as ao) {
+    <div class="mn-add-mode-banner">
+      <mat-icon>add_circle_outline</mat-icon>
+      <span>Adaugi produse la ciornă <strong>#{{ ao.orderNumber ?? '—' }}</strong> — {{ ao.client.name }}</span>
+      <button class="mn-icon-btn" (click)="router.navigate(['/app/m-history-me'])">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
   <!-- Header -->
   <div class="mn-header">
     <div class="mn-header-row">
-      <span class="mn-title">Comandă Nouă</span>
+      <span class="mn-title">{{ addToOrderId ? 'Adaugă Produse' : 'Comandă Nouă' }}</span>
       @if (cartCount() > 0) {
         <button class="mn-cart-btn" (click)="showCart.set(true)">
           <mat-icon>shopping_cart</mat-icon>
@@ -158,68 +169,75 @@
         </div>
       </div>
 
-      <div class="mn-divider"></div>
+      @if (!addToOrderId) {
+        <div class="mn-divider"></div>
 
-      <!-- Client form -->
-      <div class="mn-form">
-        <div class="mn-form-label">Date client</div>
+        <!-- Client form -->
+        <div class="mn-form">
+          <div class="mn-form-label">Date client</div>
 
-        <div class="mn-field" [class.error]="nameCtrl.invalid && nameCtrl.touched">
-          <label class="mn-field-label">Nume client *</label>
-          <input class="mn-field-input" type="text" placeholder="Numele clientului"
-                 [formControl]="nameCtrl">
-          @if (nameCtrl.invalid && nameCtrl.touched) {
-            <span class="mn-field-err">Numele este obligatoriu.</span>
-          }
-        </div>
-
-        <div class="mn-field" [class.error]="phoneCtrl.invalid && phoneCtrl.touched">
-          <label class="mn-field-label">Telefon {{ cuLivrare() ? '*' : '' }}</label>
-          <input class="mn-field-input" type="tel" inputmode="numeric" maxlength="10"
-                 placeholder="07xx xxx xxx" [formControl]="phoneCtrl"
-                 (input)="phoneCtrl.setValue($any($event.target).value.replace(/\D/g,'').slice(0,10), {emitEvent:false}); $any($event.target).value = phoneCtrl.value">
-          @if (phoneCtrl.touched && phoneCtrl.hasError('pattern')) {
-            <span class="mn-field-err">Introduceți exact 10 cifre.</span>
-          }
-        </div>
-
-        <label class="mn-toggle-row" (click)="cuLivrare.update(v => !v)">
-          <span>Cu livrare</span>
-          <div class="mn-toggle" [class.on]="cuLivrare()">
-            <div class="mn-toggle-thumb"></div>
+          <div class="mn-field" [class.error]="nameCtrl.invalid && nameCtrl.touched">
+            <label class="mn-field-label">Nume client *</label>
+            <input class="mn-field-input" type="text" placeholder="Numele clientului"
+                   [formControl]="nameCtrl">
+            @if (nameCtrl.invalid && nameCtrl.touched) {
+              <span class="mn-field-err">Numele este obligatoriu.</span>
+            }
           </div>
-        </label>
 
-        @if (cuLivrare()) {
+          <div class="mn-field" [class.error]="phoneCtrl.invalid && phoneCtrl.touched">
+            <label class="mn-field-label">Telefon {{ cuLivrare() ? '*' : '' }}</label>
+            <input class="mn-field-input" type="tel" inputmode="numeric" maxlength="10"
+                   placeholder="07xx xxx xxx" [formControl]="phoneCtrl"
+                   (input)="phoneCtrl.setValue($any($event.target).value.replace(/\D/g,'').slice(0,10), {emitEvent:false}); $any($event.target).value = phoneCtrl.value">
+            @if (phoneCtrl.touched && phoneCtrl.hasError('pattern')) {
+              <span class="mn-field-err">Introduceți exact 10 cifre.</span>
+            }
+          </div>
+
+          <label class="mn-toggle-row" (click)="cuLivrare.update(v => !v)">
+            <span>Cu livrare</span>
+            <div class="mn-toggle" [class.on]="cuLivrare()">
+              <div class="mn-toggle-thumb"></div>
+            </div>
+          </label>
+
+          @if (cuLivrare()) {
+            <div class="mn-field">
+              <label class="mn-field-label">Adresă livrare</label>
+              <input class="mn-field-input" type="text" placeholder="Strada, nr, localitate"
+                     [formControl]="addressCtrl">
+            </div>
+            <div class="mn-field-row">
+              <div class="mn-field">
+                <label class="mn-field-label">Termen livrare *</label>
+                <input class="mn-field-input" type="date" [min]="today" [formControl]="deliveryDateCtrl">
+              </div>
+              <div class="mn-field">
+                <label class="mn-field-label">Ora livrare *</label>
+                <input class="mn-field-input" type="time" [formControl]="deliveryTimeCtrl">
+              </div>
+            </div>
+          }
+
           <div class="mn-field">
-            <label class="mn-field-label">Adresă livrare</label>
-            <input class="mn-field-input" type="text" placeholder="Strada, nr, localitate"
-                   [formControl]="addressCtrl">
+            <label class="mn-field-label">Observații</label>
+            <textarea class="mn-field-input mn-textarea" rows="2" placeholder="Note opționale"
+                      [formControl]="noteCtrl"></textarea>
           </div>
-          <div class="mn-field-row">
-            <div class="mn-field">
-              <label class="mn-field-label">Termen livrare *</label>
-              <input class="mn-field-input" type="date" [min]="today" [formControl]="deliveryDateCtrl">
-            </div>
-            <div class="mn-field">
-              <label class="mn-field-label">Ora livrare *</label>
-              <input class="mn-field-input" type="time" [formControl]="deliveryTimeCtrl">
-            </div>
-          </div>
-        }
-
-        <div class="mn-field">
-          <label class="mn-field-label">Observații</label>
-          <textarea class="mn-field-input mn-textarea" rows="2" placeholder="Note opționale"
-                    [formControl]="noteCtrl"></textarea>
         </div>
-      </div>
+      }
 
       <div class="mn-sheet-footer">
         <button class="mn-btn-secondary" (click)="clearCart()">Golește coșul</button>
         <button class="mn-btn-primary" (click)="submit()">
-          <mat-icon>save</mat-icon>
-          Salvează comanda
+          @if (addToOrderId) {
+            <mat-icon>add_circle_outline</mat-icon>
+            Adaugă {{ cartCount() }} la ciornă
+          } @else {
+            <mat-icon>save</mat-icon>
+            Salvează comanda
+          }
         </button>
       </div>
     </div>
