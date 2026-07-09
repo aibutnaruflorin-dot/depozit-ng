@@ -115,10 +115,10 @@ export class MobileHistoryMeComponent {
     });
   }
 
-  getStockInfo(p: OrderProduct): { finalQty: number; bufferQty: number } | null {
+  getStockInfo(p: OrderProduct): { importedQty: number; consumedQty: number; bufferQty: number; finalQty: number } | null {
     if (!p.catalogId) return null;
     const s = this.catalogsService.getStockThreeCol(p.catalogId, p.nr);
-    return s ? { finalQty: s.finalQty, bufferQty: s.bufferQty } : null;
+    return s ? { importedQty: s.importedQty, consumedQty: s.consumedQty, bufferQty: s.bufferQty, finalQty: s.finalQty } : null;
   }
 
   stockDotClass(qty: number): string {
@@ -196,7 +196,7 @@ export class MobileHistoryMeComponent {
   reopenOrder(o: Order): void {
     this.ordersService.reopenOrder(o.id);
     this.snackBar.open('Comanda redeschisă.', '', { duration: 2500 });
-    this.closeDetail();
+    // keep sheet open — currentDetailOrder() will reactively show new status
   }
 
   addProducts(o: Order): void {

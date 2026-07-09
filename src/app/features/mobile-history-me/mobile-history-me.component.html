@@ -171,15 +171,28 @@
                 </div>
               }
 
-              <!-- Stock + qty row -->
+              <!-- Stock breakdown + qty -->
               <div class="mh-ds-prod-bottom">
                 @if (getStockInfo(p); as s) {
-                  <div class="mh-ds-stoc">
-                    <span class="mh-ds-stoc-dot" [class]="stockDotClass(s.finalQty)"></span>
-                    <span>Stoc: {{ s.finalQty }}</span>
-                    @if (s.bufferQty !== 0) {
-                      <span class="mh-ds-stoc-buf">{{ s.bufferQty > 0 ? '+' : '' }}{{ s.bufferQty }}</span>
-                    }
+                  <div class="mh-ds-stoc-breakdown">
+                    <div class="mh-ds-stoc-row">
+                      <span class="mh-ds-stoc-label">Importat</span>
+                      <span>{{ s.importedQty }}</span>
+                    </div>
+                    <div class="mh-ds-stoc-row">
+                      <span class="mh-ds-stoc-label">Consumat</span>
+                      <span>{{ s.consumedQty }}</span>
+                    </div>
+                    <div class="mh-ds-stoc-row">
+                      <span class="mh-ds-stoc-label">Buffer</span>
+                      <span [class.mh-ds-buf-pos]="s.bufferQty > 0" [class.mh-ds-buf-neg]="s.bufferQty < 0">
+                        {{ s.bufferQty === 0 ? '—' : (s.bufferQty > 0 ? '+' : '') + s.bufferQty }}
+                      </span>
+                    </div>
+                    <div class="mh-ds-stoc-row mh-ds-stoc-final-row">
+                      <span class="mh-ds-stoc-label">Final</span>
+                      <span class="mh-ds-stoc-final-val" [class]="stockDotClass(s.finalQty)">{{ s.finalQty }}</span>
+                    </div>
                   </div>
                 } @else {
                   <span></span>

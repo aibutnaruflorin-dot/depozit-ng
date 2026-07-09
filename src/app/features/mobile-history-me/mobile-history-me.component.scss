@@ -191,20 +191,32 @@
 .mh-ds-price-item span:not(.mh-ds-price-label):not(.mh-ds-price-tva) { font-size: .82rem; color: var(--color-text); }
 
 .mh-ds-prod-bottom {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  margin-top: 6px;
 }
-.mh-ds-stoc {
-  display: flex; align-items: center; gap: 5px;
-  font-size: .76rem; color: var(--color-text-muted);
+
+/* Stock breakdown (Importat / Consumat / Buffer / Final) */
+.mh-ds-stoc-breakdown {
+  display: flex; flex-direction: column; gap: 2px;
 }
-.mh-ds-stoc-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  &.dot-zero { background: #EF4444; }
-  &.dot-low  { background: #F59E0B; }
-  &.dot-ok   { background: #22C55E; }
+.mh-ds-stoc-row {
+  display: flex; align-items: center; gap: 8px; font-size: .76rem;
 }
-.mh-ds-stoc-buf { opacity: .7; }
-.mh-ds-qty-val { font-size: .85rem; font-weight: 600; color: var(--color-text); }
+.mh-ds-stoc-label {
+  color: var(--color-text-muted); min-width: 58px;
+}
+.mh-ds-stoc-row span:not(.mh-ds-stoc-label) { color: var(--color-text); }
+.mh-ds-buf-pos { color: #16A34A; font-weight: 600; }
+.mh-ds-buf-neg { color: #DC2626; font-weight: 600; }
+.mh-ds-stoc-final-row { margin-top: 2px; border-top: 1px solid var(--color-border); padding-top: 3px; }
+.mh-ds-stoc-final-val {
+  font-weight: 700; font-size: .82rem;
+  &.dot-zero { color: #EF4444; }
+  &.dot-low  { color: #F59E0B; }
+  &.dot-ok   { color: #16A34A; }
+}
+
+.mh-ds-qty-val { font-size: .85rem; font-weight: 600; color: var(--color-text); align-self: flex-end; }
 
 /* Totals */
 .mh-ds-totals { }
