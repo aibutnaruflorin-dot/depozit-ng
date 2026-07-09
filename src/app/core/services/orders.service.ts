@@ -69,6 +69,13 @@ export class OrdersService {
     this._orders.set(updated);
   }
 
+  updateDraftProducts(orderId: string, products: import('../models/order.model').OrderProduct[]): void {
+    this._orders.update(orders => orders.map(o =>
+      o.id === orderId && o.status === 'draft' ? { ...o, products } : o
+    ));
+    this.storage.set('app_orders', this._orders());
+  }
+
   submitDraftOrder(orderId: string): StockCheckResult {
     const order = this._orders().find(o => o.id === orderId);
     if (!order) return { ok: false, insufficient: [] };

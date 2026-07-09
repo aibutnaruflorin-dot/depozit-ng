@@ -234,6 +234,21 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   }
 
   sendDraft(order: Order): void {
+    if (this.hasEditedQty(order)) {
+      const editedProducts = order.products
+        .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
+        .filter(p => p.qty > 0);
+      if (editedProducts.length === 0) {
+        this.snackBar.open('Adaugă cel puțin un produs cu cantitate > 0.', '', { duration: 2500 });
+        return;
+      }
+      this.ordersService.updateDraftProducts(order.id, editedProducts);
+      this._editQty.update(m => {
+        const n = { ...m };
+        order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
+        return n;
+      });
+    }
     const result = this.ordersService.submitDraftOrder(order.id);
     if (!result.ok) {
       const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');

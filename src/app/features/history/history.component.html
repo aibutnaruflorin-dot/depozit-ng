@@ -462,8 +462,8 @@
                   <span class="epc-center">Cantitate</span>
                 </div>
                 @for (p of order.products; track p.nr; let j = $index) {
-                  @if (order.status === 'trimis' && !order.superseded) {
-                    <!-- Editabil — comandă în așteptare -->
+                  @if ((order.status === 'trimis' || order.status === 'draft') && !order.superseded) {
+                    <!-- Editabil — ciornă sau comandă în așteptare -->
                     <div class="exp-product-row"
                          [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
                       <div class="epc-name-cell">
@@ -601,6 +601,12 @@
                 </div>
               </div>
 
+              @if (order.status === 'draft' && !order.superseded && hasEditedQty(order)) {
+                <div class="exp-qty-changed-banner">
+                  <mat-icon>edit</mat-icon>
+                  Cantități modificate — apasă „Trimite" pentru a le aplica
+                </div>
+              }
               @if (order.status === 'trimis' && !order.superseded && hasEditedQty(order)) {
                 <div class="exp-qty-changed-banner">
                   <mat-icon>pending</mat-icon>
