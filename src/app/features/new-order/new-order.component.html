@@ -326,11 +326,12 @@
           @if (colVisible('stocBuffer')) {
             <td class="pc-stoc-buf">
               @if (s.bufferQty !== 0) {
-                <span [class.s3-pos]="s.bufferQty > 0" [class.s3-neg]="s.bufferQty < 0">
+                <span class="td-buffer-click" [class.s3-pos]="s.bufferQty > 0" [class.s3-neg]="s.bufferQty < 0"
+                      (click)="openHistory(p)" title="Vezi istoric ajustări">
                   {{ s.bufferQty > 0 ? '+' : '' }}{{ s.bufferQty }}
                 </span>
               } @else {
-                <span class="s3-zero-buf">—</span>
+                <span class="s3-zero-buf td-buffer-click" (click)="openHistory(p)" title="Vezi istoric ajustări">—</span>
               }
             </td>
           }
@@ -566,6 +567,54 @@
           </div>
         </div>
       }
+    </div>
+  </div>
+}
+
+@if (historyModal(); as p) {
+  <div class="adj-overlay" (click)="closeHistory()">
+    <div class="hist-card" (click)="$event.stopPropagation()">
+      <div class="adj-card-header">
+        <div class="adj-card-title">
+          <mat-icon style="color:var(--color-primary)">history</mat-icon>
+          Istoric ajustări stoc
+        </div>
+        <button mat-icon-button (click)="closeHistory()"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="hist-product-name">{{ p.name }}</div>
+      <div class="hist-body">
+        @if (productHistory().length === 0) {
+          <div class="hist-empty">
+            <mat-icon>info_outline</mat-icon>
+            Nicio ajustare înregistrată pentru acest produs.
+          </div>
+        } @else {
+          <table class="hist-table">
+            <thead>
+              <tr>
+                <th>Data / Ora</th>
+                <th>Sursă</th>
+                <th>Delta</th>
+                <th>Comentariu</th>
+                <th>Utilizator</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of productHistory(); track e.timestamp) {
+                <tr>
+                  <td class="hist-ts">{{ e.timestamp | date:'dd.MM.yyyy HH:mm' }}</td>
+                  <td><span class="hist-source">{{ SOURCE_LABELS[e.source] ?? e.source }}</span></td>
+                  <td class="hist-delta" [class.hist-pos]="e.delta > 0" [class.hist-neg]="e.delta < 0">
+                    {{ e.delta > 0 ? '+' : '' }}{{ e.delta }}
+                  </td>
+                  <td class="hist-comment">{{ e.comment || '—' }}</td>
+                  <td class="hist-user">{{ e.userName }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
     </div>
   </div>
 }

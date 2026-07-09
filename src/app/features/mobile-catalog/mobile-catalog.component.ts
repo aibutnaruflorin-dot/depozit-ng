@@ -102,13 +102,37 @@ export class MobileCatalogComponent {
 
   selectedProduct = signal<Product | null>(null);
 
-  openDetail(product: Product): void {
-    this.selectedProduct.set(product);
-  }
+  openDetail(product: Product): void { this.selectedProduct.set(product); }
+  closeDetail(): void                { this.selectedProduct.set(null); }
 
-  closeDetail(): void {
+  readonly selectedProductHistory = computed(() => {
+    const p = this.selectedProduct();
+    if (!p) return [];
+    return this.catalogsService.stockLog().filter(e =>
+      e.catalogId === p.catalogId && String(e.productNr) === String(p.nr)
+    );
+  });
+
+  historyModal = signal<Product | null>(null);
+
+  readonly productHistory = computed(() => {
+    const p = this.historyModal();
+    if (!p) return [];
+    return this.catalogsService.stockLog().filter(e =>
+      e.catalogId === p.catalogId && String(e.productNr) === String(p.nr)
+    );
+  });
+
+  readonly SOURCE_LABELS: Record<string, string> = {
+    manual: 'Manual', order: 'Comandă', cancel: 'Anulare',
+    revise: 'Revizie', add_products: 'Ad. produse',
+  };
+
+  openHistory(p: Product): void {
     this.selectedProduct.set(null);
+    this.historyModal.set(p);
   }
+  closeHistory(): void { this.historyModal.set(null); }
 
   stockDotClass(qty: number): string {
     return qty === 0 ? 'dot-zero' : 'dot-ok';

@@ -291,9 +291,67 @@
   font-size: .9rem; font-weight: 600; color: var(--color-text);
 }
 .mn-qs-stock-buf {
+  display: flex; align-items: center; gap: 4px;
   font-size: .7rem; color: var(--color-text-muted);
   margin-top: 2px; opacity: .85;
 }
+.mn-qs-hist-icon {
+  background: none; border: none; cursor: pointer; padding: 0; margin-left: 2px;
+  display: flex; align-items: center; color: var(--color-primary); opacity: .8;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  &:active { opacity: 1; }
+}
+
+/* ── History Bottom Sheet ────────────── */
+.mn-hist-backdrop { z-index: 130; }
+.mn-hist-sheet {
+  position: fixed; bottom: 64px; left: 0; right: 0; z-index: 131;
+  background: var(--color-surface); border-radius: 20px 20px 0 0;
+  padding: 8px 16px 24px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,.2);
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: calc(85vh - 64px); overflow-y: auto;
+}
+.mn-hist-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.mn-hist-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .9rem; font-weight: 700; color: var(--color-text);
+  mat-icon { font-size: 20px; width: 20px; height: 20px; color: var(--color-primary); }
+}
+.mn-hist-prod-name {
+  font-size: .85rem; font-weight: 600; color: var(--color-text);
+  padding-bottom: 6px; border-bottom: 1px solid var(--color-border);
+}
+.mn-hist-empty {
+  font-size: .85rem; color: var(--color-text-muted); text-align: center; padding: 16px 0;
+}
+.mn-hist-list { display: flex; flex-direction: column; }
+.mn-hist-entry {
+  padding: 10px 0; border-bottom: 1px solid var(--color-border);
+  display: flex; flex-direction: column; gap: 3px;
+  &:last-child { border-bottom: none; }
+}
+.mn-hist-entry-top { display: flex; align-items: center; gap: 8px; }
+.mn-hist-source {
+  background: var(--color-surface-2, #F3F4F6); border-radius: 4px;
+  padding: 1px 6px; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; color: var(--color-text-muted); white-space: nowrap;
+}
+.mn-hist-delta {
+  font-size: .92rem; font-weight: 700; flex-shrink: 0;
+  &.mn-hist-pos { color: #059669; }
+  &.mn-hist-neg { color: #DC2626; }
+}
+.mn-hist-ts {
+  font-size: .72rem; color: var(--color-text-muted); margin-left: auto; white-space: nowrap;
+}
+.mn-hist-entry-bottom {
+  display: flex; align-items: center; gap: 4px; font-size: .78rem;
+}
+.mn-hist-comment { color: var(--color-text); flex: 1; }
+.mn-hist-user    { color: var(--color-text-muted); white-space: nowrap; }
 .mn-qs-qty-row {
   display: flex; align-items: center; justify-content: space-between;
 }

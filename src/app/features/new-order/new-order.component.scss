@@ -710,6 +710,69 @@ $cih: 20px;
   mat-icon { font-size: 13px; width: 13px; height: 13px; line-height: 13px; }
 }
 
+/* Buffer click */
+.td-buffer-click {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  &:hover { opacity: 0.7; }
+}
+
+/* Stock history modal */
+.adj-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+.adj-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--color-border);
+}
+.adj-card-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 1rem; font-weight: 700; color: var(--color-text);
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+}
+.hist-card {
+  background: var(--color-surface); border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.22);
+  width: 720px; max-width: calc(100vw - 32px);
+  max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+}
+.hist-product-name {
+  padding: 6px 16px 10px;
+  font-size: 0.88rem; font-weight: 600; color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+.hist-body { overflow-y: auto; flex: 1; }
+.hist-empty {
+  display: flex; align-items: center; gap: 8px;
+  padding: 2rem; color: var(--color-text-muted); font-size: 0.88rem;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+.hist-table {
+  width: 100%; border-collapse: collapse; font-size: 0.82rem;
+  th {
+    background: var(--color-surface-2); text-align: left;
+    padding: 7px 12px; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--color-text-muted); position: sticky; top: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--color-border); }
+  tbody tr:hover { background: var(--color-surface-2); }
+}
+.hist-ts    { color: var(--color-text-muted); white-space: nowrap; font-size: 0.78rem; }
+.hist-source {
+  background: var(--color-surface-2); border-radius: 4px;
+  padding: 1px 6px; font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; white-space: nowrap;
+}
+.hist-delta { font-weight: 700; white-space: nowrap; }
+.hist-pos   { color: #43a047; }
+.hist-neg   { color: #e53935; }
+.hist-comment { color: var(--color-text); max-width: 260px; }
+.hist-user  { color: var(--color-text-muted); font-size: 0.75rem; white-space: nowrap; }
+
 /* Success state */
 .success-state {
   display: flex;

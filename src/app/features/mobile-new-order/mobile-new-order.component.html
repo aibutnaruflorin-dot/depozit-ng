@@ -244,7 +244,12 @@
             <span>{{ p.qty }} {{ p.um }}</span>
           </div>
           @if (stockBreakdown(p); as bd) {
-            <div class="mn-qs-stock-buf">{{ bd }}</div>
+            <div class="mn-qs-stock-buf">
+              {{ bd }}
+              <button class="mn-qs-hist-icon" (click)="openHistory(p)" title="Istoric ajustări">
+                <mat-icon>history</mat-icon>
+              </button>
+            </div>
           }
         </div>
         <div class="mn-qs-block">
@@ -284,6 +289,43 @@
           <mat-icon>remove_shopping_cart</mat-icon>
           Stoc indisponibil
         </button>
+      }
+    </div>
+  }
+
+  <!-- History Bottom Sheet -->
+  @if (historyModal(); as p) {
+    <div class="mn-backdrop mn-hist-backdrop" (click)="closeHistory()"></div>
+    <div class="mn-hist-sheet">
+      <div class="mn-sheet-handle"></div>
+      <div class="mn-hist-header">
+        <div class="mn-hist-title">
+          <mat-icon>history</mat-icon>
+          Istoric ajustări
+        </div>
+        <button class="mn-qs-close" (click)="closeHistory()"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="mn-hist-prod-name">{{ p.name }}</div>
+      @if (productHistory().length === 0) {
+        <div class="mn-hist-empty">Nicio ajustare înregistrată.</div>
+      } @else {
+        <div class="mn-hist-list">
+          @for (e of productHistory(); track e.timestamp) {
+            <div class="mn-hist-entry">
+              <div class="mn-hist-entry-top">
+                <span class="mn-hist-source">{{ SOURCE_LABELS[e.source] ?? e.source }}</span>
+                <span class="mn-hist-delta" [class.mn-hist-pos]="e.delta > 0" [class.mn-hist-neg]="e.delta < 0">
+                  {{ e.delta > 0 ? '+' : '' }}{{ e.delta }}
+                </span>
+                <span class="mn-hist-ts">{{ e.timestamp | date:'dd.MM HH:mm' }}</span>
+              </div>
+              <div class="mn-hist-entry-bottom">
+                <span class="mn-hist-comment">{{ e.comment || '—' }}</span>
+                <span class="mn-hist-user">· {{ e.userName }}</span>
+              </div>
+            </div>
+          }
+        </div>
       }
     </div>
   }

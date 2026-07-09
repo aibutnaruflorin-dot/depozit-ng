@@ -139,6 +139,27 @@ export class MobileNewOrderComponent implements OnInit {
     return `${importedQty} imp · ${sign}${bufferQty} ajust.`;
   }
 
+  historyModal = signal<Product | null>(null);
+
+  readonly productHistory = computed(() => {
+    const p = this.historyModal();
+    if (!p) return [];
+    return this.catalogsService.stockLog().filter(e =>
+      e.catalogId === p.catalogId && String(e.productNr) === String(p.nr)
+    );
+  });
+
+  readonly SOURCE_LABELS: Record<string, string> = {
+    manual: 'Manual', order: 'Comandă', cancel: 'Anulare',
+    revise: 'Revizie', add_products: 'Ad. produse',
+  };
+
+  openHistory(p: Product): void {
+    this.selectedProduct.set(null);
+    this.historyModal.set(p);
+  }
+  closeHistory(): void { this.historyModal.set(null); }
+
   openSheet(p: Product): void {
     this.sheetQty.set(1);
     this.selectedProduct.set(p);

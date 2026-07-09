@@ -205,6 +205,50 @@
           </button>
         </div>
       }
+
+      @if (selectedProductHistory().length > 0) {
+        <button class="mc-ds-hist-btn" (click)="openHistory(p)">
+          <mat-icon>history</mat-icon>
+          Istoric ajustări ({{ selectedProductHistory().length }})
+        </button>
+      }
+    </div>
+  }
+
+  <!-- History Bottom Sheet -->
+  @if (historyModal(); as p) {
+    <div class="mc-backdrop mc-hist-backdrop" (click)="closeHistory()"></div>
+    <div class="mc-hist-sheet">
+      <div class="mc-sheet-handle"></div>
+      <div class="mc-hist-header">
+        <div class="mc-hist-title">
+          <mat-icon>history</mat-icon>
+          Istoric ajustări
+        </div>
+        <button class="mc-ds-close" (click)="closeHistory()"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="mc-hist-prod-name">{{ p.name }}</div>
+      @if (productHistory().length === 0) {
+        <div class="mc-hist-empty">Nicio ajustare înregistrată.</div>
+      } @else {
+        <div class="mc-hist-list">
+          @for (e of productHistory(); track e.timestamp) {
+            <div class="mc-hist-entry">
+              <div class="mc-hist-entry-top">
+                <span class="mc-hist-source">{{ SOURCE_LABELS[e.source] ?? e.source }}</span>
+                <span class="mc-hist-delta" [class.mc-hist-pos]="e.delta > 0" [class.mc-hist-neg]="e.delta < 0">
+                  {{ e.delta > 0 ? '+' : '' }}{{ e.delta }}
+                </span>
+                <span class="mc-hist-ts">{{ e.timestamp | date:'dd.MM HH:mm' }}</span>
+              </div>
+              <div class="mc-hist-entry-bottom">
+                <span class="mc-hist-comment">{{ e.comment || '—' }}</span>
+                <span class="mc-hist-user">· {{ e.userName }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
     </div>
   }
 
