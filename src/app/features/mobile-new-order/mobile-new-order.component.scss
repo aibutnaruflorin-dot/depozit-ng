@@ -192,13 +192,23 @@
   font-size: .85rem; font-weight: 600; color: var(--color-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.mn-ci-sub { display: flex; justify-content: space-between; font-size: .75rem; color: var(--color-text-muted); }
-.mn-ci-total { font-weight: 700; color: var(--color-text); }
-.mn-ci-remove {
-  background: none; border: none; cursor: pointer; color: #EF4444;
-  display: flex; align-items: center;
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.mn-ci-sub {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .75rem; color: var(--color-text-muted); margin-top: 3px;
 }
+.mn-ci-stepper {
+  display: flex; align-items: center; gap: 6px;
+}
+.mn-ci-step {
+  width: 28px; height: 28px; border-radius: 8px;
+  border: 1.5px solid var(--color-border); background: var(--color-surface);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-muted); flex-shrink: 0;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &:active { background: #F3F4F6; }
+}
+.mn-ci-qty { font-size: .82rem; font-weight: 600; color: var(--color-text); min-width: 36px; text-align: center; }
+.mn-ci-total { font-weight: 700; color: var(--color-text); white-space: nowrap; }
 
 /* Totals */
 .mn-totals { padding: 12px 16px 0; }

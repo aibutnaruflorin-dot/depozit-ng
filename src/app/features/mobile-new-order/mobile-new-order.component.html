@@ -117,13 +117,18 @@
             <div class="mn-ci-main">
               <div class="mn-ci-name">{{ item.product.name }}</div>
               <div class="mn-ci-sub">
-                <span>{{ item.qty }} × {{ item.product.pretCuTVA | number:'1.2-2' }} lei</span>
+                <div class="mn-ci-stepper">
+                  <button class="mn-ci-step" (click)="dec(item.product)">
+                    <mat-icon>{{ item.qty === 1 ? 'delete_outline' : 'remove' }}</mat-icon>
+                  </button>
+                  <span class="mn-ci-qty">{{ item.qty }} {{ item.product.um }}</span>
+                  <button class="mn-ci-step" (click)="inc(item.product)">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
                 <span class="mn-ci-total">{{ (item.qty * (item.product.pretCuTVA ?? 0)) | number:'1.2-2' }} lei</span>
               </div>
             </div>
-            <button class="mn-ci-remove" (click)="removeFromCart(item.product)">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
           </div>
         }
       </div>
