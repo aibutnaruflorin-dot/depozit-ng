@@ -34,6 +34,7 @@ export class MobileNewOrderComponent implements OnInit {
   search          = signal('');
   selectedCatIds  = signal<string[]>([]);
   showCart        = signal(false);
+  onlyInCart      = signal(false);
   cart            = signal<CartItem[]>([]);
   cuLivrare       = signal(false);
   selectedProduct = signal<Product | null>(null);
@@ -71,11 +72,16 @@ export class MobileNewOrderComponent implements OnInit {
 
   readonly allSelected = computed(() => this.selectedCatIds().length === 0);
 
+  readonly cartKeys = computed(() => new Set(this.cart().map(i => this.pkey(i.product))));
+
   readonly filtered = computed(() => {
-    const q = this.search().toLowerCase().trim();
-    return this.catalogsService.productsFor(this.selectedCatIds()).filter(p =>
-      !q || p.name.toLowerCase().includes(q) || String(p.nr).includes(q)
-    );
+    const q        = this.search().toLowerCase().trim();
+    const cartOnly = this.onlyInCart();
+    const keys     = this.cartKeys();
+    return this.catalogsService.productsFor(this.selectedCatIds()).filter(p => {
+      if (cartOnly && !keys.has(this.pkey(p))) return false;
+      return !q || p.name.toLowerCase().includes(q) || String(p.nr).includes(q);
+    });
   });
 
   readonly totalCuTVA   = computed(() => this.cart().reduce((s, i) => s + (i.product.pretCuTVA ?? 0) * i.qty, 0));

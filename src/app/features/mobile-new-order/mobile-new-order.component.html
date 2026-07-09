@@ -30,6 +30,13 @@
           <span class="mn-chip-dot" [style.background]="cat.color"></span>{{ cat.name }}
         </button>
       }
+      @if (cart().length > 0) {
+        <button class="mn-chip mn-chip-cart" [class.active]="onlyInCart()"
+                (click)="onlyInCart.update(v => !v)">
+          <mat-icon class="mn-chip-icon">shopping_cart</mat-icon>
+          În coș ({{ cart().length }})
+        </button>
+      }
     </div>
   </div>
 
