@@ -159,6 +159,7 @@ $bg: #F5F6FA;
 }
 .mc-stock-label { font-size: 12px; font-weight: 600; color: $text-2; }
 .mc-masa { font-size: 11px; color: $text-3; }
+.mc-stock-buf { font-size: 11px; color: $text-3; margin-top: 1px; }
 .mc-furnizor {
   font-size: 11px; color: $text-3;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -224,6 +225,16 @@ $bg: #F5F6FA;
 .mc-ds-stock {
   display: flex; align-items: center; gap: 6px;
   font-size: .9rem; font-weight: 600; color: $text-1;
+}
+.mc-ds-stock-buf {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .7rem; color: $text-3; margin-top: 2px;
+}
+.mc-ds-hist-icon {
+  background: none; border: none; cursor: pointer; padding: 0;
+  display: flex; align-items: center; color: $primary; opacity: .8;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  &:active { opacity: 1; }
 }
 
 /* ── Adjust buttons in detail sheet ─── */

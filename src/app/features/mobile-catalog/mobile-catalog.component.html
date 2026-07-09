@@ -86,6 +86,9 @@
                   <span class="mc-masa">· {{ p.masaNeta | number:'1.0-2' }} kg</span>
                 }
               </div>
+              @if (stockBreakdown(p); as bd) {
+                <div class="mc-stock-buf">{{ bd }}</div>
+              }
               @if (p.furnizor) {
                 <div class="mc-furnizor">{{ p.furnizor }}</div>
               }
@@ -178,6 +181,14 @@
             <span class="mc-stock-dot" [class]="stockDotClass(p.qty)"></span>
             <span>{{ p.qty }} {{ p.um }}</span>
           </div>
+          @if (stockBreakdown(p); as bd) {
+            <div class="mc-ds-stock-buf">
+              {{ bd }}
+              <button class="mc-ds-hist-icon" (click)="openHistory(p); $event.stopPropagation()" title="Istoric ajustări">
+                <mat-icon>history</mat-icon>
+              </button>
+            </div>
+          }
         </div>
         <div class="mc-ds-block">
           <div class="mc-ds-label">Masă</div>

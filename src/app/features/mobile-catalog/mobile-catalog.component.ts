@@ -138,6 +138,13 @@ export class MobileCatalogComponent {
     return qty === 0 ? 'dot-zero' : 'dot-ok';
   }
 
+  stockBreakdown(p: Product): string | null {
+    const { bufferQty, importedQty } = this.catalogsService.getStockThreeCol(p.catalogId, p.nr);
+    if (bufferQty === 0) return null;
+    const sign = bufferQty > 0 ? '+' : '';
+    return `${importedQty} imp · ${sign}${bufferQty} ajust.`;
+  }
+
   tvaPercent(p: Product): string {
     if (!p.pretCuTVA || !p.pretFaraTVA || p.pretFaraTVA === 0) return '—';
     const pct = Math.round((p.pretCuTVA / p.pretFaraTVA - 1) * 100);
