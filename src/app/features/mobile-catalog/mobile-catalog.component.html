@@ -192,6 +192,79 @@
           <div class="mc-ds-val">{{ catalogName(p.catalogId) }}</div>
         </div>
       </div>
+
+      @if (canAdjust()) {
+        <div class="mc-ds-adj-row">
+          <button class="mc-ds-adj-btn mc-ds-adj-add" (click)="openAdj(p, 'add')">
+            <mat-icon>add_circle_outline</mat-icon>
+            Adaugă stoc
+          </button>
+          <button class="mc-ds-adj-btn mc-ds-adj-remove" (click)="openAdj(p, 'remove')">
+            <mat-icon>remove_circle_outline</mat-icon>
+            Scoate stoc
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Adjustment Sheet -->
+  @if (adjModal(); as m) {
+    <div class="mc-backdrop mc-adj-backdrop" (click)="closeAdj()"></div>
+    <div class="mc-adj-sheet">
+      <div class="mc-sheet-handle"></div>
+
+      <div class="mc-adj-header">
+        <div class="mc-adj-type-badge" [class.add]="m.type === 'add'" [class.remove]="m.type === 'remove'">
+          <mat-icon>{{ m.type === 'add' ? 'add_circle' : 'remove_circle' }}</mat-icon>
+          {{ m.type === 'add' ? 'Adaugă stoc' : 'Scoate stoc' }}
+        </div>
+        <button class="mc-ds-close" (click)="closeAdj()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="mc-adj-product">
+        <div class="mc-adj-prod-name">{{ m.product.name }}</div>
+        <div class="mc-adj-prod-stock">
+          <span class="mc-stock-dot" [class]="stockDotClass(m.product.qty)"></span>
+          Stoc curent: <strong>{{ m.product.qty }} {{ m.product.um }}</strong>
+        </div>
+      </div>
+
+      <div class="mc-adj-qty-section">
+        <div class="mc-adj-label">Cantitate</div>
+        <div class="mc-adj-stepper">
+          <button class="mc-adj-step-btn" (click)="setAdjQty(adjQty() - 1)" [disabled]="adjQty() <= 1">
+            <mat-icon>remove</mat-icon>
+          </button>
+          <input class="mc-adj-qty-input" type="number" min="1"
+                 [value]="adjQty()"
+                 (change)="setAdjQty(+$any($event.target).value)">
+          <button class="mc-adj-step-btn" (click)="setAdjQty(adjQty() + 1)">
+            <mat-icon>add</mat-icon>
+          </button>
+        </div>
+        <div class="mc-adj-preview">
+          Stoc după ajustare:
+          <strong>{{ m.product.qty + (m.type === 'add' ? adjQty() : -adjQty()) }} {{ m.product.um }}</strong>
+        </div>
+      </div>
+
+      <div class="mc-adj-comment-section">
+        <div class="mc-adj-label">Comentariu <span class="mc-adj-required">*</span></div>
+        <textarea class="mc-adj-textarea" rows="3"
+                  placeholder="Motivul ajustării…"
+                  [value]="adjComment()"
+                  (input)="adjComment.set($any($event.target).value); adjError.set('')"></textarea>
+        @if (adjError()) {
+          <div class="mc-adj-error">{{ adjError() }}</div>
+        }
+      </div>
+
+      <button class="mc-adj-save-btn" [class.add]="m.type === 'add'" [class.remove]="m.type === 'remove'"
+              (click)="saveAdj()">
+        <mat-icon>save</mat-icon>
+        Salvează ajustarea
+      </button>
     </div>
   }
 

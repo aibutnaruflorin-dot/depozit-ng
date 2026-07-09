@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
-import { Product } from '../../core/models/product.model';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Product, StockLogEntry } from '../../core/models/product.model';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
 @Component({
   selector: 'app-mobile-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MobileNavComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent],
   templateUrl: './mobile-catalog.component.html',
   styleUrl: './mobile-catalog.component.scss'
 })
@@ -23,9 +24,17 @@ export class MobileCatalogComponent {
   onlyZeroStock    = signal(false);
   showFilters      = signal(false);
 
+  readonly canAdjust = computed(() => this.auth.session()?.role === 'keyuser');
+
+  adjModal   = signal<{ product: Product; type: 'add' | 'remove' } | null>(null);
+  adjQty     = signal(1);
+  adjComment = signal('');
+  adjError   = signal('');
+
   constructor(
     public catalogsService: CatalogsService,
-    public auth: AuthService
+    public auth: AuthService,
+    private snackBar: MatSnackBar
   ) {}
 
   readonly allSelected = computed(() => this.selectedCatIds().length === 0 && !this.onlyZeroStock());
@@ -109,5 +118,55 @@ export class MobileCatalogComponent {
     if (!p.pretCuTVA || !p.pretFaraTVA || p.pretFaraTVA === 0) return '—';
     const pct = Math.round((p.pretCuTVA / p.pretFaraTVA - 1) * 100);
     return pct + '%';
+  }
+
+  openAdj(product: Product, type: 'add' | 'remove'): void {
+    this.adjModal.set({ product, type });
+    this.adjQty.set(1);
+    this.adjComment.set('');
+    this.adjError.set('');
+    this.selectedProduct.set(null);
+  }
+
+  closeAdj(): void {
+    this.adjModal.set(null);
+  }
+
+  setAdjQty(val: number): void {
+    if (val < 1) return;
+    this.adjQty.set(val);
+  }
+
+  saveAdj(): void {
+    const m = this.adjModal();
+    if (!m) return;
+    if (!this.adjComment().trim()) {
+      this.adjError.set('Comentariul este obligatoriu.');
+      return;
+    }
+    const session = this.auth.session();
+    if (!session) return;
+
+    const delta = m.type === 'add' ? this.adjQty() : -this.adjQty();
+    this.catalogsService.adjustQty(m.product.catalogId, m.product.nr, delta);
+
+    const entry: StockLogEntry = {
+      timestamp:   new Date().toISOString(),
+      catalogId:   m.product.catalogId,
+      productNr:   m.product.nr,
+      productName: m.product.name,
+      delta,
+      comment:     this.adjComment().trim(),
+      userName:    session.name,
+      source:      'manual'
+    };
+    this.catalogsService.addStockLog(entry);
+
+    const sign = delta > 0 ? '+' : '';
+    this.snackBar.open(
+      `Stoc ajustat: ${sign}${delta} ${m.product.um} pentru "${m.product.name}"`,
+      '', { duration: 2500, panelClass: ['snack-success', 'snack-center'] }
+    );
+    this.closeAdj();
   }
 }
