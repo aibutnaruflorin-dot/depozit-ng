@@ -24,7 +24,7 @@ export class MobileCatalogComponent {
   onlyZeroStock    = signal(false);
   showFilters      = signal(false);
 
-  readonly canAdjust = computed(() => this.auth.session()?.role === 'keyuser');
+  readonly canAdjust = computed(() => this.auth.hasFullAccess('catalog'));
 
   adjModal   = signal<{ product: Product; type: 'add' | 'remove' } | null>(null);
   adjQty     = signal(1);

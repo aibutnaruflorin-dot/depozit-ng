@@ -182,7 +182,7 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resizeObs?.disconnect();
   }
 
-  readonly canAdjust    = computed(() => this.auth.session()?.role === 'keyuser');
+  readonly canAdjust    = computed(() => this.auth.hasFullAccess('catalog'));
   readonly canExport    = computed(() => this.auth.hasFullAccess('catalog'));
 
   readonly colSpan = computed(() => {
