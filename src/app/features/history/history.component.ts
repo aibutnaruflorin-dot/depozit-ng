@@ -60,7 +60,7 @@ import { OrdersService, generateId } from '../../core/services/orders.service';
 import { StorageService } from '../../core/services/storage.service';
 import { UnitsService } from '../../core/services/units.service';
 import { TransportService } from '../../core/services/transport.service';
-import { Order } from '../../core/models/order.model';
+import { Order, OrderProduct } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -658,16 +658,27 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   getEditQty(orderId: string, idx: number, def: number): number {
     return this._editQty()[this.ekey(orderId, idx)] ?? def;
   }
-  setEditQty(orderId: string, idx: number, def: number, val: number | string, um = ''): void {
+  setEditQty(orderId: string, idx: number, def: number, val: number | string, um = '', maxQty = Infinity): void {
     let qty = Math.max(0, parseFloat(String(val)) || 0);
     if (um && !this.unitsService.allowDecimal(um)) qty = Math.round(qty);
+    if (qty > maxQty) qty = maxQty;
     this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: qty }));
   }
-  incEditQty(orderId: string, idx: number, def: number): void {
-    this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1);
+  incEditQty(orderId: string, idx: number, def: number, maxQty = Infinity): void {
+    this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1, '', maxQty);
   }
   decEditQty(orderId: string, idx: number, def: number): void {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);
+  }
+
+  /** Max quantity the user can set for a product in an order being edited.
+   *  For drafts: finalQty (stock not yet consumed).
+   *  For trimis: finalQty + p.qty (reviseOrder restores original qty first). */
+  maxEditableQty(order: Order, p: OrderProduct): number {
+    if (!p.catalogId) return Infinity;
+    const stock = this.catalogsService.getStock(p.catalogId, p.nr);
+    if (stock === null) return Infinity;
+    return order.status === 'draft' ? stock : stock + p.qty;
   }
 
   umStep(um: string): string {
