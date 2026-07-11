@@ -238,14 +238,9 @@ export class OrdersService {
             orderEvents: [...(o.orderEvents ?? []), { ...event, id: generateId() }]
           };
         }
-        const maxNr = Math.max(
-          o.products.reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0),
-          0
-        );
-        const numbered = products.map((p, i) => ({ ...p, nr: maxNr + i + 1 }));
         return {
           ...o,
-          products: [...o.products, ...numbered],
+          products: [...o.products, ...products],
           orderEvents: [...(o.orderEvents ?? []), { ...event, id: generateId() }]
         };
       })
