@@ -8,6 +8,8 @@ import { CatalogsService } from '../../core/services/catalogs.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Order, OrderProduct } from '../../core/models/order.model';
+import { StorageService } from '../../core/services/storage.service';
+import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
 type StatusTab = 'toate' | 'draft' | 'asteapta' | 'activ' | 'livrat' | 'anulat';
@@ -33,11 +35,16 @@ export class MobileHistoryMeComponent {
     { key: 'anulat',   label: 'Anulat'  },
   ];
 
+  readonly whatsappContacts = computed<WhatsAppContact[]>(() =>
+    this.storage.get<WhatsAppContact[]>('app_whatsapp_contacts') ?? []
+  );
+
   constructor(
     public auth: AuthService,
     public ordersService: OrdersService,
     public transportService: TransportService,
     public catalogsService: CatalogsService,
+    private storage: StorageService,
     private snackBar: MatSnackBar,
     private router: Router
   ) {}
@@ -265,14 +272,25 @@ export class MobileHistoryMeComponent {
 
   whatsAppOrder(o: Order, e: Event): void {
     e.stopPropagation();
-    const phone = o.client?.phone;
-    if (!phone) return;
-    let p = phone.replace(/[\s\-().]/g, '');
-    if (p.startsWith('00')) p = '+' + p.slice(2);
-    else if (p.startsWith('0')) p = '+4' + p;
-    else if (p.startsWith('40') && !p.startsWith('+')) p = '+' + p;
     const text = this.ordersService.generateText(o);
-    window.open(`https://wa.me/${p}?text=${encodeURIComponent(text)}`, '_blank');
+    const clientPhone = o.client?.phone;
+    const contacts = this.whatsappContacts();
+
+    if (clientPhone) {
+      let p = clientPhone.replace(/[\s\-().]/g, '');
+      if (p.startsWith('00')) p = '+' + p.slice(2);
+      else if (p.startsWith('0')) p = '+4' + p;
+      else if (p.startsWith('40') && !p.startsWith('+')) p = '+' + p;
+      window.open(`https://wa.me/${p}?text=${encodeURIComponent(text)}`, '_blank');
+    } else if (contacts.length > 0) {
+      const first = contacts[0];
+      const url = first.type === 'group'
+        ? first.phone
+        : `https://wa.me/${first.phone}?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    } else {
+      this.snackBar.open('Clientul nu are telefon configurat.', '', { duration: 2500 });
+    }
   }
 
   printOrder(o: Order, e: Event): void {
