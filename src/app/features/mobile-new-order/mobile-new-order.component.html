@@ -4,7 +4,7 @@
   @if (addToOrderId && addToOrder(); as ao) {
     <div class="mn-add-mode-banner">
       <mat-icon>add_circle_outline</mat-icon>
-      <span>Adaugi produse la ciornă <strong>#{{ ao.orderNumber ?? '—' }}</strong> — {{ ao.client.name }}</span>
+      <span>Adaugi produse la <strong>{{ ao.status === 'draft' ? 'ciornă' : 'comanda' }} #{{ ao.orderNumber ?? '—' }}</strong> — {{ ao.client.name }}</span>
       <button class="mn-icon-btn" (click)="router.navigate(['/app/m-history-me'])">
         <mat-icon>close</mat-icon>
       </button>

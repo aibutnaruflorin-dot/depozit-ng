@@ -131,7 +131,12 @@
 
         <!-- Products -->
         <div class="mh-ds-section">
-          <div class="mh-ds-section-label">Produse ({{ o.products.length }})</div>
+          <div class="mh-ds-section-label">
+            Produse ({{ o.products.length + (o.pendingProducts?.length ?? 0) }})
+            @if (o.pendingProducts?.length) {
+              <span class="mh-ds-pending-badge">+{{ o.pendingProducts!.length }} neconfirmate</span>
+            }
+          </div>
           @for (p of o.products; track p.nr) {
             <div class="mh-ds-prod"
                  [class.mh-ds-prod-removed]="o.status === 'draft' && getEditQty(o.id, $index, p.qty) === 0">
@@ -213,6 +218,30 @@
                 }
               </div>
 
+            </div>
+          }
+
+          <!-- Pending products (adăugate, neconfirmate) -->
+          @if (o.pendingProducts?.length) {
+            <div class="mh-ds-pending-section">
+              <div class="mh-ds-pending-title">
+                <mat-icon>pending</mat-icon>
+                Adăugate de tine — neconfirmate încă
+              </div>
+              @for (p of o.pendingProducts!; track p.nr) {
+                <div class="mh-ds-prod mh-ds-prod-pending">
+                  <div class="mh-ds-prod-name">{{ p.name }}</div>
+                  <div class="mh-ds-prod-tags">
+                    @if (p.category) { <span class="mh-ds-tag">{{ p.category }}</span> }
+                    @if (p.um)       { <span class="mh-ds-tag">{{ p.um }}</span> }
+                    @if (p.furnizor) { <span class="mh-ds-tag mh-ds-tag-dim">{{ p.furnizor }}</span> }
+                  </div>
+                  <div class="mh-ds-prod-bottom">
+                    <span></span>
+                    <span class="mh-ds-qty-val">{{ p.qty }} {{ p.um }}</span>
+                  </div>
+                </div>
+              }
             </div>
           }
         </div>

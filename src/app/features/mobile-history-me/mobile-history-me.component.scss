@@ -226,6 +226,23 @@
   &.mh-ds-total-final { font-weight: 700; font-size: .9rem; padding-top: 8px; }
 }
 
+/* Pending products section */
+.mh-ds-pending-badge {
+  background: #FEF3C7; color: #92400E; border-radius: 8px;
+  padding: 2px 7px; font-size: .65rem; font-weight: 700; margin-left: 6px;
+}
+.mh-ds-pending-section {
+  margin-top: 8px; border-radius: 8px;
+  background: #FFFBEB; border: 1px solid #FDE68A; padding: 8px;
+}
+.mh-ds-pending-title {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .7rem; font-weight: 700; color: #92400E;
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+.mh-ds-prod-pending { background: #FFFBEB; border: 1px solid #FDE68A; }
+
 /* Qty changed banner */
 .mh-qty-changed-banner {
   display: flex; align-items: center; gap: 6px;
