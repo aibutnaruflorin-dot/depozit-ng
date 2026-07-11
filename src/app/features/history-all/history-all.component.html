@@ -454,7 +454,7 @@
                 <span class="epc-center">Cantitate</span>
               </div>
               @for (p of order.products; track p.nr; let j = $index) {
-                @if (isPending(order)) {
+                @if (isActiveOrder(order)) {
                   <div class="exp-product-row"
                        [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
                     <div class="epc-name-cell">
@@ -503,10 +503,9 @@
                         <input class="eq-input" type="number" min="0" [attr.step]="umStep(p.um)"
                                [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
                                [class.eq-input--over]="editQtyExceedsStock(order.id, j, p.catalogId, p.nr)"
-                               (change)="setEditQty(order.id, j, p.qty, $any($event.target).value, p.um)"
+                               (input)="setEditQty(order.id, j, p.qty, $any($event.target).value, p.um)"
                                (click)="$any($event.target).select()">
-                        <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty)"
-                                [disabled]="s.finalQty <= 0">
+                        <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty, maxEditableQty(order, p))">
                           <mat-icon>add</mat-icon>
                         </button>
                       </div>
@@ -569,21 +568,21 @@
                 <span class="exp-total-heading">Total</span>
                 <span></span><span></span><span></span><span></span><span></span>
                 <span class="exp-total-net">
-                  @if (isPending(order)) {
+                  @if (isActiveOrder(order)) {
                     {{ editTotalFaraTVA(order) | number:'1.2-2' }} lei
                   } @else {
                     {{ orderTotalFaraTVA(order) | number:'1.2-2' }} lei
                   }
                 </span>
                 <span class="exp-total-tva">
-                  @if (isPending(order)) {
+                  @if (isActiveOrder(order)) {
                     {{ editTotalCuTVA(order) | number:'1.2-2' }} lei
                   } @else {
                     {{ orderTotalCuTVA(order) | number:'1.2-2' }} lei
                   }
                 </span>
                 <span class="exp-total-masa">
-                  @if (isPending(order)) {
+                  @if (isActiveOrder(order)) {
                     {{ formatMasa(editTotalMasa(order)) }}
                   } @else {
                     {{ formatMasa(orderTotalMasa(order)) }}
@@ -687,20 +686,23 @@
 
             <div class="expansion-footer">
               @if (isPending(order)) {
-                <button mat-flat-button class="btn-cancel-order" (click)="cancelOrder(order)">
-                  <mat-icon>block</mat-icon>
-                  Anulează
-                </button>
                 <button mat-flat-button class="btn-accept-order" (click)="acceptOrder(order)">
                   <mat-icon>check_circle</mat-icon>
                   Acceptă
+                </button>
+              }
+              @if (isActiveOrder(order)) {
+                <button mat-flat-button class="btn-cancel-order" (click)="cancelOrder(order)">
+                  <mat-icon>block</mat-icon>
+                  Anulează
                 </button>
                 <button mat-flat-button color="primary" (click)="finalizeOrder(order)"
                         [disabled]="!hasQtyChanges(order)">
                   <mat-icon>edit_note</mat-icon>
                   Finalizează cu modificări
                 </button>
-              } @else if (canReopen(order)) {
+              }
+              @if (canReopen(order)) {
                 <button mat-stroked-button class="btn-reopen-order" (click)="reopenOrder(order)">
                   <mat-icon>lock_open</mat-icon>
                   Redeschide

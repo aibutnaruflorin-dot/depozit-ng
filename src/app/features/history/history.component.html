@@ -462,7 +462,7 @@
                   <span class="epc-center">Cantitate</span>
                 </div>
                 @for (p of order.products; track p.nr; let j = $index) {
-                  @if ((order.status === 'trimis' || order.status === 'draft') && !order.superseded) {
+                  @if (['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded) {
                     <!-- Editabil — ciornă sau comandă în așteptare -->
                     <div class="exp-product-row"
                          [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
@@ -518,7 +518,7 @@
                           <input class="eq-input" type="number" min="0" [attr.step]="umStep(p.um)"
                                  [value]="editQtyMap()[ekey(order.id, j)] ?? p.qty"
                                  [class.eq-input--over]="editQtyExceedsStock(order.id, j, p.catalogId, p.nr)"
-                                 (change)="setEditQty(order.id, j, p.qty, $any($event.target).value, p.um, maxEditableQty(order, p))"
+                                 (input)="setEditQty(order.id, j, p.qty, $any($event.target).value, p.um)"
                                  (click)="$any($event.target).select()">
                           <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty, maxEditableQty(order, p))">
                             <mat-icon>add</mat-icon>
@@ -592,21 +592,21 @@
                   <span class="exp-total-heading">Total</span>
                   <span></span><span></span><span></span><span></span><span></span>
                   <span class="exp-total-net">
-                    @if (order.status === 'trimis' && !order.superseded) {
+                    @if (!['anulat','livrat'].includes(order.status) && !order.superseded) {
                       {{ editTotalFaraTVA(order) | number:'1.2-2' }} lei
                     } @else {
                       {{ orderTotalFaraTVA(order) | number:'1.2-2' }} lei
                     }
                   </span>
                   <span class="exp-total-tva">
-                    @if (order.status === 'trimis' && !order.superseded) {
+                    @if (!['anulat','livrat'].includes(order.status) && !order.superseded) {
                       {{ editTotalCuTVA(order) | number:'1.2-2' }} lei
                     } @else {
                       {{ orderTotalCuTVA(order) | number:'1.2-2' }} lei
                     }
                   </span>
                   <span class="exp-total-masa">
-                    @if (order.status === 'trimis' && !order.superseded) {
+                    @if (!['anulat','livrat'].includes(order.status) && !order.superseded) {
                       {{ formatMasa(editTotalMasa(order)) }}
                     } @else {
                       {{ formatMasa(orderTotalMasa(order)) }}
@@ -622,7 +622,7 @@
                   Cantități modificate — apasă „Trimite" pentru a le aplica
                 </div>
               }
-              @if (order.status === 'trimis' && !order.superseded && hasEditedQty(order)) {
+              @if (['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && hasEditedQty(order)) {
                 <div class="exp-qty-changed-banner">
                   <mat-icon>pending</mat-icon>
                   Cantități modificate — apasă „Retrimite modificat" pentru a le trimite
@@ -740,7 +740,7 @@
                     Anulează
                   </button>
                 }
-                @if (isPending(order)) {
+                @if (['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded) {
                   <button mat-flat-button color="primary" (click)="reviseOrder(order)"
                           [disabled]="!hasPendingChanges(order)"
                           [matTooltip]="hasPendingChanges(order) ? '' : 'Nu există modificări de trimis'">

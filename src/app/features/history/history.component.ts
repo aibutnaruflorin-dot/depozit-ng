@@ -234,10 +234,22 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   }
 
   sendDraft(order: Order): void {
+    const withEditedQty = order.products.map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }));
+    const overStock = withEditedQty.filter(p => {
+      if (!p.catalogId) return false;
+      const max = this.maxEditableQty(order, p);
+      return p.qty > max;
+    });
+    if (overStock.length > 0) {
+      const list = overStock.map(p => {
+        const max = this.maxEditableQty(order, p);
+        return `• ${p.name}: disponibil ${max}, solicitat ${p.qty}`;
+      }).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-error'], verticalPosition: 'top' });
+      return;
+    }
     if (this.hasEditedQty(order)) {
-      const editedProducts = order.products
-        .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
-        .filter(p => p.qty > 0);
+      const editedProducts = withEditedQty.filter(p => p.qty > 0);
       if (editedProducts.length === 0) {
         this.snackBar.open('Adaugă cel puțin un produs cu cantitate > 0.', '', { duration: 2500 });
         return;
@@ -750,9 +762,21 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
 
   reviseOrder(order: Order): void {
     if (!this._checkDelivery(order)) return;
-    const editedProducts = order.products
-      .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
-      .filter(p => p.qty > 0);
+    const withEditedQty = order.products.map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }));
+    const overStock = withEditedQty.filter(p => {
+      if (!p.catalogId) return false;
+      const max = this.maxEditableQty(order, p);
+      return p.qty > max;
+    });
+    if (overStock.length > 0) {
+      const list = overStock.map(p => {
+        const max = this.maxEditableQty(order, p);
+        return `• ${p.name}: disponibil ${max}, solicitat ${p.qty}`;
+      }).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-error'], verticalPosition: 'top' });
+      return;
+    }
+    const editedProducts = withEditedQty.filter(p => p.qty > 0);
     const newProducts = [...editedProducts, ...(order.pendingProducts ?? [])];
 
     if (newProducts.length === 0) {

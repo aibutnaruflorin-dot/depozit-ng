@@ -369,6 +369,11 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     return order.status === 'trimis' && !order.superseded;
   }
 
+  isActiveOrder(order: Order): boolean {
+    const active = ['trimis', 'acceptat', 'planificat', 'in_livrare', 'livrat_partial'];
+    return active.includes(order.status) && !order.superseded;
+  }
+
   getCodExtern(p: import('../../core/models/order.model').OrderProduct): string {
     if (p.codExtern) return p.codExtern;
     if (!p.catalogId) return '';
@@ -377,10 +382,11 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
   }
 
   hasQtyChanges(order: Order): boolean {
-    return order.products.some((p, i) => {
+    const hasEdits = order.products.some((p, i) => {
       const edited = this._editQty()[this.ekey(order.id, i)];
       return edited !== undefined && edited !== p.qty;
     });
+    return hasEdits || !!(order.pendingProducts?.length);
   }
 
   pFaraTVA(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): number | null {
@@ -559,9 +565,19 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
 
   finalizeOrder(order: Order): void {
     if (!this._checkDelivery(order)) return;
-    const newProducts = order.products
-      .map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }))
-      .filter(p => p.qty > 0);
+    const withEditedQty = order.products.map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }));
+    const overStock = withEditedQty.filter(p => {
+      if (!p.catalogId) return false;
+      const max = this.maxEditableQty(order, p);
+      return p.qty > max;
+    });
+    if (overStock.length > 0) {
+      const list = overStock.map(p => `• ${p.name}: disponibil ${this.maxEditableQty(order, p)}, solicitat ${p.qty}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-error'], verticalPosition: 'top' });
+      return;
+    }
+    const editedProducts = withEditedQty.filter(p => p.qty > 0);
+    const newProducts = [...editedProducts, ...(order.pendingProducts ?? [])];
     if (newProducts.length === 0) {
       this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
       return;
@@ -789,8 +805,20 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     if (um && !this.unitsService.allowDecimal(um)) qty = Math.round(qty);
     this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: qty }));
   }
-  incEditQty(orderId: string, idx: number, def: number): void {
-    this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1);
+  maxEditableQty(order: Order, p: import('../../core/models/order.model').OrderProduct): number {
+    if (!p.catalogId) return Infinity;
+    const stock = this.catalogsService.getStock(p.catalogId, p.nr);
+    if (stock === null) return Infinity;
+    return stock + p.qty;
+  }
+
+  incEditQty(orderId: string, idx: number, def: number, maxQty = Infinity): void {
+    const current = this.getEditQty(orderId, idx, def);
+    if (current >= maxQty) {
+      this.snackBar.open('Stoc insuficient — nu mai există cantitate disponibilă pentru acest produs.', 'OK', { duration: 3000, panelClass: ['snack-error'] });
+      return;
+    }
+    this.setEditQty(orderId, idx, def, current + 1);
   }
   decEditQty(orderId: string, idx: number, def: number): void {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);

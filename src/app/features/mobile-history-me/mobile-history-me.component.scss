@@ -147,7 +147,7 @@
 }
 .mh-ds-client {
   font-size: .98rem; font-weight: 700; color: var(--color-text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
 
 .mh-ds-meta-row {
@@ -159,7 +159,7 @@
 
 /* Scrollable body */
 .mh-ds-body {
-  flex: 1; overflow-y: auto; padding: 0 14px 12px;
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 14px 12px;
 }
 
 .mh-ds-section {
@@ -173,12 +173,20 @@
   &:last-child { margin-bottom: 0; }
   mat-icon { font-size: 16px; width: 16px; height: 16px; color: var(--color-text-muted); margin-top: 2px; flex-shrink: 0; }
   a { color: var(--color-primary); text-decoration: none; }
+  span { word-break: break-word; overflow-wrap: break-word; min-width: 0; }
 }
 .mh-ds-section-label {
   font-size: .7rem; font-weight: 700; color: var(--color-text-muted);
   text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px;
 }
-.mh-ds-obs { font-size: .85rem; color: var(--color-text); line-height: 1.5; }
+.mh-ds-obs {
+  font-size: .85rem; color: var(--color-text); line-height: 1.5;
+  word-break: break-word; overflow-wrap: break-word;
+}
+
+.mh-ds-obs-toggle {
+  font-size: .78rem; color: var(--color-primary); cursor: pointer; margin-top: 4px; display: inline-block;
+}
 
 /* Products in detail */
 .mh-ds-prod {
@@ -295,7 +303,8 @@
   display: flex; align-items: center; justify-content: center;
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
-.mh-ps-qty { min-width: 48px; text-align: center; font-size: .82rem; font-weight: 600; color: var(--color-text); }
+.mh-ps-qty { min-width: 48px; text-align: center; font-size: .82rem; font-weight: 600; color: var(--color-text); border-radius: 4px; padding: 1px 4px; }
+.mh-ps-qty--over { color: #ef4444; background: #fff1f1; }
 .mh-ps-btn--delete { border-color: #FECACA; color: #DC2626; }
 
 /* Order events journal */

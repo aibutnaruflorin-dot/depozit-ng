@@ -233,7 +233,7 @@
         <button class="mn-btn-primary" (click)="submit()">
           @if (addToOrderId) {
             <mat-icon>add_circle_outline</mat-icon>
-            Adaugă {{ cartCount() }} la ciornă
+            {{ addPending ? 'Adaugă ' + cartCount() + ' la comandă' : 'Adaugă ' + cartCount() + ' la ciornă' }}
           } @else {
             <mat-icon>save</mat-icon>
             Salvează comanda

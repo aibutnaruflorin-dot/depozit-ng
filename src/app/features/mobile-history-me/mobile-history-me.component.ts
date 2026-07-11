@@ -22,9 +22,19 @@ type StatusTab = 'toate' | 'draft' | 'asteapta' | 'activ' | 'livrat' | 'anulat';
   styleUrl: './mobile-history-me.component.scss'
 })
 export class MobileHistoryMeComponent {
-  activeTab = signal<StatusTab>('toate');
-  detailId  = signal<string | null>(null);
-  _editQty  = signal<Record<string, number>>({});
+  activeTab   = signal<StatusTab>('toate');
+  detailId    = signal<string | null>(null);
+  _editQty    = signal<Record<string, number>>({});
+  _obsExpanded = signal<Set<string>>(new Set());
+
+  isObsExpanded(orderId: string): boolean { return this._obsExpanded().has(orderId); }
+  toggleObs(orderId: string): void {
+    this._obsExpanded.update(s => {
+      const n = new Set(s);
+      n.has(orderId) ? n.delete(orderId) : n.add(orderId);
+      return n;
+    });
+  }
 
   readonly TABS: { key: StatusTab; label: string }[] = [
     { key: 'toate',    label: 'Toate'   },
@@ -150,9 +160,12 @@ export class MobileHistoryMeComponent {
   closeDetail(): void { this.detailId.set(null); }
 
   canSend(o: Order): boolean        { return o.status === 'draft'; }
-  canRevise(o: Order): boolean      { return o.status === 'trimis' && !o.superseded && (this.hasEditedQty(o) || !!(o.pendingProducts?.length)); }
-  canAddProducts(o: Order): boolean { return ['draft','trimis','acceptat'].includes(o.status); }
-  canCancel(o: Order): boolean      { return ['draft','trimis','acceptat'].includes(o.status); }
+  canRevise(o: Order): boolean {
+    const active = ['trimis','acceptat','planificat','in_livrare','livrat_partial'];
+    return active.includes(o.status) && !o.superseded && (this.hasEditedQty(o) || !!(o.pendingProducts?.length));
+  }
+  canAddProducts(o: Order): boolean { return ['draft','trimis','acceptat','planificat','livrat_partial'].includes(o.status) && !o.superseded; }
+  canCancel(o: Order): boolean      { return ['draft','trimis','acceptat','planificat'].includes(o.status) && !o.superseded; }
   canReopen(o: Order): boolean      { return o.status === 'anulat'; }
 
   ekey(orderId: string, idx: number): string { return `${orderId}:${idx}`; }
@@ -166,8 +179,28 @@ export class MobileHistoryMeComponent {
     this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: qty }));
   }
 
-  incEditQty(orderId: string, idx: number, currentQty: number): void {
-    this.setEditQty(orderId, idx, this.getEditQty(orderId, idx, currentQty) + 1);
+  maxEditableQty(order: Order, p: OrderProduct): number {
+    if (!p.catalogId) return Infinity;
+    const stock = this.catalogsService.getStock(p.catalogId, p.nr);
+    if (stock === null) return Infinity;
+    return order.status === 'draft' ? stock : stock + p.qty;
+  }
+
+  editQtyExceedsStock(orderId: string, idx: number, p: OrderProduct): boolean {
+    if (!p.catalogId) return false;
+    const edited = this._editQty()[this.ekey(orderId, idx)];
+    if (edited === undefined) return false;
+    const stock = this.catalogsService.getStock(p.catalogId, p.nr);
+    return stock !== null && edited > stock;
+  }
+
+  incEditQty(orderId: string, idx: number, currentQty: number, maxQty = Infinity): void {
+    const current = this.getEditQty(orderId, idx, currentQty);
+    if (current >= maxQty) {
+      this.snackBar.open('Stoc insuficient — nu mai există cantitate disponibilă pentru acest produs.', 'OK', { duration: 3000, panelClass: ['snack-error'] });
+      return;
+    }
+    this.setEditQty(orderId, idx, current + 1);
   }
 
   decEditQty(orderId: string, idx: number, currentQty: number): void {
@@ -204,10 +237,22 @@ export class MobileHistoryMeComponent {
   }
 
   sendDraft(o: Order): void {
+    const withEditedQty = o.products.map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }));
+    const overStock = withEditedQty.filter(p => {
+      if (!p.catalogId) return false;
+      const max = this.maxEditableQty(o, p);
+      return p.qty > max;
+    });
+    if (overStock.length > 0) {
+      const list = overStock.map(p => {
+        const max = this.maxEditableQty(o, p);
+        return `• ${p.name}: disponibil ${max}, solicitat ${p.qty}`;
+      }).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-error'], verticalPosition: 'top' });
+      return;
+    }
     if (this.hasEditedQty(o)) {
-      const editedProducts = o.products
-        .map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }))
-        .filter(p => p.qty > 0);
+      const editedProducts = withEditedQty.filter(p => p.qty > 0);
       if (editedProducts.length === 0) {
         this.snackBar.open('Adaugă cel puțin un produs cu cantitate > 0.', '', { duration: 2500 });
         return;
@@ -221,8 +266,8 @@ export class MobileHistoryMeComponent {
     }
     const result = this.ordersService.submitDraftOrder(o.id);
     if (!result.ok) {
-      const list = result.insufficient.map(i => `${i.name}: ${i.available}/${i.requested}`).join(', ');
-      this.snackBar.open(`Stoc insuficient: ${list}`, 'Închide', { duration: 5000, panelClass: ['snack-warn'] });
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-error'], verticalPosition: 'top' });
       return;
     }
     const sent = this.ordersService.orders().find(x => x.id === o.id)!;
@@ -246,9 +291,21 @@ export class MobileHistoryMeComponent {
   }
 
   reviseOrder(o: Order): void {
-    const editedProducts = o.products
-      .map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }))
-      .filter(p => p.qty > 0);
+    const withEditedQty = o.products.map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }));
+    const overStock = withEditedQty.filter(p => {
+      if (!p.catalogId) return false;
+      const max = this.maxEditableQty(o, p);
+      return p.qty > max;
+    });
+    if (overStock.length > 0) {
+      const list = overStock.map(p => {
+        const max = this.maxEditableQty(o, p);
+        return `• ${p.name}: disponibil ${max}, solicitat ${p.qty}`;
+      }).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-error'], verticalPosition: 'top' });
+      return;
+    }
+    const editedProducts = withEditedQty.filter(p => p.qty > 0);
     const newProducts = [...editedProducts, ...(o.pendingProducts ?? [])];
 
     if (newProducts.length === 0) {

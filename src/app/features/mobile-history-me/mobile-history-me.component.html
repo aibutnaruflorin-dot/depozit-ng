@@ -140,8 +140,13 @@
             @if (o.client.note) {
               <div class="mh-ds-row">
                 <mat-icon>chat_bubble_outline</mat-icon>
-                <span>{{ o.client.note }}</span>
+                <span>{{ isObsExpanded(o.id + ':note') ? o.client.note : (o.client.note.length > 80 ? o.client.note.slice(0, 80) + '…' : o.client.note) }}</span>
               </div>
+              @if (o.client.note.length > 80) {
+                <span class="mh-ds-obs-toggle" (click)="toggleObs(o.id + ':note')">
+                  {{ isObsExpanded(o.id + ':note') ? 'Arată mai puțin ▲' : 'Arată mai mult ▼' }}
+                </span>
+              }
             }
           </div>
         }
@@ -150,7 +155,12 @@
         @if (o.observatii) {
           <div class="mh-ds-section">
             <div class="mh-ds-section-label">Observații</div>
-            <div class="mh-ds-obs">{{ o.observatii }}</div>
+            <div class="mh-ds-obs">{{ isObsExpanded(o.id) ? o.observatii : (o.observatii.length > 80 ? o.observatii.slice(0, 80) + '…' : o.observatii) }}</div>
+            @if (o.observatii.length > 80) {
+              <span class="mh-ds-obs-toggle" (click)="toggleObs(o.id)">
+                {{ isObsExpanded(o.id) ? 'Arată mai puțin ▲' : 'Arată mai mult ▼' }}
+              </span>
+            }
           </div>
         }
 
@@ -164,7 +174,7 @@
           </div>
           @for (p of o.products; track p.nr) {
             <div class="mh-ds-prod"
-                 [class.mh-ds-prod-removed]="o.status === 'draft' && getEditQty(o.id, $index, p.qty) === 0">
+                 [class.mh-ds-prod-removed]="['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded && getEditQty(o.id, $index, p.qty) === 0">
 
               <!-- Name -->
               <div class="mh-ds-prod-name">{{ p.name }}</div>
@@ -238,13 +248,13 @@
                   <span></span>
                 }
 
-                @if (o.status === 'draft') {
+                @if (['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded) {
                   <div class="mh-prod-stepper">
                     <button class="mh-ps-btn" (click)="decEditQty(o.id, $index, p.qty)">
                       <mat-icon>{{ getEditQty(o.id, $index, p.qty) <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
                     </button>
-                    <span class="mh-ps-qty">{{ getEditQty(o.id, $index, p.qty) }} {{ p.um }}</span>
-                    <button class="mh-ps-btn" (click)="incEditQty(o.id, $index, p.qty)">
+                    <span class="mh-ps-qty" [class.mh-ps-qty--over]="editQtyExceedsStock(o.id, $index, p)">{{ getEditQty(o.id, $index, p.qty) }} {{ p.um }}</span>
+                    <button class="mh-ps-btn" (click)="incEditQty(o.id, $index, p.qty, maxEditableQty(o, p))">
                       <mat-icon>add</mat-icon>
                     </button>
                   </div>
@@ -272,7 +282,30 @@
                     @if (p.furnizor) { <span class="mh-ds-tag mh-ds-tag-dim">{{ p.furnizor }}</span> }
                   </div>
                   <div class="mh-ds-prod-bottom">
-                    <span></span>
+                    @if (getStockInfo(p); as s) {
+                      <div class="mh-ds-stoc-breakdown">
+                        <div class="mh-ds-stoc-row">
+                          <span class="mh-ds-stoc-label">Importat</span>
+                          <span>{{ s.importedQty }}</span>
+                        </div>
+                        <div class="mh-ds-stoc-row">
+                          <span class="mh-ds-stoc-label">Consumat</span>
+                          <span>{{ s.consumedQty }}</span>
+                        </div>
+                        <div class="mh-ds-stoc-row">
+                          <span class="mh-ds-stoc-label">Buffer</span>
+                          <span [class.mh-ds-buf-pos]="s.bufferQty > 0" [class.mh-ds-buf-neg]="s.bufferQty < 0">
+                            {{ s.bufferQty === 0 ? '—' : (s.bufferQty > 0 ? '+' : '') + s.bufferQty }}
+                          </span>
+                        </div>
+                        <div class="mh-ds-stoc-row mh-ds-stoc-final-row">
+                          <span class="mh-ds-stoc-label">Final</span>
+                          <span class="mh-ds-stoc-final-val" [class]="stockDotClass(s.finalQty)">{{ s.finalQty }}</span>
+                        </div>
+                      </div>
+                    } @else {
+                      <span></span>
+                    }
                     <div class="mh-prod-stepper">
                       <button class="mh-ps-btn" (click)="decPendingQty(o.id, pi)">
                         <mat-icon>{{ p.qty <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
@@ -344,10 +377,11 @@
       </div><!-- end body -->
 
       <!-- Changed qty banner -->
-      @if (o.status === 'draft' && hasEditedQty(o)) {
+      @if (hasEditedQty(o)) {
         <div class="mh-qty-changed-banner">
           <mat-icon>edit</mat-icon>
-          Cantități modificate — apasă „Trimite" pentru a le aplica
+          @if (o.status === 'draft') { Cantități modificate — apasă „Trimite" pentru a le aplica }
+          @else { Cantități modificate — apasă „Retrimite modificat" pentru a le aplica }
         </div>
       }
 
