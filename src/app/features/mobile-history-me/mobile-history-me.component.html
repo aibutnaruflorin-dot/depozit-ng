@@ -47,7 +47,7 @@
           <div class="mh-card-meta">
             <span>{{ shortDate(o.timestamp) }}</span>
             <span class="mh-sep">·</span>
-            <span>{{ o.products.length }} produse</span>
+            <span>{{ o.products.length + (o.pendingProducts?.length ?? 0) }} produse</span>
             @if (o.cuLivrare) {
               <span class="mh-sep">·</span>
               <mat-icon class="mh-meta-icon">local_shipping</mat-icon>
@@ -55,6 +55,22 @@
             @if (orderTotal(o) > 0) {
               <span class="mh-meta-total">{{ orderTotal(o) | number:'1.2-2' }} lei</span>
             }
+          </div>
+          <div class="mh-card-actions" (click)="$event.stopPropagation()">
+            <button class="mh-ca-btn" (click)="emailOrder(o, $event)" title="Trimite email">
+              <mat-icon>email</mat-icon>
+            </button>
+            @if (o.client?.phone) {
+              <button class="mh-ca-btn" (click)="whatsAppOrder(o, $event)" title="WhatsApp">
+                <mat-icon>chat</mat-icon>
+              </button>
+            }
+            <button class="mh-ca-btn" (click)="printOrder(o, $event)" title="Printează">
+              <mat-icon>print</mat-icon>
+            </button>
+            <button class="mh-ca-btn" (click)="downloadOrder(o, $event)" title="Descarcă CSV">
+              <mat-icon>download</mat-icon>
+            </button>
           </div>
         </div>
       }

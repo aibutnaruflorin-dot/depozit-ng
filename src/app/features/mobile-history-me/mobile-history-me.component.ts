@@ -254,4 +254,81 @@ export class MobileHistoryMeComponent {
   }
 
   newOrder(): void { this.router.navigate(['/app/m-new-order']); }
+
+  /* ── Quick actions (card level) ─────── */
+
+  emailOrder(o: Order, e: Event): void {
+    e.stopPropagation();
+    const text = this.ordersService.generateText(o);
+    window.open(this.ordersService.generateMailto(o, text), '_blank');
+  }
+
+  whatsAppOrder(o: Order, e: Event): void {
+    e.stopPropagation();
+    const phone = o.client?.phone;
+    if (!phone) return;
+    let p = phone.replace(/[\s\-().]/g, '');
+    if (p.startsWith('00')) p = '+' + p.slice(2);
+    else if (p.startsWith('0')) p = '+4' + p;
+    else if (p.startsWith('40') && !p.startsWith('+')) p = '+' + p;
+    const text = this.ordersService.generateText(o);
+    window.open(`https://wa.me/${p}?text=${encodeURIComponent(text)}`, '_blank');
+  }
+
+  printOrder(o: Order, e: Event): void {
+    e.stopPropagation();
+    const status = o.superseded ? 'Înlocuită' : o.status === 'anulat' ? 'Anulată' :
+                   o.status === 'acceptat' ? 'Acceptată' : 'În așteptare';
+    const rows = o.products.map((p, i) => `
+      <tr>
+        <td>${i + 1}</td><td>${p.name}</td>
+        <td style="text-align:center">${p.qty}</td><td>${p.um}</td>
+        <td>${p.category ?? ''}</td><td>${p.codExtern ?? ''}</td>
+      </tr>`).join('');
+    const html = `<!DOCTYPE html><html lang="ro"><head><meta charset="UTF-8">
+      <title>Comanda #${o.orderNumber ?? o.id.slice(0,6)}</title>
+      <style>
+        body{font-family:Arial,sans-serif;font-size:13px;color:#111;margin:24px}
+        h2{margin:0 0 4px;font-size:16px}
+        .meta{display:flex;gap:32px;margin-bottom:16px;color:#444;font-size:12px}
+        .meta span{display:flex;flex-direction:column}
+        .meta strong{color:#111;font-size:13px}
+        table{width:100%;border-collapse:collapse;margin-top:8px}
+        th{background:#f0f0f0;text-align:left;padding:6px 8px;font-size:12px;border:1px solid #ccc;text-transform:uppercase;letter-spacing:.04em}
+        td{padding:5px 8px;border:1px solid #ddd;vertical-align:top}
+        tr:nth-child(even) td{background:#fafafa}
+        .footer{margin-top:16px;font-size:11px;color:#888;border-top:1px solid #ddd;padding-top:8px}
+        @media print{body{margin:0}}
+      </style></head><body>
+      <h2>Comanda #${o.orderNumber ?? '—'} · ${status}</h2>
+      <div class="meta">
+        <span><label>Client</label><strong>${o.client.name}</strong></span>
+        ${o.client.phone ? `<span><label>Telefon</label><strong>${o.client.phone}</strong></span>` : ''}
+        <span><label>Agent</label><strong>${o.agent?.name ?? '—'}</strong></span>
+        <span><label>Data</label><strong>${new Date(o.timestamp).toLocaleString('ro-RO')}</strong></span>
+      </div>
+      <table><thead><tr>
+        <th>#</th><th>Produs</th><th>Cant.</th><th>UM</th><th>Categorie</th><th>Cod extern</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+      <div class="footer">Generat din Depozit App · ${new Date().toLocaleString('ro-RO')}</div>
+      <script>window.onload=()=>{window.print()}<\/script>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+
+  downloadOrder(o: Order, e: Event): void {
+    e.stopPropagation();
+    const header = 'Nr,Produs,Cantitate,UM,Categorie,Cod extern,Furnizor,Fara TVA,Cu TVA';
+    const rows = o.products.map((p, i) =>
+      [i + 1, `"${p.name}"`, p.qty, p.um, p.category ?? '', p.codExtern ?? '', p.furnizor ?? '',
+       p.pretFaraTVA ?? '', p.pretCuTVA ?? ''].join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `comanda_${o.orderNumber ?? o.id.slice(0,6)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
 }

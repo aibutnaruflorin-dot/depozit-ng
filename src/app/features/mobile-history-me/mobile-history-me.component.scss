@@ -81,6 +81,19 @@
 .mh-meta-icon { font-size: 14px; width: 14px; height: 14px; color: var(--color-primary); }
 .mh-meta-total { margin-left: auto; font-weight: 700; color: var(--color-text); }
 
+.mh-card-actions {
+  display: flex; align-items: center; gap: 2px;
+  margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+.mh-ca-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer;
+  color: var(--color-text-muted); padding: 6px 0; border-radius: 6px;
+  &:active { background: var(--color-border); }
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
 /* ── Status chips ───────────────────── */
 .mh-chip {
   flex-shrink: 0; border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700;
