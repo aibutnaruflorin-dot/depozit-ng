@@ -236,8 +236,8 @@ export class MobileNewOrderComponent implements OnInit {
       const session = this.auth.session();
       if (!session) { this.auth.logout(); return; }
 
-      const newProds: OrderProduct[] = this.cart().map((item, i) => ({
-        nr: i + 1, name: item.product.name, um: item.product.um,
+      const newProds: OrderProduct[] = this.cart().map(item => ({
+        nr: item.product.nr, name: item.product.name, um: item.product.um,
         qty: item.qty, category: item.product.category, catalogId: item.product.catalogId,
         furnizor: item.product.furnizor, codExtern: item.product.codExtern,
         pretFaraTVA: item.product.pretFaraTVA, pretCuTVA: item.product.pretCuTVA,
@@ -264,9 +264,7 @@ export class MobileNewOrderComponent implements OnInit {
         if (existing.status !== 'draft') {
           this.snackBar.open('Ciornă indisponibilă.', '', { duration: 2500 }); return;
         }
-        const maxNr = existing.products.reduce((m, p) => Math.max(m, Number(p.nr) || 0), 0);
-        const numbered = newProds.map((p, i) => ({ ...p, nr: maxNr + i + 1 }));
-        this.ordersService.updateDraftProducts(this.addToOrderId!, [...existing.products, ...numbered]);
+        this.ordersService.updateDraftProducts(this.addToOrderId!, [...existing.products, ...newProds]);
         this.snackBar.open(`${newProds.length} produse adăugate la ciornă!`, 'OK', {
           duration: 3000, panelClass: ['snack-success']
         });

@@ -495,6 +495,14 @@
                           <span class="s3-label">Final</span>
                           <span class="s3-final" [class.s3-zero]="s.finalQty === 0">{{ s.finalQty | number:'1.0-4' }}</span>
                         </div>
+                        @let sBlocking = getBlockingOrdersFor(p.catalogId, p.nr);
+                        @if (s.finalQty <= 0 && sBlocking.length > 0) {
+                          <div class="stoc-blocked-info">
+                            @for (b of sBlocking; track b.orderNumber) {
+                              <span class="stoc-blocked-item"><mat-icon>lock</mat-icon>#{{ b.orderNumber }} {{ b.clientName }} — {{ b.qty }} {{ p.um }} ({{ b.statusLabel }})</span>
+                            }
+                          </div>
+                        }
                       </div>
                       <span class="epc-cod">{{ p.codExtern || '—' }}</span>
                       <span class="epc-furn">{{ p.furnizor || '—' }}</span>
@@ -560,6 +568,14 @@
                           <span class="s3-label">Final</span>
                           <span class="s3-final" [class.s3-zero]="sr.finalQty === 0">{{ sr.finalQty }}</span>
                         </div>
+                        @let srBlocking = getBlockingOrdersFor(p.catalogId, p.nr);
+                        @if (sr.finalQty <= 0 && srBlocking.length > 0) {
+                          <div class="stoc-blocked-info">
+                            @for (b of srBlocking; track b.orderNumber) {
+                              <span class="stoc-blocked-item"><mat-icon>lock</mat-icon>#{{ b.orderNumber }} {{ b.clientName }} — {{ b.qty }} {{ p.um }} ({{ b.statusLabel }})</span>
+                            }
+                          </div>
+                        }
                       </div>
                       <span class="epc-cod">{{ p.codExtern || '—' }}</span>
                       <span class="epc-furn">{{ p.furnizor || '—' }}</span>
@@ -636,6 +652,14 @@
                           <div class="s3-row"><span class="s3-label">Consumat</span><span class="s3-con">{{ ps.consumedQty > 0 ? '−' + ps.consumedQty : ps.consumedQty }}</span></div>
                           <div class="s3-row"><span class="s3-label">Buffer</span><span class="s3-buf" [class.s3-pos]="ps.bufferQty > 0" [class.s3-neg]="ps.bufferQty < 0">{{ ps.bufferQty > 0 ? '+' : '' }}{{ ps.bufferQty === 0 ? '—' : ps.bufferQty }}</span></div>
                           <div class="s3-row s3-total"><span class="s3-label">Final</span><span class="s3-final" [class.s3-zero]="ps.finalQty === 0">{{ ps.finalQty | number:'1.0-4' }}</span></div>
+                          @let psBlocking = getBlockingOrdersFor(p.catalogId, p.nr);
+                          @if (ps.finalQty <= 0 && psBlocking.length > 0) {
+                            <div class="stoc-blocked-info">
+                              @for (b of psBlocking; track b.orderNumber) {
+                                <span class="stoc-blocked-item"><mat-icon>lock</mat-icon>#{{ b.orderNumber }} {{ b.clientName }} — {{ b.qty }} {{ p.um }} ({{ b.statusLabel }})</span>
+                              }
+                            </div>
+                          }
                         </div>
                       } @else {
                         <span></span>

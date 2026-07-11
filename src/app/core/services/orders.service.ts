@@ -140,6 +140,17 @@ export class OrdersService {
     this.storage.set('app_orders', this._orders());
   }
 
+  /** Returns active orders that contain a specific catalog product, i.e. orders blocking that stock. */
+  getBlockingOrders(catalogId: string, productNr: string | number): { orderNumber?: number; clientName: string; qty: number; status: string }[] {
+    const key = String(productNr);
+    return this._orders()
+      .filter(o => !o.superseded && !['anulat', 'livrat'].includes(o.status))
+      .flatMap(o => o.products
+        .filter(p => p.catalogId === catalogId && String(p.nr) === key)
+        .map(p => ({ orderNumber: o.orderNumber, clientName: o.client.name, qty: p.qty, status: o.status }))
+      );
+  }
+
   cancelOrder(id: string): void {
     const order = this._orders().find(o => o.id === id);
     if (order && order.status !== 'anulat' && !order.superseded) {

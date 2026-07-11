@@ -128,6 +128,18 @@ export class MobileHistoryMeComponent {
     return s ? { importedQty: s.importedQty, consumedQty: s.consumedQty, bufferQty: s.bufferQty, finalQty: s.finalQty } : null;
   }
 
+  getBlockingOrders(p: OrderProduct, currentOrderId: string): { orderNumber?: number; clientName: string; qty: number; statusLabel: string }[] {
+    if (!p.catalogId) return [];
+    const statusMap: Record<string, string> = {
+      draft: 'Ciornă', trimis: 'În așteptare', acceptat: 'Acceptat',
+      planificat: 'Planificat', in_livrare: 'În livrare', livrat: 'Livrat'
+    };
+    return this.ordersService.getBlockingOrders(p.catalogId, p.nr)
+      .filter(b => b.orderNumber !== undefined || b.clientName !== '')
+      .filter((_, i, arr) => i === arr.findIndex(x => x.orderNumber === arr[i].orderNumber))
+      .map(b => ({ ...b, statusLabel: statusMap[b.status] ?? b.status }));
+  }
+
   stockDotClass(qty: number): string {
     if (qty <= 0) return 'dot-zero';
     if (qty <= 5) return 'dot-low';
@@ -253,7 +265,7 @@ export class MobileHistoryMeComponent {
       cuLivrare:     o.cuLivrare,
       deliveryDate:  o.deliveryDate,
       deliveryTime:  o.deliveryTime,
-      products:      newProducts.map((p, i) => ({ ...p, nr: i + 1 })),
+      products:      newProducts,
       status:        'trimis',
       revisedFromId: o.id
     };

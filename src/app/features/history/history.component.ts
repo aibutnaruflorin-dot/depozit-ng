@@ -405,6 +405,17 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     return new Date(iso).toLocaleString('ro-RO');
   }
 
+  readonly _statusLabelMap: Record<string, string> = {
+    draft: 'Ciornă', trimis: 'În așteptare', acceptat: 'Acceptat',
+    planificat: 'Planificat', in_livrare: 'În livrare', livrat: 'Livrat'
+  };
+
+  getBlockingOrdersFor(catalogId: string | undefined, productNr: string | number): { orderNumber?: number; clientName: string; qty: number; statusLabel: string }[] {
+    if (!catalogId) return [];
+    return this.ordersService.getBlockingOrders(catalogId, productNr)
+      .map(b => ({ ...b, statusLabel: this._statusLabelMap[b.status] ?? b.status }));
+  }
+
   pFaraTVA(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): number | null {
     if (p.pretFaraTVA != null) return p.pretFaraTVA;
     if (p.catalogId) return this.catalogsService.findProduct(p.catalogId, p.nr)?.pretFaraTVA ?? null;

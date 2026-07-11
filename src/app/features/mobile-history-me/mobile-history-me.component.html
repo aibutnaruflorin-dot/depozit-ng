@@ -223,6 +223,16 @@
                       <span class="mh-ds-stoc-label">Final</span>
                       <span class="mh-ds-stoc-final-val" [class]="stockDotClass(s.finalQty)">{{ s.finalQty }}</span>
                     </div>
+                    @if (s.finalQty <= 0 && getBlockingOrders(p, o.id).length > 0) {
+                      <div class="mh-ds-stoc-blocked">
+                        @for (b of getBlockingOrders(p, o.id); track b.orderNumber) {
+                          <span class="mh-ds-stoc-blocked-item">
+                            <mat-icon>lock</mat-icon>
+                            #{{ b.orderNumber }} {{ b.clientName }} — {{ b.qty }} {{ p.um }} ({{ b.statusLabel }})
+                          </span>
+                        }
+                      </div>
+                    }
                   </div>
                 } @else {
                   <span></span>
