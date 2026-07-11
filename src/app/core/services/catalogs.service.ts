@@ -199,7 +199,9 @@ export class CatalogsService {
     if (subtractReserved?.size) {
       products = products.map(p => {
         const res = subtractReserved.get(p.name) ?? 0;
-        return res > 0 ? { ...p, qty: Math.max(0, p.qty - res) } : p;
+        if (res <= 0) return p;
+        const netQty = Math.max(0, p.qty - res);
+        return { ...p, qty: netQty, importedQty: netQty };
       });
     }
 
