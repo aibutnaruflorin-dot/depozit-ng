@@ -92,6 +92,15 @@
   mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; }
 }
 
+.exp-locked-banner {
+  display: flex; align-items: center; gap: 6px;
+  margin: 4px 0; padding: 6px 10px;
+  border-radius: 6px; border: 1px solid #e65100; background: #fff3e0;
+  font-size: 0.75rem; font-weight: 600; color: #e65100;
+  [data-theme="dark"] & { background: rgba(230,81,0,0.1); }
+  mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; }
+}
+
 .exp-pending-section {
   margin: 10px 0 4px; padding: 10px 12px;
   border: 1.5px dashed #f59e0b; border-radius: 8px; background: #fffbeb;

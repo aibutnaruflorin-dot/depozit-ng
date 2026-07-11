@@ -492,6 +492,10 @@ $_epc-cols: minmax(180px, 1fr) 120px 50px 145px 90px 130px 108px 108px 80px 130p
 .btn-reopen-order {
   mat-icon { font-size: 18px; }
 }
+.btn-lock-active {
+  border-color: #e65100 !important; color: #e65100 !important;
+  mat-icon { color: #e65100; }
+}
 .btn-collapse {
   margin-left: auto; width: 32px; height: 32px;
 }

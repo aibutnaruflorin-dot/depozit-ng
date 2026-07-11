@@ -462,7 +462,7 @@
                   <span class="epc-center">Cantitate</span>
                 </div>
                 @for (p of order.products; track p.nr; let j = $index) {
-                  @if (['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded) {
+                  @if (['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && !order.locked) {
                     <!-- Editabil — ciornă sau comandă în așteptare -->
                     <div class="exp-product-row"
                          [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
@@ -633,7 +633,11 @@
                 <div class="exp-pending-section">
                   <div class="exp-pending-title">
                     <mat-icon>pending</mat-icon>
-                    Produse neconfirmate (vizibile doar ție — apasă „Retrimite modificat" pentru a le trimite)
+                    @if (order.locked) {
+                      Produse adăugate — comanda este blocată de depozit
+                    } @else {
+                      Produse neconfirmate (vizibile doar ție — apasă „Retrimite modificat" pentru a le trimite)
+                    }
                   </div>
                   @for (p of order.pendingProducts!; track p.nr; let pi = $index) {
                     <div class="exp-product-row exp-pending-row">
@@ -668,24 +672,28 @@
                       <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
                       <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
                       <span class="epc-masa">—</span>
-                      <div class="epc-qty-cell">
-                        <div class="exp-qty-controls">
-                          <button mat-icon-button class="eq-btn" (click)="decPending(order.id, pi, p.um)">
-                            <mat-icon>remove</mat-icon>
-                          </button>
-                          <input class="eq-input" type="number" min="0" [attr.step]="umStep(p.um)"
-                                 [value]="p.qty"
-                                 (change)="setPendingQtyManual(order.id, pi, $any($event.target).value, p.um)"
-                                 (click)="$any($event.target).select()">
-                          <button mat-icon-button class="eq-btn" (click)="incPending(order.id, pi, p.um)">
-                            <mat-icon>add</mat-icon>
-                          </button>
-                          <button mat-icon-button class="eq-btn eq-btn--delete" color="warn"
-                                  (click)="deletePending(order.id, pi, p.name)" matTooltip="Elimină">
-                            <mat-icon>delete</mat-icon>
-                          </button>
+                      @if (!order.locked) {
+                        <div class="epc-qty-cell">
+                          <div class="exp-qty-controls">
+                            <button mat-icon-button class="eq-btn" (click)="decPending(order.id, pi, p.um)">
+                              <mat-icon>remove</mat-icon>
+                            </button>
+                            <input class="eq-input" type="number" min="0" [attr.step]="umStep(p.um)"
+                                   [value]="p.qty"
+                                   (change)="setPendingQtyManual(order.id, pi, $any($event.target).value, p.um)"
+                                   (click)="$any($event.target).select()">
+                            <button mat-icon-button class="eq-btn" (click)="incPending(order.id, pi, p.um)">
+                              <mat-icon>add</mat-icon>
+                            </button>
+                            <button mat-icon-button class="eq-btn eq-btn--delete" color="warn"
+                                    (click)="deletePending(order.id, pi, p.name)" matTooltip="Elimină">
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      } @else {
+                        <span class="epc-qty-cell exp-qty-static">{{ p.qty }}</span>
+                      }
                     </div>
                   }
                 </div>
@@ -740,7 +748,7 @@
                     Anulează
                   </button>
                 }
-                @if (['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded) {
+                @if (['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && !order.locked) {
                   <button mat-flat-button color="primary" (click)="reviseOrder(order)"
                           [disabled]="!hasPendingChanges(order)"
                           [matTooltip]="hasPendingChanges(order) ? '' : 'Nu există modificări de trimis'">
@@ -751,6 +759,12 @@
                     <mat-icon>block</mat-icon>
                     Anulează
                   </button>
+                }
+                @if (['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && order.locked) {
+                  <div class="exp-locked-banner">
+                    <mat-icon>lock</mat-icon>
+                    Comanda este blocată de depozit — nu poți face modificări
+                  </div>
                 }
                 @if (canAddProducts(order)) {
                   <button mat-stroked-button (click)="addProductsOrderId.set(order.id); expandRow(order.id)">

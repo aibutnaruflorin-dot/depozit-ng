@@ -278,6 +278,11 @@ export class OrdersService {
     return [...byName.values()].sort((a, b) => b.totalQty - a.totalQty);
   }
 
+  setOrderLocked(id: string, locked: boolean): void {
+    this._orders.update(orders => orders.map(o => o.id === id ? { ...o, locked } : o));
+    this.storage.set('app_orders', this._orders());
+  }
+
   resetPeriod(): void {
     this.catalogs.reconcileStockToImport();
     this.catalogs.clearOrderStockLog();

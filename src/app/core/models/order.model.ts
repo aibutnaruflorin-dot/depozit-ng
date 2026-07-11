@@ -40,4 +40,5 @@ export interface Order {
   superseded?: boolean;
   orderEvents?: OrderEvent[];
   observatii?: string;
+  locked?: boolean;
 }

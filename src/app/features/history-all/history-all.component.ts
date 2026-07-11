@@ -231,6 +231,8 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
   expandedRows = signal<Record<string, boolean>>({});
   private _editQty = signal<Record<string, number | undefined>>({});
   readonly editQtyMap = this._editQty.asReadonly();
+  private _editPendingQty = signal<Record<string, number | undefined>>({});
+  readonly editPendingQtyMap = this._editPendingQty.asReadonly();
 
   readonly todayStr = new Date().toISOString().slice(0, 10);
 
@@ -577,7 +579,10 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
       return;
     }
     const editedProducts = withEditedQty.filter(p => p.qty > 0);
-    const newProducts = [...editedProducts, ...(order.pendingProducts ?? [])];
+    const editedPending = (order.pendingProducts ?? [])
+      .map((p, pi) => ({ ...p, qty: this.getPendingEditQty(order.id, pi, p.qty) }))
+      .filter(p => p.qty > 0);
+    const newProducts = [...editedProducts, ...editedPending];
     if (newProducts.length === 0) {
       this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
       return;
@@ -597,6 +602,11 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     this._editQty.update(m => {
       const n = { ...m };
       order.products.forEach((_, i) => delete n[this.ekey(order.id, i)]);
+      return n;
+    });
+    this._editPendingQty.update(m => {
+      const n = { ...m };
+      (order.pendingProducts ?? []).forEach((_, pi) => delete n[this.pekey(order.id, pi)]);
       return n;
     });
     this.collapseRow(order.id);
@@ -828,36 +838,39 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     return this.unitsService.allowDecimal(um) ? '0.01' : '1';
   }
 
-  incPending(orderId: string, idx: number, um: string): void {
-    const order = this.ordersService.orders().find(o => o.id === orderId);
-    const p = order?.pendingProducts?.[idx];
-    if (!p) return;
-    let newQty = p.qty + 1;
-    if (!this.unitsService.allowDecimal(um)) newQty = Math.round(newQty);
-    this.ordersService.updatePendingProduct(orderId, idx, newQty);
+  pekey(orderId: string, idx: number): string { return 'p:' + orderId + ':' + idx; }
+
+  getPendingEditQty(orderId: string, idx: number, def: number): number {
+    return this._editPendingQty()[this.pekey(orderId, idx)] ?? def;
+  }
+  setEditPendingQty(orderId: string, idx: number, def: number, val: number | string, um = ''): void {
+    let qty = Math.max(0, parseFloat(String(val)) || 0);
+    if (um && !this.unitsService.allowDecimal(um)) qty = Math.round(qty);
+    this._editPendingQty.update(m => ({ ...m, [this.pekey(orderId, idx)]: qty }));
+  }
+  maxEditablePendingQty(p: import('../../core/models/order.model').OrderProduct): number {
+    if (!p.catalogId) return Infinity;
+    const stock = this.catalogsService.getStock(p.catalogId, p.nr);
+    return stock ?? Infinity;
+  }
+  incEditPendingQty(orderId: string, idx: number, def: number, maxQty = Infinity): void {
+    const current = this.getPendingEditQty(orderId, idx, def);
+    if (current >= maxQty) {
+      this.snackBar.open('Stoc insuficient — nu mai există cantitate disponibilă.', 'OK', { duration: 3000, panelClass: ['snack-error'] });
+      return;
+    }
+    this.setEditPendingQty(orderId, idx, def, current + 1);
+  }
+  decEditPendingQty(orderId: string, idx: number, def: number): void {
+    this.setEditPendingQty(orderId, idx, def, this.getPendingEditQty(orderId, idx, def) - 1);
   }
 
-  decPending(orderId: string, idx: number, um: string): void {
-    const order = this.ordersService.orders().find(o => o.id === orderId);
-    const p = order?.pendingProducts?.[idx];
-    if (!p) return;
-    let newQty = Math.max(0, p.qty - 1);
-    if (!this.unitsService.allowDecimal(um) && newQty > 0) newQty = Math.round(newQty);
-    this.ordersService.updatePendingProduct(orderId, idx, newQty);
-  }
-
-  deletePending(orderId: string, idx: number, name: string): void {
-    if (!confirm(`Elimini "${name}" din produsele neconfirmate?`)) return;
-    this.ordersService.removePendingProduct(orderId, idx);
-  }
-
-  setPendingQtyManual(orderId: string, idx: number, val: string, um: string): void {
-    const order = this.ordersService.orders().find(o => o.id === orderId);
-    const p = order?.pendingProducts?.[idx];
-    if (!p) return;
-    let newQty = Math.max(0, parseFloat(val) || 0);
-    if (!this.unitsService.allowDecimal(um)) newQty = Math.round(newQty);
-    this.ordersService.updatePendingProduct(orderId, idx, newQty);
+  toggleLock(order: Order): void {
+    this.ordersService.setOrderLocked(order.id, !order.locked);
+    const msg = order.locked
+      ? 'Comanda deblocată — agentul poate modifica din nou.'
+      : 'Comanda blocată — agentul nu mai poate face modificări.';
+    this.snackBar.open(msg, 'OK', { duration: 3000 });
   }
 
   printOrder(order: Order, e: Event): void {

@@ -596,12 +596,19 @@
               <div class="exp-pending-section">
                 <div class="exp-pending-title">
                   <mat-icon>pending</mat-icon>
-                  Produse neconfirmate (adăugate de agent, neretrimise încă)
+                  Produse adăugate de agent (neretrimise încă) — editabile aici, aplicate la „Finalizează cu modificări"
                 </div>
                 @for (p of order.pendingProducts!; track p.nr; let pi = $index) {
-                  <div class="exp-product-row exp-pending-row">
+                  <div class="exp-product-row exp-pending-row"
+                       [class.exp-removed]="getPendingEditQty(order.id, pi, p.qty) === 0">
                     <div class="epc-name-cell">
                       <span class="epc-name">{{ p.name }}</span>
+                      @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
+                        <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
+                      }
+                      @if (getCodExtern(p)) {
+                        <app-barcode [value]="getCodExtern(p)" class="epc-barcode"></app-barcode>
+                      }
                     </div>
                     <span class="epc-cat">
                       @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
@@ -613,33 +620,40 @@
                         <div class="s3-row"><span class="s3-label">Importat</span><span class="s3-imp">{{ ps.importedQty }}</span></div>
                         <div class="s3-row"><span class="s3-label">Consumat</span><span class="s3-con">{{ ps.consumedQty > 0 ? '−' + ps.consumedQty : ps.consumedQty }}</span></div>
                         <div class="s3-row"><span class="s3-label">Buffer</span><span class="s3-buf" [class.s3-pos]="ps.bufferQty > 0" [class.s3-neg]="ps.bufferQty < 0">{{ ps.bufferQty > 0 ? '+' : '' }}{{ ps.bufferQty === 0 ? '—' : ps.bufferQty }}</span></div>
-                        <div class="s3-row s3-total"><span class="s3-label">Final</span><span class="s3-final" [class.s3-zero]="ps.finalQty === 0">{{ ps.finalQty | number:'1.0-4' }}</span></div>
+                        <div class="s3-row s3-total" (click)="openStockHistory(p.name, p.catalogId, p.nr, $event)" style="cursor:pointer" matTooltip="Click pentru Istoricul ajustărilor">
+                          <span class="s3-label">Final</span><span class="s3-final" [class.s3-zero]="ps.finalQty === 0">{{ ps.finalQty | number:'1.0-4' }}</span>
+                        </div>
                       </div>
                     } @else {
                       <span></span>
                     }
-                    <span class="epc-cod">{{ p.codExtern || '—' }}</span>
+                    <span class="epc-cod">{{ getCodExtern(p) || '—' }}</span>
                     <span class="epc-furn">{{ p.furnizor || '—' }}</span>
                     <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
                     <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
-                    <span class="epc-masa">—</span>
+                    @let masaP = pMasa(p) * getPendingEditQty(order.id, pi, p.qty);
+                    <span class="epc-masa">{{ masaP > 0 ? formatMasa(masaP) : '—' }}</span>
                     <div class="epc-qty-cell">
                       <div class="exp-qty-controls">
-                        <button mat-icon-button class="eq-btn" (click)="decPending(order.id, pi, p.um)">
+                        <button mat-icon-button class="eq-btn" (click)="decEditPendingQty(order.id, pi, p.qty)">
                           <mat-icon>remove</mat-icon>
                         </button>
                         <input class="eq-input" type="number" min="0" [attr.step]="umStep(p.um)"
-                               [value]="p.qty"
-                               (change)="setPendingQtyManual(order.id, pi, $any($event.target).value, p.um)"
+                               [value]="getPendingEditQty(order.id, pi, p.qty)"
+                               (input)="setEditPendingQty(order.id, pi, p.qty, $any($event.target).value, p.um)"
                                (click)="$any($event.target).select()">
-                        <button mat-icon-button class="eq-btn" (click)="incPending(order.id, pi, p.um)">
+                        <button mat-icon-button class="eq-btn" (click)="incEditPendingQty(order.id, pi, p.qty, maxEditablePendingQty(p))">
                           <mat-icon>add</mat-icon>
                         </button>
-                        <button mat-icon-button class="eq-btn eq-btn--delete" color="warn"
-                                (click)="deletePending(order.id, pi, p.name)" matTooltip="Elimină">
-                          <mat-icon>delete</mat-icon>
-                        </button>
                       </div>
+                      @let ewp = catalogsService.calcBufferWarning(p.catalogId, p.nr, getPendingEditQty(order.id, pi, p.qty));
+                      @if (getPendingEditQty(order.id, pi, p.qty) === 0) {
+                        <span class="exp-remove-hint">va fi eliminat</span>
+                      } @else if (ewp.warn) {
+                        <div class="exp-buf-warn">
+                          <mat-icon>warning</mat-icon> {{ ewp.bufferUsed }} buf
+                        </div>
+                      }
                     </div>
                   </div>
                 }
@@ -700,6 +714,11 @@
                         [disabled]="!hasQtyChanges(order)">
                   <mat-icon>edit_note</mat-icon>
                   Finalizează cu modificări
+                </button>
+                <button mat-stroked-button [class.btn-lock-active]="order.locked" (click)="toggleLock(order)"
+                        [matTooltip]="order.locked ? 'Comanda blocată — agentul nu poate modifica. Click pentru a debloca.' : 'Click pentru a bloca comanda din Comenzile mele'">
+                  <mat-icon>{{ order.locked ? 'lock' : 'lock_open' }}</mat-icon>
+                  {{ order.locked ? 'Deblocheaza' : 'Blocheaza' }}
                 </button>
               }
               @if (canReopen(order)) {

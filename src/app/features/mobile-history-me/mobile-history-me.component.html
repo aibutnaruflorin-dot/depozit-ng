@@ -248,7 +248,7 @@
                   <span></span>
                 }
 
-                @if (['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded) {
+                @if (['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded && !o.locked) {
                   <div class="mh-prod-stepper">
                     <button class="mh-ps-btn" (click)="decEditQty(o.id, $index, p.qty)">
                       <mat-icon>{{ getEditQty(o.id, $index, p.qty) <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
@@ -270,8 +270,8 @@
           @if (o.pendingProducts?.length) {
             <div class="mh-ds-pending-section">
               <div class="mh-ds-pending-title">
-                <mat-icon>pending</mat-icon>
-                Adăugate de tine — neconfirmate încă
+                <mat-icon>{{ o.locked ? 'lock' : 'pending' }}</mat-icon>
+                @if (o.locked) { Adăugate de tine — blocat de depozit } @else { Adăugate de tine — neconfirmate încă }
               </div>
               @for (p of o.pendingProducts!; track p.nr; let pi = $index) {
                 <div class="mh-ds-prod mh-ds-prod-pending">
@@ -306,18 +306,22 @@
                     } @else {
                       <span></span>
                     }
-                    <div class="mh-prod-stepper">
-                      <button class="mh-ps-btn" (click)="decPendingQty(o.id, pi)">
-                        <mat-icon>{{ p.qty <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
-                      </button>
-                      <span class="mh-ps-qty">{{ p.qty }} {{ p.um }}</span>
-                      <button class="mh-ps-btn" (click)="incPendingQty(o.id, pi)">
-                        <mat-icon>add</mat-icon>
-                      </button>
-                      <button class="mh-ps-btn mh-ps-btn--delete" (click)="deletePending(o.id, pi, p.name)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </div>
+                    @if (!o.locked) {
+                      <div class="mh-prod-stepper">
+                        <button class="mh-ps-btn" (click)="decPendingQty(o.id, pi)">
+                          <mat-icon>{{ p.qty <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
+                        </button>
+                        <span class="mh-ps-qty">{{ p.qty }} {{ p.um }}</span>
+                        <button class="mh-ps-btn" (click)="incPendingQty(o.id, pi)">
+                          <mat-icon>add</mat-icon>
+                        </button>
+                        <button class="mh-ps-btn mh-ps-btn--delete" (click)="deletePending(o.id, pi, p.name)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="mh-ds-qty-val">{{ p.qty }} {{ p.um }}</span>
+                    }
                   </div>
                 </div>
               }

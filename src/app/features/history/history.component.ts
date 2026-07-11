@@ -215,6 +215,7 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   private _csvOrder?: Order;
 
   canAddProducts(order: Order): boolean {
+    if (order.locked) return false;
     const open = ['draft', 'trimis', 'acceptat', 'planificat', 'livrat_partial'];
     if (!open.includes(order.status) || order.superseded) return false;
     const s = this.auth.session();

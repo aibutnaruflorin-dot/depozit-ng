@@ -161,10 +161,11 @@ export class MobileHistoryMeComponent {
 
   canSend(o: Order): boolean        { return o.status === 'draft'; }
   canRevise(o: Order): boolean {
+    if (o.locked) return false;
     const active = ['trimis','acceptat','planificat','in_livrare','livrat_partial'];
     return active.includes(o.status) && !o.superseded && (this.hasEditedQty(o) || !!(o.pendingProducts?.length));
   }
-  canAddProducts(o: Order): boolean { return ['draft','trimis','acceptat','planificat','livrat_partial'].includes(o.status) && !o.superseded; }
+  canAddProducts(o: Order): boolean { return !o.locked && ['draft','trimis','acceptat','planificat','livrat_partial'].includes(o.status) && !o.superseded; }
   canCancel(o: Order): boolean      { return ['draft','trimis','acceptat','planificat'].includes(o.status) && !o.superseded; }
   canReopen(o: Order): boolean      { return o.status === 'anulat'; }
 
