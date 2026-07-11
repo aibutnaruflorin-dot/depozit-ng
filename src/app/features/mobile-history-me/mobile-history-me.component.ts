@@ -216,6 +216,13 @@ export class MobileHistoryMeComponent {
     const order = this.ordersService.orders().find(o => o.id === orderId);
     const p = order?.pendingProducts?.[idx];
     if (!p) return;
+    if (p.catalogId) {
+      const stock = this.catalogsService.getStock(p.catalogId, p.nr);
+      if (stock !== null && p.qty >= stock) {
+        this.snackBar.open('Stoc insuficient — nu mai există cantitate disponibilă.', 'OK', { duration: 3000, panelClass: ['snack-error'] });
+        return;
+      }
+    }
     this.ordersService.updatePendingProduct(orderId, idx, p.qty + 1);
   }
 
