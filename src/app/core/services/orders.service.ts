@@ -311,12 +311,19 @@ export class OrdersService {
   }
 
   private _checkStock(products: OrderProduct[]): { name: string; available: number; requested: number }[] {
-    const out: { name: string; available: number; requested: number }[] = [];
+    const demands = new Map<string, { catalogId: string; nr: string | number; name: string; total: number }>();
     for (const p of products) {
       if (!p.catalogId) continue;
-      const stock = this.catalogs.getStock(p.catalogId, p.nr);
-      if (stock !== null && stock < p.qty) {
-        out.push({ name: p.name, available: stock, requested: p.qty });
+      const key = `${p.catalogId}::${String(p.nr)}`;
+      const ex = demands.get(key);
+      if (ex) ex.total += p.qty;
+      else demands.set(key, { catalogId: p.catalogId, nr: p.nr, name: p.name, total: p.qty });
+    }
+    const out: { name: string; available: number; requested: number }[] = [];
+    for (const { catalogId, nr, name, total } of demands.values()) {
+      const stock = this.catalogs.getStock(catalogId, nr);
+      if (stock !== null && stock < total) {
+        out.push({ name, available: stock, requested: total });
       }
     }
     return out;
