@@ -57,12 +57,27 @@
             }
           </div>
           <div class="mh-card-actions" (click)="$event.stopPropagation()">
+            @if (canAddProducts(o)) {
+              <button class="mh-ca-btn" (click)="addProducts(o)" title="Adaugă produse">
+                <mat-icon>add_shopping_cart</mat-icon>
+              </button>
+            } @else if (canReopen(o)) {
+              <button class="mh-ca-btn" (click)="reopenOrder(o)" title="Redeschide comanda">
+                <mat-icon>lock_open</mat-icon>
+              </button>
+            } @else {
+              <span class="mh-ca-placeholder"></span>
+            }
             <button class="mh-ca-btn" (click)="emailOrder(o, $event)" title="Trimite email">
               <mat-icon>email</mat-icon>
             </button>
             @if (o.client?.phone) {
               <button class="mh-ca-btn" (click)="whatsAppOrder(o, $event)" title="WhatsApp">
-                <mat-icon>chat</mat-icon>
+                <img src="whatsapp.svg" alt="WhatsApp" class="mh-wa-icon" />
+              </button>
+            } @else {
+              <button class="mh-ca-btn" disabled title="Clientul nu are telefon">
+                <img src="whatsapp.svg" alt="WhatsApp" class="mh-wa-icon mh-wa-icon--disabled" />
               </button>
             }
             <button class="mh-ca-btn" (click)="printOrder(o, $event)" title="Printează">
