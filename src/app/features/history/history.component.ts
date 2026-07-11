@@ -665,7 +665,12 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     this._editQty.update(m => ({ ...m, [this.ekey(orderId, idx)]: qty }));
   }
   incEditQty(orderId: string, idx: number, def: number, maxQty = Infinity): void {
-    this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) + 1, '', maxQty);
+    const current = this.getEditQty(orderId, idx, def);
+    if (current >= maxQty) {
+      this.snackBar.open('Stoc insuficient — nu mai există cantitate disponibilă pentru acest produs.', 'OK', { duration: 3000, panelClass: ['snack-error'] });
+      return;
+    }
+    this.setEditQty(orderId, idx, def, current + 1, '', maxQty);
   }
   decEditQty(orderId: string, idx: number, def: number): void {
     this.setEditQty(orderId, idx, def, this.getEditQty(orderId, idx, def) - 1);

@@ -520,8 +520,7 @@
                                  [class.eq-input--over]="editQtyExceedsStock(order.id, j, p.catalogId, p.nr)"
                                  (change)="setEditQty(order.id, j, p.qty, $any($event.target).value, p.um, maxEditableQty(order, p))"
                                  (click)="$any($event.target).select()">
-                          <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty, maxEditableQty(order, p))"
-                                  [disabled]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) >= maxEditableQty(order, p)">
+                          <button mat-icon-button class="eq-btn" (click)="incEditQty(order.id, j, p.qty, maxEditableQty(order, p))">
                             <mat-icon>add</mat-icon>
                           </button>
                         </div>
