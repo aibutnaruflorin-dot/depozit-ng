@@ -221,26 +221,14 @@ export class OrdersService {
   }
 
   addProductsToOrder(orderId: string, products: OrderProduct[], event: Omit<OrderEvent, 'id'>): StockCheckResult {
-    const isPending = event.source === 'comenzile-mele';
-    if (!isPending) {
-      const insufficient = this._checkStock(products);
-      if (insufficient.length) return { ok: false, insufficient };
-      this._decrementStock(products, 'add_products');
-    }
+    // Both agent (comenzile-mele) and admin (toate-comenzile) additions go to pendingProducts —
+    // stock is consumed only at reviseOrder (Finalizează cu modificări), not upfront.
     this._orders.update(orders =>
       orders.map(o => {
         if (o.id !== orderId) return o;
-        if (isPending) {
-          // Keep original catalog nrs so catalogId+nr stock lookup works at revise time
-          return {
-            ...o,
-            pendingProducts: [...(o.pendingProducts ?? []), ...products],
-            orderEvents: [...(o.orderEvents ?? []), { ...event, id: generateId() }]
-          };
-        }
         return {
           ...o,
-          products: [...o.products, ...products],
+          pendingProducts: [...(o.pendingProducts ?? []), ...products],
           orderEvents: [...(o.orderEvents ?? []), { ...event, id: generateId() }]
         };
       })
