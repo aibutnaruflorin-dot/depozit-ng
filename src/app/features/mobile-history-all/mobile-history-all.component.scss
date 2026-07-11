@@ -302,6 +302,7 @@
   margin: 0 14px 8px; padding: 8px 10px; font-size: .78rem; font-weight: 500;
   flex-shrink: 0;
   mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; }
+  &.mh-locked-banner { background: #FFF3E0; color: #E65100; border: 1px solid #E65100; }
 }
 
 /* Footer */
@@ -313,12 +314,14 @@
 }
 .mh-act-btn {
   display: flex; align-items: center; justify-content: center; gap: 5px;
-  border: none; border-radius: 10px; padding: 11px 14px;
+  border: 1px solid var(--color-border); border-radius: 10px; padding: 11px 14px;
+  background: var(--color-surface); color: var(--color-text);
   font-size: .88rem; font-weight: 600; cursor: pointer; width: 100%;
   mat-icon { font-size: 18px; width: 18px; height: 18px; }
-  &.primary   { background: var(--color-primary); color: #fff; }
+  &.primary   { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
   &.secondary { background: var(--color-border); color: var(--color-text); }
-  &.danger    { background: #FEE2E2; color: #991B1B; }
+  &.danger    { background: #FEE2E2; color: #991B1B; border-color: #FECACA; }
+  &.mh-act-lock-active { border-color: #E65100; color: #E65100; }
 }
 
 /* Stepper (in detail sheet) */

@@ -275,7 +275,7 @@
                   <span></span>
                 }
 
-                @if (isKeyUser() && o.status === 'trimis' && !o.superseded) {
+                @if (isKeyUser() && isActiveOrder(o) && !o.locked) {
                   <div class="mh-prod-stepper">
                     <button class="mh-ps-btn" (click)="decEditQty(o.id, $index, p.qty)">
                       <mat-icon>{{ getEditQty(o.id, $index, p.qty) <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
@@ -297,8 +297,8 @@
           @if (o.pendingProducts?.length) {
             <div class="mh-ds-pending-section">
               <div class="mh-ds-pending-title">
-                <mat-icon>pending</mat-icon>
-                Produse adăugate — neconfirmate
+                <mat-icon>{{ o.locked ? 'lock' : 'pending' }}</mat-icon>
+                @if (o.locked) { Produse adăugate — blocat de depozit } @else { Produse adăugate — neconfirmate }
               </div>
               @for (p of o.pendingProducts!; track p.nr; let pi = $index) {
                 <div class="mh-ds-prod mh-ds-prod-pending">
@@ -310,18 +310,22 @@
                   </div>
                   <div class="mh-ds-prod-bottom">
                     <span></span>
-                    <div class="mh-prod-stepper">
-                      <button class="mh-ps-btn" (click)="decPendingQty(o.id, pi)">
-                        <mat-icon>{{ p.qty <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
-                      </button>
-                      <span class="mh-ps-qty">{{ p.qty }} {{ p.um }}</span>
-                      <button class="mh-ps-btn" (click)="incPendingQty(o.id, pi)">
-                        <mat-icon>add</mat-icon>
-                      </button>
-                      <button class="mh-ps-btn mh-ps-btn--delete" (click)="deletePending(o.id, pi, p.name)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </div>
+                    @if (!o.locked) {
+                      <div class="mh-prod-stepper">
+                        <button class="mh-ps-btn" (click)="decPendingQty(o.id, pi)">
+                          <mat-icon>{{ p.qty <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
+                        </button>
+                        <span class="mh-ps-qty">{{ p.qty }} {{ p.um }}</span>
+                        <button class="mh-ps-btn" (click)="incPendingQty(o.id, pi)">
+                          <mat-icon>add</mat-icon>
+                        </button>
+                        <button class="mh-ps-btn mh-ps-btn--delete" (click)="deletePending(o.id, pi, p.name)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="mh-ds-qty-val">{{ p.qty }} {{ p.um }}</span>
+                    }
                   </div>
                 </div>
               }
@@ -380,11 +384,17 @@
 
       </div><!-- end body -->
 
-      <!-- Changed qty banner (keyuser only) -->
-      @if (isKeyUser() && hasEditedQty(o)) {
+      <!-- Changed qty banner -->
+      @if (isKeyUser() && hasQtyChanges(o) && !o.locked) {
         <div class="mh-qty-changed-banner">
           <mat-icon>edit</mat-icon>
           Cantități modificate — apasă „Finalizează" pentru a le aplica
+        </div>
+      }
+      @if (o.locked) {
+        <div class="mh-qty-changed-banner mh-locked-banner">
+          <mat-icon>lock</mat-icon>
+          Comanda blocată — agentul nu poate face modificări
         </div>
       }
 
@@ -395,9 +405,15 @@
             <mat-icon>check_circle</mat-icon> Acceptă comanda
           </button>
         }
-        @if (canFinalize(o)) {
+        @if (canFinalizeWithChanges(o)) {
           <button class="mh-act-btn primary" (click)="finalizeOrder(o)">
-            <mat-icon>done_all</mat-icon> Finalizează modificat
+            <mat-icon>done_all</mat-icon> Finalizează cu modificări
+          </button>
+        }
+        @if (isActiveOrder(o) && isKeyUser()) {
+          <button class="mh-act-btn" [class.mh-act-lock-active]="o.locked" (click)="toggleLock(o)">
+            <mat-icon>{{ o.locked ? 'lock' : 'lock_open' }}</mat-icon>
+            {{ o.locked ? 'Deblochează' : 'Blochează' }}
           </button>
         }
         @if (canAddProducts(o)) {

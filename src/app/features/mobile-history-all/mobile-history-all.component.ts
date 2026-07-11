@@ -107,6 +107,22 @@ export class MobileHistoryAllComponent {
   isKeyUser(): boolean { return this.auth.isKeyUser(); }
   isOwner(o: Order): boolean { return o.agent?.id === this.auth.session()?.userId; }
 
+  isActiveOrder(o: Order): boolean {
+    return ['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded;
+  }
+
+  hasQtyChanges(o: Order): boolean {
+    return this.hasEditedQty(o) || !!(o.pendingProducts?.length);
+  }
+
+  toggleLock(o: Order): void {
+    this.ordersService.setOrderLocked(o.id, !o.locked);
+    const msg = o.locked
+      ? 'Comanda deblocată — agentul poate modifica din nou.'
+      : 'Comanda blocată — agentul nu mai poate face modificări.';
+    this.snackBar.open(msg, 'OK', { duration: 3000 });
+  }
+
   statusLabel(o: Order): string {
     if (o.status === 'trimis')  return 'În aşteptare';
     if (o.status === 'anulat')  return 'Anulat';
@@ -169,24 +185,24 @@ export class MobileHistoryAllComponent {
   openDetail(o: Order): void { this.detailId.set(o.id); }
   closeDetail(): void { this.detailId.set(null); }
 
-  /** Accept direct (no qty edits in play). Mutually exclusive with canFinalize. */
   canAccept(o: Order): boolean {
-    return o.status === 'trimis' && !o.superseded && this.isKeyUser() && !this.hasEditedQty(o);
+    return o.status === 'trimis' && !o.superseded && this.isKeyUser() && !this.hasQtyChanges(o);
   }
 
-  /** Accept with qty modifications applied (creates revision with status=acceptat). */
-  canFinalize(o: Order): boolean {
-    return o.status === 'trimis' && !o.superseded && this.isKeyUser() && this.hasEditedQty(o);
+  canFinalizeWithChanges(o: Order): boolean {
+    return this.isActiveOrder(o) && this.isKeyUser() && this.hasQtyChanges(o);
   }
 
   canAddProducts(o: Order): boolean {
-    return ['trimis', 'acceptat', 'planificat', 'livrat_partial'].includes(o.status)
+    return !o.locked
+      && ['trimis', 'acceptat', 'planificat', 'livrat_partial'].includes(o.status)
       && !o.superseded
       && (this.isKeyUser() || this.isOwner(o));
   }
 
   canCancel(o: Order): boolean {
-    return ['trimis', 'acceptat'].includes(o.status)
+    return ['trimis', 'acceptat', 'planificat'].includes(o.status)
+      && !o.superseded
       && (this.isKeyUser() || this.isOwner(o));
   }
 
@@ -242,6 +258,13 @@ export class MobileHistoryAllComponent {
     const order = this.ordersService.orders().find(o => o.id === orderId);
     const p = order?.pendingProducts?.[idx];
     if (!p) return;
+    if (p.catalogId) {
+      const stock = this.catalogsService.getStock(p.catalogId, p.nr);
+      if (stock !== null && p.qty >= stock) {
+        this.snackBar.open('Stoc insuficient — nu mai există cantitate disponibilă.', 'OK', { duration: 3000, panelClass: ['snack-error'] });
+        return;
+      }
+    }
     this.ordersService.updatePendingProduct(orderId, idx, p.qty + 1);
   }
 
@@ -287,7 +310,7 @@ export class MobileHistoryAllComponent {
       return;
     }
 
-    const newProducts = [...withEditedQty.filter(p => p.qty > 0), ...(o.pendingProducts ?? [])];
+    const newProducts = [...withEditedQty.filter(p => p.qty > 0), ...(o.pendingProducts ?? []).filter(p => p.qty > 0)];
     if (newProducts.length === 0) {
       this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
       return;
