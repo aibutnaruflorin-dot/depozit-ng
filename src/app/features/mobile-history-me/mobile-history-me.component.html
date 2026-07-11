@@ -287,6 +287,11 @@
             <mat-icon>send</mat-icon> Trimite comanda
           </button>
         }
+        @if (canRevise(o)) {
+          <button class="mh-act-btn primary" (click)="reviseOrder(o)">
+            <mat-icon>send</mat-icon> Retrimite modificat
+          </button>
+        }
         @if (canAddProducts(o)) {
           <button class="mh-act-btn secondary" (click)="addProducts(o)">
             <mat-icon>add_circle_outline</mat-icon> Adaugă produse

@@ -2,7 +2,7 @@ import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { OrdersService } from '../../core/services/orders.service';
+import { OrdersService, generateId } from '../../core/services/orders.service';
 import { TransportService } from '../../core/services/transport.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -131,6 +131,7 @@ export class MobileHistoryMeComponent {
   closeDetail(): void { this.detailId.set(null); }
 
   canSend(o: Order): boolean        { return o.status === 'draft'; }
+  canRevise(o: Order): boolean      { return o.status === 'trimis' && !o.superseded && (this.hasEditedQty(o) || !!(o.pendingProducts?.length)); }
   canAddProducts(o: Order): boolean { return ['draft','trimis','acceptat'].includes(o.status); }
   canCancel(o: Order): boolean      { return ['draft','trimis','acceptat'].includes(o.status); }
   canReopen(o: Order): boolean      { return o.status === 'anulat'; }
@@ -198,6 +199,51 @@ export class MobileHistoryMeComponent {
     this.ordersService.reopenOrder(o.id);
     this.snackBar.open('Comanda redeschisă.', '', { duration: 2500 });
     // keep sheet open — currentDetailOrder() will reactively show new status
+  }
+
+  reviseOrder(o: Order): void {
+    const editedProducts = o.products
+      .map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }))
+      .filter(p => p.qty > 0);
+    const newProducts = [...editedProducts, ...(o.pendingProducts ?? [])];
+
+    if (newProducts.length === 0) {
+      this.snackBar.open('Adaugă cel puțin un produs cu qty > 0.', '', { duration: 2500 });
+      return;
+    }
+
+    const session = this.auth.session()!;
+    const newOrder: Order = {
+      id:            generateId(),
+      timestamp:     new Date().toISOString(),
+      agent:         { id: session.userId, name: session.name, username: session.username },
+      client:        o.client,
+      cuLivrare:     o.cuLivrare,
+      deliveryDate:  o.deliveryDate,
+      deliveryTime:  o.deliveryTime,
+      products:      newProducts.map((p, i) => ({ ...p, nr: i + 1 })),
+      status:        'trimis',
+      revisedFromId: o.id
+    };
+
+    const result = this.ordersService.reviseOrder(o.id, newOrder);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join(', ');
+      this.snackBar.open(`Stoc insuficient: ${list}`, 'Închide', { duration: 5000, panelClass: ['snack-warn'] });
+      return;
+    }
+
+    const text = this.ordersService.generateText(newOrder);
+    window.open(this.ordersService.generateMailto(newOrder, text), '_blank');
+
+    this._editQty.update(m => {
+      const n = { ...m };
+      o.products.forEach((_, i) => delete n[this.ekey(o.id, i)]);
+      return n;
+    });
+
+    this.closeDetail();
+    this.snackBar.open('Comanda revizuită a fost trimisă!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   addProducts(o: Order): void {
