@@ -246,14 +246,14 @@
             </div>
           }
 
-          <!-- Pending products (adăugate, neconfirmate) -->
+          <!-- Pending products cu steppers -->
           @if (o.pendingProducts?.length) {
             <div class="mh-ds-pending-section">
               <div class="mh-ds-pending-title">
                 <mat-icon>pending</mat-icon>
                 Adăugate de tine — neconfirmate încă
               </div>
-              @for (p of o.pendingProducts!; track p.nr) {
+              @for (p of o.pendingProducts!; track p.nr; let pi = $index) {
                 <div class="mh-ds-prod mh-ds-prod-pending">
                   <div class="mh-ds-prod-name">{{ p.name }}</div>
                   <div class="mh-ds-prod-tags">
@@ -263,7 +263,43 @@
                   </div>
                   <div class="mh-ds-prod-bottom">
                     <span></span>
-                    <span class="mh-ds-qty-val">{{ p.qty }} {{ p.um }}</span>
+                    <div class="mh-prod-stepper">
+                      <button class="mh-ps-btn" (click)="decPendingQty(o.id, pi)">
+                        <mat-icon>{{ p.qty <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>
+                      </button>
+                      <span class="mh-ps-qty">{{ p.qty }} {{ p.um }}</span>
+                      <button class="mh-ps-btn" (click)="incPendingQty(o.id, pi)">
+                        <mat-icon>add</mat-icon>
+                      </button>
+                      <button class="mh-ps-btn mh-ps-btn--delete" (click)="deletePending(o.id, pi, p.name)">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Produse adăugate ulterior (orderEvents) -->
+          @if (o.orderEvents?.length) {
+            <div class="mh-ds-section mh-ds-events-section">
+              <div class="mh-ds-section-label">
+                <mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle">history</mat-icon>
+                Produse adăugate ulterior
+              </div>
+              @for (ev of o.orderEvents!; track ev.id) {
+                <div class="mh-ds-event-entry">
+                  <div class="mh-ds-event-meta">
+                    <mat-icon>person</mat-icon>
+                    <strong>{{ ev.userName }}</strong>
+                    · {{ ev.source === 'comenzile-mele' ? 'Comenzile mele' : ev.source === 'transport' ? 'Transport' : 'Toate comenzile' }}
+                    · {{ ev.timestamp | date:'dd.MM.yy HH:mm' }}
+                  </div>
+                  <div class="mh-ds-event-chips">
+                    @for (p of ev.products; track p.name) {
+                      <span class="mh-ds-event-chip">+{{ p.qty }} {{ p.name }}</span>
+                    }
                   </div>
                 </div>
               }

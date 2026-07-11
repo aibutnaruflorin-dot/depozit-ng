@@ -166,6 +166,31 @@ export class MobileHistoryMeComponent {
     return order.products.some((_, i) => this._editQty()[this.ekey(order.id, i)] !== undefined);
   }
 
+  incPendingQty(orderId: string, idx: number): void {
+    const order = this.ordersService.orders().find(o => o.id === orderId);
+    const p = order?.pendingProducts?.[idx];
+    if (!p) return;
+    this.ordersService.updatePendingProduct(orderId, idx, p.qty + 1);
+  }
+
+  decPendingQty(orderId: string, idx: number): void {
+    const order = this.ordersService.orders().find(o => o.id === orderId);
+    const p = order?.pendingProducts?.[idx];
+    if (!p) return;
+    const newQty = p.qty - 1;
+    if (newQty <= 0) {
+      if (!confirm(`Elimini "${p.name}" din produsele neconfirmate?`)) return;
+      this.ordersService.removePendingProduct(orderId, idx);
+    } else {
+      this.ordersService.updatePendingProduct(orderId, idx, newQty);
+    }
+  }
+
+  deletePending(orderId: string, idx: number, name: string): void {
+    if (!confirm(`Elimini "${name}" din produsele neconfirmate?`)) return;
+    this.ordersService.removePendingProduct(orderId, idx);
+  }
+
   sendDraft(o: Order): void {
     if (this.hasEditedQty(o)) {
       const editedProducts = o.products

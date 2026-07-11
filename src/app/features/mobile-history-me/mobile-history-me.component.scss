@@ -296,3 +296,22 @@
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
 .mh-ps-qty { min-width: 48px; text-align: center; font-size: .82rem; font-weight: 600; color: var(--color-text); }
+.mh-ps-btn--delete { border-color: #FECACA; color: #DC2626; }
+
+/* Order events journal */
+.mh-ds-events-section { }
+.mh-ds-event-entry {
+  padding: 6px 0; border-bottom: 1px solid var(--color-border);
+  &:last-child { border-bottom: none; }
+}
+.mh-ds-event-meta {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  font-size: .72rem; color: var(--color-text-muted); margin-bottom: 4px;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+  strong { color: var(--color-text); }
+}
+.mh-ds-event-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.mh-ds-event-chip {
+  background: #EFF6FF; color: #1D4ED8; border-radius: 4px;
+  padding: 2px 6px; font-size: .7rem; font-weight: 500;
+}
