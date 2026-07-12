@@ -63,7 +63,7 @@ export class MobileTransportComponent implements OnInit {
 
   readonly active = computed(() =>
     this.transportService.transports()
-      .filter(t => ['in_livrare','confirmat_sofer','planificat'].includes(t.status))
+      .filter(t => t.status !== 'livrat' && t.status !== 'sters')
       .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare))
   );
 
@@ -207,17 +207,21 @@ export class MobileTransportComponent implements OnInit {
     return p.masaNeta ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta ?? 0;
   }
 
-  tripValue(t: Transport): number {
-    let total = 0;
+  tripValue(t: Transport): { net: number; tva: number } {
+    let net = 0, tva = 0;
     for (const del of t.deliveries) {
       const order = this.ordersService.orders().find(o => o.id === del.orderId);
       if (!order) continue;
       for (const item of del.items) {
         const p = order.products[item.productIndex];
-        if (p) total += this.productPrice(p).tva * item.qty;
+        if (p) {
+          const price = this.productPrice(p);
+          net += price.net * item.qty;
+          tva += price.tva * item.qty;
+        }
       }
     }
-    return total;
+    return { net, tva };
   }
 
   tripWeight(t: Transport): number {
@@ -370,7 +374,7 @@ export class MobileTransportComponent implements OnInit {
   }
 
   deleteTransport(t: Transport): void {
-    if (!confirm(`Muți cursa din ${this.fmtDate(t.oraPlecare)} în Curse șterse?\nComenzi vor reveni la statusul anterior.`)) return;
+    if (!confirm('Muți această cursă în Curse șterse? Comenzile vor reveni la statusul anterior.')) return;
     this.transportService.setStatus(t.id, 'sters');
     const affected = [...new Set(t.deliveries.map(d => d.orderId))];
     for (const orderId of affected) {
@@ -388,7 +392,6 @@ export class MobileTransportComponent implements OnInit {
   }
 
   restoreTransport(t: Transport): void {
-    if (!confirm('Redeschizi cursa ca "Așteptare confirmare"?')) return;
     this.transportService.setStatus(t.id, 'planificat');
     this.snackBar.open('Cursa a fost redeschisă.', '', { duration: 2000 });
   }
@@ -398,17 +401,13 @@ export class MobileTransportComponent implements OnInit {
   sendDriverWhatsApp(t: Transport): void {
     const driver = this.transportService.getDriver(t.driverId);
     if (!driver?.telefon) { this.snackBar.open('Șoferul nu are număr de telefon configurat.', 'OK', { duration: 3000 }); return; }
-    const orders = this.ordersForTransport(t);
-    const phone  = driver.telefon.replace(/\D/g, '');
-    const msg    = this._buildDriverMsg(t, driver.nume, orders);
-    window.open(`https://wa.me/${phone.startsWith('0') ? '4' + phone : phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    const phone = driver.telefon.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone.startsWith('0') ? '4' + phone : phone}?text=${encodeURIComponent(this._buildTripMsg(t))}`, '_blank');
     this.transportService.markWaSent(t.id, 'driver');
   }
 
   sendGroupWhatsApp(t: Transport, contact: WhatsAppContact): void {
-    const orders = this.ordersForTransport(t);
-    const msg    = this._buildGroupMsg(t, orders);
-    window.open(`https://wa.me/${contact.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://wa.me/${contact.phone.replace(/\D/g, '')}?text=${encodeURIComponent(this._buildTripMsg(t))}`, '_blank');
   }
 
   helperHasPhone(t: Transport): boolean {
@@ -422,10 +421,8 @@ export class MobileTransportComponent implements OnInit {
     const person = [...this.transportService.helpers(), ...this.transportService.drivers()]
       .find(d => d.nume === t.helper);
     if (!person?.telefon) { this.snackBar.open(`${t.helper} nu are număr de telefon configurat.`, 'OK', { duration: 3000 }); return; }
-    const phone  = person.telefon.replace(/\D/g, '');
-    const orders = this.ordersForTransport(t);
-    const msg    = this._buildGroupMsg(t, orders);
-    window.open(`https://wa.me/${phone.startsWith('0') ? '4' + phone : phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    const phone = person.telefon.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone.startsWith('0') ? '4' + phone : phone}?text=${encodeURIComponent(this._buildTripMsg(t))}`, '_blank');
     this.transportService.markWaSent(t.id, 'helper');
   }
 
@@ -470,21 +467,10 @@ export class MobileTransportComponent implements OnInit {
     this._obsBuffer.delete(key);
   }
 
-  private _buildDriverMsg(t: Transport, driverName: string, orders: Order[]): string {
-    const v = this.transportService.getVehicle(t.vehicleId);
-    const veh = v?.alias || v?.denumire || t.vehicleId;
-    let msg = `Bună ziua, ${driverName}!\n\nAi planificată o cursă cu ${veh}:\nPlecare: ${this.fmtDT(t.oraPlecare)}\nRetur estimat: ${this.fmtDT(t.oraSosire)}\n\n`;
-    orders.forEach((o, i) => { msg += `Stop ${i + 1}: ${o.client.name}${o.client.address ? ' — ' + o.client.address : ''}\n`; });
-    return msg;
-  }
-
-  private _buildGroupMsg(t: Transport, orders: Order[]): string {
-    const v = this.transportService.getVehicle(t.vehicleId);
-    const veh = v?.alias || v?.denumire || t.vehicleId;
-    const drv = this.transportService.getDriver(t.driverId);
-    let msg = `Cursă planificată — ${veh}\n${drv ? 'Șofer: ' + drv.nume + '\n' : ''}Plecare: ${this.fmtDT(t.oraPlecare)}\n\n`;
-    orders.forEach((o, i) => { msg += `Stop ${i + 1}: ${o.client.name}${o.client.address ? ' — ' + o.client.address : ''}\n`; });
-    return msg;
+  private _buildTripMsg(t: Transport): string {
+    const orders = this.ordersForTransport(t);
+    const lines = orders.map(o => `• ${o.client.name}${o.client.address ? ' — ' + o.client.address : ''}`).join('\n');
+    return `Cursa:\nPlecare: ${this.fmtDT(t.oraPlecare)}\nSosire: ${this.fmtDT(t.oraSosire)}\n${lines}`;
   }
 
   // ── Private ───────────────────────────────────────────────────────────────

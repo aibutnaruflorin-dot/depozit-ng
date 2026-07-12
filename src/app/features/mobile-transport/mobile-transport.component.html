@@ -67,7 +67,7 @@
       @for (t of displayList(); track t.id) { @let ov = isOverdue(t);
         @let val = tripValue(t);
         @let wt  = tripWeight(t);
-        <div class="mt-card" [class.mt-card--overdue]="ov" (click)="toggleExpand(t.id)">
+        <div class="mt-card" [class.mt-card--overdue]="ov" [class.mt-card--cancel]="t.status==='anulat'" (click)="toggleExpand(t.id)">
 
           <div class="mt-card-top">
             <div class="mt-trip-info">
@@ -88,9 +88,10 @@
             <span>{{ fmtDT(t.oraPlecare) }} – {{ fmtDT(t.oraSosire) }}</span>
             <span class="mt-sep">·</span>
             <span>{{ t.deliveries.length }} cm.</span>
-            @if (val > 0) {
+            @if (val.tva > 0) {
               <span class="mt-sep">·</span>
-              <span>{{ val | number:'1.0-0' }} lei</span>
+              <span>{{ val.net | number:'1.0-0' }} lei</span>
+              <span class="mt-val-tva">{{ val.tva | number:'1.0-0' }} cu TVA</span>
             }
             @if (wt > 0) {
               <span class="mt-sep">·</span>
@@ -136,22 +137,24 @@
 
               @if (auth.isAdmin()) {
                 <div class="mt-act-row">
-                  <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentDriverAt"
-                          (click)="sendDriverWhatsApp(t)">
-                    <mat-icon>local_shipping</mat-icon>WA Șofer
-                    @if (t.waSentDriverAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
-                  </button>
-                  @if (helperHasPhone(t)) {
-                    <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentHelperAt"
-                            (click)="sendHelperWhatsApp(t)">
-                      <mat-icon>person_add</mat-icon>WA Ajutor
-                      @if (t.waSentHelperAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
+                  @if (t.status !== 'anulat') {
+                    <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentDriverAt"
+                            (click)="sendDriverWhatsApp(t)">
+                      <mat-icon>local_shipping</mat-icon>WA Șofer
+                      @if (t.waSentDriverAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
                     </button>
-                  }
-                  @for (g of waGroups(); track g.id) {
-                    <button class="mt-act-btn mt-act-btn--wa" (click)="sendGroupWhatsApp(t, g)">
-                      <mat-icon>group</mat-icon>{{ g.name }}
-                    </button>
+                    @if (helperHasPhone(t)) {
+                      <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentHelperAt"
+                              (click)="sendHelperWhatsApp(t)">
+                        <mat-icon>person_add</mat-icon>WA Ajutor
+                        @if (t.waSentHelperAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
+                      </button>
+                    }
+                    @for (g of waGroups(); track g.id) {
+                      <button class="mt-act-btn mt-act-btn--wa" (click)="sendGroupWhatsApp(t, g)">
+                        <mat-icon>group</mat-icon>{{ g.name }}
+                      </button>
+                    }
                   }
                   @if (t.status === 'planificat') {
                     <button class="mt-act-btn" (click)="openEdit(t)">

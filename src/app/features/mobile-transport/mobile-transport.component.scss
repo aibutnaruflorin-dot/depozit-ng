@@ -82,6 +82,7 @@
   box-shadow: 0 1px 4px rgba(0,0,0,.06); cursor: pointer;
   border-left: 3px solid transparent;
   &.mt-card--overdue { border-left-color: #dc2626; }
+  &.mt-card--cancel  { border-left-color: #9ca3af; opacity: .75; }
   &.mt-card--del     { opacity: .65; cursor: default; border-left-color: #9ca3af; }
 }
 .mt-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
@@ -100,6 +101,7 @@
 }
 .mt-meta-icon { font-size: 14px; width: 14px; height: 14px; }
 .mt-sep { opacity: .4; }
+.mt-val-tva { font-size: .72rem; color: var(--color-text-muted); }
 
 .mt-restore-btn {
   background: none; border: 1.5px solid var(--color-border); border-radius: 8px;
