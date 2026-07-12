@@ -49,7 +49,11 @@ export class MSettingsUsersComponent {
   formEmail    = '';
 
   readonly PERMISSION_LABELS = PERMISSION_LABELS;
-  readonly roles = ['keyuser','agent','sub-agent','sofer','ajutor_manipulant','contabilitate'];
+  editingIsKeyUser = signal(false);
+
+  get selectablePermissions() {
+    return this.permissions().filter(p => p.id !== 'keyuser');
+  }
 
   readonly PHONE_RE = /^\d{10}$/;
   readonly EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -108,6 +112,7 @@ export class MSettingsUsersComponent {
 
   openAdd(): void {
     this.editingId.set(null);
+    this.editingIsKeyUser.set(false);
     this.formName = this.formUsername = this.formPassword = this.formTelefon = this.formEmail = '';
     this.formRole = 'agent';
     this.showForm.set(true);
@@ -118,6 +123,7 @@ export class MSettingsUsersComponent {
       this.snackBar.open('Contul KeyUser se editează din Setări → Securitate.', '', { duration: 3000 }); return;
     }
     this.editingId.set(user.id);
+    this.editingIsKeyUser.set(false);
     this.formName     = user.name;
     this.formUsername = user.username;
     this.formPassword = '';
@@ -185,7 +191,7 @@ export class MSettingsUsersComponent {
 
   delete(user: User): void {
     if ((user.role as string) === 'keyuser') { this.snackBar.open('Contul KeyUser nu poate fi șters.', '', { duration: 3000 }); return; }
-    if (!confirm(`Ștergi utilizatorul "${user.name}"?`)) return;
+    if (!confirm(`Ștergi utilizatorul "${user.name}"? Această acțiune nu poate fi anulată.`)) return;
     const users = this.users().filter(u => u.id !== user.id);
     const session = this.auth.session();
     if (session) this.audit.log(session.userId, 'USER_DELETE', `Șters utilizator ${user.username}`);

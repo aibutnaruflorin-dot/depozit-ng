@@ -60,6 +60,7 @@
   outline: none; width: 100%; box-sizing: border-box;
   &:focus { border-color: var(--color-primary); }
 }
+.msub-field-hint { font-size: .72rem; color: var(--color-text-muted); margin-top: -2px; }
 .msub-form-actions { display: flex; gap: 8px; margin-top: 10px; }
 .msub-btn {
   border: 1px solid var(--color-border); border-radius: 8px; padding: 8px 16px;

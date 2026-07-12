@@ -43,6 +43,7 @@ export class MSettingsVehiclesComponent {
     this.showForm.set(true);
   }
 
+  private readonly PLATE_RE = /^[A-Z]{1,2}\s\d{1,3}\s[A-Z]{2,3}$/;
   private normNr(s: string): string { return s.replace(/\s+/g, '').toUpperCase(); }
 
   save(): void {
@@ -51,6 +52,10 @@ export class MSettingsVehiclesComponent {
       return;
     }
     const nr    = this.formNr.trim().toUpperCase();
+    if (!this.PLATE_RE.test(nr)) {
+      this.snackBar.open('Format invalid — ex: IS 01 ABC sau B 123 ABC', '', { duration: 3500, panelClass: ['snack-warn'] });
+      return;
+    }
     const alias = this.formAlias.trim();
     const id    = this.editingId();
     const all   = this.transportService.vehicles();

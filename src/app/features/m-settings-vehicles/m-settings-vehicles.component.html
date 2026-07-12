@@ -43,7 +43,9 @@
         <input class="msub-input" [(ngModel)]="formDenumire" placeholder="ex: Autoutilitară Ford">
 
         <label class="msub-label">Nr. înmatriculare *</label>
-        <input class="msub-input" [(ngModel)]="formNr" placeholder="ex: BC 01 ABC" style="text-transform:uppercase">
+        <input class="msub-input" [(ngModel)]="formNr" placeholder="ex: IS 01 ABC" maxlength="9"
+               style="text-transform:uppercase"
+               (input)="formNr = $any($event.target).value.toUpperCase()">
 
         <label class="msub-label">Marcă</label>
         <input class="msub-input" [(ngModel)]="formMarca" placeholder="ex: Ford">
@@ -52,7 +54,8 @@
         <input class="msub-input" [(ngModel)]="formAlias" placeholder="ex: Camioneta mare">
 
         <label class="msub-label">Tonaj maxim (kg)</label>
-        <input class="msub-input" [(ngModel)]="formTonaj" type="number" placeholder="ex: 3500">
+        <input class="msub-input" [(ngModel)]="formTonaj" type="number" placeholder="ex: 3500" min="1" max="40000">
+        <span class="msub-field-hint">1 – 40.000 kg · ex: 3500 → afișat ca 3.5 t</span>
 
         <div class="msub-form-actions">
           <button class="msub-btn primary" (click)="save()"><mat-icon>save</mat-icon> Salvează</button>

@@ -74,14 +74,12 @@
           <label class="msub-label">Parolă {{ editingId() !== null ? '(lasă gol pentru a nu schimba)' : '*' }}</label>
           <input class="msub-input" [(ngModel)]="formPassword" type="password" placeholder="Minim 4 caractere">
 
-          @if (editingId() === null) {
-            <label class="msub-label">Rol *</label>
-            <select class="msub-select" [(ngModel)]="formRole">
-              @for (r of roles; track r) {
-                <option [value]="r">{{ roleLabel(r) }}</option>
-              }
-            </select>
-          }
+          <label class="msub-label">Rol *</label>
+          <select class="msub-select" [(ngModel)]="formRole">
+            @for (p of selectablePermissions; track p.id) {
+              <option [value]="p.id">{{ p.name }}</option>
+            }
+          </select>
 
           <label class="msub-label">Telefon (10 cifre)</label>
           <input class="msub-input" [(ngModel)]="formTelefon" type="tel" placeholder="ex: 0761234567" maxlength="10">
