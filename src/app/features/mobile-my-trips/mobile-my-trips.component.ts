@@ -26,6 +26,7 @@ const STEP_ACTIONS = ['Confirmă', 'Pornește cursa', 'Finalizează', ''];
 })
 export class MobileMyTripsComponent {
   showHistory     = signal(false);
+  showAllHistory  = signal(false);
   expandedId      = signal<string | null>(null);
   showHistoricMap = signal<Record<string, boolean>>({});
 
@@ -41,21 +42,43 @@ export class MobileMyTripsComponent {
     private snackBar: MatSnackBar
   ) {}
 
+  // ── Driver-view computeds (U-03: secțiuni separate per status) ────────────
+
   readonly myDriverId = computed(() => {
     const uid = this.auth.session()?.userId;
     return uid != null ? String(uid) : null;
   });
 
-  readonly current = computed(() => {
+  readonly tripsInDelivery = computed(() => {
     const myId = this.myDriverId();
     if (!myId) return [];
     return this.transportService.transports()
-      .filter(t => String(t.driverId) === myId &&
-        ['planificat', 'confirmat_sofer', 'in_livrare', 'anulat'].includes(t.status))
-      .sort((a, b) => {
-        const ord = ['in_livrare', 'confirmat_sofer', 'planificat', 'anulat'];
-        return ord.indexOf(a.status) - ord.indexOf(b.status) || a.oraPlecare.localeCompare(b.oraPlecare);
-      });
+      .filter(t => String(t.driverId) === myId && t.status === 'in_livrare')
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  });
+
+  readonly tripsConfirmed = computed(() => {
+    const myId = this.myDriverId();
+    if (!myId) return [];
+    return this.transportService.transports()
+      .filter(t => String(t.driverId) === myId && t.status === 'confirmat_sofer')
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  });
+
+  readonly tripsPlanned = computed(() => {
+    const myId = this.myDriverId();
+    if (!myId) return [];
+    return this.transportService.transports()
+      .filter(t => String(t.driverId) === myId && t.status === 'planificat')
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  });
+
+  readonly tripsCancelled = computed(() => {
+    const myId = this.myDriverId();
+    if (!myId) return [];
+    return this.transportService.transports()
+      .filter(t => String(t.driverId) === myId && t.status === 'anulat')
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
   });
 
   readonly history = computed(() => {
@@ -63,8 +86,13 @@ export class MobileMyTripsComponent {
     if (!myId) return [];
     return this.transportService.transports()
       .filter(t => String(t.driverId) === myId && t.status === 'livrat')
-      .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare))
-      .slice(0, 20);
+      .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare));
+  });
+
+  // U-07: afișare paginată, show all la cerere
+  readonly historyDisplayed = computed(() => {
+    const h = this.history();
+    return this.showAllHistory() ? h : h.slice(0, 20);
   });
 
   readonly isNotDriver = computed(() => {
@@ -72,6 +100,11 @@ export class MobileMyTripsComponent {
     if (!myId) return true;
     return !this.transportService.transports().some(t => String(t.driverId) === myId);
   });
+
+  readonly hasActiveTrips = computed(() =>
+    this.tripsInDelivery().length + this.tripsConfirmed().length +
+    this.tripsPlanned().length + this.tripsCancelled().length > 0
+  );
 
   // ── Admin-view computed ───────────────────────────────────────────────────
 
@@ -139,6 +172,10 @@ export class MobileMyTripsComponent {
       });
   }
 
+  deliveryItemsCount(t: Transport, orderId: string): number {
+    return this.deliveryItems(t, orderId).length;
+  }
+
   getDeliveryNote(t: Transport, orderId: string): string {
     return t.deliveries.find(d => d.orderId === orderId)?.observatii
       ?? this.ordersService.orders().find(o => o.id === orderId)?.client.note
@@ -149,13 +186,68 @@ export class MobileMyTripsComponent {
     return t.status !== 'livrat' && t.status !== 'anulat' && new Date(t.oraSosire).getTime() < Date.now();
   }
 
-  fmt(iso: string): string {
+  fmt(iso: string): string { return this.transportService.formatDateTime(iso); }
+
+  fmtTs(iso: string | undefined): string {
+    if (!iso) return '—';
     return this.transportService.formatDateTime(iso);
   }
 
   mapsLink(address: string): string {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   }
+
+  // ── F-01: Greutate + tonaj ────────────────────────────────────────────────
+
+  tripTotalWeight(t: Transport): number {
+    return this.ordersForTransport(t).reduce((sum, order) => {
+      const d = t.deliveries.find(del => del.orderId === order.id);
+      if (!d) return sum;
+      return sum + d.items.reduce((si, item) => {
+        const p = order.products[item.productIndex];
+        if (!p) return si;
+        const masa = p.masaNeta
+          ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta
+          ?? 0;
+        return si + masa * item.qty;
+      }, 0);
+    }, 0);
+  }
+
+  tripWeightWarn(t: Transport): boolean {
+    const vehicle = this.transportService.getVehicle(t.vehicleId);
+    if (!vehicle?.tonajMaxim) return false;
+    return this.tripTotalWeight(t) > vehicle.tonajMaxim;
+  }
+
+  fmtWeight(kg: number): string {
+    if (kg <= 0) return '';
+    return kg >= 1000
+      ? `${(kg / 1000).toFixed(2).replace(/\.?0+$/, '')} t`
+      : `${kg.toFixed(1).replace(/\.0$/, '')} kg`;
+  }
+
+  // ── F-02: Durată + log tranziții ──────────────────────────────────────────
+
+  tripDuration(t: Transport): string {
+    if (!t.startedAt || !t.completedAt) return '—';
+    const ms = new Date(t.completedAt).getTime() - new Date(t.startedAt).getTime();
+    if (ms <= 0) return '—';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  tripTotalDuration(t: Transport): string {
+    if (!t.completedAt) return '—';
+    const ms = new Date(t.completedAt).getTime() - new Date(t.createdAt).getTime();
+    if (ms <= 0) return '—';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  // ── UI interaction ────────────────────────────────────────────────────────
 
   toggleExpand(id: string): void { this.expandedId.update(v => v === id ? null : id); }
 
@@ -197,15 +289,48 @@ export class MobileMyTripsComponent {
     }
 
     const msgs: Partial<Record<TransportStatus, string>> = {
-      confirmat_sofer: 'Cursa confirmată!',
+      confirmat_sofer: 'Ai confirmat primirea sarcinii!',  // U-01: mesaj contextual
       in_livrare:      'Cursa a pornit!',
       livrat:          'Livrare finalizată!'
     };
     this.snackBar.open(msgs[next] ?? 'Status actualizat.', '', { duration: 2200, panelClass: ['snack-success'] });
   }
 
+  // U-04: admin poate seta orice status (inclusiv skip pași)
+  setTripStatus(t: Transport, status: TransportStatus): void {
+    if (status === t.status) return;
+
+    if (status === 'in_livrare') {
+      const conflict = this.transportService.transports()
+        .find(other => other.id !== t.id && String(other.driverId) === String(t.driverId) && other.status === 'in_livrare');
+      if (conflict) {
+        this.snackBar.open('Șoferul are deja o cursă în livrare.', 'OK', { duration: 3500 });
+        return;
+      }
+    }
+
+    if (status === 'livrat' && !confirm('Marchezi cursa ca finalizată?')) return;
+
+    this.transportService.setStatus(t.id, status);
+
+    if (status === 'livrat') {
+      for (const { orderId } of t.deliveries) {
+        const order = this.ordersService.orders().find(o => o.id === orderId);
+        if (order) this.ordersService.updateDeliveryState(orderId, this._deliveredArr(order));
+      }
+    }
+
+    const msgs: Partial<Record<TransportStatus, string>> = {
+      confirmat_sofer: 'Cursa confirmată!',
+      in_livrare:      'Cursa a pornit!',
+      livrat:          'Livrare finalizată!'
+    };
+    this.snackBar.open(msgs[status] ?? 'Status actualizat.', '', { duration: 2200, panelClass: ['snack-success'] });
+  }
+
+  // S-01 fix: 'sters' arhivează cursa din view-ul șoferului
   confirmCancellation(t: Transport): void {
-    this.transportService.setStatus(t.id, 'anulat');
+    this.transportService.setStatus(t.id, 'sters');
     this.snackBar.open('Anulare confirmată.', '', { duration: 2500 });
   }
 

@@ -246,7 +246,7 @@ export class MyTripsComponent {
   }
 
   confirmCancellation(t: Transport): void {
-    this.transportService.setStatus(t.id, 'anulat');
+    this.transportService.setStatus(t.id, 'sters');
     this.snackBar.open('Anulare confirmată.', '', { duration: 2500 });
   }
 

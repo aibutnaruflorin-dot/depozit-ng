@@ -280,3 +280,124 @@
   width: auto; align-self: flex-start; margin-top: 8px;
   padding: 7px 14px; font-size: .82rem;
 }
+
+// ── U-02: Driver ID chip ──────────────────────────────────────────────────────
+.mm-driver-id {
+  font-size: .72rem; font-weight: 700; color: var(--color-primary);
+  background: rgba(1,105,111,.08); border-radius: 6px; padding: 1px 5px; margin-left: 2px;
+}
+
+// ── U-01: Banner sarcină nouă (planificat) ────────────────────────────────────
+.mm-new-task-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(90deg, #FFFBEB 0%, #FEF3C7 100%);
+  border: 1.5px solid #F59E0B; border-radius: 8px;
+  padding: 8px 10px; margin-bottom: 10px;
+  font-size: .8rem; font-weight: 600; color: #78350F;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; color: #F59E0B; flex-shrink: 0; animation: mm-pulse 1.4s ease-in-out infinite; }
+}
+@keyframes mm-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.18); }
+}
+
+// ── F-01: Greutate + tonaj ────────────────────────────────────────────────────
+.mm-weight-row {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .77rem; color: var(--color-text-muted); margin: 5px 0 4px;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; }
+  &.mm-weight-warn {
+    color: #dc2626; font-weight: 700;
+    mat-icon { color: #dc2626; }
+  }
+}
+
+// ── F-02: Durată cursă ────────────────────────────────────────────────────────
+.mm-duration-row {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .76rem; color: var(--color-text-muted); margin: 4px 0;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; flex-shrink: 0; }
+}
+.mm-duration-total { color: var(--color-text-muted); }
+.mm-hist-meta { display: flex; align-items: center; gap: 6px; }
+.mm-dur-badge {
+  font-size: .7rem; font-weight: 700; background: #D1FAE5; color: #065F46;
+  border-radius: 20px; padding: 2px 7px;
+}
+
+// ── F-02: Log tranziții (istoric) ─────────────────────────────────────────────
+.mm-log-section {
+  display: flex; flex-direction: column; gap: 5px; padding: 4px 2px;
+}
+.mm-log-entry {
+  display: flex; align-items: center; gap: 6px; font-size: .76rem;
+  color: var(--color-text-muted);
+  &.mm-log-entry--final { color: var(--color-text); }
+  &.mm-log-entry--dur   { color: #065F46; font-weight: 600; }
+}
+.mm-log-icon {
+  font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; color: var(--color-primary);
+  &.mm-log-icon--final { color: #16a34a; }
+}
+.mm-log-label { flex: 1; }
+.mm-log-time  { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.mm-log-sep   { height: 1px; background: var(--color-border); margin: 2px 0; }
+
+// ── U-04: Mini stepper admin ──────────────────────────────────────────────────
+.mm-mini-stepper {
+  display: flex; gap: 4px; margin-top: 10px; flex-wrap: wrap;
+}
+.mm-step-btn {
+  flex: 1 1 0; min-width: 0;
+  background: var(--color-surface); border: 1.5px solid var(--color-border);
+  border-radius: 8px; padding: 6px 4px; font-size: .7rem; font-weight: 600;
+  cursor: pointer; color: var(--color-text-muted); transition: background .15s, color .15s;
+  &.mm-step-btn--current {
+    background: var(--color-primary); border-color: var(--color-primary); color: #fff;
+  }
+  &.mm-step-btn--done {
+    background: #D1FAE5; border-color: #6EE7B7; color: #065F46;
+  }
+  &:not(.mm-step-btn--current):not(.mm-step-btn--done):hover {
+    background: var(--color-border); color: var(--color-text);
+  }
+}
+
+// ── U-05: Badge livrare parțială ──────────────────────────────────────────────
+.mm-partial-badge {
+  font-size: .7rem; font-weight: 700; background: #FEF3C7; color: #92400E;
+  border-radius: 20px; padding: 2px 8px; flex-shrink: 0;
+}
+
+// ── U-06: Nr. articole ────────────────────────────────────────────────────────
+.mm-art-count {
+  font-size: .7rem; color: var(--color-text-muted); flex-shrink: 0;
+}
+
+// ── U-07: Buton arată-toate istoricul ─────────────────────────────────────────
+.mm-show-all-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; background: var(--color-surface); border: 1.5px dashed var(--color-border);
+  border-radius: 10px; padding: 10px 14px; font-size: .84rem; font-weight: 600;
+  color: var(--color-primary); cursor: pointer; margin-bottom: 10px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { background: var(--color-border); }
+}
+
+// ── Section labels cu variante ────────────────────────────────────────────────
+.mm-section-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .75rem; font-weight: 700; color: var(--color-text-muted);
+  text-transform: uppercase; letter-spacing: .04em; margin: 12px 0 6px;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+  &.mm-section-label--active  { color: #1E40AF; mat-icon { color: #1E40AF; } }
+  &.mm-section-label--confirm { color: #78350F; mat-icon { color: #B45309; } }
+  &.mm-section-label--plan    { color: #3730A3; mat-icon { color: #4F46E5; } }
+  &.mm-section-label--cancel  { color: #991B1B; mat-icon { color: #DC2626; } }
+}
+.mm-sec-count {
+  font-size: .7rem; font-weight: 700; border-radius: 12px; padding: 1px 7px;
+  background: var(--color-border); color: var(--color-text-muted);
+  &.mm-sec-count--warn    { background: #DBEAFE; color: #1E40AF; }
+  &.mm-sec-count--confirm { background: #FEF3C7; color: #92400E; }
+}
