@@ -90,7 +90,17 @@ export class MSettingsUsersComponent {
     private audit: AuditService,
     private snackBar: MatSnackBar
   ) {
-    this.users.set(this.storage.get<User[]>('app_users') ?? []);
+    let savedUsers = this.storage.get<User[]>('app_users') ?? [];
+    const operationalRoles = new Set(['sofer', 'ajutor_manipulant']);
+    const migrated = savedUsers.map(u => {
+      if (u.jobRole && operationalRoles.has(u.jobRole)) return { ...u, role: u.jobRole as Permission, jobRole: undefined };
+      return u.jobRole ? { ...u, jobRole: undefined } : u;
+    });
+    if (migrated.some((u, i) => u.role !== savedUsers[i].role || u.jobRole !== savedUsers[i].jobRole)) {
+      this.storage.set('app_users', migrated);
+      savedUsers = migrated;
+    }
+    this.users.set(savedUsers);
     this._loadPerms();
   }
 

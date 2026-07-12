@@ -144,7 +144,7 @@ export class MSettingsContactsComponent {
     const val = this.bufferEmail.trim();
     if (!val) return;
     this.catalogsService.setBufferNotifyEmail(val);
-    this.snackBar.open('Email notificare salvat.', '', { duration: 2000 });
+    this.snackBar.open('Email notificare buffer salvat.', '', { duration: 2000 });
   }
 
   private _saveEmail(): void { this.storage.set('app_email_contacts', this.emailContacts()); }
