@@ -88,6 +88,11 @@
                   class="msub-file-input" (change)="onFileSelected(cat, $event)">
               }
             </div>
+            @if (st.importMsg) {
+              <div class="msub-import-msg" [class.ok]="st.importOk" [class.err]="!st.importOk">
+                {{ st.importMsg }}
+              </div>
+            }
             <div class="msub-cat-hint">Importă fișierul direct din Nexus, fără modificări. Fișierele cu același nume sunt respinse.</div>
           }
 

@@ -74,7 +74,7 @@
           <mat-icon>warning_amber</mat-icon>
           <div>
             <strong>Curățare sesiune test</strong>
-            <p>Șterge toate comenzile și cursele. Cataloagele, stocul, mașinile și utilizatorii rămân.</p>
+            <p>Șterge toate comenzile și toate cursele de transport. Cataloagele, stocul, mașinile, șoferii și utilizatorii rămân neatinși.</p>
           </div>
         </div>
         @if (!confirmReset()) {
@@ -84,7 +84,7 @@
         } @else {
           <div class="ms-danger-confirm">
             <mat-icon>error_outline</mat-icon>
-            <span>Ești sigur? Acțiunea este <strong>ireversibilă</strong>.</span>
+            <span>Ești sigur? Această acțiune este <strong>ireversibilă</strong>.</span>
           </div>
           <div class="ms-danger-actions">
             <button class="ms-danger-btn confirm" (click)="executePeriodReset()">

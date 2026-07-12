@@ -42,7 +42,11 @@
                 <span class="msub-inactive-badge">Dezactivat</span>
               }
             </div>
-            @if (u.telefon) { <div class="msub-user-phone">📞 {{ u.telefon }}</div> }
+            @if (u.telefon) {
+              <div class="msub-user-phone">
+                <a [href]="'tel:' + u.telefon" class="msub-tel-link">📞 {{ u.telefon }}</a>
+              </div>
+            }
           </div>
           @if (auth.isAdmin()) {
             <div class="msub-user-actions">

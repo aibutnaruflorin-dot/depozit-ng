@@ -9,7 +9,7 @@ import { UnitsService } from '../../core/services/units.service';
 import { Catalog } from '../../core/models/catalog.model';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
-interface CatState { importing: boolean; testing: boolean; syncing: boolean; apiMsg: { ok: boolean; msg: string } | null; }
+interface CatState { importing: boolean; testing: boolean; syncing: boolean; apiMsg: { ok: boolean; msg: string } | null; importMsg: string; importOk: boolean | null; }
 
 @Component({
   selector: 'app-m-settings-catalogs',
@@ -29,7 +29,7 @@ export class MSettingsCatalogsComponent {
   }
 
   private _initState(id: string): void {
-    if (!this.catStates[id]) this.catStates[id] = { importing: false, testing: false, syncing: false, apiMsg: null };
+    if (!this.catStates[id]) this.catStates[id] = { importing: false, testing: false, syncing: false, apiMsg: null, importMsg: '', importOk: null };
   }
 
   getMeta(catId: string) { return this.catalogsService.getMeta(catId); }
@@ -117,6 +117,8 @@ export class MSettingsCatalogsComponent {
 
     const result = await this.catalogsService.importExcel(cat.id, file);
     st.importing = false;
+    st.importMsg = result.msg;
+    st.importOk  = result.ok;
     this.snackBar.open(result.msg, result.ok ? 'OK' : 'Închide', {
       duration: result.ok ? 4000 : 6000,
       panelClass: [result.ok ? 'snack-success' : 'snack-error']
