@@ -69,7 +69,7 @@
           <input class="msub-input" [(ngModel)]="formName" placeholder="ex: Ion Popescu">
 
           <label class="msub-label">Username *</label>
-          <input class="msub-input" [(ngModel)]="formUsername" placeholder="ex: ion.popescu" [readonly]="editingId() !== null">
+          <input class="msub-input" [(ngModel)]="formUsername" placeholder="ex: ion.popescu">
 
           <label class="msub-label">Parolă {{ editingId() !== null ? '(lasă gol pentru a nu schimba)' : '*' }}</label>
           <input class="msub-input" [(ngModel)]="formPassword" type="password" placeholder="Minim 4 caractere">

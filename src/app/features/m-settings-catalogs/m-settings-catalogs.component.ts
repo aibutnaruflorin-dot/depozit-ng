@@ -125,7 +125,7 @@ export class MSettingsCatalogsComponent {
   }
 
   delete(cat: Catalog): void {
-    if (!confirm(`Ștergi catalogul "${cat.name}"? Toate produsele vor fi șterse!`)) return;
+    if (!confirm(`Ștergi catalogul "${cat.name}"? Toate produsele sale vor fi șterse.`)) return;
     this.catalogsService.deleteCatalog(cat.id);
     if (this.expandedId() === cat.id) this.expandedId.set(null);
     this.snackBar.open('Catalog șters.', '', { duration: 2000 });

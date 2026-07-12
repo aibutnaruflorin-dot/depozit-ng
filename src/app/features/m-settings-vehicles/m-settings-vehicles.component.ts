@@ -43,7 +43,7 @@ export class MSettingsVehiclesComponent {
     this.showForm.set(true);
   }
 
-  private readonly PLATE_RE = /^[A-Z]{1,2}\s\d{1,3}\s[A-Z]{2,3}$/;
+  private readonly PLATE_RE = /^[A-Z]{1,2}\s?\d{2,3}\s?[A-Z]{3}$/i;
   private normNr(s: string): string { return s.replace(/\s+/g, '').toUpperCase(); }
 
   save(): void {
@@ -68,7 +68,7 @@ export class MSettingsVehiclesComponent {
       if (dupAlias) { this.snackBar.open(`Aliasul "${alias}" este deja folosit de "${dupAlias.denumire}".`, '', { duration: 3500 }); return; }
     }
 
-    const tonajMaxim = this.formTonaj.trim() ? (parseFloat(this.formTonaj) || undefined) : undefined;
+    const tonajMaxim = this.formTonaj.trim() ? (parseInt(this.formTonaj, 10) || undefined) : undefined;
     if (tonajMaxim !== undefined && (tonajMaxim < 1 || tonajMaxim > 40000)) {
       this.snackBar.open('Tonajul maxim trebuie să fie între 1 și 40.000 kg.', '', { duration: 3000 }); return;
     }

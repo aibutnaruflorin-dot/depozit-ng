@@ -52,7 +52,9 @@ export class MSettingsUsersComponent {
   editingIsKeyUser = signal(false);
 
   get selectablePermissions() {
-    return this.permissions().filter(p => p.id !== 'keyuser');
+    return this.permissions()
+      .filter(p => !this.LOCKED_PERMS.has(p.id))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ro'));
   }
 
   readonly PHONE_RE = /^\d{10}$/;
