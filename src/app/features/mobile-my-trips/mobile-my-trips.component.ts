@@ -14,7 +14,7 @@ const STATUS_STEPS: TransportStatus[] = ['planificat', 'confirmat_sofer', 'in_li
 const STATUS_LABELS: Record<string, string> = {
   planificat: 'Planificat', confirmat_sofer: 'Confirmat', in_livrare: 'În livrare', livrat: 'Livrat', anulat: 'Anulat'
 };
-const STEP_LABELS = ['Planificat', 'Confirmat', 'Pornit', 'Livrat'];
+const STEP_LABELS  = ['Planificat', 'Confirmat', 'Pornit', 'Livrat'];
 const STEP_ACTIONS = ['Confirmă', 'Pornește cursa', 'Finalizează', ''];
 
 @Component({
@@ -25,18 +25,18 @@ const STEP_ACTIONS = ['Confirmă', 'Pornește cursa', 'Finalizează', ''];
   styleUrl: './mobile-my-trips.component.scss'
 })
 export class MobileMyTripsComponent {
-  showHistory  = signal(false);
-  expandedId   = signal<string | null>(null);
+  showHistory = signal(false);
+  expandedId  = signal<string | null>(null);
 
   readonly STATUS_STEPS = STATUS_STEPS;
   readonly STEP_LABELS  = STEP_LABELS;
   readonly STEP_ACTIONS = STEP_ACTIONS;
 
   constructor(
-    public auth: AuthService,
-    public transportService: TransportService,
-    public ordersService: OrdersService,
-    public catalogsService: CatalogsService,
+    public  auth: AuthService,
+    public  transportService: TransportService,
+    public  ordersService: OrdersService,
+    public  catalogsService: CatalogsService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -50,9 +50,9 @@ export class MobileMyTripsComponent {
     if (!myId) return [];
     return this.transportService.transports()
       .filter(t => String(t.driverId) === myId &&
-        ['planificat','confirmat_sofer','in_livrare'].includes(t.status))
+        ['planificat', 'confirmat_sofer', 'in_livrare', 'anulat'].includes(t.status))
       .sort((a, b) => {
-        const ord = ['in_livrare','confirmat_sofer','planificat'];
+        const ord = ['in_livrare', 'confirmat_sofer', 'planificat', 'anulat'];
         return ord.indexOf(a.status) - ord.indexOf(b.status) || a.oraPlecare.localeCompare(b.oraPlecare);
       });
   });
@@ -72,6 +72,8 @@ export class MobileMyTripsComponent {
     return !this.transportService.transports().some(t => String(t.driverId) === myId);
   });
 
+  // ── Display helpers ───────────────────────────────────────────────────────
+
   stepIndex(t: Transport): number {
     return STATUS_STEPS.indexOf(t.status as TransportStatus);
   }
@@ -80,7 +82,7 @@ export class MobileMyTripsComponent {
 
   vehicleName(t: Transport): string {
     const v = this.transportService.getVehicle(t.vehicleId);
-    return v?.alias || v?.numarInmatriculare || t.vehicleId;
+    return v?.alias || v?.denumire || t.vehicleId;
   }
 
   ordersForTransport(t: Transport): Order[] {
@@ -89,11 +91,39 @@ export class MobileMyTripsComponent {
       .filter((o): o is Order => !!o);
   }
 
+  deliveryItems(t: Transport, orderId: string): { name: string; qty: number; um: string }[] {
+    const delivery = t.deliveries.find(d => d.orderId === orderId);
+    const order    = this.ordersService.orders().find(o => o.id === orderId);
+    if (!delivery || !order) return [];
+    return delivery.items
+      .filter(item => item.qty > 0)
+      .map(item => {
+        const p = order.products[item.productIndex];
+        return { name: p?.name ?? '?', qty: item.qty, um: p?.um ?? '' };
+      });
+  }
+
+  getDeliveryNote(t: Transport, orderId: string): string {
+    return t.deliveries.find(d => d.orderId === orderId)?.observatii
+      ?? this.ordersService.orders().find(o => o.id === orderId)?.client.note
+      ?? '';
+  }
+
+  isOverdue(t: Transport): boolean {
+    return t.status !== 'livrat' && t.status !== 'anulat' && new Date(t.oraSosire).getTime() < Date.now();
+  }
+
+  fmt(iso: string): string {
+    return this.transportService.formatDateTime(iso);
+  }
+
+  mapsLink(address: string): string {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  }
+
   toggleExpand(id: string): void { this.expandedId.update(v => v === id ? null : id); }
 
-  private _deliveredArr(order: Order): number[] {
-    return order.products.map(p => p.qty);
-  }
+  // ── Status transitions ────────────────────────────────────────────────────
 
   advance(t: Transport): void {
     const idx = STATUS_STEPS.indexOf(t.status as TransportStatus);
@@ -123,9 +153,29 @@ export class MobileMyTripsComponent {
 
     const msgs: Partial<Record<TransportStatus, string>> = {
       confirmat_sofer: 'Cursa confirmată!',
-      in_livrare: 'Cursa a pornit!',
-      livrat: 'Livrare finalizată!'
+      in_livrare:      'Cursa a pornit!',
+      livrat:          'Livrare finalizată!'
     };
     this.snackBar.open(msgs[next] ?? 'Status actualizat.', '', { duration: 2200, panelClass: ['snack-success'] });
+  }
+
+  confirmCancellation(t: Transport): void {
+    this.transportService.setStatus(t.id, 'anulat');
+    this.snackBar.open('Anulare confirmată.', '', { duration: 2500 });
+  }
+
+  // ── Private ───────────────────────────────────────────────────────────────
+
+  private _deliveredArr(order: Order): number[] {
+    const qty = new Array(order.products.length).fill(0);
+    for (const t of this.transportService.transports()) {
+      if (t.status !== 'livrat') continue;
+      const d = t.deliveries.find(d => d.orderId === order.id);
+      if (!d) continue;
+      for (const item of d.items) {
+        if (item.productIndex < qty.length) qty[item.productIndex] += item.qty;
+      }
+    }
+    return qty;
   }
 }

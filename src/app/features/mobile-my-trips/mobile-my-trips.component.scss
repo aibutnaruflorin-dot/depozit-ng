@@ -101,3 +101,99 @@
   font-size: .78rem; background: var(--color-surface-2, #F0F2F5);
   border-radius: 6px; padding: 3px 8px; color: var(--color-text-muted);
 }
+
+// ── Header driver chip ────────────────────────────────────────────────────────
+.mm-header { display: flex; align-items: center; justify-content: space-between; }
+.mm-driver-chip {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .8rem; color: var(--color-text-muted); flex-shrink: 0;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+
+// ── Admin hint ────────────────────────────────────────────────────────────────
+.mm-admin-hint {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #EFF6FF; border-radius: 9px; padding: 10px 12px; margin-bottom: 8px;
+  font-size: .82rem; color: #1D4ED8;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+}
+
+// ── Not-driver state ──────────────────────────────────────────────────────────
+.mm-not-driver {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--color-surface); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  mat-icon { font-size: 24px; width: 24px; height: 24px; color: var(--color-text-muted); flex-shrink: 0; margin-top: 2px; }
+  strong { font-size: .9rem; color: var(--color-text); display: block; }
+  p { margin: 4px 0 0; font-size: .8rem; color: var(--color-text-muted); }
+}
+
+// ── Empty section ─────────────────────────────────────────────────────────────
+.mm-empty-section {
+  display: flex; align-items: center; gap: 8px; padding: 10px 4px;
+  color: var(--color-text-muted); font-size: .85rem;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+// ── Overdue / cancelled modifiers ────────────────────────────────────────────
+.mm-trip-card--overdue { border-left: 3px solid #dc2626; }
+.mm-trip-card--cancelled { border-left: 3px solid #9ca3af; opacity: .8; cursor: default; }
+.mm-car-icon--cancel { color: #9ca3af !important; }
+
+.mm-overdue-hint {
+  display: flex; align-items: center; gap: 3px; margin-bottom: 4px;
+  font-size: .72rem; color: #dc2626; font-weight: 600;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+
+// ── Cancelled banner ──────────────────────────────────────────────────────────
+.mm-cancelled-banner {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+  background: #FEF2F2; border-radius: 8px; padding: 8px 10px;
+  color: #991B1B; font-size: .82rem;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+}
+.mm-cancel-ack-btn {
+  margin-left: auto; background: #dc2626; color: #fff; border: none; border-radius: 8px;
+  padding: 6px 12px; cursor: pointer; font-size: .78rem; font-weight: 600; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+}
+
+// ── Expanded order blocks ─────────────────────────────────────────────────────
+.mm-expanded {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--color-border);
+  margin-bottom: 10px;
+}
+.mm-order-block {
+  background: var(--color-surface-2, #F0F2F5); border-radius: 8px; padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.mm-order-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mm-deadline {
+  font-size: .7rem; background: #FEF3C7; color: #92400E;
+  border-radius: 8px; padding: 2px 6px; flex-shrink: 0;
+}
+.mm-addr-link {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .78rem; color: #1d4ed8; text-decoration: none;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; }
+}
+.mm-phone-link {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .78rem; color: #16a34a; text-decoration: none;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; }
+}
+.mm-items-list { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 2px; }
+.mm-item-row { display: flex; justify-content: space-between; gap: 8px; font-size: .78rem; }
+.mm-item-name {
+  flex: 1; color: var(--color-text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mm-item-qty { flex-shrink: 0; font-weight: 600; color: var(--color-text); }
+.mm-obs {
+  display: flex; align-items: flex-start; gap: 4px;
+  font-size: .78rem; color: var(--color-text-muted); font-style: italic;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+}
