@@ -1,20 +1,55 @@
 <div class="mt-wrap">
 
+  <!-- ── Header ── -->
   <div class="mt-header">
-    <span class="mt-title">Transport</span>
+    <div class="mt-header-top">
+      <span class="mt-title">Transport</span>
+      @if (cancelled() > 0) {
+        <span class="mt-badge-cancelled">{{ cancelled() }} anulat{{ cancelled() === 1 ? '' : 'e' }}</span>
+      }
+      @if (auth.isAdmin()) {
+        <button class="mt-fab-btn" (click)="openCreate()" title="Cursă nouă">
+          <mat-icon>add</mat-icon>
+        </button>
+      }
+    </div>
     <div class="mt-tabs">
-      <button class="mt-tab" [class.active]="activeTab() === 'active'"
-              (click)="activeTab.set('active')">
+      <button class="mt-tab" [class.active]="activeTab() === 'active'" (click)="activeTab.set('active')">
         Active <span class="mt-cnt">{{ active().length }}</span>
       </button>
-      <button class="mt-tab" [class.active]="activeTab() === 'done'"
-              (click)="activeTab.set('done')">
+      <button class="mt-tab" [class.active]="activeTab() === 'done'" (click)="activeTab.set('done')">
         Livrate <span class="mt-cnt">{{ done().length }}</span>
       </button>
     </div>
   </div>
 
-  <div class="mt-list">
+  <div class="mt-body">
+
+    <!-- ── Comenzi de planificat (admin) ── -->
+    @if (auth.isAdmin() && pendingOrders().length > 0) {
+      <div class="mt-section-hdr" (click)="showPending.set(!showPending())">
+        <mat-icon>pending_actions</mat-icon>
+        <span>Comenzi de planificat</span>
+        <span class="mt-cnt mt-cnt--warn">{{ pendingOrders().length }}</span>
+        <mat-icon class="mt-chevron">{{ showPending() ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </div>
+      @if (showPending()) {
+        @for (o of pendingOrders(); track o.id) {
+          <div class="mt-pending-item">
+            <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+            <span class="mt-order-client">{{ o.client.name }}</span>
+            @if (o.deliveryDate) {
+              <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}</span>
+            }
+            <button class="mt-plan-btn" (click)="openCreate(o.id)" title="Planifică această comandă">
+              <mat-icon>add_circle_outline</mat-icon>
+            </button>
+          </div>
+        }
+      }
+    }
+
+    <!-- ── Main list ── -->
     @if (displayList().length === 0) {
       <div class="mt-empty">
         <mat-icon>local_shipping</mat-icon>
@@ -22,20 +57,38 @@
       </div>
     } @else {
       @for (t of displayList(); track t.id) {
-        <div class="mt-card" (click)="toggleExpand(t.id)">
+        @let ov = isOverdue(t);
+        @let val = tripValue(t);
+        @let wt  = tripWeight(t);
+        <div class="mt-card" [class.mt-card--overdue]="ov" (click)="toggleExpand(t.id)">
+
           <div class="mt-card-top">
             <div class="mt-trip-info">
               <mat-icon class="mt-icon">local_shipping</mat-icon>
-              <span class="mt-vehicle">{{ vehicleName(t) }}</span>
-              <span class="mt-driver">{{ driverName(t) }}</span>
+              <div class="mt-trip-names">
+                <span class="mt-vehicle">{{ vehicleName(t) }}</span>
+                <span class="mt-driver">{{ driverName(t) }}</span>
+              </div>
             </div>
-            <span class="mt-chip" [class]="statusClass(t)">{{ statusLabel(t) }}</span>
+            <div class="mt-card-badge-row">
+              @if (ov) { <mat-icon class="mt-overdue-icon">warning</mat-icon> }
+              <span class="mt-chip" [class]="statusClass(t)">{{ statusLabel(t.status) }}</span>
+            </div>
           </div>
+
           <div class="mt-card-meta">
             <mat-icon class="mt-meta-icon">schedule</mat-icon>
-            <span>{{ t.oraPlecare }} – {{ t.oraSosire }}</span>
+            <span>{{ fmtDT(t.oraPlecare) }} – {{ fmtDT(t.oraSosire) }}</span>
             <span class="mt-sep">·</span>
-            <span>{{ t.deliveries.length }} {{ t.deliveries.length === 1 ? 'comandă' : 'comenzi' }}</span>
+            <span>{{ t.deliveries.length }} cm.</span>
+            @if (val > 0) {
+              <span class="mt-sep">·</span>
+              <span>{{ val | number:'1.0-0' }} lei</span>
+            }
+            @if (wt > 0) {
+              <span class="mt-sep">·</span>
+              <span>{{ fmtWeight(wt) }}</span>
+            }
           </div>
 
           @if (expandedId() === t.id) {
@@ -44,18 +97,174 @@
                 <div class="mt-order-row">
                   <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
                   <span class="mt-order-client">{{ o.client.name }}</span>
-                  @if (o.cuLivrare) {
-                    <mat-icon class="mt-deliv-icon">home</mat-icon>
+                  @if (o.cuLivrare) { <mat-icon class="mt-deliv-icon">home</mat-icon> }
+                </div>
+              }
+
+              @if (auth.isAdmin()) {
+                <div class="mt-act-row">
+                  <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentDriverAt"
+                          (click)="sendDriverWhatsApp(t)">
+                    <mat-icon>local_shipping</mat-icon>WA Șofer
+                    @if (t.waSentDriverAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
+                  </button>
+                  @for (g of waGroups(); track g.id) {
+                    <button class="mt-act-btn mt-act-btn--wa" (click)="sendGroupWhatsApp(t, g)">
+                      <mat-icon>group</mat-icon>{{ g.name }}
+                    </button>
+                  }
+                  @if (t.status === 'planificat') {
+                    <button class="mt-act-btn" (click)="openEdit(t)">
+                      <mat-icon>edit</mat-icon>Editează
+                    </button>
+                    <button class="mt-act-btn mt-act-btn--danger" (click)="deleteTransport(t)">
+                      <mat-icon>delete_outline</mat-icon>Șterge
+                    </button>
                   }
                 </div>
               }
             </div>
           }
+
         </div>
       }
-      <div style="height:72px"></div>
     }
+
+    <!-- ── Deleted trips (admin) ── -->
+    @if (auth.isAdmin() && deleted().length > 0) {
+      <div class="mt-section-hdr mt-section-hdr--del" (click)="showDeleted.set(!showDeleted())">
+        <mat-icon>delete_outline</mat-icon>
+        <span>Curse șterse</span>
+        <span class="mt-cnt mt-cnt--del">{{ deleted().length }}</span>
+        <mat-icon class="mt-chevron">{{ showDeleted() ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </div>
+      @if (showDeleted()) {
+        @for (t of deleted(); track t.id) {
+          <div class="mt-card mt-card--del">
+            <div class="mt-card-top">
+              <div class="mt-trip-info">
+                <mat-icon class="mt-icon">local_shipping</mat-icon>
+                <div class="mt-trip-names">
+                  <span class="mt-vehicle">{{ vehicleName(t) }}</span>
+                  <span class="mt-driver">{{ driverName(t) }}</span>
+                </div>
+              </div>
+              <button class="mt-restore-btn" (click)="restoreTransport(t)" title="Redeschide cursa">
+                <mat-icon>restore</mat-icon>
+              </button>
+            </div>
+            <div class="mt-card-meta">
+              <mat-icon class="mt-meta-icon">schedule</mat-icon>
+              <span>{{ fmtDT(t.oraPlecare) }}</span>
+              <span class="mt-sep">·</span>
+              <span>{{ t.deliveries.length }} cm.</span>
+            </div>
+          </div>
+        }
+      }
+    }
+
+    <div style="height:80px"></div>
   </div>
+
+  <!-- ── Create/Edit form (admin, slide-up overlay) ── -->
+  @if (showForm()) {
+    <div class="mt-overlay" (click)="closeForm()">
+      <div class="mt-panel" (click)="$event.stopPropagation()">
+
+        <div class="mt-panel-hdr">
+          <span class="mt-panel-title">{{ editingId() ? 'Editează cursa' : 'Cursă nouă' }}</span>
+          <button class="mt-panel-close" (click)="closeForm()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="mt-panel-body">
+
+          <div class="mt-field">
+            <label class="mt-lbl">Mașină *</label>
+            <select class="mt-sel" [(ngModel)]="formVehicleId">
+              <option value="">Selectați mașina...</option>
+              @for (v of transportService.vehicles(); track v.id) {
+                <option [value]="v.id">{{ v.alias || v.denumire }} — {{ v.numarInmatriculare }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="mt-field">
+            <label class="mt-lbl">Șofer *</label>
+            <select class="mt-sel" [(ngModel)]="formDriverId">
+              <option value="">Selectați șoferul...</option>
+              @for (d of transportService.drivers(); track d.id) {
+                <option [value]="d.id">{{ d.nume }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="mt-row-2">
+            <div class="mt-field">
+              <label class="mt-lbl">Data plecare *</label>
+              <input class="mt-inp" type="date" [(ngModel)]="formPlecareDate">
+            </div>
+            <div class="mt-field">
+              <label class="mt-lbl">Ora plecare</label>
+              <input class="mt-inp" type="time" [(ngModel)]="formPlecareTime">
+            </div>
+          </div>
+
+          <div class="mt-row-2">
+            <div class="mt-field">
+              <label class="mt-lbl">Data sosire *</label>
+              <input class="mt-inp" type="date" [(ngModel)]="formSosireDate">
+            </div>
+            <div class="mt-field">
+              <label class="mt-lbl">Ora sosire</label>
+              <input class="mt-inp" type="time" [(ngModel)]="formSosireTime">
+            </div>
+          </div>
+
+          <div class="mt-field">
+            <label class="mt-lbl">Ajutor (opțional)</label>
+            <input class="mt-inp" type="text" [(ngModel)]="formHelperName" placeholder="Nume ajutor…">
+          </div>
+
+          <div class="mt-form-sec-title">
+            <mat-icon>receipt_long</mat-icon>
+            Comenzi pe cursă
+            <span class="mt-cnt">{{ formSelectedOrderIds().size }}</span>
+          </div>
+
+          @if (formEligibleOrders().length === 0) {
+            <div class="mt-no-orders">
+              <mat-icon>info_outline</mat-icon>
+              <span>Nu există comenzi disponibile pentru livrare.</span>
+            </div>
+          } @else {
+            @for (o of formEligibleOrders(); track o.id) {
+              <div class="mt-pick-item" [class.mt-pick-item--sel]="formSelectedOrderIds().has(o.id)"
+                   (click)="toggleOrderInForm(o.id)">
+                <mat-icon class="mt-pick-chk">
+                  {{ formSelectedOrderIds().has(o.id) ? 'check_box' : 'check_box_outline_blank' }}
+                </mat-icon>
+                <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+                <span class="mt-pick-name">{{ o.client.name }}</span>
+                @if (o.deliveryDate) {
+                  <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}</span>
+                }
+              </div>
+            }
+          }
+
+        </div>
+
+        <div class="mt-panel-ftr">
+          <button class="mt-btn mt-btn--ghost" (click)="closeForm()">Anulează</button>
+          <button class="mt-btn mt-btn--primary" (click)="save()">
+            {{ editingId() ? 'Salvează' : 'Creează cursa' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
 
   <app-mobile-nav />
 </div>

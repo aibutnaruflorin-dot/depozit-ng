@@ -1,12 +1,27 @@
 :host { display: block; }
 .mt-wrap { background: #F5F6FA; min-height: 100vh; padding-bottom: 64px; }
 
+// ── Header ──────────────────────────────────────────────────────────────────
 .mt-header {
   position: sticky; top: 0; z-index: 50;
   background: var(--color-surface); padding: 12px 14px 0;
   box-shadow: 0 1px 4px rgba(0,0,0,.08);
 }
-.mt-title { font-size: 1.1rem; font-weight: 700; color: var(--color-text); display: block; margin-bottom: 8px; }
+.mt-header-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mt-title { font-size: 1.1rem; font-weight: 700; color: var(--color-text); flex: 1; }
+
+.mt-badge-cancelled {
+  font-size: .72rem; font-weight: 600; background: #FEE2E2; color: #991B1B;
+  border-radius: 12px; padding: 2px 8px; flex-shrink: 0;
+}
+
+.mt-fab-btn {
+  width: 32px; height: 32px; border-radius: 50%; border: none; flex-shrink: 0;
+  background: var(--color-primary); color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+}
+
 .mt-tabs { display: flex; gap: 8px; padding-bottom: 10px; }
 .mt-tab {
   border: 1.5px solid var(--color-border); background: none; border-radius: 20px;
@@ -17,9 +32,13 @@
 .mt-cnt {
   background: rgba(255,255,255,.25); border-radius: 10px; padding: 0 6px; font-size: .7rem; font-weight: 700;
   .mt-tab:not(.active) & { background: var(--color-border); color: var(--color-text-muted); }
+  &.mt-cnt--warn { background: #f59e0b; color: #fff; }
+  &.mt-cnt--del  { background: #dc2626; color: #fff; }
 }
 
-.mt-list { padding: 8px 12px; }
+// ── Body ─────────────────────────────────────────────────────────────────────
+.mt-body { padding: 8px 12px; }
+
 .mt-empty {
   display: flex; flex-direction: column; align-items: center;
   padding: 60px 16px; color: var(--color-text-muted); gap: 8px;
@@ -27,20 +46,69 @@
   p { margin: 0; font-size: .9rem; }
 }
 
+// ── Section toggles ──────────────────────────────────────────────────────────
+.mt-section-hdr {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--color-surface); border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 6px; cursor: pointer;
+  font-size: .85rem; font-weight: 600; color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  > mat-icon:first-child { font-size: 18px; width: 18px; height: 18px; color: var(--color-primary); }
+  > span { flex: 1; }
+  .mt-chevron { font-size: 20px; width: 20px; height: 20px; color: var(--color-text-muted); margin-left: 2px; }
+  &.mt-section-hdr--del > mat-icon:first-child { color: #dc2626; }
+}
+
+.mt-pending-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--color-surface); border-radius: 8px;
+  padding: 8px 12px; margin-bottom: 4px;
+  border-left: 3px solid #f59e0b;
+}
+.mt-deadline-sm {
+  font-size: .72rem; background: #FEF3C7; color: #92400E;
+  border-radius: 8px; padding: 2px 6px; flex-shrink: 0;
+}
+.mt-plan-btn {
+  margin-left: auto; background: none; border: none; cursor: pointer; padding: 0;
+  color: var(--color-primary); display: flex; align-items: center;
+  mat-icon { font-size: 22px; width: 22px; height: 22px; }
+}
+
+// ── Cards ─────────────────────────────────────────────────────────────────────
 .mt-card {
   background: var(--color-surface); border-radius: 12px;
   padding: 12px 14px; margin-bottom: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,.06); cursor: pointer;
+  border-left: 3px solid transparent;
+  &.mt-card--overdue { border-left-color: #dc2626; }
+  &.mt-card--del     { opacity: .65; cursor: default; border-left-color: #9ca3af; }
 }
 .mt-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
-.mt-trip-info { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.mt-icon { font-size: 18px; width: 18px; height: 18px; color: var(--color-primary); }
-.mt-vehicle { font-size: .9rem; font-weight: 700; color: var(--color-text); }
-.mt-driver { font-size: .78rem; color: var(--color-text-muted); }
-.mt-card-meta { display: flex; align-items: center; gap: 5px; font-size: .75rem; color: var(--color-text-muted); }
-.mt-meta-icon { font-size: 14px; width: 14px; height: 14px; }
-.mt-sep { opacity: .5; }
+.mt-trip-info { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1; }
+.mt-icon { font-size: 18px; width: 18px; height: 18px; color: var(--color-primary); flex-shrink: 0; }
+.mt-trip-names { display: flex; flex-direction: column; min-width: 0; }
+.mt-vehicle { font-size: .9rem; font-weight: 700; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mt-driver  { font-size: .78rem; color: var(--color-text-muted); }
 
+.mt-card-badge-row { display: flex; align-items: center; gap: 5px; flex-shrink: 0; margin-left: 8px; }
+.mt-overdue-icon   { font-size: 16px; width: 16px; height: 16px; color: #dc2626; }
+
+.mt-card-meta {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 4px; font-size: .75rem; color: var(--color-text-muted); margin-top: 3px;
+}
+.mt-meta-icon { font-size: 14px; width: 14px; height: 14px; }
+.mt-sep { opacity: .4; }
+
+.mt-restore-btn {
+  background: none; border: 1.5px solid var(--color-border); border-radius: 8px;
+  padding: 4px 8px; cursor: pointer; display: flex; align-items: center;
+  color: var(--color-text-muted); margin-left: 8px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+// ── Status chips ─────────────────────────────────────────────────────────────
 .mt-chip {
   border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700; flex-shrink: 0;
   &.chip-plan    { background: #E0E7FF; color: #3730A3; }
@@ -50,11 +118,98 @@
   &.chip-cancel  { background: #FEE2E2; color: #991B1B; }
 }
 
+// ── Expanded section ─────────────────────────────────────────────────────────
 .mt-expanded {
   margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--color-border);
-  display: flex; flex-direction: column; gap: 8px;
+  display: flex; flex-direction: column; gap: 6px;
 }
-.mt-order-row { display: flex; align-items: center; gap: 8px; }
-.mt-order-nr { font-size: .8rem; font-weight: 700; color: var(--color-text-muted); flex-shrink: 0; }
+.mt-order-row    { display: flex; align-items: center; gap: 8px; }
+.mt-order-nr     { font-size: .8rem; font-weight: 700; color: var(--color-text-muted); flex-shrink: 0; }
 .mt-order-client { font-size: .88rem; color: var(--color-text); flex: 1; }
-.mt-deliv-icon { font-size: 15px; width: 15px; height: 15px; color: var(--color-primary); }
+.mt-deliv-icon   { font-size: 15px; width: 15px; height: 15px; color: var(--color-primary); }
+
+// ── Action buttons ────────────────────────────────────────────────────────────
+.mt-act-row  { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mt-act-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1.5px solid var(--color-border); background: none; border-radius: 20px;
+  padding: 5px 12px; font-size: .78rem; font-weight: 500; cursor: pointer;
+  color: var(--color-text); white-space: nowrap;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &.mt-act-btn--wa     { border-color: #25d366; color: #16a34a; }
+  &.mt-act-btn--sent   { background: #d1fae5; }
+  &.mt-act-btn--danger { border-color: #fca5a5; color: #dc2626; }
+}
+.mt-sent-chk { font-size: 14px !important; width: 14px !important; height: 14px !important; color: #16a34a; }
+
+// ── Overlay & panel ───────────────────────────────────────────────────────────
+.mt-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200;
+  display: flex; align-items: flex-end;
+}
+.mt-panel {
+  background: var(--color-surface); border-radius: 20px 20px 0 0;
+  width: 100%; max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 -4px 24px rgba(0,0,0,.18);
+}
+.mt-panel-hdr {
+  display: flex; align-items: center; padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border); flex-shrink: 0;
+}
+.mt-panel-title { font-size: 1rem; font-weight: 700; color: var(--color-text); flex: 1; }
+.mt-panel-close {
+  background: none; border: none; cursor: pointer; padding: 0;
+  color: var(--color-text-muted); display: flex; align-items: center;
+  mat-icon { font-size: 22px; width: 22px; height: 22px; }
+}
+.mt-panel-body {
+  flex: 1; overflow-y: auto; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.mt-panel-ftr {
+  display: flex; gap: 10px; padding: 12px 16px;
+  border-top: 1px solid var(--color-border); flex-shrink: 0;
+}
+
+// ── Form fields ───────────────────────────────────────────────────────────────
+.mt-field { display: flex; flex-direction: column; gap: 4px; }
+.mt-lbl   { font-size: .8rem; font-weight: 600; color: var(--color-text-muted); }
+.mt-sel, .mt-inp {
+  width: 100%; padding: 9px 11px; border-radius: 9px; font-size: .9rem;
+  border: 1.5px solid var(--color-border); background: var(--color-surface);
+  color: var(--color-text); box-sizing: border-box;
+  &:focus { outline: none; border-color: var(--color-primary); }
+}
+.mt-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.mt-form-sec-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .88rem; font-weight: 700; color: var(--color-text); margin-top: 4px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; color: var(--color-primary); }
+}
+
+.mt-pick-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px; border-radius: 9px; cursor: pointer;
+  border: 1.5px solid var(--color-border); background: var(--color-surface);
+  &.mt-pick-item--sel { border-color: var(--color-primary); background: #EEF2FF; }
+}
+.mt-pick-chk  {
+  font-size: 20px !important; width: 20px !important; height: 20px !important;
+  color: var(--color-text-muted); flex-shrink: 0;
+  .mt-pick-item--sel & { color: var(--color-primary); }
+}
+.mt-pick-name { font-size: .88rem; color: var(--color-text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mt-no-orders {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--color-text-muted); font-size: .85rem; padding: 8px 0;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+}
+
+// ── Panel buttons ─────────────────────────────────────────────────────────────
+.mt-btn {
+  flex: 1; padding: 10px; border-radius: 10px; font-size: .9rem; font-weight: 600; cursor: pointer;
+  &.mt-btn--ghost   { background: none; border: 1.5px solid var(--color-border); color: var(--color-text-muted); }
+  &.mt-btn--primary { border: none; background: var(--color-primary); color: #fff; }
+}
