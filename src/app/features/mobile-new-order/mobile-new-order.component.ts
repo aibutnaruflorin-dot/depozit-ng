@@ -51,6 +51,8 @@ export class MobileNewOrderComponent implements OnInit {
 
   readonly addToOrderId: string | null;
   readonly addPending: boolean;
+  readonly returnTo: string;
+  readonly addSource: 'comenzile-mele' | 'toate-comenzile';
 
   readonly addToOrder = computed(() => {
     if (!this.addToOrderId) return null;
@@ -65,8 +67,11 @@ export class MobileNewOrderComponent implements OnInit {
     public router: Router
   ) {
     const nav = this.router.getCurrentNavigation();
-    this.addToOrderId  = (nav?.extras?.state as any)?.addToOrderId ?? null;
-    this.addPending    = !!(nav?.extras?.state as any)?.addPending;
+    const state = (nav?.extras?.state as any) ?? {};
+    this.addToOrderId = state.addToOrderId ?? null;
+    this.addPending   = !!state.addPending;
+    this.returnTo     = state.returnTo ?? 'history-me';
+    this.addSource    = state.source ?? 'comenzile-mele';
     effect(() => saveCart(this.cart()));
   }
 
@@ -249,7 +254,7 @@ export class MobileNewOrderComponent implements OnInit {
         const result = this.ordersService.addProductsToOrder(existing.id, newProds, {
           timestamp: new Date().toISOString(),
           userId: session.userId, userName: session.name,
-          source: 'comenzile-mele', type: 'products_added',
+          source: this.addSource, type: 'products_added',
           products: newProds.map(p => ({ name: p.name, qty: p.qty, um: p.um })),
         });
         if (!result.ok) {
@@ -270,7 +275,11 @@ export class MobileNewOrderComponent implements OnInit {
         });
       }
       this.cart.set([]); clearCartStorage(); this.showCart.set(false);
-      this.router.navigate(['/app/m-history-me']);
+      if (this.returnTo === 'history-all') {
+        this.router.navigate(['/app/m-history-all'], { state: { openOrderId: this.addToOrderId } });
+      } else {
+        this.router.navigate(['/app/m-history-me']);
+      }
       return;
     }
 

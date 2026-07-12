@@ -1,0 +1,67 @@
+<div class="msub-wrap">
+  <div class="msub-header">
+    <a class="msub-back" routerLink="/app/m-settings"><mat-icon>arrow_back</mat-icon></a>
+    <span class="msub-title">Flota de mașini</span>
+    <button class="msub-header-btn" (click)="openAdd()"><mat-icon>add</mat-icon></button>
+  </div>
+
+  <div class="msub-body">
+
+    @if (transportService.vehicles().length === 0 && !showForm()) {
+      <div class="msub-empty">
+        <mat-icon>local_shipping</mat-icon>
+        <p>Nicio mașină adăugată.</p>
+        <button class="msub-btn primary" (click)="openAdd()"><mat-icon>add</mat-icon> Adaugă mașină</button>
+      </div>
+    }
+
+    @for (v of transportService.vehicles(); track v.id) {
+      <div class="msub-vehicle-card">
+        <div class="msub-vehicle-icon"><mat-icon>local_shipping</mat-icon></div>
+        <div class="msub-vehicle-info">
+          <div class="msub-vehicle-name">{{ v.denumire }}</div>
+          <div class="msub-vehicle-meta">
+            <strong>{{ v.numarInmatriculare }}</strong>
+            @if (v.marca) { <span>· {{ v.marca }}</span> }
+            @if (v.alias) { <span>· <em>{{ v.alias }}</em></span> }
+            @if (v.tonajMaxim) { <span class="msub-tonaj">· {{ fmtTonaj(v.tonajMaxim) }}</span> }
+          </div>
+        </div>
+        <div class="msub-item-actions">
+          <button class="msub-btn-icon" (click)="openEdit(v)"><mat-icon>edit</mat-icon></button>
+          <button class="msub-btn-icon warn" (click)="delete(v)"><mat-icon>delete_outline</mat-icon></button>
+        </div>
+      </div>
+    }
+
+    <!-- Formular adaugă / editează -->
+    @if (showForm()) {
+      <div class="msub-form-card">
+        <div class="msub-form-title">{{ editingId() ? 'Editează mașina' : 'Adaugă mașină' }}</div>
+
+        <label class="msub-label">Denumire *</label>
+        <input class="msub-input" [(ngModel)]="formDenumire" placeholder="ex: Autoutilitară Ford">
+
+        <label class="msub-label">Nr. înmatriculare *</label>
+        <input class="msub-input" [(ngModel)]="formNr" placeholder="ex: BC 01 ABC" style="text-transform:uppercase">
+
+        <label class="msub-label">Marcă</label>
+        <input class="msub-input" [(ngModel)]="formMarca" placeholder="ex: Ford">
+
+        <label class="msub-label">Alias</label>
+        <input class="msub-input" [(ngModel)]="formAlias" placeholder="ex: Camioneta mare">
+
+        <label class="msub-label">Tonaj maxim (kg)</label>
+        <input class="msub-input" [(ngModel)]="formTonaj" type="number" placeholder="ex: 3500">
+
+        <div class="msub-form-actions">
+          <button class="msub-btn primary" (click)="save()"><mat-icon>save</mat-icon> Salvează</button>
+          <button class="msub-btn" (click)="showForm.set(false)">Anulează</button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

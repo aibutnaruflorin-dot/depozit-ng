@@ -332,6 +332,44 @@
             </div>
           }
 
+          <!-- Produse adăugate ulterior — confirmate (read-only, colapsabil) -->
+          @if (o.addedProducts?.length) {
+            @let addedAll = o.addedProducts!;
+            @let addedExp = isAddedExpanded(o.id);
+            <div class="mh-ds-pending-section mh-ds-added-section">
+              <div class="mh-ds-pending-title" style="cursor:pointer" (click)="toggleAddedExpanded(o.id)">
+                <mat-icon>check_circle</mat-icon>
+                Produse adăugate ulterior — confirmate ({{ addedAll.length }})
+                <mat-icon style="margin-left:auto;font-size:14px;width:14px;height:14px">{{ addedExp ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </div>
+              @for (p of (addedExp ? addedAll : addedAll.slice(0,2)); track p.nr) {
+                <div class="mh-ds-prod mh-ds-prod-pending">
+                  <div class="mh-ds-prod-name">{{ p.name }}</div>
+                  <div class="mh-ds-prod-meta">
+                    @if (p.category) { <span class="mh-ds-cat-chip">{{ p.category }}</span> }
+                    <span class="mh-ds-um">{{ p.um }}</span>
+                  </div>
+                  <div class="mh-ds-stoc-row">
+                    @if (p.catalogId) {
+                      @let ps2 = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                      <div class="mh-ds-stoc-col">
+                        <span class="mh-ds-stoc-label">Importat</span><span class="mh-ds-stoc-val">{{ ps2.importedQty }}</span>
+                        <span class="mh-ds-stoc-label">Consumat</span><span class="mh-ds-stoc-val s3-neg">{{ ps2.consumedQty > 0 ? '−' + ps2.consumedQty : ps2.consumedQty }}</span>
+                        <span class="mh-ds-stoc-label">Final</span><span class="mh-ds-stoc-final-val" [class]="stockDotClass(ps2.finalQty)">{{ ps2.finalQty }}</span>
+                      </div>
+                    }
+                    <div class="mh-ds-qty-static">{{ p.qty }} {{ p.um }}</div>
+                  </div>
+                </div>
+              }
+              @if (addedAll.length > 2) {
+                <div class="mh-ds-added-toggle" (click)="toggleAddedExpanded(o.id)">
+                  {{ addedExp ? 'Arată mai puțin ▲' : 'Arată toate (' + addedAll.length + ') ▼' }}
+                </div>
+              }
+            </div>
+          }
+
           <!-- Produse adăugate ulterior (orderEvents) -->
           @if (o.orderEvents?.length) {
             <div class="mh-ds-section mh-ds-events-section">

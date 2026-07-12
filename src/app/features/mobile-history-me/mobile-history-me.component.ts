@@ -26,6 +26,7 @@ export class MobileHistoryMeComponent {
   detailId    = signal<string | null>(null);
   _editQty    = signal<Record<string, number>>({});
   _obsExpanded = signal<Set<string>>(new Set());
+  _addedExpanded = signal<Set<string>>(new Set());
 
   isObsExpanded(orderId: string): boolean { return this._obsExpanded().has(orderId); }
   toggleObs(orderId: string): void {
@@ -34,6 +35,11 @@ export class MobileHistoryMeComponent {
       n.has(orderId) ? n.delete(orderId) : n.add(orderId);
       return n;
     });
+  }
+
+  isAddedExpanded(id: string): boolean { return this._addedExpanded().has(id); }
+  toggleAddedExpanded(id: string): void {
+    this._addedExpanded.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
 
   readonly TABS: { key: StatusTab; label: string }[] = [
@@ -115,15 +121,21 @@ export class MobileHistoryMeComponent {
   }
 
   orderTotal(o: Order): number {
-    return o.products.reduce((s, p) => s + (p.pretCuTVA ?? 0) * p.qty, 0);
+    const prod = o.products.reduce((s, p) => s + (p.pretCuTVA ?? 0) * p.qty, 0);
+    const admin = (o.adminProducts ?? []).reduce((s, p) => s + (p.pretCuTVA ?? 0) * p.qty, 0);
+    return prod + admin;
   }
 
   orderTotalFaraTVA(o: Order): number {
-    return o.products.reduce((s, p) => s + (p.pretFaraTVA ?? 0) * p.qty, 0);
+    const prod = o.products.reduce((s, p) => s + (p.pretFaraTVA ?? 0) * p.qty, 0);
+    const admin = (o.adminProducts ?? []).reduce((s, p) => s + (p.pretFaraTVA ?? 0) * p.qty, 0);
+    return prod + admin;
   }
 
   orderMasa(o: Order): number {
-    return o.products.reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0);
+    const prod = o.products.reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0);
+    const admin = (o.adminProducts ?? []).reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0);
+    return prod + admin;
   }
 
   shortDate(iso: string): string {
@@ -166,7 +178,7 @@ export class MobileHistoryMeComponent {
     return active.includes(o.status) && !o.superseded && (this.hasEditedQty(o) || !!(o.pendingProducts?.length));
   }
   canAddProducts(o: Order): boolean { return !o.locked && ['draft','trimis','acceptat','planificat','livrat_partial'].includes(o.status) && !o.superseded; }
-  canCancel(o: Order): boolean      { return ['draft','trimis','acceptat','planificat'].includes(o.status) && !o.superseded; }
+  canCancel(o: Order): boolean      { return !o.locked && ['draft','trimis','acceptat','planificat'].includes(o.status) && !o.superseded; }
   canReopen(o: Order): boolean      { return o.status === 'anulat'; }
 
   ekey(orderId: string, idx: number): string { return `${orderId}:${idx}`; }
@@ -314,7 +326,7 @@ export class MobileHistoryMeComponent {
       return;
     }
     const editedProducts = withEditedQty.filter(p => p.qty > 0);
-    const newProducts = [...editedProducts, ...(o.pendingProducts ?? [])];
+    const newProducts = [...editedProducts, ...(o.pendingProducts ?? []), ...(o.adminProducts ?? [])];
 
     if (newProducts.length === 0) {
       this.snackBar.open('Adaugă cel puțin un produs cu qty > 0.', '', { duration: 2500 });

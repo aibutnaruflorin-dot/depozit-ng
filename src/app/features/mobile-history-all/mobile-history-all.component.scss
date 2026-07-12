@@ -294,6 +294,18 @@
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
 .mh-ds-prod-pending { background: #FFFBEB; border: 1px solid #FDE68A; }
+.mh-ds-added-section {
+  background: #f0fdf4 !important; border-color: #86efac !important;
+  .mh-ds-pending-title { color: #15803d; }
+}
+.mh-ds-added-toggle {
+  text-align: center; font-size: .72rem; color: #15803d; cursor: pointer;
+  padding: 4px 0 2px; font-weight: 600; letter-spacing: .02em;
+  &:hover { text-decoration: underline; }
+}
+.mh-ds-qty-static {
+  font-weight: 700; font-size: .9rem; align-self: center; margin-left: auto;
+}
 
 /* Qty changed banner */
 .mh-qty-changed-banner {

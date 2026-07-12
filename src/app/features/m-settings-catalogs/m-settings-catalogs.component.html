@@ -1,0 +1,161 @@
+<div class="msub-wrap">
+  <div class="msub-header">
+    <a class="msub-back" routerLink="/app/m-settings"><mat-icon>arrow_back</mat-icon></a>
+    <span class="msub-title">Cataloage de produse</span>
+    <button class="msub-header-btn" (click)="add()"><mat-icon>add</mat-icon></button>
+  </div>
+
+  <div class="msub-body">
+
+    @if (catalogsService.catalogs().length === 0) {
+      <div class="msub-empty">
+        <mat-icon>inventory_2</mat-icon>
+        <p>Niciun catalog adăugat.</p>
+        <button class="msub-btn primary" (click)="add()"><mat-icon>add</mat-icon> Adaugă catalog</button>
+      </div>
+    }
+
+    @for (cat of catalogsService.catalogs(); track cat.id) {
+      @let st = catStates[cat.id] ?? { importing: false, testing: false, syncing: false, apiMsg: null };
+      <div class="msub-cat-card">
+
+        <!-- Header catalog -->
+        <div class="msub-cat-header" (click)="toggle(cat.id)" style="cursor:pointer">
+          <span class="msub-cat-dot" [style.background]="cat.color"></span>
+          @if (renamingId() === cat.id) {
+            <input class="msub-input msub-input-inline" [(ngModel)]="renameValue"
+              (keydown.enter)="saveRename()" (keydown.escape)="cancelRename()"
+              (click)="$event.stopPropagation()">
+            <button class="msub-btn-icon ok" (click)="$event.stopPropagation(); saveRename()"><mat-icon>check</mat-icon></button>
+            <button class="msub-btn-icon" (click)="$event.stopPropagation(); cancelRename()"><mat-icon>close</mat-icon></button>
+          } @else {
+            <span class="msub-cat-name">{{ cat.name }}</span>
+            <div class="msub-item-actions">
+              <button class="msub-btn-icon" (click)="$event.stopPropagation(); startRename(cat)"><mat-icon>edit</mat-icon></button>
+              <button class="msub-btn-icon warn" (click)="$event.stopPropagation(); delete(cat)"><mat-icon>delete_outline</mat-icon></button>
+            </div>
+            <mat-icon class="msub-expand-icon">{{ expandedId() === cat.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+          }
+        </div>
+
+        <!-- Meta -->
+        @let meta = getMeta(cat.id);
+        <div class="msub-cat-meta">
+          @if (meta) {
+            {{ meta.count }} produse · Actualizat {{ formatDate(meta.lastUpdate) }}
+          } @else {
+            <em>Niciun produs importat</em>
+          }
+        </div>
+
+        <!-- Detalii expandabile -->
+        @if (expandedId() === cat.id) {
+
+          <!-- Culoare -->
+          <div class="msub-cat-row">
+            <span class="msub-cat-label">Culoare</span>
+            <input type="color" class="msub-color-input" [value]="cat.color" (input)="setColor(cat, $any($event.target).value)">
+            <code class="msub-color-hex">{{ cat.color }}</code>
+          </div>
+
+          <!-- Sursă date -->
+          <div class="msub-cat-row">
+            <span class="msub-cat-label">Sursă</span>
+            <div class="msub-radio-group">
+              <label class="msub-radio">
+                <input type="radio" [name]="'src-' + cat.id" value="excel"
+                  [checked]="cat.dataSource === 'excel'" (change)="setSource(cat, 'excel')">
+                📁 Excel
+              </label>
+              <label class="msub-radio">
+                <input type="radio" [name]="'src-' + cat.id" value="api"
+                  [checked]="cat.dataSource === 'api'" (change)="setSource(cat, 'api')">
+                🌐 API Nexus
+              </label>
+            </div>
+          </div>
+
+          <!-- Import Excel -->
+          @if (cat.dataSource === 'excel') {
+            <div class="msub-cat-row">
+              @if (st.importing) {
+                <span class="msub-importing">⏳ Se importă...</span>
+              } @else {
+                <label class="msub-file-label" [for]="'xls-' + cat.id">
+                  <mat-icon>upload_file</mat-icon> Selectează XLS/XLSX
+                </label>
+                <input [id]="'xls-' + cat.id" type="file" accept=".xls,.xlsx"
+                  class="msub-file-input" (change)="onFileSelected(cat, $event)">
+              }
+            </div>
+            <div class="msub-cat-hint">Importă fișierul direct din Nexus, fără modificări. Fișierele cu același nume sunt respinse.</div>
+          }
+
+          <!-- Setări API -->
+          @if (cat.dataSource === 'api') {
+            <div class="msub-api-section">
+              <div class="msub-api-field">
+                <label class="msub-cat-label">URL Server Nexus</label>
+                <input class="msub-input" [value]="cat.apiUrl ?? ''" placeholder="http://192.168.1.100"
+                  (blur)="setApiField(cat, 'apiUrl', $any($event.target).value)">
+              </div>
+              <div class="msub-api-field">
+                <label class="msub-cat-label">Cheie API</label>
+                <input class="msub-input" [value]="cat.apiKey ?? ''" placeholder="abc123…"
+                  (blur)="setApiField(cat, 'apiKey', $any($event.target).value)">
+              </div>
+              <div class="msub-api-field">
+                <label class="msub-cat-label">Cod gestiune</label>
+                <input class="msub-input" [value]="cat.apiGestiune ?? ''" placeholder="001"
+                  (blur)="setApiField(cat, 'apiGestiune', $any($event.target).value)">
+              </div>
+
+              @if (st.apiMsg) {
+                <div class="msub-api-msg" [class.ok]="st.apiMsg.ok" [class.err]="!st.apiMsg.ok">
+                  {{ st.apiMsg.ok ? '✅' : '❌' }} {{ st.apiMsg.msg }}
+                </div>
+              }
+
+              <div class="msub-api-actions">
+                <button class="msub-btn" (click)="testApi(cat)" [disabled]="st.testing || st.syncing">
+                  @if (st.testing) { ⏳ Se testează... } @else { 🔍 Testează conexiunea }
+                </button>
+                <button class="msub-btn primary" (click)="saveAndSync(cat)" [disabled]="st.testing || st.syncing">
+                  @if (st.syncing) { ⏳ Se sincronizează... } @else { <mat-icon>sync</mat-icon> Salvează &amp; Sincronizează }
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Istoric importuri -->
+          @let uploads = uploadsFor(cat);
+          @if (uploads.length > 0) {
+            <div class="msub-uploads-section">
+              <div class="msub-uploads-title"><mat-icon>history</mat-icon> Istoric urcări ({{ uploads.length }}/4)</div>
+              @for (u of uploads; track u.uploadedAt) {
+                <div class="msub-upload-row">
+                  @if (u.active) {
+                    <mat-icon class="msub-upload-icon active">check_circle</mat-icon>
+                  } @else {
+                    <mat-icon class="msub-upload-icon">radio_button_unchecked</mat-icon>
+                  }
+                  <div class="msub-upload-info">
+                    <span class="msub-upload-name">{{ u.filename }}</span>
+                    <span class="msub-upload-meta">{{ formatDate(u.uploadedAt) }} · {{ u.productCount }} produse</span>
+                  </div>
+                  <span class="msub-upload-badge" [class.badge-active]="u.active" [class.badge-inactive]="!u.active">
+                    {{ u.active ? 'Activ' : 'Inactiv' }}
+                  </span>
+                </div>
+              }
+            </div>
+          }
+
+        }
+      </div>
+    }
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

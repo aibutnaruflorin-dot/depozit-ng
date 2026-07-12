@@ -5,12 +5,27 @@
     <div class="ms-section">
       <div class="ms-section-title">Administrare</div>
       <div class="ms-menu">
-        <a class="ms-menu-item" routerLink="/app/settings">
-          <mat-icon>settings</mat-icon>
-          <span>Setări generale</span>
+        <a class="ms-menu-item" routerLink="/app/m-settings-catalogs">
+          <mat-icon>inventory_2</mat-icon>
+          <span>Cataloage</span>
           <mat-icon class="ms-chevron">chevron_right</mat-icon>
         </a>
-        <a class="ms-menu-item" routerLink="/app/users">
+        <a class="ms-menu-item" routerLink="/app/m-settings-contacts">
+          <mat-icon>contacts</mat-icon>
+          <span>Destinatari</span>
+          <mat-icon class="ms-chevron">chevron_right</mat-icon>
+        </a>
+        <a class="ms-menu-item" routerLink="/app/m-settings-vehicles">
+          <mat-icon>local_shipping</mat-icon>
+          <span>Mașini</span>
+          <mat-icon class="ms-chevron">chevron_right</mat-icon>
+        </a>
+        <a class="ms-menu-item" routerLink="/app/m-settings-units">
+          <mat-icon>straighten</mat-icon>
+          <span>Unități de măsură</span>
+          <mat-icon class="ms-chevron">chevron_right</mat-icon>
+        </a>
+        <a class="ms-menu-item" routerLink="/app/m-settings-users">
           <mat-icon>people</mat-icon>
           <span>Utilizatori</span>
           <mat-icon class="ms-chevron">chevron_right</mat-icon>
@@ -24,7 +39,7 @@
     <div class="ms-menu">
       <a class="ms-menu-item" routerLink="/app/m-account">
         <mat-icon>person</mat-icon>
-        <span>Profilul meu</span>
+        <span>Contul meu</span>
         <mat-icon class="ms-chevron">chevron_right</mat-icon>
       </a>
       <a class="ms-menu-item" routerLink="/app/m-security">
@@ -36,11 +51,11 @@
   </div>
 
   <div class="ms-section">
-    <div class="ms-section-title">Ajutor</div>
+    <div class="ms-section-title">Informații</div>
     <div class="ms-menu">
       <a class="ms-menu-item" routerLink="/app/m-manual">
         <mat-icon>menu_book</mat-icon>
-        <span>Manual utilizare</span>
+        <span>Manual</span>
         <mat-icon class="ms-chevron">chevron_right</mat-icon>
       </a>
       <a class="ms-menu-item" routerLink="/app/m-about">
@@ -50,6 +65,37 @@
       </a>
     </div>
   </div>
+
+  @if (auth.isAdmin() || auth.isKeyUser()) {
+    <div class="ms-section">
+      <div class="ms-section-title">Zonă de risc</div>
+      <div class="ms-danger-card">
+        <div class="ms-danger-header">
+          <mat-icon>warning_amber</mat-icon>
+          <div>
+            <strong>Curățare sesiune test</strong>
+            <p>Șterge toate comenzile și cursele. Cataloagele, stocul, mașinile și utilizatorii rămân.</p>
+          </div>
+        </div>
+        @if (!confirmReset()) {
+          <button class="ms-danger-btn" (click)="confirmReset.set(true)">
+            <mat-icon>delete_sweep</mat-icon> Curățare sesiune test
+          </button>
+        } @else {
+          <div class="ms-danger-confirm">
+            <mat-icon>error_outline</mat-icon>
+            <span>Ești sigur? Acțiunea este <strong>ireversibilă</strong>.</span>
+          </div>
+          <div class="ms-danger-actions">
+            <button class="ms-danger-btn confirm" (click)="executePeriodReset()">
+              <mat-icon>delete_forever</mat-icon> Da, șterge tot
+            </button>
+            <button class="ms-cancel-btn" (click)="confirmReset.set(false)">Anulează</button>
+          </div>
+        }
+      </div>
+    </div>
+  }
 
   <div style="height:80px"></div>
   <app-mobile-nav />

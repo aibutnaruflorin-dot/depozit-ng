@@ -96,6 +96,17 @@
   opacity: 0.85;
   border-left: 3px solid #f59e0b !important;
 }
+.exp-added-section {
+  border: 1.5px solid #16a34a !important; background: #f0fdf4 !important;
+  [data-theme="dark"] & { background: rgba(22,163,74,0.08) !important; border-color: #15803d !important; }
+  .exp-pending-title { color: #15803d; }
+  .exp-pending-row { border-left-color: #16a34a !important; }
+}
+.exp-added-toggle {
+  font-size: 0.75rem; font-weight: 600; color: #15803d;
+  cursor: pointer; padding: 4px 0 0; text-align: center;
+  &:hover { text-decoration: underline; }
+}
 
 .exp-events-journal {
   margin: 12px 0 4px; padding: 10px 12px;

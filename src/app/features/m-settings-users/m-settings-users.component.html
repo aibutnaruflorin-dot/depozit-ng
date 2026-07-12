@@ -1,0 +1,233 @@
+<div class="msub-wrap">
+  <div class="msub-header">
+    <a class="msub-back" routerLink="/app/m-settings"><mat-icon>arrow_back</mat-icon></a>
+    <span class="msub-title">Utilizatori</span>
+    @if (auth.isAdmin()) {
+      @if (activeTab() === 'users') {
+        <button class="msub-header-btn" (click)="openAdd()"><mat-icon>person_add</mat-icon></button>
+      } @else {
+        <button class="msub-header-btn" (click)="openAddPerm()"><mat-icon>add</mat-icon></button>
+      }
+    }
+  </div>
+
+  <!-- Tabs -->
+  <div class="msub-tabs">
+    <button class="msub-tab" [class.active]="activeTab() === 'users'" (click)="activeTab.set('users'); showForm.set(false); showPermForm.set(false)">
+      <mat-icon>people</mat-icon> Utilizatori
+    </button>
+    <button class="msub-tab" [class.active]="activeTab() === 'roles'" (click)="activeTab.set('roles'); showForm.set(false); showPermForm.set(false)">
+      <mat-icon>admin_panel_settings</mat-icon> Roluri
+    </button>
+  </div>
+
+  <div class="msub-body">
+
+    <!-- ═══════════════════════ TAB: UTILIZATORI ═══════════════════════════ -->
+    @if (activeTab() === 'users') {
+
+      @for (u of users(); track u.id) {
+        <div class="msub-user-card" [class.inactive]="u.active === false">
+          <div class="msub-user-avatar" [style.background]="roleColor(u.role)">
+            {{ u.name.charAt(0).toUpperCase() }}
+          </div>
+          <div class="msub-user-info">
+            <div class="msub-user-name">{{ u.name }}</div>
+            <code class="msub-user-username">{{ u.username }}</code>
+            <div class="msub-user-meta">
+              <span class="msub-role-badge" [style.background]="roleColor(u.role) + '22'" [style.color]="roleColor(u.role)">
+                {{ roleLabel(u.role) }}
+              </span>
+              @if (u.active === false) {
+                <span class="msub-inactive-badge">Dezactivat</span>
+              }
+            </div>
+            @if (u.telefon) { <div class="msub-user-phone">📞 {{ u.telefon }}</div> }
+          </div>
+          @if (auth.isAdmin()) {
+            <div class="msub-user-actions">
+              <button class="msub-btn-icon" (click)="openEdit(u)" title="Editează"><mat-icon>edit</mat-icon></button>
+              <button class="msub-btn-icon" (click)="toggleActive(u)"
+                      [style.color]="u.active !== false ? '#ef4444' : '#10b981'"
+                      [title]="u.active !== false ? 'Dezactivează' : 'Activează'">
+                <mat-icon>{{ u.active !== false ? 'person_off' : 'person' }}</mat-icon>
+              </button>
+              @if (u.role !== 'keyuser') {
+                <button class="msub-btn-icon warn" (click)="delete(u)" title="Șterge"><mat-icon>delete_outline</mat-icon></button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Formular adaugă / editează utilizator -->
+      @if (showForm()) {
+        <div class="msub-form-card">
+          <div class="msub-form-title">{{ editingId() !== null ? 'Editează utilizatorul' : 'Adaugă utilizator' }}</div>
+
+          <label class="msub-label">Nume complet *</label>
+          <input class="msub-input" [(ngModel)]="formName" placeholder="ex: Ion Popescu">
+
+          <label class="msub-label">Username *</label>
+          <input class="msub-input" [(ngModel)]="formUsername" placeholder="ex: ion.popescu" [readonly]="editingId() !== null">
+
+          <label class="msub-label">Parolă {{ editingId() !== null ? '(lasă gol pentru a nu schimba)' : '*' }}</label>
+          <input class="msub-input" [(ngModel)]="formPassword" type="password" placeholder="Minim 4 caractere">
+
+          @if (editingId() === null) {
+            <label class="msub-label">Rol *</label>
+            <select class="msub-select" [(ngModel)]="formRole">
+              @for (r of roles; track r) {
+                <option [value]="r">{{ roleLabel(r) }}</option>
+              }
+            </select>
+          }
+
+          <label class="msub-label">Telefon (10 cifre)</label>
+          <input class="msub-input" [(ngModel)]="formTelefon" type="tel" placeholder="ex: 0761234567" maxlength="10">
+
+          <label class="msub-label">Email recuperare</label>
+          <input class="msub-input" [(ngModel)]="formEmail" type="email" placeholder="ex: ion@firma.ro">
+
+          <div class="msub-form-actions">
+            <button class="msub-btn primary" (click)="save()"><mat-icon>save</mat-icon> Salvează</button>
+            <button class="msub-btn" (click)="showForm.set(false)">Anulează</button>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ═══════════════════════ TAB: ROLURI ═══════════════════════════════ -->
+    @if (activeTab() === 'roles') {
+
+      <!-- Rang sistem (KeyUser) -->
+      @if (systemRanks.length > 0) {
+        <div class="msub-perm-section-title"><mat-icon>military_tech</mat-icon> Ranguri de sistem</div>
+        @for (p of systemRanks; track p.id) {
+          <div class="msub-perm-card locked">
+            <div class="msub-perm-header">
+              <mat-icon class="msub-perm-icon" style="color:#7c3aed">star</mat-icon>
+              <div class="msub-perm-info">
+                <div class="msub-perm-name-row">
+                  <span class="msub-perm-name">{{ p.name }}</span>
+                  @if (p.id === 'keyuser') { <span class="msub-badge-unic">Unic</span> }
+                  <span class="msub-admin-badge">Admin</span>
+                  <span class="msub-badge-rang">Rang</span>
+                </div>
+              </div>
+              <mat-icon style="font-size:16px;color:var(--color-text-muted)" title="Rang protejat — nu poate fi șters">lock</mat-icon>
+            </div>
+          </div>
+        }
+      }
+
+      <!-- Roluri sistem editabile -->
+      @if (systemRoles.length > 0) {
+        <div class="msub-perm-section-title"><mat-icon>shield</mat-icon> Roluri sistem</div>
+        @for (p of systemRoles; track p.id) {
+          <div class="msub-perm-card">
+            <div class="msub-perm-header">
+              <mat-icon class="msub-perm-icon" style="color:#0ea5e9">shield</mat-icon>
+              <div class="msub-perm-info">
+                <div class="msub-perm-name-row">
+                  <span class="msub-perm-name">{{ p.name }}</span>
+                  <span class="msub-badge-rang">Sistem</span>
+                </div>
+              </div>
+              @if (auth.isAdmin()) {
+                <button class="msub-btn-icon" (click)="openEditPerm(p)" title="Editează pagini"><mat-icon>edit</mat-icon></button>
+              }
+              <mat-icon style="font-size:16px;color:var(--color-text-muted)" title="Nu poate fi șters">lock</mat-icon>
+            </div>
+            <div class="msub-perm-pages">
+              @for (pg of appPages; track pg.id) {
+                @let acc = (p.pages[pg.id] ?? 'none');
+                <span class="msub-page-chip acc-{{ acc }}">
+                  <mat-icon>{{ acc === 'full' ? 'check_circle' : acc === 'read' ? 'visibility' : 'block' }}</mat-icon>
+                  {{ pg.label }}
+                </span>
+              }
+            </div>
+          </div>
+        }
+      }
+
+      <!-- Roluri personalizate -->
+      <div class="msub-perm-section-title">
+        <mat-icon>verified_user</mat-icon> Roluri personalizate
+        @if (customRoles.length === 0) { <em class="msub-perm-none">— niciun rol</em> }
+      </div>
+      @for (p of customRoles; track p.id) {
+        <div class="msub-perm-card">
+          <div class="msub-perm-header">
+            <mat-icon class="msub-perm-icon" style="color:#10b981">{{ p.isAdmin ? 'admin_panel_settings' : 'shield' }}</mat-icon>
+            <div class="msub-perm-info">
+              <div class="msub-perm-name-row">
+                <span class="msub-perm-name">{{ p.name }}</span>
+                @if (p.isAdmin) { <span class="msub-admin-badge">Admin</span> }
+              </div>
+            </div>
+            @if (auth.isAdmin()) {
+              <div class="msub-item-actions">
+                <button class="msub-btn-icon" (click)="openEditPerm(p)"><mat-icon>edit</mat-icon></button>
+                <button class="msub-btn-icon warn" (click)="deletePerm(p)"><mat-icon>delete_outline</mat-icon></button>
+              </div>
+            }
+          </div>
+          <div class="msub-perm-pages">
+            @for (pg of appPages; track pg.id) {
+              @let acc = (p.pages[pg.id] ?? 'none');
+              <span class="msub-page-chip acc-{{ acc }}">
+                <mat-icon>{{ acc === 'full' ? 'check_circle' : acc === 'read' ? 'visibility' : 'block' }}</mat-icon>
+                {{ pg.label }}
+              </span>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Formular adaugă / editează rol -->
+      @if (showPermForm()) {
+        <div class="msub-form-card">
+          <div class="msub-form-title">{{ editingPermId() !== null ? 'Editează rolul' : 'Adaugă rol nou' }}</div>
+
+          <label class="msub-label">Nume rol *</label>
+          <input class="msub-input" [(ngModel)]="permName" placeholder="ex: Operator depozit">
+
+          <label class="msub-label-row">
+            <input type="checkbox" [(ngModel)]="permIsAdmin" (ngModelChange)="onPermAdminChange()">
+            <span>Administrator (acces complet la toate)</span>
+          </label>
+
+          @if (!permIsAdmin) {
+            <div class="msub-pages-editor">
+              <div class="msub-pages-editor-title">Acces pagini</div>
+              @for (pg of appPages; track pg.id) {
+                <div class="msub-page-row">
+                  <span class="msub-page-row-label">{{ pg.label }}</span>
+                  <div class="msub-access-btns">
+                    @for (opt of accessOptions; track opt) {
+                      <button class="msub-access-btn acc-{{ opt }}" [class.active]="permPages[pg.id] === opt"
+                              (click)="permPages[pg.id] = opt">
+                        {{ accessLabels[opt] }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="msub-form-actions">
+            <button class="msub-btn primary" (click)="savePerm()"><mat-icon>save</mat-icon> Salvează</button>
+            <button class="msub-btn" (click)="showPermForm.set(false)">Anulează</button>
+          </div>
+        </div>
+      }
+    }
+
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

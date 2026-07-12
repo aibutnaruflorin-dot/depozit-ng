@@ -1,0 +1,131 @@
+<div class="msub-wrap">
+  <div class="msub-header">
+    <a class="msub-back" routerLink="/app/m-settings"><mat-icon>arrow_back</mat-icon></a>
+    <span class="msub-title">Destinatari</span>
+  </div>
+
+  <div class="msub-body">
+
+    <div class="msub-hint-card">
+      <mat-icon>info</mat-icon>
+      <span>Activează WhatsApp sau Email per utilizator. Sunt necesare numărul de telefon și emailul de recuperare.</span>
+    </div>
+
+    <!-- ══ WHATSAPP ══ -->
+    <div class="msub-section-title"><mat-icon>chat</mat-icon> WhatsApp</div>
+
+    <!-- Utilizatori cu toggle WA -->
+    @if (users().length > 0) {
+      <div class="msub-card">
+        <div class="msub-card-label">Activează per utilizator</div>
+        @for (u of users(); track u.id) {
+          @if (u.telefon) {
+            <div class="msub-user-row">
+              <div class="msub-user-info">
+                <span class="msub-user-name">{{ u.name }}</span>
+                <span class="msub-user-phone">{{ u.telefon }}</span>
+              </div>
+              <button class="msub-toggle" [class.on]="isUserWaEnabled(u)" (click)="toggleUserWa(u)">
+                <mat-icon>{{ isUserWaEnabled(u) ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+              </button>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- Adaugă grup WA -->
+    <div class="msub-card">
+      <div class="msub-card-label">Adaugă grup WhatsApp</div>
+      <input class="msub-input" [(ngModel)]="newWaName" placeholder="Nume grup">
+      <input class="msub-input" [(ngModel)]="newWaPhone" placeholder="Link grup (https://chat.whatsapp.com/...)">
+      <button class="msub-btn primary" (click)="addWaGroup()" [disabled]="!newWaName.trim() || !newWaPhone.trim()">
+        <mat-icon>add</mat-icon> Adaugă
+      </button>
+    </div>
+
+    <!-- Lista WA -->
+    @if (waContacts().length > 0) {
+      <div class="msub-card">
+        <div class="msub-card-label">Destinatari activi</div>
+        @for (c of waContacts(); track c.id) {
+          <div class="msub-contact-row">
+            <mat-icon class="msub-contact-icon">{{ c.type === 'group' ? 'group' : 'phone' }}</mat-icon>
+            <div class="msub-contact-info">
+              <span class="msub-contact-name">{{ c.name }}</span>
+              <span class="msub-contact-phone">{{ c.phone }}</span>
+            </div>
+            <span class="msub-type-badge">{{ c.type === 'group' ? 'Grup' : 'Număr' }}</span>
+            <button class="msub-btn-icon warn" (click)="removeWa(c.id)"><mat-icon>delete_outline</mat-icon></button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ══ EMAIL ══ -->
+    <div class="msub-section-title" style="margin-top:8px"><mat-icon>email</mat-icon> Email</div>
+
+    <!-- Email notificare buffer -->
+    <div class="msub-card">
+      <div class="msub-card-label">Email notificare resetare buffer</div>
+      <div class="msub-input-row">
+        <input class="msub-input" [(ngModel)]="bufferEmail" type="email" placeholder="ex: office@firma.ro">
+        <button class="msub-btn primary" (click)="saveBufferEmail()" [disabled]="!bufferEmail.trim()">
+          <mat-icon>save</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Utilizatori cu toggle Email -->
+    @if (users().length > 0) {
+      <div class="msub-card">
+        <div class="msub-card-label">Activează per utilizator</div>
+        @for (u of users(); track u.id) {
+          @if (u.recoveryEmail) {
+            <div class="msub-user-row">
+              <div class="msub-user-info">
+                <span class="msub-user-name">{{ u.name }}</span>
+                <span class="msub-user-phone">{{ u.recoveryEmail }}</span>
+              </div>
+              <button class="msub-toggle" [class.on]="isUserEmailEnabled(u)" (click)="toggleUserEmail(u)">
+                <mat-icon>{{ isUserEmailEnabled(u) ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+              </button>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- Adaugă listă email -->
+    <div class="msub-card">
+      <div class="msub-card-label">Adaugă adresă email</div>
+      <input class="msub-input" [(ngModel)]="newEmailName" placeholder="Nume / Etichetă">
+      <input class="msub-input" [(ngModel)]="newEmailAddr" type="email" placeholder="Adresă email">
+      <button class="msub-btn primary" (click)="addEmailList()" [disabled]="!newEmailName.trim() || !newEmailAddr.trim()">
+        <mat-icon>add</mat-icon> Adaugă
+      </button>
+    </div>
+
+    <!-- Lista Email -->
+    @if (emailContacts().length > 0) {
+      <div class="msub-card">
+        <div class="msub-card-label">Destinatari email activi</div>
+        @for (c of emailContacts(); track c.id) {
+          <div class="msub-contact-row">
+            <mat-icon class="msub-contact-icon">{{ c.type === 'list' ? 'group' : 'person' }}</mat-icon>
+            <div class="msub-contact-info">
+              <span class="msub-contact-name">{{ c.name }}</span>
+              <span class="msub-contact-phone">{{ c.email }}</span>
+            </div>
+            <span class="msub-type-badge">{{ c.type === 'list' ? 'Listă' : 'Individual' }}</span>
+            <button class="msub-btn-icon warn" (click)="removeEmail(c.id)"><mat-icon>delete_outline</mat-icon></button>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

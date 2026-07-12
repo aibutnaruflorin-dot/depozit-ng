@@ -7,40 +7,62 @@
   </div>
 
   <div class="mab-body">
-    <div class="mab-logo-section">
-      <div class="mab-logo-circle">
-        <mat-icon>store</mat-icon>
-      </div>
-      <div class="mab-app-name">D2C App</div>
-      <div class="mab-version">Versiunea {{ version }}</div>
-    </div>
+    <div class="mab-card">
 
-    <div class="mab-info-card">
-      <div class="mab-info-row">
-        <mat-icon>business</mat-icon>
-        <div>
-          <div class="mab-info-label">Companie</div>
-          <div class="mab-info-value">Depozitu2Constructii</div>
-        </div>
+      <!-- Logo Lean Digital -->
+      <div class="mab-logo-wrap">
+        <img src="/logo-lean-digital.png" alt="Lean Digital" class="mab-logo-img" />
       </div>
-      <div class="mab-info-row">
-        <mat-icon>code</mat-icon>
-        <div>
-          <div class="mab-info-label">Platformă</div>
-          <div class="mab-info-value">Angular 21 · PWA</div>
-        </div>
-      </div>
-      <div class="mab-info-row">
-        <mat-icon>copyright</mat-icon>
-        <div>
-          <div class="mab-info-label">An</div>
-          <div class="mab-info-value">{{ year }}</div>
-        </div>
-      </div>
-    </div>
 
-    <div class="mab-desc">
-      Aplicație internă pentru gestionarea comenzilor, transportului și a catalogului de produse.
+      <!-- Titlu aplicație -->
+      <div class="mab-app">
+        <div class="mab-app-name">{{ app.name }}</div>
+        <div class="mab-app-sub">{{ app.subtitle }}</div>
+      </div>
+
+      <mat-divider class="mab-divider" />
+
+      <!-- Autor -->
+      <section class="mab-section">
+        <div class="mab-section-title">Dezvoltat de</div>
+
+        <div class="mab-row">
+          <mat-icon class="mab-icon">person</mat-icon>
+          <span>{{ author.name }}</span>
+        </div>
+
+        <div class="mab-row">
+          <mat-icon class="mab-icon">apartment</mat-icon>
+          <a [href]="author.linkedin" target="_blank" rel="noopener" class="mab-link">
+            {{ author.company }}
+            <mat-icon class="mab-link-icon">open_in_new</mat-icon>
+          </a>
+        </div>
+      </section>
+
+      <mat-divider class="mab-divider" />
+
+      <!-- Contact -->
+      <section class="mab-section">
+        <div class="mab-section-title">Contact</div>
+
+        <div class="mab-row">
+          <mat-icon class="mab-icon">phone</mat-icon>
+          <a [href]="'tel:' + author.phone" class="mab-link">{{ author.phone }}</a>
+        </div>
+
+        @for (email of author.emails; track email) {
+          <div class="mab-row">
+            <mat-icon class="mab-icon">email</mat-icon>
+            <a [href]="'mailto:' + email" class="mab-link">{{ email }}</a>
+          </div>
+        }
+      </section>
+
+      <mat-divider class="mab-divider" />
+
+      <p class="mab-footer">© {{ year }} {{ author.company }}. Toate drepturile rezervate.</p>
+
     </div>
   </div>
 

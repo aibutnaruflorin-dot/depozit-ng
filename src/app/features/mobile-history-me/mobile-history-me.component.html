@@ -122,6 +122,14 @@
           }
         </div>
 
+        <!-- Locked banner -->
+        @if (o.locked) {
+          <div class="mh-locked-banner">
+            <mat-icon>lock</mat-icon>
+            Comanda este blocată de depozit — nu poți face modificări
+          </div>
+        }
+
         <!-- Client contact -->
         @if (o.client.phone || o.client.address || o.client.note) {
           <div class="mh-ds-section">
@@ -167,9 +175,12 @@
         <!-- Products -->
         <div class="mh-ds-section">
           <div class="mh-ds-section-label">
-            Produse ({{ o.products.length + (o.pendingProducts?.length ?? 0) }})
+            Produse ({{ o.products.length + (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }})
             @if (o.pendingProducts?.length) {
               <span class="mh-ds-pending-badge">+{{ o.pendingProducts!.length }} neconfirmate</span>
+            }
+            @if (o.adminProducts?.length) {
+              <span class="mh-ds-pending-badge" style="background:#e0f2fe;color:#0369a1">+{{ o.adminProducts!.length }} de depozit</span>
             }
           </div>
           @for (p of o.products; track p.nr) {
@@ -323,6 +334,74 @@
                       <span class="mh-ds-qty-val">{{ p.qty }} {{ p.um }}</span>
                     }
                   </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Adăugate de depozit — în așteptare (înainte de finalizare) -->
+          @if (o.adminProducts?.length) {
+            <div class="mh-ds-pending-section mh-ds-admin-section">
+              <div class="mh-ds-pending-title">
+                <mat-icon>store</mat-icon>
+                Adăugate de depozit — vor fi confirmate când depozitul finalizează
+              </div>
+              @for (p of o.adminProducts!; track p.nr) {
+                <div class="mh-ds-prod mh-ds-prod-pending">
+                  <div class="mh-ds-prod-name">{{ p.name }}</div>
+                  <div class="mh-ds-prod-meta">
+                    @if (p.category) { <span class="mh-ds-tag">{{ p.category }}</span> }
+                    <span class="mh-ds-um">{{ p.um }}</span>
+                  </div>
+                  @if (p.catalogId) {
+                    @let psAd = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                    <div class="mh-ds-stoc-row">
+                      <div class="mh-ds-stoc-col">
+                        <span class="mh-ds-stoc-label">Importat</span><span class="mh-ds-stoc-val">{{ psAd.importedQty }}</span>
+                        <span class="mh-ds-stoc-label">Consumat</span><span class="mh-ds-stoc-val s3-neg">{{ psAd.consumedQty > 0 ? '−' + psAd.consumedQty : psAd.consumedQty }}</span>
+                        <span class="mh-ds-stoc-label">Final</span><span class="mh-ds-stoc-final-val" [class]="stockDotClass(psAd.finalQty)">{{ psAd.finalQty }}</span>
+                      </div>
+                      <div class="mh-ds-qty-static">{{ p.qty }} {{ p.um }}</div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Adăugate de depozit — confirmate (după finalizare, colapsabil) -->
+          @if (o.addedProducts?.length) {
+            @let addedAll = o.addedProducts!;
+            @let addedExp = isAddedExpanded(o.id);
+            <div class="mh-ds-pending-section mh-ds-added-section">
+              <div class="mh-ds-pending-title" style="cursor:pointer" (click)="toggleAddedExpanded(o.id)">
+                <mat-icon>check_circle</mat-icon>
+                Adăugate de depozit — confirmate ({{ addedAll.length }})
+                <mat-icon style="margin-left:auto;font-size:14px;width:14px;height:14px">{{ addedExp ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </div>
+              @for (p of (addedExp ? addedAll : addedAll.slice(0,2)); track p.nr) {
+                <div class="mh-ds-prod mh-ds-prod-pending">
+                  <div class="mh-ds-prod-name">{{ p.name }}</div>
+                  <div class="mh-ds-prod-meta">
+                    @if (p.category) { <span class="mh-ds-tag">{{ p.category }}</span> }
+                    <span class="mh-ds-um">{{ p.um }}</span>
+                  </div>
+                  @if (p.catalogId) {
+                    @let psAd2 = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                    <div class="mh-ds-stoc-row">
+                      <div class="mh-ds-stoc-col">
+                        <span class="mh-ds-stoc-label">Importat</span><span class="mh-ds-stoc-val">{{ psAd2.importedQty }}</span>
+                        <span class="mh-ds-stoc-label">Consumat</span><span class="mh-ds-stoc-val s3-neg">{{ psAd2.consumedQty > 0 ? '−' + psAd2.consumedQty : psAd2.consumedQty }}</span>
+                        <span class="mh-ds-stoc-label">Final</span><span class="mh-ds-stoc-final-val" [class]="stockDotClass(psAd2.finalQty)">{{ psAd2.finalQty }}</span>
+                      </div>
+                      <div class="mh-ds-qty-static">{{ p.qty }} {{ p.um }}</div>
+                    </div>
+                  }
+                </div>
+              }
+              @if (addedAll.length > 2) {
+                <div class="mh-ds-added-toggle" (click)="toggleAddedExpanded(o.id)">
+                  {{ addedExp ? 'Arată mai puțin ▲' : 'Arată toate (' + addedAll.length + ') ▼' }}
                 </div>
               }
             </div>

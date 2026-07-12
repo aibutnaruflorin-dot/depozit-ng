@@ -5,7 +5,7 @@
     <div class="mn-add-mode-banner">
       <mat-icon>add_circle_outline</mat-icon>
       <span>Adaugi produse la <strong>{{ ao.status === 'draft' ? 'ciornă' : 'comanda' }} #{{ ao.orderNumber ?? '—' }}</strong> — {{ ao.client.name }}</span>
-      <button class="mn-icon-btn" (click)="router.navigate(['/app/m-history-me'])">
+      <button class="mn-icon-btn" (click)="returnTo === 'history-all' ? router.navigate(['/app/m-history-all'], {state:{openOrderId:addToOrderId}}) : router.navigate(['/app/m-history-me'])">
         <mat-icon>close</mat-icon>
       </button>
     </div>

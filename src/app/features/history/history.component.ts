@@ -188,6 +188,11 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
 
   expandedRows = signal<Record<string, boolean>>({});
   private _editQty = signal<Record<string, number | undefined>>({});
+  private _addedExpanded = signal<Set<string>>(new Set());
+  isAddedExpanded(id: string): boolean { return this._addedExpanded().has(id); }
+  toggleAddedExpanded(id: string): void {
+    this._addedExpanded.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
   readonly editQtyMap = this._editQty.asReadonly();
 
   readonly todayStr = new Date().toISOString().slice(0, 10);
@@ -447,16 +452,20 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   }
 
   editTotalFaraTVA(order: Order): number {
-    return order.products.reduce((s, p, j) => {
+    const prodTotal = order.products.reduce((s, p, j) => {
       const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
       return s + (this.pFaraTVA(p) ?? 0) * qty;
     }, 0);
+    const adminTotal = (order.adminProducts ?? []).reduce((s, p) => s + (this.pFaraTVA(p) ?? 0) * p.qty, 0);
+    return prodTotal + adminTotal;
   }
   editTotalCuTVA(order: Order): number {
-    return order.products.reduce((s, p, j) => {
+    const prodTotal = order.products.reduce((s, p, j) => {
       const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
       return s + (this.pCuTVA(p) ?? 0) * qty;
     }, 0);
+    const adminTotal = (order.adminProducts ?? []).reduce((s, p) => s + (this.pCuTVA(p) ?? 0) * p.qty, 0);
+    return prodTotal + adminTotal;
   }
 
   pMasa(p: { masaNeta?: number; catalogId?: string; nr: number | string }): number {
@@ -468,10 +477,12 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     return order.products.reduce((s, p) => s + this.pMasa(p) * p.qty, 0);
   }
   editTotalMasa(order: Order): number {
-    return order.products.reduce((s, p, j) => {
+    const prodTotal = order.products.reduce((s, p, j) => {
       const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
       return s + this.pMasa(p) * qty;
     }, 0);
+    const adminTotal = (order.adminProducts ?? []).reduce((s, p) => s + this.pMasa(p) * p.qty, 0);
+    return prodTotal + adminTotal;
   }
   formatMasa(kg: number): string {
     if (kg <= 0) return '—';
@@ -778,7 +789,7 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
       return;
     }
     const editedProducts = withEditedQty.filter(p => p.qty > 0);
-    const newProducts = [...editedProducts, ...(order.pendingProducts ?? [])];
+    const newProducts = [...editedProducts, ...(order.pendingProducts ?? []), ...(order.adminProducts ?? [])];
 
     if (newProducts.length === 0) {
       this.snackBar.open('Adaugă cel puțin un produs cu qty > 0.', '', { duration: 2500 });

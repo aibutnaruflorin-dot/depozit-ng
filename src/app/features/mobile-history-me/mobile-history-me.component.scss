@@ -256,6 +256,13 @@
   background: #FEF3C7; color: #92400E; border-radius: 8px;
   padding: 2px 7px; font-size: .65rem; font-weight: 700; margin-left: 6px;
 }
+.mh-locked-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff3e0; border: 1px solid #e65100; border-radius: 8px;
+  color: #e65100; font-size: .8rem; font-weight: 600;
+  padding: 10px 12px; margin-bottom: 8px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+}
 .mh-ds-pending-section {
   margin-top: 8px; border-radius: 8px;
   background: #FFFBEB; border: 1px solid #FDE68A; padding: 8px;
@@ -267,6 +274,19 @@
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
 .mh-ds-prod-pending { background: #FFFBEB; border: 1px solid #FDE68A; }
+.mh-ds-admin-section {
+  background: #f0f9ff !important; border-color: #7dd3fc !important;
+  .mh-ds-pending-title { color: #0369a1; }
+}
+.mh-ds-added-section {
+  background: #f0fdf4 !important; border-color: #86efac !important;
+  .mh-ds-pending-title { color: #15803d; }
+}
+.mh-ds-added-toggle {
+  text-align: center; font-size: .72rem; color: #15803d; cursor: pointer;
+  padding: 4px 0 2px; font-weight: 600; letter-spacing: .02em;
+  &:hover { text-decoration: underline; }
+}
 
 /* Qty changed banner */
 .mh-qty-changed-banner {

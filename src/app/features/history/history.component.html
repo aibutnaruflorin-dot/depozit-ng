@@ -336,10 +336,10 @@
         }
         @if (colVisible('produse')) {
           <td>
-            {{ order.products.length + (order.pendingProducts?.length ?? 0) }} art.
-            @if (order.pendingProducts?.length || (order.status === 'trimis' && !order.superseded && hasEditedQty(order))) {
+            {{ order.products.length + (order.pendingProducts?.length ?? 0) + (order.adminProducts?.length ?? 0) }} art.
+            @if (order.pendingProducts?.length || order.adminProducts?.length || (order.status === 'trimis' && !order.superseded && hasEditedQty(order))) {
               <span class="events-badge pending-badge"
-                    [matTooltip]="(order.pendingProducts?.length ? (order.pendingProducts!.length) + ' produs(e) adăugate + ' : '') + (hasEditedQty(order) ? 'cantități modificate' : '') + ' — neconfirmate'">
+                    [matTooltip]="((order.pendingProducts?.length ?? 0) + (order.adminProducts?.length ?? 0) > 0 ? ((order.pendingProducts?.length ?? 0) + (order.adminProducts?.length ?? 0)) + ' produs(e) adăugate + ' : '') + (hasEditedQty(order) ? 'cantități modificate' : '') + ' — neconfirmate'">
                 <mat-icon>pending</mat-icon>
               </span>
             }
@@ -694,6 +694,94 @@
                       } @else {
                         <span class="epc-qty-cell exp-qty-static">{{ p.qty }}</span>
                       }
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (order.adminProducts?.length) {
+                <div class="exp-pending-section exp-admin-added-section">
+                  <div class="exp-pending-title">
+                    <mat-icon>store</mat-icon>
+                    Adăugate de depozit — vor fi confirmate când depozitul finalizează comanda
+                  </div>
+                  @for (p of order.adminProducts!; track p.nr) {
+                    <div class="exp-product-row exp-pending-row">
+                      <div class="epc-name-cell">
+                        <span class="epc-name">{{ p.name }}</span>
+                        @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
+                          <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
+                        }
+                      </div>
+                      <span class="epc-cat">
+                        @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
+                      </span>
+                      <span class="epc-um">{{ p.um }}</span>
+                      @if (p.catalogId) {
+                        @let psA = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                        <div class="stoc3-cell">
+                          <div class="s3-row"><span class="s3-label">Importat</span><span class="s3-imp">{{ psA.importedQty }}</span></div>
+                          <div class="s3-row"><span class="s3-label">Consumat</span><span class="s3-con">{{ psA.consumedQty > 0 ? '−' + psA.consumedQty : psA.consumedQty }}</span></div>
+                          <div class="s3-row"><span class="s3-label">Buffer</span><span class="s3-buf" [class.s3-pos]="psA.bufferQty > 0" [class.s3-neg]="psA.bufferQty < 0">{{ psA.bufferQty > 0 ? '+' : '' }}{{ psA.bufferQty === 0 ? '—' : psA.bufferQty }}</span></div>
+                          <div class="s3-row s3-total"><span class="s3-label">Final</span><span class="s3-final" [class.s3-zero]="psA.finalQty === 0">{{ psA.finalQty | number:'1.0-4' }}</span></div>
+                        </div>
+                      } @else {
+                        <span></span>
+                      }
+                      <span class="epc-cod">{{ p.codExtern || '—' }}</span>
+                      <span class="epc-furn">{{ p.furnizor || '—' }}</span>
+                      <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                      <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                      <span class="epc-masa">—</span>
+                      <span class="epc-qty-cell exp-qty-static">{{ p.qty }}</span>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (order.addedProducts?.length) {
+                @let addedAll = order.addedProducts!;
+                @let addedExp = isAddedExpanded(order.id);
+                <div class="exp-pending-section exp-admin-added-section">
+                  <div class="exp-pending-title" style="cursor:pointer" (click)="toggleAddedExpanded(order.id)">
+                    <mat-icon>check_circle</mat-icon>
+                    Adăugate de depozit — confirmate ({{ addedAll.length }})
+                    <mat-icon style="margin-left:auto;font-size:16px;width:16px;height:16px">{{ addedExp ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </div>
+                  @for (p of (addedExp ? addedAll : addedAll.slice(0,2)); track p.nr) {
+                    <div class="exp-product-row exp-pending-row">
+                      <div class="epc-name-cell">
+                        <span class="epc-name">{{ p.name }}</span>
+                        @if (p.catalogId && catalogsService.getById(p.catalogId); as cat) {
+                          <span class="exp-cat-badge" [style.background]="cat.color + '22'" [style.color]="cat.color">{{ cat.name }}</span>
+                        }
+                      </div>
+                      <span class="epc-cat">
+                        @if (p.category) { <span class="exp-cat-chip">{{ p.category }}</span> }
+                      </span>
+                      <span class="epc-um">{{ p.um }}</span>
+                      @if (p.catalogId) {
+                        @let psAd = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                        <div class="stoc3-cell">
+                          <div class="s3-row"><span class="s3-label">Importat</span><span class="s3-imp">{{ psAd.importedQty }}</span></div>
+                          <div class="s3-row"><span class="s3-label">Consumat</span><span class="s3-con">{{ psAd.consumedQty > 0 ? '−' + psAd.consumedQty : psAd.consumedQty }}</span></div>
+                          <div class="s3-row"><span class="s3-label">Buffer</span><span class="s3-buf" [class.s3-pos]="psAd.bufferQty > 0" [class.s3-neg]="psAd.bufferQty < 0">{{ psAd.bufferQty > 0 ? '+' : '' }}{{ psAd.bufferQty === 0 ? '—' : psAd.bufferQty }}</span></div>
+                          <div class="s3-row s3-total"><span class="s3-label">Final</span><span class="s3-final" [class.s3-zero]="psAd.finalQty === 0">{{ psAd.finalQty | number:'1.0-4' }}</span></div>
+                        </div>
+                      } @else {
+                        <span></span>
+                      }
+                      <span class="epc-cod">{{ p.codExtern || '—' }}</span>
+                      <span class="epc-furn">{{ p.furnizor || '—' }}</span>
+                      <span class="epc-net">{{ pFaraTVA(p) != null ? ((pFaraTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                      <span class="epc-tva">{{ pCuTVA(p) != null ? ((pCuTVA(p)! | number:'1.2-2') + ' lei') : '—' }}</span>
+                      <span class="epc-masa">—</span>
+                      <span class="epc-qty-cell exp-qty-static">{{ p.qty }}</span>
+                    </div>
+                  }
+                  @if (addedAll.length > 2) {
+                    <div class="exp-added-toggle" (click)="toggleAddedExpanded(order.id)">
+                      {{ addedExp ? 'Arată mai puțin ▲' : 'Arată toate (' + addedAll.length + ') ▼' }}
                     </div>
                   }
                 </div>

@@ -105,7 +105,7 @@ export class OrdersService {
     this._decrementStock(newOrder.products, 'revise');
     newOrder.orderNumber = this.nextOrderNumber();
     const updated = this._orders().map(o =>
-      o.id === originalId ? { ...o, superseded: true, pendingProducts: [] } : o
+      o.id === originalId ? { ...o, superseded: true, pendingProducts: [], adminProducts: [] } : o
     );
     const final = [newOrder, ...updated];
     this.storage.set('app_orders', final);
@@ -221,14 +221,16 @@ export class OrdersService {
   }
 
   addProductsToOrder(orderId: string, products: OrderProduct[], event: Omit<OrderEvent, 'id'>): StockCheckResult {
-    // Both agent (comenzile-mele) and admin (toate-comenzile) additions go to pendingProducts —
-    // stock is consumed only at reviseOrder (Finalizează cu modificări), not upfront.
+    // Agent additions → pendingProducts (agent can edit & retrimite)
+    // Admin additions → adminProducts (shown read-only in Comenzile mele; stock consumed at reviseOrder)
+    const isAdmin = event.source === 'toate-comenzile';
     this._orders.update(orders =>
       orders.map(o => {
         if (o.id !== orderId) return o;
         return {
           ...o,
-          pendingProducts: [...(o.pendingProducts ?? []), ...products],
+          pendingProducts: isAdmin ? (o.pendingProducts ?? []) : [...(o.pendingProducts ?? []), ...products],
+          adminProducts:   isAdmin ? [...(o.adminProducts ?? []), ...products] : (o.adminProducts ?? []),
           orderEvents: [...(o.orderEvents ?? []), { ...event, id: generateId() }]
         };
       })

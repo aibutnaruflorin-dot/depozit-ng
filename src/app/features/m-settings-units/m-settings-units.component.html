@@ -1,0 +1,56 @@
+<div class="msub-wrap">
+  <div class="msub-header">
+    <a class="msub-back" routerLink="/app/m-settings"><mat-icon>arrow_back</mat-icon></a>
+    <span class="msub-title">Unități de măsură</span>
+  </div>
+
+  <div class="msub-body">
+    @if (unitsService.units().length === 0) {
+      <div class="msub-empty">
+        <mat-icon>straighten</mat-icon>
+        <p>Nicio unitate de măsură definită.</p>
+      </div>
+    }
+
+    @for (um of unitsService.units(); track um.code) {
+      <div class="msub-item">
+        @if (editingCode() === um.code) {
+          <div class="msub-item-edit">
+            <input class="msub-input" [(ngModel)]="editCode" placeholder="Cod UM" maxlength="10" (keydown.enter)="saveEdit()" (keydown.escape)="cancelEdit()">
+            <label class="msub-check-label">
+              <input type="checkbox" [(ngModel)]="editDecimal"> Zecimale
+            </label>
+            <button class="msub-btn-icon ok" (click)="saveEdit()"><mat-icon>check</mat-icon></button>
+            <button class="msub-btn-icon" (click)="cancelEdit()"><mat-icon>close</mat-icon></button>
+          </div>
+        } @else {
+          <code class="msub-um-code">{{ um.code }}</code>
+          <span class="msub-badge" [class.badge-yes]="um.allowDecimal" [class.badge-no]="!um.allowDecimal">
+            {{ um.allowDecimal ? 'Zecimale' : 'Întregi' }}
+          </span>
+          <div class="msub-item-actions">
+            <button class="msub-btn-icon" (click)="startEdit(um)"><mat-icon>edit</mat-icon></button>
+            <button class="msub-btn-icon warn" (click)="delete(um.code)"><mat-icon>delete_outline</mat-icon></button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Adaugă -->
+    <div class="msub-add-card">
+      <div class="msub-add-title"><mat-icon>add_circle</mat-icon> Adaugă UM</div>
+      <div class="msub-add-row">
+        <input class="msub-input" [(ngModel)]="newCode" placeholder="Cod UM (ex: BUC)" maxlength="10" (keydown.enter)="add()">
+        <label class="msub-check-label">
+          <input type="checkbox" [(ngModel)]="newDecimal"> Zecimale
+        </label>
+        <button class="msub-btn primary" (click)="add()" [disabled]="!newCode.trim()">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:80px"></div>
+  <app-mobile-nav />
+</div>

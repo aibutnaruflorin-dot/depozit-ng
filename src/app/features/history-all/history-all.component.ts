@@ -233,6 +233,11 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
   readonly editQtyMap = this._editQty.asReadonly();
   private _editPendingQty = signal<Record<string, number | undefined>>({});
   readonly editPendingQtyMap = this._editPendingQty.asReadonly();
+  private _addedExpanded = signal<Set<string>>(new Set());
+  isAddedExpanded(id: string): boolean { return this._addedExpanded().has(id); }
+  toggleAddedExpanded(id: string): void {
+    this._addedExpanded.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
 
   readonly todayStr = new Date().toISOString().slice(0, 10);
 
@@ -388,7 +393,11 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
       const edited = this._editQty()[this.ekey(order.id, i)];
       return edited !== undefined && edited !== p.qty;
     });
-    return hasEdits || !!(order.pendingProducts?.length);
+    return hasEdits || !!(order.pendingProducts?.length) || !!(order.adminProducts?.length);
+  }
+
+  allPendingProducts(order: Order): Order['pendingProducts'] {
+    return [...(order.pendingProducts ?? []), ...(order.adminProducts ?? [])];
   }
 
   pFaraTVA(p: { pretFaraTVA?: number; pretCuTVA?: number; catalogId?: string; nr: number | string }): number | null {
@@ -579,7 +588,8 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
       return;
     }
     const editedProducts = withEditedQty.filter(p => p.qty > 0);
-    const editedPending = (order.pendingProducts ?? [])
+    const allPending = this.allPendingProducts(order)!;
+    const editedPending = allPending
       .map((p, pi) => ({ ...p, qty: this.getPendingEditQty(order.id, pi, p.qty) }))
       .filter(p => p.qty > 0);
     const newProducts = [...editedProducts, ...editedPending];
@@ -587,11 +597,13 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
       this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
       return;
     }
+    const allAdded = [...(order.addedProducts ?? []), ...editedPending];
     const newOrder: Order = {
       id: generateId(), timestamp: new Date().toISOString(),
       agent: order.agent, client: order.client,
       cuLivrare: order.cuLivrare, deliveryDate: order.deliveryDate, deliveryTime: order.deliveryTime,
-      products: newProducts, status: 'acceptat', revisedFromId: order.id
+      products: newProducts, status: 'acceptat', revisedFromId: order.id,
+      addedProducts: allAdded.length > 0 ? allAdded : undefined
     };
     const result = this.ordersService.reviseOrder(order.id, newOrder);
     if (!result.ok) {
@@ -606,10 +618,11 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     });
     this._editPendingQty.update(m => {
       const n = { ...m };
-      (order.pendingProducts ?? []).forEach((_, pi) => delete n[this.pekey(order.id, pi)]);
+      this.allPendingProducts(order)!.forEach((_, pi) => delete n[this.pekey(order.id, pi)]);
       return n;
     });
     this.collapseRow(order.id);
+    this.expandRow(newOrder.id);
     this.snackBar.open('Comanda finalizată cu modificări!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 

@@ -22,10 +22,15 @@ type StatusTab = 'toate' | 'asteapta' | 'activ' | 'livrat' | 'anulat';
   styleUrl: './mobile-history-all.component.scss'
 })
 export class MobileHistoryAllComponent {
-  activeTab    = signal<StatusTab>('toate');
-  detailId     = signal<string | null>(null);
-  _editQty     = signal<Record<string, number>>({});
-  _obsExpanded = signal<Set<string>>(new Set());
+  activeTab      = signal<StatusTab>('toate');
+  detailId       = signal<string | null>(null);
+  _editQty       = signal<Record<string, number>>({});
+  _obsExpanded   = signal<Set<string>>(new Set());
+  private _addedExpanded = signal<Set<string>>(new Set());
+  isAddedExpanded(id: string): boolean { return this._addedExpanded().has(id); }
+  toggleAddedExpanded(id: string): void {
+    this._addedExpanded.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
 
   filterAgent  = signal('');
   filterClient = signal('');
@@ -61,7 +66,10 @@ export class MobileHistoryAllComponent {
     private storage: StorageService,
     private snackBar: MatSnackBar,
     private router: Router
-  ) {}
+  ) {
+    const openId = (this.router.getCurrentNavigation()?.extras?.state as any)?.openOrderId as string | undefined;
+    if (openId) this.detailId.set(openId);
+  }
 
   readonly allOrders = computed(() =>
     this.ordersService.orders()
@@ -112,7 +120,7 @@ export class MobileHistoryAllComponent {
   }
 
   hasQtyChanges(o: Order): boolean {
-    return this.hasEditedQty(o) || !!(o.pendingProducts?.length);
+    return this.hasEditedQty(o) || !!(o.pendingProducts?.length) || !!(o.adminProducts?.length);
   }
 
   toggleLock(o: Order): void {
@@ -194,8 +202,7 @@ export class MobileHistoryAllComponent {
   }
 
   canAddProducts(o: Order): boolean {
-    return !o.locked
-      && ['trimis', 'acceptat', 'planificat', 'livrat_partial'].includes(o.status)
+    return ['trimis', 'acceptat', 'planificat', 'livrat_partial'].includes(o.status)
       && !o.superseded
       && (this.isKeyUser() || this.isOwner(o));
   }
@@ -310,7 +317,8 @@ export class MobileHistoryAllComponent {
       return;
     }
 
-    const newProducts = [...withEditedQty.filter(p => p.qty > 0), ...(o.pendingProducts ?? []).filter(p => p.qty > 0)];
+    const addedPending = [...(o.pendingProducts ?? []), ...(o.adminProducts ?? [])].filter(p => p.qty > 0);
+    const newProducts = [...withEditedQty.filter(p => p.qty > 0), ...addedPending];
     if (newProducts.length === 0) {
       this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
       return;
@@ -326,7 +334,10 @@ export class MobileHistoryAllComponent {
       deliveryTime:  o.deliveryTime,
       products:      newProducts,
       status:        'acceptat',
-      revisedFromId: o.id
+      revisedFromId: o.id,
+      addedProducts: [...(o.addedProducts ?? []), ...addedPending].length > 0
+        ? [...(o.addedProducts ?? []), ...addedPending]
+        : undefined
     };
 
     const result = this.ordersService.reviseOrder(o.id, newOrder);
@@ -342,7 +353,7 @@ export class MobileHistoryAllComponent {
       return n;
     });
 
-    this.closeDetail();
+    this.detailId.set(newOrder.id);
     this.snackBar.open('Comanda finalizată cu modificări!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
@@ -362,7 +373,7 @@ export class MobileHistoryAllComponent {
   addProducts(o: Order): void {
     this.closeDetail();
     this.router.navigate(['/app/m-new-order'], {
-      state: { addToOrderId: o.id, addPending: true }
+      state: { addToOrderId: o.id, addPending: true, returnTo: 'history-all', source: 'toate-comenzile' }
     });
   }
 
