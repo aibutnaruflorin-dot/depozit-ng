@@ -85,6 +85,13 @@ export class MobileTransportComponent implements OnInit {
       .slice(0, 20)
   );
 
+  readonly doneTotal = computed(() =>
+    this.transportService.transports().filter(t => t.status === 'livrat').length
+  );
+  readonly deletedTotal = computed(() =>
+    this.transportService.transports().filter(t => t.status === 'sters').length
+  );
+
   readonly displayList = computed(() =>
     this.activeTab() === 'done' ? this.done() : this.active()
   );
@@ -288,14 +295,18 @@ export class MobileTransportComponent implements OnInit {
       this.snackBar.open('Completați datele de plecare și sosire.', '', { duration: 2500 }); return;
     }
     if (this.formSelectedOrderIds().size === 0) {
-      this.snackBar.open('Adăugați cel puțin o comandă pe cursă.', '', { duration: 2500 }); return;
+      this.snackBar.open('Adaugă cel puțin o comandă la cursă.', '', { duration: 2500 }); return;
     }
 
     const oraPlecare = `${this.formPlecareDate}T${this.formPlecareTime}:00`;
     const oraSosire  = `${this.formSosireDate}T${this.formSosireTime}:00`;
 
+    if (new Date(oraPlecare) < new Date()) {
+      this.snackBar.open('Ora de plecare nu poate fi în trecut.', '', { duration: 3500 }); return;
+    }
+
     if (oraSosire <= oraPlecare) {
-      this.snackBar.open('Sosirea trebuie să fie după plecare.', '', { duration: 2500 }); return;
+      this.snackBar.open('Data/ora de sosire trebuie să fie după plecare.', '', { duration: 3000 }); return;
     }
 
     const editId = this.editingId();
@@ -316,22 +327,44 @@ export class MobileTransportComponent implements OnInit {
       this.snackBar.open('Nu există cantități disponibile pentru comenzile selectate.', '', { duration: 3000 }); return;
     }
 
+    const overlap = this._checkOverlap(oraPlecare, oraSosire, this.formVehicleId, this.formDriverId, editId);
+    if (overlap.vehicle || overlap.driver) {
+      const who = overlap.vehicle && overlap.driver ? 'Mașina și șoferul'
+        : overlap.vehicle ? 'Mașina' : 'Șoferul';
+      this.snackBar.open(`${who} nu este disponibil în această perioadă.`, 'OK', { duration: 5000 }); return;
+    }
+
+    const helperName = this.formHelperName.trim() || undefined;
+    if (helperName) {
+      const pA = new Date(oraPlecare).getTime(), sA = new Date(oraSosire).getTime();
+      const eA = this._effectiveEndMs(pA, sA);
+      const helperBusy = this.transportService.transports()
+        .filter(t => t.status !== 'livrat' && t.status !== 'anulat' && t.status !== 'sters' && t.id !== editId && t.helper === helperName)
+        .some(t => {
+          const pB = new Date(t.oraPlecare).getTime(), sB = new Date(t.oraSosire).getTime();
+          return pA < this._effectiveEndMs(pB, sB) && pB < eA;
+        });
+      if (helperBusy) {
+        this.snackBar.open(`${helperName} este deja în cursă. Alege altă persoană.`, 'OK', { duration: 5000 }); return;
+      }
+    }
+
     if (editId) {
       this.transportService.updateTransport(editId, {
         vehicleId: this.formVehicleId, driverId: this.formDriverId,
-        helper: this.formHelperName || undefined, deliveries, oraPlecare, oraSosire
+        helper: helperName, deliveries, oraPlecare, oraSosire
       });
-      this.snackBar.open('Cursa a fost actualizată.', '', { duration: 2000, panelClass: ['snack-success'] });
+      this.snackBar.open('Cursa actualizată.', '', { duration: 2000 });
     } else {
       this.transportService.createTransport({
         vehicleId: this.formVehicleId, driverId: this.formDriverId,
-        helper: this.formHelperName || undefined, deliveries, oraPlecare, oraSosire
+        helper: helperName, deliveries, oraPlecare, oraSosire
       });
       for (const orderId of this.formSelectedOrderIds()) {
         const order = this.ordersService.orders().find(o => o.id === orderId);
         if (order && order.status === 'acceptat') this.ordersService.updateOrderStatus(orderId, 'planificat');
       }
-      this.snackBar.open('Cursa a fost creată.', '', { duration: 2000, panelClass: ['snack-success'] });
+      this.snackBar.open('Cursă planificată.', '', { duration: 2000 });
     }
     this.closeForm();
   }
@@ -364,7 +397,7 @@ export class MobileTransportComponent implements OnInit {
 
   sendDriverWhatsApp(t: Transport): void {
     const driver = this.transportService.getDriver(t.driverId);
-    if (!driver?.telefon) { this.snackBar.open('Șoferul nu are număr de telefon.', '', { duration: 2500 }); return; }
+    if (!driver?.telefon) { this.snackBar.open('Șoferul nu are număr de telefon configurat.', 'OK', { duration: 3000 }); return; }
     const orders = this.ordersForTransport(t);
     const phone  = driver.telefon.replace(/\D/g, '');
     const msg    = this._buildDriverMsg(t, driver.nume, orders);
@@ -388,7 +421,7 @@ export class MobileTransportComponent implements OnInit {
     if (!t.helper) return;
     const person = [...this.transportService.helpers(), ...this.transportService.drivers()]
       .find(d => d.nume === t.helper);
-    if (!person?.telefon) { this.snackBar.open(`${t.helper} nu are număr de telefon.`, '', { duration: 2500 }); return; }
+    if (!person?.telefon) { this.snackBar.open(`${t.helper} nu are număr de telefon configurat.`, 'OK', { duration: 3000 }); return; }
     const phone  = person.telefon.replace(/\D/g, '');
     const orders = this.ordersForTransport(t);
     const msg    = this._buildGroupMsg(t, orders);
@@ -398,10 +431,43 @@ export class MobileTransportComponent implements OnInit {
 
   notifyDriverDeleted(t: Transport): void {
     const driver = this.transportService.getDriver(t.driverId);
-    if (!driver?.telefon) { this.snackBar.open('Șoferul nu are număr de telefon.', '', { duration: 2500 }); return; }
+    if (!driver?.telefon) { this.snackBar.open('Șoferul nu are număr de telefon configurat.', 'OK', { duration: 3000 }); return; }
     const msg   = `Cursa ta din ${this.fmtDT(t.oraPlecare)} a fost ANULATĂ.`;
     const phone = driver.telefon.replace(/\D/g, '');
     window.open(`https://wa.me/${phone.startsWith('0') ? '4' + phone : phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  // ── Delivery details ─────────────────────────────────────────────────────
+
+  deliveryItemsForOrder(t: Transport, orderId: string): { name: string; qty: number; um: string }[] {
+    const delivery = t.deliveries.find(d => d.orderId === orderId);
+    const order = this.ordersService.orders().find(o => o.id === orderId);
+    if (!delivery || !order) return [];
+    return delivery.items
+      .filter(item => item.qty > 0)
+      .map(item => {
+        const p = order.products[item.productIndex];
+        return { name: p?.name ?? '?', qty: item.qty, um: p?.um ?? '' };
+      });
+  }
+
+  getDeliveryNote(t: Transport, orderId: string): string {
+    return t.deliveries.find(d => d.orderId === orderId)?.observatii ?? '';
+  }
+
+  setObsBuffer(tripId: string, orderId: string, val: string): void {
+    this._obsBuffer.set(`${tripId}::${orderId}`, val);
+  }
+
+  saveObsBuffer(t: Transport, orderId: string): void {
+    const key = `${t.id}::${orderId}`;
+    if (!this._obsBuffer.has(key)) return;
+    const note = this._obsBuffer.get(key)!;
+    const deliveries = t.deliveries.map(d =>
+      d.orderId === orderId ? { ...d, observatii: note.trim() || undefined } : d
+    );
+    this.transportService.updateTransport(t.id, { deliveries });
+    this._obsBuffer.delete(key);
   }
 
   private _buildDriverMsg(t: Transport, driverName: string, orders: Order[]): string {
@@ -422,6 +488,28 @@ export class MobileTransportComponent implements OnInit {
   }
 
   // ── Private ───────────────────────────────────────────────────────────────
+
+  private _obsBuffer = new Map<string, string>();
+
+  private _effectiveEndMs(plecare: number, sosire: number): number {
+    const duration = sosire - plecare;
+    return sosire + Math.min(duration * 0.5, 2 * 3_600_000);
+  }
+
+  private _checkOverlap(plecare: string, sosire: string, vehicleId: string, driverId: string, excludeId?: string | null): { vehicle: boolean; driver: boolean } {
+    const pA = new Date(plecare).getTime(), sA = new Date(sosire).getTime();
+    const eA = this._effectiveEndMs(pA, sA);
+    let vehicle = false, driver = false;
+    for (const t of this.transportService.transports()) {
+      if (t.status === 'livrat' || t.status === 'anulat' || t.status === 'sters' || t.id === excludeId) continue;
+      const pB = new Date(t.oraPlecare).getTime(), sB = new Date(t.oraSosire).getTime();
+      if (pA < this._effectiveEndMs(pB, sB) && pB < eA) {
+        if (t.vehicleId === vehicleId) vehicle = true;
+        if (t.driverId  === driverId)  driver  = true;
+      }
+    }
+    return { vehicle, driver };
+  }
 
   private _getDeliveredQtyArr(order: Order): number[] {
     const qty = new Array(order.products.length).fill(0);

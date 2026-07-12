@@ -8,7 +8,8 @@
         <span class="mt-badge-cancelled">{{ cancelled() }} anulat{{ cancelled() === 1 ? '' : 'e' }}</span>
       }
       @if (auth.isAdmin()) {
-        <button class="mt-fab-btn" (click)="openCreate()" title="Cursă nouă">
+        <button class="mt-fab-btn" (click)="openCreate()" title="Cursă nouă"
+                [disabled]="!transportService.vehicles().length || !transportService.drivers().length">
           <mat-icon>add</mat-icon>
         </button>
       }
@@ -24,6 +25,13 @@
   </div>
 
   <div class="mt-body">
+
+    @if (auth.isAdmin() && (!transportService.vehicles().length || !transportService.drivers().length)) {
+      <div class="mt-setup-hint">
+        <mat-icon>info</mat-icon>
+        Adaugă mașini și șoferi în <strong>Setări → Mașini / Șoferi</strong>.
+      </div>
+    }
 
     <!-- ── Comenzi de planificat (admin) ── -->
     @if (auth.isAdmin() && pendingOrders().length > 0) {
@@ -56,8 +64,7 @@
         <p>Nicio cursă {{ activeTab() === 'done' ? 'livrată' : 'activă' }}.</p>
       </div>
     } @else {
-      @for (t of displayList(); track t.id) {
-        @let ov = isOverdue(t);
+      @for (t of displayList(); track t.id) { @let ov = isOverdue(t);
         @let val = tripValue(t);
         @let wt  = tripWeight(t);
         <div class="mt-card" [class.mt-card--overdue]="ov" (click)="toggleExpand(t.id)">
@@ -105,6 +112,26 @@
                   <span class="mt-order-client">{{ o.client.name }}</span>
                   @if (o.cuLivrare) { <mat-icon class="mt-deliv-icon">home</mat-icon> }
                 </div>
+                @let items = deliveryItemsForOrder(t, o.id);
+                @if (items.length > 0) {
+                  <div class="mt-items-list">
+                    @for (item of items; track item.name) {
+                      <div class="mt-item-row">
+                        <span class="mt-item-name">{{ item.name }}</span>
+                        <span class="mt-item-qty">{{ item.qty }} {{ item.um }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+                @if (auth.isAdmin()) {
+                  <textarea class="mt-note-input" rows="1"
+                            [value]="getDeliveryNote(t, o.id)"
+                            (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
+                            (blur)="saveObsBuffer(t, o.id)"
+                            [placeholder]="'Notă #' + o.orderNumber"
+                            (click)="$event.stopPropagation()">
+                  </textarea>
+                }
               }
 
               @if (auth.isAdmin()) {
@@ -140,6 +167,9 @@
           }
 
         </div>
+      }
+      @if (activeTab() === 'done' && doneTotal() > 30) {
+        <div class="mt-cap-note">Se afișează ultimele 30 din {{ doneTotal() }} curse livrate.</div>
       }
     }
 
@@ -178,6 +208,9 @@
               <span>{{ t.deliveries.length }} cm.</span>
             </div>
           </div>
+        }
+        @if (deletedTotal() > 20) {
+          <div class="mt-cap-note">Se afișează ultimele 20 din {{ deletedTotal() }} curse șterse.</div>
         }
       }
     }
