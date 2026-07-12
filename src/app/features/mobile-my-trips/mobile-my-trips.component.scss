@@ -197,3 +197,86 @@
   font-size: .78rem; color: var(--color-text-muted); font-style: italic;
   mat-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
 }
+
+// ── Admin view — driver sections ──────────────────────────────────────────────
+.mm-driver-section {
+  background: var(--color-surface); border-radius: 12px;
+  padding: 12px 12px 6px; margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.mm-driver-header {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; color: var(--color-primary); }
+}
+.mm-driver-name { font-size: .9rem; font-weight: 700; color: var(--color-text); flex: 1; }
+
+.mm-badge {
+  font-size: .7rem; font-weight: 700; border-radius: 12px; padding: 2px 8px; flex-shrink: 0;
+  background: var(--color-border); color: var(--color-text-muted);
+  &.mm-badge--warn  { background: #FEF3C7; color: #92400E; }
+  &.mm-badge--info  { background: #E0E7FF; color: #3730A3; }
+  &.mm-badge--muted { background: #F3F4F6; color: #6B7280; }
+}
+
+.mm-sub-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: .72rem; font-weight: 700; color: var(--color-text-muted);
+  text-transform: uppercase; letter-spacing: .04em;
+  margin: 8px 0 5px;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; }
+  &.mm-sub-label--active { color: #1E40AF; mat-icon { color: #1E40AF; } }
+  &.mm-sub-label--plan   { color: #92400E; mat-icon { color: #92400E; } }
+  &.mm-sub-label--toggle {
+    cursor: pointer; color: #6B7280;
+    &:hover { color: var(--color-text); }
+  }
+}
+.mm-chevron { font-size: 18px !important; width: 18px !important; height: 18px !important; margin-left: auto; }
+
+// ── Admin trip card ───────────────────────────────────────────────────────────
+.mm-admin-trip {
+  background: var(--color-surface-2, #F8FAFA); border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 7px; cursor: pointer;
+  border-left: 2px solid transparent;
+  &.mm-admin-trip--overdue { border-left-color: #dc2626; }
+  &.mm-admin-trip--hist    { opacity: .75; cursor: default; }
+}
+.mm-admin-trip-top {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 5px;
+}
+.mm-vehicle-info {
+  display: flex; align-items: center; gap: 6px;
+  > div { display: flex; flex-direction: column; }
+}
+.mm-car-icon--done { color: #6B7280 !important; }
+.mm-plate { font-size: .7rem; color: var(--color-text-muted); margin-top: 1px; }
+
+.mm-admin-time {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .76rem; color: var(--color-text-muted); margin-bottom: 5px;
+}
+.mm-meta-icon   { font-size: 13px !important; width: 13px !important; height: 13px !important; flex-shrink: 0; }
+.mm-warn-icon-sm { font-size: 13px !important; width: 13px !important; height: 13px !important; color: #dc2626; }
+
+.mm-admin-clients { display: flex; flex-wrap: wrap; gap: 4px; }
+.mm-admin-client-chip {
+  font-size: .73rem; background: var(--color-border); border-radius: 6px;
+  padding: 2px 8px; color: var(--color-text-muted);
+}
+
+// ── Status chip ───────────────────────────────────────────────────────────────
+.mm-status-chip {
+  font-size: .7rem; font-weight: 700; border-radius: 20px; padding: 3px 10px;
+  white-space: nowrap; flex-shrink: 0;
+  &.mm-chip--active  { background: #DBEAFE; color: #1E40AF; }
+  &.mm-chip--confirm { background: #FEF3C7; color: #92400E; }
+  &.mm-chip--plan    { background: #E0E7FF; color: #3730A3; }
+  &.mm-chip--done    { background: #D1FAE5; color: #065F46; }
+  &.mm-chip--cancel  { background: #FEE2E2; color: #991B1B; }
+}
+
+// ── Advance button — varianta mică (admin card) ───────────────────────────────
+.mm-advance-btn--sm {
+  width: auto; align-self: flex-start; margin-top: 8px;
+  padding: 7px 14px; font-size: .82rem;
+}

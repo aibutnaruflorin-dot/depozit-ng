@@ -11,15 +11,92 @@
 
   <div class="mm-body">
 
-    <!-- ── Admin view ─────────────────────────────────────── -->
+    <!-- ═══════════════════════════════════════════════
+         ADMIN VIEW — secțiuni per șofer
+         ═══════════════════════════════════════════════ -->
     @if (auth.isAdmin()) {
-      <div class="mm-admin-hint">
-        <mat-icon>info</mat-icon>
-        <span>Monitorizare curse per șofer disponibilă în pagina <strong>Transport</strong>.</span>
-      </div>
+
+      @if (!driverSections().length) {
+        <div class="mm-empty">
+          <mat-icon>person_off</mat-icon>
+          <p>Niciun șofer cu curse înregistrate.</p>
+        </div>
+      }
+
+      @for (sec of driverSections(); track sec.driver.id) {
+        <div class="mm-driver-section">
+
+          <div class="mm-driver-header">
+            <mat-icon>person</mat-icon>
+            <span class="mm-driver-name">{{ sec.driver.nume }}</span>
+            @if (sec.active.length) {
+              <span class="mm-badge mm-badge--warn">{{ sec.active.length }} activ</span>
+            }
+            @if (sec.planned.length) {
+              <span class="mm-badge mm-badge--info">{{ sec.planned.length }} planif.</span>
+            }
+            @if (sec.hist.length) {
+              <span class="mm-badge mm-badge--muted">{{ sec.hist.length }} fin.</span>
+            }
+          </div>
+
+          <!-- Curse în desfășurare -->
+          @if (sec.active.length) {
+            <div class="mm-sub-label mm-sub-label--active">
+              <mat-icon>local_shipping</mat-icon>Curse în desfășurare
+            </div>
+            @for (t of sec.active; track t.id) {
+              <ng-container [ngTemplateOutlet]="adminTripCard"
+                            [ngTemplateOutletContext]="{ $implicit: t }"></ng-container>
+            }
+          }
+
+          <!-- Curse planificate -->
+          @if (sec.planned.length) {
+            <div class="mm-sub-label mm-sub-label--plan">
+              <mat-icon>schedule</mat-icon>Curse planificate
+            </div>
+            @for (t of sec.planned; track t.id) {
+              <ng-container [ngTemplateOutlet]="adminTripCard"
+                            [ngTemplateOutletContext]="{ $implicit: t }"></ng-container>
+            }
+          }
+
+          <!-- Curse finalizate (colapsabil) -->
+          @if (sec.hist.length) {
+            <div class="mm-sub-label mm-sub-label--toggle" (click)="toggleDriverHistoric(sec.driver.id)">
+              <mat-icon>history</mat-icon>Curse finalizate
+              <span class="mm-badge mm-badge--muted">{{ sec.hist.length }}</span>
+              <mat-icon class="mm-chevron">{{ showDriverHistoric(sec.driver.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </div>
+            @if (showDriverHistoric(sec.driver.id)) {
+              @for (t of sec.hist; track t.id) {
+                <div class="mm-admin-trip mm-admin-trip--hist">
+                  <div class="mm-admin-trip-top">
+                    <div class="mm-vehicle-info">
+                      <mat-icon class="mm-car-icon mm-car-icon--done">check_circle</mat-icon>
+                      <span class="mm-vehicle">{{ vehicleName(t) }}</span>
+                    </div>
+                    <span class="mm-time">{{ fmt(t.oraPlecare) }}</span>
+                  </div>
+                  <div class="mm-admin-clients">
+                    @for (o of ordersForTransport(t); track o.id) {
+                      <span class="mm-admin-client-chip">{{ o.client.name }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          }
+
+        </div>
+      }
+
     }
 
-    <!-- ── Driver view ────────────────────────────────────── -->
+    <!-- ═══════════════════════════════════════════════
+         DRIVER VIEW — curse personale
+         ═══════════════════════════════════════════════ -->
     @if (!auth.isAdmin()) {
 
       @if (isNotDriver()) {
@@ -32,7 +109,7 @@
         </div>
       } @else {
 
-        <!-- Active trips -->
+        <!-- Curse active -->
         @if (current().length > 0) {
           <div class="mm-section-label">Curse active ({{ current().length }})</div>
         } @else {
@@ -45,7 +122,6 @@
         @for (t of current(); track t.id) {
 
           @if (t.status === 'anulat') {
-            <!-- ── Anulat card ── -->
             <div class="mm-trip-card mm-trip-card--cancelled">
               <div class="mm-trip-info">
                 <mat-icon class="mm-car-icon mm-car-icon--cancel">cancel</mat-icon>
@@ -62,10 +138,8 @@
             </div>
 
           } @else {
-            <!-- ── Active / normal card ── -->
             <div class="mm-trip-card" [class.mm-trip-card--overdue]="isOverdue(t)" (click)="toggleExpand(t.id)">
 
-              <!-- Progress bar -->
               <div class="mm-progress">
                 @for (step of STEP_LABELS; track $index) {
                   <div class="mm-step" [class.done]="$index <= stepIndex(t)" [class.active]="$index === stepIndex(t)">
@@ -80,24 +154,19 @@
                 }
               </div>
 
-              <!-- Trip summary -->
               <div class="mm-trip-info">
                 <mat-icon class="mm-car-icon">local_shipping</mat-icon>
                 <span class="mm-vehicle">{{ vehicleName(t) }}</span>
                 <span class="mm-time">{{ fmt(t.oraPlecare) }} – {{ fmt(t.oraSosire) }}</span>
               </div>
               @if (isOverdue(t)) {
-                <div class="mm-overdue-hint">
-                  <mat-icon>warning</mat-icon>Termen depășit
-                </div>
+                <div class="mm-overdue-hint"><mat-icon>warning</mat-icon>Termen depășit</div>
               }
 
-              <!-- Expanded order details -->
               @if (expandedId() === t.id) {
                 <div class="mm-expanded" (click)="$event.stopPropagation()">
                   @for (o of ordersForTransport(t); track o.id) {
                     <div class="mm-order-block">
-
                       <div class="mm-order-header">
                         <span class="mm-order-nr">#{{ o.orderNumber ?? '—' }}</span>
                         <span class="mm-order-client">{{ o.client.name }}</span>
@@ -107,20 +176,17 @@
                           </span>
                         }
                       </div>
-
                       @if (o.cuLivrare && o.client.address) {
                         <a [href]="mapsLink(o.client.address)" target="_blank"
                            class="mm-addr-link" (click)="$event.stopPropagation()">
                           <mat-icon>location_on</mat-icon>{{ o.client.address }}
                         </a>
                       }
-
                       @if (o.client.phone) {
                         <a [href]="'tel:' + o.client.phone" class="mm-phone-link" (click)="$event.stopPropagation()">
                           <mat-icon>phone</mat-icon>{{ o.client.phone }}
                         </a>
                       }
-
                       @let items = deliveryItems(t, o.id);
                       @if (items.length > 0) {
                         <div class="mm-items-list">
@@ -132,18 +198,15 @@
                           }
                         </div>
                       }
-
                       @let note = getDeliveryNote(t, o.id);
                       @if (note) {
                         <div class="mm-obs"><mat-icon>notes</mat-icon>{{ note }}</div>
                       }
-
                     </div>
                   }
                 </div>
               }
 
-              <!-- Advance button -->
               @if (stepIndex(t) >= 0 && stepIndex(t) < STATUS_STEPS.length - 1) {
                 <button class="mm-advance-btn" (click)="$event.stopPropagation(); advance(t)">
                   {{ STEP_ACTIONS[stepIndex(t)] }}
@@ -156,7 +219,7 @@
 
         }
 
-        <!-- History -->
+        <!-- Curse livrate (șofer) -->
         @if (history().length > 0) {
           <button class="mm-history-toggle" (click)="showHistory.update(v => !v)">
             <mat-icon>{{ showHistory() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -187,6 +250,83 @@
     }
 
   </div>
+
+  <!-- ── Template card admin cursă ───────────────────────────────────────────── -->
+  <ng-template #adminTripCard let-t>
+    <div class="mm-admin-trip" [class.mm-admin-trip--overdue]="isOverdue(t)" (click)="toggleExpand(t.id)">
+
+      <div class="mm-admin-trip-top">
+        <div class="mm-vehicle-info">
+          <mat-icon class="mm-car-icon">local_shipping</mat-icon>
+          <div>
+            <span class="mm-vehicle">{{ vehicleName(t) }}</span>
+            @if (getVehiclePlate(t.vehicleId)) {
+              <small class="mm-plate">{{ getVehiclePlate(t.vehicleId) }}</small>
+            }
+          </div>
+        </div>
+        <span class="mm-status-chip" [ngClass]="statusChipClass(t.status)">{{ statusLabel(t) }}</span>
+      </div>
+
+      <div class="mm-admin-time">
+        <mat-icon class="mm-meta-icon">schedule</mat-icon>
+        {{ fmt(t.oraPlecare) }} – {{ fmt(t.oraSosire) }}
+        @if (isOverdue(t)) { <mat-icon class="mm-warn-icon-sm">warning</mat-icon> }
+      </div>
+
+      <div class="mm-admin-clients">
+        @for (o of ordersForTransport(t); track o.id) {
+          <span class="mm-admin-client-chip">{{ o.client.name }}</span>
+        }
+      </div>
+
+      @if (expandedId() === t.id) {
+        <div class="mm-expanded" (click)="$event.stopPropagation()">
+          @for (o of ordersForTransport(t); track o.id) {
+            <div class="mm-order-block">
+              <div class="mm-order-header">
+                <span class="mm-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+                <span class="mm-order-client">{{ o.client.name }}</span>
+              </div>
+              @if (o.cuLivrare && o.client.address) {
+                <a [href]="mapsLink(o.client.address)" target="_blank"
+                   class="mm-addr-link" (click)="$event.stopPropagation()">
+                  <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                </a>
+              }
+              @if (o.client.phone) {
+                <a [href]="'tel:' + o.client.phone" class="mm-phone-link" (click)="$event.stopPropagation()">
+                  <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                </a>
+              }
+              @let items = deliveryItems(t, o.id);
+              @if (items.length > 0) {
+                <div class="mm-items-list">
+                  @for (item of items; track item.name) {
+                    <div class="mm-item-row">
+                      <span class="mm-item-name">{{ item.name }}</span>
+                      <span class="mm-item-qty">{{ item.qty }} {{ item.um }}</span>
+                    </div>
+                  }
+                </div>
+              }
+              @let note = getDeliveryNote(t, o.id);
+              @if (note) {
+                <div class="mm-obs"><mat-icon>notes</mat-icon>{{ note }}</div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (stepIndex(t) >= 0 && stepIndex(t) < STATUS_STEPS.length - 1) {
+        <button class="mm-advance-btn mm-advance-btn--sm" (click)="$event.stopPropagation(); advance(t)">
+          {{ STEP_ACTIONS[stepIndex(t)] }}<mat-icon>arrow_forward</mat-icon>
+        </button>
+      }
+
+    </div>
+  </ng-template>
 
   <app-mobile-nav />
 </div>

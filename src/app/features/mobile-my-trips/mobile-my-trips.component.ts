@@ -25,8 +25,9 @@ const STEP_ACTIONS = ['Confirmă', 'Pornește cursa', 'Finalizează', ''];
   styleUrl: './mobile-my-trips.component.scss'
 })
 export class MobileMyTripsComponent {
-  showHistory = signal(false);
-  expandedId  = signal<string | null>(null);
+  showHistory     = signal(false);
+  expandedId      = signal<string | null>(null);
+  showHistoricMap = signal<Record<string, boolean>>({});
 
   readonly STATUS_STEPS = STATUS_STEPS;
   readonly STEP_LABELS  = STEP_LABELS;
@@ -72,6 +73,26 @@ export class MobileMyTripsComponent {
     return !this.transportService.transports().some(t => String(t.driverId) === myId);
   });
 
+  // ── Admin-view computed ───────────────────────────────────────────────────
+
+  readonly driverSections = computed(() => {
+    const drivers    = this.transportService.drivers();
+    const transports = this.transportService.transports();
+    return drivers
+      .map(driver => {
+        const dId = String(driver.id);
+        const mine = transports.filter(t => String(t.driverId) === dId);
+        const active  = mine.filter(t => t.status === 'in_livrare' || t.status === 'confirmat_sofer')
+                            .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+        const planned = mine.filter(t => t.status === 'planificat')
+                            .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+        const hist    = mine.filter(t => t.status === 'livrat')
+                            .sort((a, b) => b.oraPlecare.localeCompare(a.oraPlecare));
+        return { driver, active, planned, hist };
+      })
+      .filter(s => s.active.length + s.planned.length + s.hist.length > 0);
+  });
+
   // ── Display helpers ───────────────────────────────────────────────────────
 
   stepIndex(t: Transport): number {
@@ -80,9 +101,24 @@ export class MobileMyTripsComponent {
 
   statusLabel(t: Transport): string { return STATUS_LABELS[t.status] ?? t.status; }
 
+  statusChipClass(status: string): string {
+    const map: Record<string, string> = {
+      in_livrare:      'mm-chip--active',
+      confirmat_sofer: 'mm-chip--confirm',
+      planificat:      'mm-chip--plan',
+      livrat:          'mm-chip--done',
+      anulat:          'mm-chip--cancel',
+    };
+    return map[status] ?? '';
+  }
+
   vehicleName(t: Transport): string {
     const v = this.transportService.getVehicle(t.vehicleId);
     return v?.alias || v?.denumire || t.vehicleId;
+  }
+
+  getVehiclePlate(vehicleId: string): string {
+    return this.transportService.getVehicle(vehicleId)?.numarInmatriculare ?? '';
   }
 
   ordersForTransport(t: Transport): Order[] {
@@ -122,6 +158,15 @@ export class MobileMyTripsComponent {
   }
 
   toggleExpand(id: string): void { this.expandedId.update(v => v === id ? null : id); }
+
+  toggleDriverHistoric(driverId: string | number): void {
+    const key = String(driverId);
+    this.showHistoricMap.update(m => ({ ...m, [key]: !m[key] }));
+  }
+
+  showDriverHistoric(driverId: string | number): boolean {
+    return !!this.showHistoricMap()[String(driverId)];
+  }
 
   // ── Status transitions ────────────────────────────────────────────────────
 
