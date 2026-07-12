@@ -128,6 +128,11 @@
 .mt-order-client { font-size: .88rem; color: var(--color-text); flex: 1; }
 .mt-deliv-icon   { font-size: 15px; width: 15px; height: 15px; color: var(--color-primary); }
 
+.mt-helper-row { display: flex; align-items: center; gap: 6px; color: var(--color-text-muted); }
+.mt-helper-name { font-size: .82rem; font-style: italic; }
+.mt-weight-warn { color: #dc2626; font-weight: 600; }
+.mt-del-actions { display: flex; gap: 4px; }
+
 // ── Action buttons ────────────────────────────────────────────────────────────
 .mt-act-row  { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .mt-act-btn {

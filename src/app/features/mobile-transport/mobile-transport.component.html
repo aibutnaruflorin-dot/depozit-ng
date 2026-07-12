@@ -87,12 +87,18 @@
             }
             @if (wt > 0) {
               <span class="mt-sep">·</span>
-              <span>{{ fmtWeight(wt) }}</span>
+              <span [class.mt-weight-warn]="tripWeightWarn(t)">{{ fmtWeight(wt) }}</span>
             }
           </div>
 
           @if (expandedId() === t.id) {
             <div class="mt-expanded" (click)="$event.stopPropagation()">
+              @if (t.helper) {
+                <div class="mt-helper-row">
+                  <mat-icon class="mt-meta-icon">person_add</mat-icon>
+                  <span class="mt-helper-name">{{ t.helper }}</span>
+                </div>
+              }
               @for (o of ordersForTransport(t); track o.id) {
                 <div class="mt-order-row">
                   <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
@@ -108,6 +114,13 @@
                     <mat-icon>local_shipping</mat-icon>WA Șofer
                     @if (t.waSentDriverAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
                   </button>
+                  @if (helperHasPhone(t)) {
+                    <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentHelperAt"
+                            (click)="sendHelperWhatsApp(t)">
+                      <mat-icon>person_add</mat-icon>WA Ajutor
+                      @if (t.waSentHelperAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
+                    </button>
+                  }
                   @for (g of waGroups(); track g.id) {
                     <button class="mt-act-btn mt-act-btn--wa" (click)="sendGroupWhatsApp(t, g)">
                       <mat-icon>group</mat-icon>{{ g.name }}
@@ -149,9 +162,14 @@
                   <span class="mt-driver">{{ driverName(t) }}</span>
                 </div>
               </div>
-              <button class="mt-restore-btn" (click)="restoreTransport(t)" title="Redeschide cursa">
-                <mat-icon>restore</mat-icon>
-              </button>
+              <div class="mt-del-actions">
+                <button class="mt-restore-btn" (click)="notifyDriverDeleted(t)" title="Notifică șofer că cursa a fost anulată" style="color:#16a34a">
+                  <mat-icon>chat</mat-icon>
+                </button>
+                <button class="mt-restore-btn" (click)="restoreTransport(t)" title="Redeschide cursa">
+                  <mat-icon>restore</mat-icon>
+                </button>
+              </div>
             </div>
             <div class="mt-card-meta">
               <mat-icon class="mt-meta-icon">schedule</mat-icon>

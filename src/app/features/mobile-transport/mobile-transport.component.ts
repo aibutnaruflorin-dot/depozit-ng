@@ -5,10 +5,11 @@ import { TransportService } from '../../core/services/transport.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
+import { CatalogsService } from '../../core/services/catalogs.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Transport, TripDelivery, TripOrderItem } from '../../core/models/transport.model';
-import { Order } from '../../core/models/order.model';
+import { Order, OrderProduct } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
@@ -49,6 +50,7 @@ export class MobileTransportComponent implements OnInit {
     public  ordersService: OrdersService,
     public  auth: AuthService,
     private storage: StorageService,
+    private catalogsService: CatalogsService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -149,9 +151,23 @@ export class MobileTransportComponent implements OnInit {
     return 'chip-cancel';
   }
 
+  isOrderDeadlineOverdue(order: Order): boolean {
+    if (!order.deliveryDate) return false;
+    const [y, mo, d] = order.deliveryDate.split('-').map(Number);
+    const deadline = new Date(y, mo - 1, d);
+    if (order.deliveryTime) {
+      const [h, m] = order.deliveryTime.split(':').map(Number);
+      deadline.setHours(h, m, 0, 0);
+    } else {
+      deadline.setHours(23, 59, 0, 0);
+    }
+    return Date.now() > deadline.getTime();
+  }
+
   isOverdue(t: Transport): boolean {
-    return !['livrat','anulat','sters'].includes(t.status) &&
-      new Date(t.oraSosire).getTime() < Date.now();
+    if (['livrat','anulat','sters'].includes(t.status)) return false;
+    if (new Date(t.oraSosire).getTime() < Date.now()) return true;
+    return this.ordersForTransport(t).some(o => this.isOrderDeadlineOverdue(o));
   }
 
   fmtDT(iso: string): string {
@@ -167,6 +183,23 @@ export class MobileTransportComponent implements OnInit {
     catch { return iso; }
   }
 
+  productPrice(p: OrderProduct): { net: number; tva: number } {
+    let net = p.pretFaraTVA ?? null;
+    let tva = p.pretCuTVA ?? null;
+    if ((net == null || tva == null) && p.catalogId) {
+      const cp = this.catalogsService.findProduct(p.catalogId, p.nr);
+      net = net ?? cp?.pretFaraTVA ?? null;
+      tva = tva ?? cp?.pretCuTVA ?? null;
+    }
+    if (net != null && tva == null) tva = Math.round(net * 1.19 * 100) / 100;
+    if (tva != null && net == null) net = Math.round(tva / 1.19 * 100) / 100;
+    return { net: net ?? 0, tva: tva ?? 0 };
+  }
+
+  productMasa(p: OrderProduct): number {
+    return p.masaNeta ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta ?? 0;
+  }
+
   tripValue(t: Transport): number {
     let total = 0;
     for (const del of t.deliveries) {
@@ -174,7 +207,7 @@ export class MobileTransportComponent implements OnInit {
       if (!order) continue;
       for (const item of del.items) {
         const p = order.products[item.productIndex];
-        if (p) total += (p.pretCuTVA ?? (p.pretFaraTVA ? p.pretFaraTVA * 1.19 : 0)) * item.qty;
+        if (p) total += this.productPrice(p).tva * item.qty;
       }
     }
     return total;
@@ -187,14 +220,23 @@ export class MobileTransportComponent implements OnInit {
       if (!order) continue;
       for (const item of del.items) {
         const p = order.products[item.productIndex];
-        if (p) total += (p.masaNeta ?? 0) * item.qty;
+        if (p) total += this.productMasa(p) * item.qty;
       }
     }
     return total;
   }
 
+  tripWeightWarn(t: Transport): boolean {
+    const v = this.transportService.getVehicle(t.vehicleId);
+    if (!v?.tonajMaxim) return false;
+    return this.tripWeight(t) > v.tonajMaxim;
+  }
+
   fmtWeight(kg: number): string {
-    return kg >= 1000 ? (kg / 1000).toFixed(2) + ' t' : Math.round(kg) + ' kg';
+    if (kg <= 0) return '';
+    return kg >= 1000
+      ? `${(kg / 1000).toFixed(2).replace(/\.?0+$/, '')} t`
+      : `${kg.toFixed(1).replace(/\.0$/, '')} kg`;
   }
 
   toggleExpand(id: string): void { this.expandedId.update(v => v === id ? null : id); }
@@ -295,20 +337,21 @@ export class MobileTransportComponent implements OnInit {
   }
 
   deleteTransport(t: Transport): void {
-    if (!confirm(`Ștergi cursa din ${this.fmtDate(t.oraPlecare)}?\nComenzi aferente vor reveni la "Acceptat".`)) return;
+    if (!confirm(`Muți cursa din ${this.fmtDate(t.oraPlecare)} în Curse șterse?\nComenzi vor reveni la statusul anterior.`)) return;
     this.transportService.setStatus(t.id, 'sters');
-    for (const del of t.deliveries) {
-      const order = this.ordersService.orders().find(o => o.id === del.orderId);
+    const affected = [...new Set(t.deliveries.map(d => d.orderId))];
+    for (const orderId of affected) {
+      const order = this.ordersService.orders().find(o => o.id === orderId);
       if (!order) continue;
-      const onOther = this.transportService.transports().some(tr =>
-        tr.id !== t.id &&
-        ['planificat','confirmat_sofer','in_livrare'].includes(tr.status) &&
-        tr.deliveries.some(d => d.orderId === del.orderId)
-      );
-      if (!onOther && order.status === 'planificat') this.ordersService.updateOrderStatus(del.orderId, 'acceptat');
+      const delivered = this._getDeliveredQtyArr(order);
+      if (delivered.some(q => q > 0)) {
+        this.ordersService.updateDeliveryState(orderId, delivered);
+      } else {
+        this.ordersService.updateOrderStatus(orderId, 'acceptat');
+      }
     }
     this.expandedId.set(null);
-    this.snackBar.open('Cursa a fost ștearsă.', '', { duration: 2000 });
+    this.snackBar.open('Cursa a fost mutată în Curse șterse.', '', { duration: 2200 });
   }
 
   restoreTransport(t: Transport): void {
@@ -335,6 +378,32 @@ export class MobileTransportComponent implements OnInit {
     window.open(`https://wa.me/${contact.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
+  helperHasPhone(t: Transport): boolean {
+    if (!t.helper) return false;
+    return [...this.transportService.helpers(), ...this.transportService.drivers()]
+      .some(d => d.nume === t.helper && !!d.telefon);
+  }
+
+  sendHelperWhatsApp(t: Transport): void {
+    if (!t.helper) return;
+    const person = [...this.transportService.helpers(), ...this.transportService.drivers()]
+      .find(d => d.nume === t.helper);
+    if (!person?.telefon) { this.snackBar.open(`${t.helper} nu are număr de telefon.`, '', { duration: 2500 }); return; }
+    const phone  = person.telefon.replace(/\D/g, '');
+    const orders = this.ordersForTransport(t);
+    const msg    = this._buildGroupMsg(t, orders);
+    window.open(`https://wa.me/${phone.startsWith('0') ? '4' + phone : phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    this.transportService.markWaSent(t.id, 'helper');
+  }
+
+  notifyDriverDeleted(t: Transport): void {
+    const driver = this.transportService.getDriver(t.driverId);
+    if (!driver?.telefon) { this.snackBar.open('Șoferul nu are număr de telefon.', '', { duration: 2500 }); return; }
+    const msg   = `Cursa ta din ${this.fmtDT(t.oraPlecare)} a fost ANULATĂ.`;
+    const phone = driver.telefon.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone.startsWith('0') ? '4' + phone : phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
   private _buildDriverMsg(t: Transport, driverName: string, orders: Order[]): string {
     const v = this.transportService.getVehicle(t.vehicleId);
     const veh = v?.alias || v?.denumire || t.vehicleId;
@@ -353,6 +422,19 @@ export class MobileTransportComponent implements OnInit {
   }
 
   // ── Private ───────────────────────────────────────────────────────────────
+
+  private _getDeliveredQtyArr(order: Order): number[] {
+    const qty = new Array(order.products.length).fill(0);
+    for (const t of this.transportService.transports()) {
+      if (t.status !== 'livrat') continue;
+      const d = t.deliveries.find(d => d.orderId === order.id);
+      if (!d) continue;
+      for (const item of d.items) {
+        if (item.productIndex < qty.length) qty[item.productIndex] += item.qty;
+      }
+    }
+    return qty;
+  }
 
   private _hasRemainingItems(order: Order): boolean {
     return order.products.some((_, i) => this._getRemainingQty(order, i) > 0);
