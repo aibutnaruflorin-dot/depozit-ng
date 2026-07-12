@@ -314,6 +314,7 @@ export class MobileTransportComponent implements OnInit {
     }
 
     const editId = this.editingId();
+    const existingTrip = editId ? this.transportService.transports().find(t => t.id === editId) : undefined;
     const deliveries: TripDelivery[] = [];
 
     for (const orderId of this.formSelectedOrderIds()) {
@@ -324,7 +325,12 @@ export class MobileTransportComponent implements OnInit {
         const rem = this._getRemainingQty(order, productIndex, editId);
         if (rem > 0) items.push({ productIndex, qty: rem });
       });
-      if (items.length > 0) deliveries.push({ orderId, items });
+      if (items.length > 0) {
+        const del: TripDelivery = { orderId, items };
+        const existingObs = existingTrip?.deliveries.find(d => d.orderId === orderId)?.observatii;
+        if (existingObs) del.observatii = existingObs;
+        deliveries.push(del);
+      }
     }
 
     if (deliveries.length === 0) {
@@ -470,7 +476,7 @@ export class MobileTransportComponent implements OnInit {
   private _buildTripMsg(t: Transport): string {
     const orders = this.ordersForTransport(t);
     const lines = orders.map(o => `• ${o.client.name}${o.client.address ? ' — ' + o.client.address : ''}`).join('\n');
-    return `Cursa:\nPlecare: ${this.fmtDT(t.oraPlecare)}\nSosire: ${this.fmtDT(t.oraSosire)}\n${lines}`;
+    return `Cursa:\nPlecare: ${this.transportService.formatDateTime(t.oraPlecare)}\nSosire: ${this.transportService.formatDateTime(t.oraSosire)}\n${lines}`;
   }
 
   // ── Private ───────────────────────────────────────────────────────────────
