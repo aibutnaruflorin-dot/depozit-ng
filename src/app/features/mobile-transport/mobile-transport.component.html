@@ -55,6 +55,9 @@
                 <span class="mt-pending-dot" title="Produse adăugate, neconfirmate"></span>
               }
               <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+              <button class="mt-plan-btn mt-plan-btn--edit" (click)="$event.stopPropagation(); openMobileEdit(o)" title="Modificare comandă">
+                <mat-icon>edit</mat-icon>
+              </button>
               <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
                 <mat-icon>add_shopping_cart</mat-icon>
               </button>
@@ -80,30 +83,66 @@
                     <mat-icon>notes</mat-icon>{{ o.observatii ?? o.client.note }}
                   </div>
                 }
-                <div class="mt-detail-products">
-                  @for (p of o.products; track $index) {
-                    <div class="mt-detail-product-row">
-                      <span class="mt-dp-name">{{ p.name }}</span>
-                      <span class="mt-dp-qty">{{ p.qty }} {{ p.um }}</span>
-                    </div>
-                  }
-                </div>
-                @if (hasPendingChanges(o)) {
-                  <div class="mt-pending-notice">
-                    <mat-icon>pending_actions</mat-icon>
-                    <span>Produse adăugate, neconfirmate:</span>
+                @if (editingMobileOrderId() === o.id) {
+                  <!-- ── Mod editare ── -->
+                  <div class="mt-edit-label">
+                    <mat-icon>edit</mat-icon>Modificare produse
                   </div>
-                  <div class="mt-detail-products mt-detail-products--pending">
-                    @for (p of (o.pendingProducts ?? []).concat(o.adminProducts ?? []); track $index) {
-                      <div class="mt-detail-product-row mt-detail-product-row--new">
-                        <span class="mt-dp-name">{{ p.name }}</span>
-                        <span class="mt-dp-qty mt-dp-qty--new">+{{ p.qty }} {{ p.um }}</span>
+                  <div class="mt-edit-list">
+                    @for (p of o.products; track $index) {
+                      @let qty = getMobileEditQty(o.id, $index, p.qty);
+                      @let maxQty = mobileEditMaxQty(p);
+                      <div class="mt-edit-row" [class.mt-edit-row--removed]="qty === 0">
+                        <div class="mt-edit-name-wrap">
+                          <span class="mt-dp-name">{{ p.name }}</span>
+                          @if (maxQty != null) {
+                            <span class="mt-edit-stock" [class.mt-edit-stock--warn]="qty > maxQty">
+                              stoc: {{ maxQty }} {{ p.um }}
+                            </span>
+                          }
+                        </div>
+                        <div class="mt-edit-stepper">
+                          <button class="mt-step-btn" (click)="setMobileEditQty(o.id, $index, qty - 1)">−</button>
+                          <span class="mt-step-qty" [class.mt-step-qty--zero]="qty === 0">{{ qty }}</span>
+                          <button class="mt-step-btn" (click)="setMobileEditQty(o.id, $index, qty + 1)">+</button>
+                        </div>
+                        <span class="mt-dp-qty">{{ p.um }}</span>
                       </div>
                     }
                   </div>
-                  <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
-                    <mat-icon>check_circle</mat-icon>Finalizează cu modificări
-                  </button>
+                  <div class="mt-edit-actions">
+                    <button class="mt-edit-cancel-btn" (click)="cancelMobileEdit()">Renunță</button>
+                    <button class="mt-edit-confirm-btn" (click)="confirmMobileEdit(o)">
+                      <mat-icon>check_circle</mat-icon>Salvează
+                    </button>
+                  </div>
+                } @else {
+                  <!-- ── Mod vizualizare ── -->
+                  <div class="mt-detail-products">
+                    @for (p of o.products; track $index) {
+                      <div class="mt-detail-product-row">
+                        <span class="mt-dp-name">{{ p.name }}</span>
+                        <span class="mt-dp-qty">{{ p.qty }} {{ p.um }}</span>
+                      </div>
+                    }
+                  </div>
+                  @if (hasPendingChanges(o)) {
+                    <div class="mt-pending-notice">
+                      <mat-icon>pending_actions</mat-icon>
+                      <span>Produse adăugate, neconfirmate:</span>
+                    </div>
+                    <div class="mt-detail-products mt-detail-products--pending">
+                      @for (p of (o.pendingProducts ?? []).concat(o.adminProducts ?? []); track $index) {
+                        <div class="mt-detail-product-row mt-detail-product-row--new">
+                          <span class="mt-dp-name">{{ p.name }}</span>
+                          <span class="mt-dp-qty mt-dp-qty--new">+{{ p.qty }} {{ p.um }}</span>
+                        </div>
+                      }
+                    </div>
+                    <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
+                      <mat-icon>check_circle</mat-icon>Finalizează cu modificări
+                    </button>
+                  }
                 }
               </div>
             }

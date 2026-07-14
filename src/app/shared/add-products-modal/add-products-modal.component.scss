@@ -313,3 +313,62 @@
 }
 .apm-bottom-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 .apm-manual-toggle-btn { font-size: 0.82rem; }
+
+// ── Coloana Rest stoc ────────────────────────────────────────────────────────
+.apm-rest-cell {
+  display: flex; align-items: center; justify-content: flex-end;
+  font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  padding-right: 4px;
+  &.apm-rest--ok   { color: #16a34a; }
+  &.apm-rest--over { color: #dc2626; }
+}
+
+// ── Modul Coș ────────────────────────────────────────────────────────────────
+.apm-cart-chip {
+  margin-left: auto; border-style: dashed;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &--active {
+    background: #d97706 !important;
+    border-color: #d97706 !important;
+    border-style: solid !important;
+    color: #fff !important;
+  }
+}
+.apm-cart-hint {
+  display: flex; align-items: center; gap: 6px;
+  color: #92400e; font-style: normal; font-weight: 500;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; color: #d97706; }
+}
+.apm-cart-bottom {
+  display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0;
+}
+
+.apm-cart-totals {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+
+.apm-total-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  background: var(--color-surface-alt, #f3f4f6);
+  border: 1px solid var(--color-border, #e5e7eb);
+  font-size: 0.8rem; white-space: nowrap;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; color: #6b7280; }
+  .apm-total-label { color: #6b7280; margin-right: 2px; }
+  strong { font-variant-numeric: tabular-nums; }
+  &--main {
+    background: #fef3c7; border-color: #fcd34d;
+    mat-icon { color: #d97706; }
+    .apm-total-label { color: #92400e; }
+    strong { color: #92400e; }
+  }
+}
+
+.apm-save-btn {
+  background: #d97706 !important; color: #fff !important;
+  &[disabled], &.mat-mdc-button-disabled {
+    background: rgba(0,0,0,0.12) !important;
+    color: rgba(0,0,0,0.38) !important;
+    cursor: default;
+  }
+}

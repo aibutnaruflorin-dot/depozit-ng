@@ -174,16 +174,6 @@ export class TransportComponent implements OnInit {
     return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
   });
 
-  // Modal preview produse pending
-  pendingPreviewOrderId = signal<string | null>(null);
-  readonly pendingPreviewOrder = computed(() => {
-    const id = this.pendingPreviewOrderId();
-    return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
-  });
-  pendingProducts(o: Order): Order['pendingProducts'] {
-    return [...(o.pendingProducts ?? []), ...(o.adminProducts ?? [])];
-  }
-
   readonly modalTotalWeight = computed(() => {
     return this.modalOrders().reduce((sum, order) => {
       const qtyMap = this.modalQty()[order.id] ?? {};
@@ -1200,31 +1190,10 @@ export class TransportComponent implements OnInit {
     this.ordersService.updateOrderObservatii(orderId, this._orderObsBuffer.get(orderId)!);
   }
 
-  hasPendingChanges(o: Order): boolean {
-    return !!(o.pendingProducts?.length || o.adminProducts?.length);
-  }
-
-  finalizeWithChanges(o: Order): void {
-    const pending = [...(o.pendingProducts ?? []), ...(o.adminProducts ?? [])];
-    const newProducts = [...o.products, ...pending].filter(p => p.qty > 0);
-    if (!newProducts.length) return;
-    const allAdded = [...(o.addedProducts ?? []), ...pending];
-    const newOrder: Order = {
-      id: generateId(), timestamp: new Date().toISOString(),
-      agent: o.agent, client: o.client,
-      cuLivrare: o.cuLivrare, deliveryDate: o.deliveryDate, deliveryTime: o.deliveryTime,
-      helper: o.helper, observatii: o.observatii,
-      products: newProducts, status: 'acceptat', revisedFromId: o.id,
-      addedProducts: allAdded.length > 0 ? allAdded : undefined
-    };
-    const result = this.ordersService.reviseOrder(o.id, newOrder);
-    if (!result.ok) {
-      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
-      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 5000, panelClass: ['snack-error'] });
-      return;
-    }
-    this.pendingPreviewOrderId.set(null);
-    this.snackBar.open('Comanda finalizată cu modificări!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
+  deleteOrder(o: Order): void {
+    if (!confirm(`Ștergi definitiv comanda #${o.orderNumber} - ${o.client.name}? Acțiunea nu poate fi anulată.`)) return;
+    this.ordersService.hardDeleteOrder(o.id);
+    this.snackBar.open(`Comanda #${o.orderNumber} a fost ștearsă.`, '', { duration: 2500 });
   }
 
   selectedHelpers(): { orderNum: number | undefined; helper: string }[] {

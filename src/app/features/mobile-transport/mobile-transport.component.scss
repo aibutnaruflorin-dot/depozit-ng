@@ -82,6 +82,7 @@
   color: var(--color-primary); display: flex; align-items: center; flex-shrink: 0;
   mat-icon { font-size: 22px; width: 22px; height: 22px; }
   &.mt-plan-btn--cart { margin-left: auto; color: #6B7280; }
+  &.mt-plan-btn--edit { margin-left: auto; color: #d97706; }
   & + .mt-plan-btn    { margin-left: 0; }
 }
 
@@ -141,6 +142,60 @@
   width: 100%; background: var(--color-primary); color: #fff;
   border: none; border-radius: 8px; padding: 9px; font-size: .85rem; font-weight: 600;
   cursor: pointer; margin-top: 2px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+// ── Editare comandă (inline mobile) ───────────────────────────────────────────
+.mt-edit-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: .78rem; font-weight: 700; color: #d97706;
+  margin-bottom: 6px;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+.mt-edit-list {
+  display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;
+}
+.mt-edit-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--color-surface); border-radius: 8px; padding: 8px 10px;
+  border: 1.5px solid var(--color-border);
+  &.mt-edit-row--removed {
+    border-color: #FECACA; background: #FEF2F2;
+    .mt-dp-name { text-decoration: line-through; color: var(--color-text-muted); }
+    .mt-step-qty { color: #dc2626; }
+  }
+}
+.mt-edit-name-wrap { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.mt-edit-stock {
+  font-size: .68rem; color: var(--color-text-muted);
+  &.mt-edit-stock--warn { color: #dc2626; font-weight: 600; }
+}
+.mt-edit-stepper { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.mt-step-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-2, #F5F6FA); color: var(--color-text);
+  font-size: 1.1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  &:active { background: #FEF3C7; border-color: #d97706; }
+}
+.mt-step-qty {
+  min-width: 32px; text-align: center; font-size: .92rem;
+  font-weight: 700; font-variant-numeric: tabular-nums;
+  &.mt-step-qty--zero { color: #dc2626; }
+}
+.mt-edit-actions {
+  display: flex; gap: 8px; margin-top: 4px;
+}
+.mt-edit-cancel-btn {
+  flex: 1; background: var(--color-border); color: var(--color-text-muted);
+  border: none; border-radius: 8px; padding: 9px; font-size: .85rem; font-weight: 600;
+  cursor: pointer;
+}
+.mt-edit-confirm-btn {
+  flex: 2; background: #d97706; color: #fff;
+  border: none; border-radius: 8px; padding: 9px; font-size: .85rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
   mat-icon { font-size: 18px; width: 18px; height: 18px; }
 }
 

@@ -297,6 +297,64 @@ export class MobileTransportComponent implements OnInit {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   }
 
+  // ── Editare comandă (mobile inline) ───────────────────────────────────────
+  editingMobileOrderId = signal<string | null>(null);
+  private _mobileEditQty = signal<Record<string, number>>({});
+
+  openMobileEdit(o: Order): void {
+    const map: Record<string, number> = {};
+    o.products.forEach((p, i) => { map[`${o.id}:${i}`] = p.qty; });
+    this._mobileEditQty.set(map);
+    this.editingMobileOrderId.set(o.id);
+  }
+
+  getMobileEditQty(orderId: string, idx: number, def: number): number {
+    return this._mobileEditQty()[`${orderId}:${idx}`] ?? def;
+  }
+
+  setMobileEditQty(orderId: string, idx: number, qty: number): void {
+    this._mobileEditQty.update(m => ({ ...m, [`${orderId}:${idx}`]: Math.max(0, qty) }));
+  }
+
+  cancelMobileEdit(): void {
+    this.editingMobileOrderId.set(null);
+  }
+
+  confirmMobileEdit(o: Order): void {
+    const newProducts = o.products
+      .map((p, i) => ({ ...p, qty: this.getMobileEditQty(o.id, i, p.qty) }))
+      .filter(p => p.qty > 0);
+    if (!newProducts.length) {
+      this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
+      return;
+    }
+    const session = this.auth.session();
+    const event: Omit<import('../../core/models/order.model').OrderEvent, 'id'> = {
+      timestamp: new Date().toISOString(),
+      userId: session?.userId ?? 0,
+      userName: session?.name ?? '—',
+      source: 'transport',
+      type: 'products_updated',
+      products: newProducts.map(p => ({ name: p.name, qty: p.qty, um: p.um })),
+    };
+    const result = this.ordersService.updateOrderProducts(o.id, newProducts, event);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 5000, panelClass: ['snack-error'] });
+      return;
+    }
+    this.editingMobileOrderId.set(null);
+    this.expandedPendingId.set(null);
+    this.snackBar.open('Comanda modificată!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
+  }
+
+  mobileEditMaxQty(p: OrderProduct): number | null {
+    if (!p.catalogId) return null;
+    const available = this.catalogsService.getStock(p.catalogId, p.nr);
+    if (available == null) return null;
+    return available + p.qty;
+  }
+
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   openCreate(preselect?: string): void {

@@ -4,8 +4,13 @@
     <!-- Header -->
     <div class="apm-header">
       <div class="apm-title">
-        <mat-icon>add_shopping_cart</mat-icon>
-        Adaugă produse — #{{ order().orderNumber }} {{ order().client.name }}
+        @if (cartMode()) {
+          <mat-icon>edit</mat-icon>
+          Editează produse — #{{ order().orderNumber }} {{ order().client.name }}
+        } @else {
+          <mat-icon>add_shopping_cart</mat-icon>
+          Adaugă produse — #{{ order().orderNumber }} {{ order().client.name }}
+        }
       </div>
       <button mat-icon-button (click)="closed.emit()"><mat-icon>close</mat-icon></button>
     </div>
@@ -14,15 +19,25 @@
     <div class="apm-toolbar">
       <!-- Catalog chips -->
       <div class="apm-cat-chips">
-        <button class="apm-cat-chip" [class.apm-cat-chip--active]="selectedCatalogId() === null"
-                (click)="selectedCatalogId.set(null)">Toate</button>
-        @for (c of catalogs(); track c.id) {
-          <button class="apm-cat-chip" [class.apm-cat-chip--active]="selectedCatalogId() === c.id"
-                  (click)="selectedCatalogId.set(c.id)">
-            <span class="apm-cat-dot" [style.background]="c.color"></span>
-            {{ c.name }}
-          </button>
+        @if (!cartMode()) {
+          <button class="apm-cat-chip" [class.apm-cat-chip--active]="selectedCatalogId() === null"
+                  (click)="selectedCatalogId.set(null)">Toate</button>
+          @for (c of catalogs(); track c.id) {
+            <button class="apm-cat-chip" [class.apm-cat-chip--active]="selectedCatalogId() === c.id"
+                    (click)="selectedCatalogId.set(c.id)">
+              <span class="apm-cat-dot" [style.background]="c.color"></span>
+              {{ c.name }}
+            </button>
+          }
         }
+        <!-- Buton coș: filtrează la produsele deja pe comandă -->
+        <button class="apm-cat-chip apm-cart-chip"
+                [class.apm-cart-chip--active]="cartMode()"
+                (click)="cartMode() ? exitCartMode() : enterCartMode()"
+                [matTooltip]="cartMode() ? 'Ieși din modul editare' : 'Editează produsele existente din comandă'">
+          <mat-icon>shopping_bag</mat-icon>
+          Coș ({{ order().products.length }})
+        </button>
       </div>
 
       <!-- Search -->
@@ -100,6 +115,7 @@
             Stoc fin.<mat-icon class="apm-sort-icon">{{ sortIcon('stocFinal') }}</mat-icon>
           </span>
         }
+        <span class="apm-th apm-tr">Rest</span>
         @if (colVisible('stocBuffer')) {
           <span class="apm-th apm-tr apm-th--sort" [class.apm-th--active]="sortCol()==='stocBuffer'" (click)="toggleSort('stocBuffer')">
             Buffer<mat-icon class="apm-sort-icon">{{ sortIcon('stocBuffer') }}</mat-icon>
@@ -149,6 +165,10 @@
           @if (colVisible('masaNeta'))    { <span class="apm-td apm-tr apm-muted">{{ row.p.masaNeta ? ((row.p.masaNeta | number:'1.0-2') + ' kg') : '—' }}</span> }
           @if (colVisible('stocImport'))  { <span class="apm-td apm-tr apm-muted">{{ row.importedQty }}</span> }
           @if (colVisible('stocFinal'))   { <span class="apm-td apm-tr" [class.apm-stock-zero]="row.finalQty === 0">{{ row.finalQty }}</span> }
+          @let rest = row.finalQty - getEffectiveQty(row.p);
+          <span class="apm-rest-cell" [class.apm-rest--ok]="rest >= 0" [class.apm-rest--over]="rest < 0">
+            {{ rest | number:'1.0-2' }}
+          </span>
           @if (colVisible('stocBuffer'))  {
             <span class="apm-td apm-tr" [class.apm-buf-pos]="row.bufferQty > 0" [class.apm-buf-neg]="row.bufferQty < 0">
               {{ row.bufferQty !== 0 ? (row.bufferQty > 0 ? '+' : '') + row.bufferQty : '—' }}
@@ -175,6 +195,7 @@
               <mat-icon class="apm-bwarn" [matTooltip]="bufferUsed + ' buc din Stoc Buffer'">warning</mat-icon>
             }
           </div>
+
         </div>
 
         @if (productRows().length === 0) {
@@ -235,7 +256,33 @@
     <!-- Bottom bar -->
     <div class="apm-bottom-bar">
       <div class="apm-staged-chips">
-        @if (staged().length === 0) {
+        @if (cartMode()) {
+          <div class="apm-cart-bottom">
+            <div class="apm-cart-totals">
+              @if (stagedTotalMasa() > 0) {
+                <span class="apm-total-chip">
+                  <mat-icon>scale</mat-icon>
+                  <span class="apm-total-label">Masă</span>
+                  <strong>{{ stagedTotalMasa() >= 1000 ? ((stagedTotalMasa() / 1000) | number:'1.2-2') + ' t' : (stagedTotalMasa() | number:'1.0-2') + ' kg' }}</strong>
+                </span>
+              }
+              @if (stagedTotalFaraTVA() > 0) {
+                <span class="apm-total-chip">
+                  <mat-icon>receipt</mat-icon>
+                  <span class="apm-total-label">F.TVA</span>
+                  <strong>{{ stagedTotalFaraTVA() | number:'1.2-2' }} lei</strong>
+                </span>
+              }
+              @if (stagedTotalPrice() > 0) {
+                <span class="apm-total-chip apm-total-chip--main">
+                  <mat-icon>payments</mat-icon>
+                  <span class="apm-total-label">C.TVA</span>
+                  <strong>{{ stagedTotalPrice() | number:'1.2-2' }} lei</strong>
+                </span>
+              }
+            </div>
+          </div>
+        } @else if (staged().length === 0) {
           <span class="apm-staged-hint">Setează cantitatea din tabel sau adaugă manual.</span>
         } @else {
           @for (p of staged(); let i = $index; track i) {
@@ -259,16 +306,26 @@
         }
       </div>
       <div class="apm-bottom-actions">
-        <button mat-stroked-button class="apm-manual-toggle-btn" (click)="showManual.set(!showManual())">
-          <mat-icon>edit_note</mat-icon>
-          Manual
-        </button>
+        @if (!cartMode()) {
+          <button mat-stroked-button class="apm-manual-toggle-btn" (click)="showManual.set(!showManual())">
+            <mat-icon>edit_note</mat-icon>
+            Manual
+          </button>
+        }
         <button mat-stroked-button (click)="closed.emit()">Anulează</button>
-        <button mat-flat-button color="primary" (click)="confirm()" [disabled]="staged().length === 0 || hasOverStock()"
-                [matTooltip]="hasOverStock() ? 'Corectează cantitățile care depășesc stocul (roșu)' : ''">
-          <mat-icon>check</mat-icon>
-          Confirmă ({{ staged().length }})
-        </button>
+        @if (cartMode()) {
+          <button mat-flat-button class="apm-save-btn" (click)="cartModeConfirm()" [disabled]="!hasCartChanges() || hasOverStock()"
+                  [matTooltip]="hasOverStock() ? 'Corectează cantitățile care depășesc stocul (roșu)' : !hasCartChanges() ? 'Nu există modificări față de comanda curentă' : ''">
+            <mat-icon>save</mat-icon>
+            Salvează modificările
+          </button>
+        } @else {
+          <button mat-flat-button color="primary" (click)="confirm()" [disabled]="staged().length === 0 || hasOverStock()"
+                  [matTooltip]="hasOverStock() ? 'Corectează cantitățile care depășesc stocul (roșu)' : ''">
+            <mat-icon>check</mat-icon>
+            Confirmă ({{ staged().length }})
+          </button>
+        }
       </div>
     </div>
 

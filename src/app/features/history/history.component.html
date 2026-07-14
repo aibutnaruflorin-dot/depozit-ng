@@ -790,19 +790,24 @@
               @if (order.orderEvents?.length) {
                 <div class="exp-events-journal">
                   <div class="exp-events-title">
-                    <mat-icon>history</mat-icon> Produse adăugate ulterior
+                    <mat-icon>history</mat-icon> Modificări ulterioare
                   </div>
                   @for (ev of order.orderEvents!; track ev.id) {
                     <div class="exp-event-entry">
                       <div class="exp-event-meta">
-                        <mat-icon>person</mat-icon>
+                        <mat-icon>{{ ev.type === 'products_updated' ? 'edit' : 'person' }}</mat-icon>
                         <strong>{{ ev.userName }}</strong>
                         · {{ ev.source === 'transport' ? 'Transport' : ev.source === 'comenzile-mele' ? 'Comenzile mele' : 'Toate comenzile' }}
                         · {{ ev.timestamp | date:'dd.MM.yy HH:mm' }}
+                        @if (ev.type === 'products_updated') {
+                          <span class="exp-event-type-badge">modificat</span>
+                        }
                       </div>
                       <div class="exp-event-chips">
                         @for (p of ev.products; track p.name) {
-                          <span class="exp-event-chip">+{{ p.qty }} {{ p.name }}</span>
+                          <span class="exp-event-chip" [class.exp-event-chip--updated]="ev.type === 'products_updated'">
+                            {{ ev.type === 'products_updated' ? '' : '+' }}{{ p.qty }} {{ p.name }}
+                          </span>
                         }
                       </div>
                     </div>

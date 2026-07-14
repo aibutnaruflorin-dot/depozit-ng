@@ -407,24 +407,29 @@
             </div>
           }
 
-          <!-- Produse adăugate ulterior (orderEvents) -->
+          <!-- Produse adăugate/modificate ulterior (orderEvents) -->
           @if (o.orderEvents?.length) {
             <div class="mh-ds-section mh-ds-events-section">
               <div class="mh-ds-section-label">
                 <mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle">history</mat-icon>
-                Produse adăugate ulterior
+                Modificări ulterioare
               </div>
               @for (ev of o.orderEvents!; track ev.id) {
                 <div class="mh-ds-event-entry">
                   <div class="mh-ds-event-meta">
-                    <mat-icon>person</mat-icon>
+                    <mat-icon>{{ ev.type === 'products_updated' ? 'edit' : 'person' }}</mat-icon>
                     <strong>{{ ev.userName }}</strong>
                     · {{ ev.source === 'comenzile-mele' ? 'Comenzile mele' : ev.source === 'transport' ? 'Transport' : 'Toate comenzile' }}
                     · {{ ev.timestamp | date:'dd.MM.yy HH:mm' }}
+                    @if (ev.type === 'products_updated') {
+                      <span class="mh-ds-event-badge">modificat</span>
+                    }
                   </div>
                   <div class="mh-ds-event-chips">
                     @for (p of ev.products; track p.name) {
-                      <span class="mh-ds-event-chip">+{{ p.qty }} {{ p.name }}</span>
+                      <span class="mh-ds-event-chip" [class.mh-ds-event-chip--updated]="ev.type === 'products_updated'">
+                        {{ ev.type === 'products_updated' ? '' : '+' }}{{ p.qty }} {{ p.name }}
+                      </span>
                     }
                   </div>
                 </div>

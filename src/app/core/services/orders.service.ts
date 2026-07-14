@@ -113,6 +113,30 @@ export class OrdersService {
     return { ok: true, insufficient: [] };
   }
 
+  /** Edits an order's products in-place (same id, same orderNumber). Handles stock release + re-check. Clears pendingProducts/adminProducts and logs an event. */
+  updateOrderProducts(orderId: string, newProducts: import('../models/order.model').OrderProduct[], event?: Omit<import('../models/order.model').OrderEvent, 'id'>): StockCheckResult {
+    const original = this._orders().find(o => o.id === orderId);
+    if (!original) return { ok: false, insufficient: [] };
+    this._incrementStock(original.products, 'revise');
+    const insufficient = this._checkStock(newProducts);
+    if (insufficient.length) {
+      this._decrementStock(original.products, 'revise');
+      return { ok: false, insufficient };
+    }
+    this._decrementStock(newProducts, 'revise');
+    this._orders.update(orders =>
+      orders.map(o => {
+        if (o.id !== orderId) return o;
+        const orderEvents = event
+          ? [...(o.orderEvents ?? []), { ...event, id: generateId() }]
+          : (o.orderEvents ?? []);
+        return { ...o, products: newProducts, pendingProducts: [], adminProducts: [], orderEvents };
+      })
+    );
+    this.storage.set('app_orders', this._orders());
+    return { ok: true, insufficient: [] };
+  }
+
   acceptOrder(id: string): void {
     this._orders.update(orders =>
       orders.map(o => o.id === id ? { ...o, status: 'acceptat' } : o)
@@ -159,6 +183,15 @@ export class OrdersService {
     this._orders.update(orders =>
       orders.map(o => o.id === id ? { ...o, status: 'anulat' } : o)
     );
+    this.storage.set('app_orders', this._orders());
+  }
+
+  hardDeleteOrder(id: string): void {
+    const order = this._orders().find(o => o.id === id);
+    if (order && !order.superseded && order.status !== 'anulat') {
+      this._incrementStock(order.products, 'cancel');
+    }
+    this._orders.update(orders => orders.filter(o => o.id !== id));
     this.storage.set('app_orders', this._orders());
   }
 

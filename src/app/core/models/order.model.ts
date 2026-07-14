@@ -4,7 +4,7 @@ export interface OrderEvent {
   userId: number;
   userName: string;
   source: 'transport' | 'comenzile-mele' | 'toate-comenzile';
-  type: 'products_added';
+  type: 'products_added' | 'products_updated';
   products: Array<{ name: string; qty: number; um: string }>;
 }
 

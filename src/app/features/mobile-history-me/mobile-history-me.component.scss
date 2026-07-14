@@ -343,6 +343,12 @@
 .mh-ds-event-chip {
   background: #EFF6FF; color: #1D4ED8; border-radius: 4px;
   padding: 2px 6px; font-size: .7rem; font-weight: 500;
+  &--updated { background: #fef3c7; color: #92400e; }
+}
+.mh-ds-event-badge {
+  margin-left: 5px; padding: 1px 5px; border-radius: 8px;
+  background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 700;
+  text-transform: uppercase;
 }
 .mh-ds-stoc-blocked {
   display: flex;

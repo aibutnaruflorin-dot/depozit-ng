@@ -96,6 +96,7 @@ export class AddProductsModalComponent implements OnInit {
     if (this.colVisible('masaNeta'))    cols.push('82px');
     if (this.colVisible('stocImport'))  cols.push('80px');
     if (this.colVisible('stocFinal'))   cols.push('80px');
+    cols.push('72px'); // Rest stoc — always visible
     if (this.colVisible('stocBuffer'))  cols.push('80px');
     if (this.colVisible('codExtern'))   cols.push('120px');
     if (this.colVisible('furnizor'))    cols.push('140px');
@@ -108,8 +109,10 @@ export class AddProductsModalComponent implements OnInit {
   searchQ           = signal('');
   selectedCatalogId = signal<string | null>(null);
   staged            = signal<OrderProduct[]>([]);
+  private _cartSnapshot = signal<OrderProduct[]>([]);
   showManual        = signal(false);
   showJournal       = signal(false);
+  cartMode          = signal(false);
   manualName        = signal('');
   manualQty         = signal(1);
   manualUm          = signal('BUC');
@@ -139,14 +142,31 @@ export class AddProductsModalComponent implements OnInit {
   readonly productRows = computed((): ProductRow[] => {
     const q     = this.searchQ().toLowerCase().trim();
     const catId = this.selectedCatalogId();
+    const cart  = this.cartMode();
     const pool  = this.catalogsService.productsForGrouped(catId ? [catId] : []);
-    const filtered = q
+    let filtered = q
       ? pool.filter(p => p.name.toLowerCase().includes(q) || (p.codExtern ?? '').toLowerCase().includes(q))
       : pool;
+
+    // Cart mode: show only products already in the order
+    const orderQtyByKey: Record<string, number> = {};
+    if (cart) {
+      for (const op of this.order().products) {
+        if (op.catalogId) orderQtyByKey[`${op.catalogId}_${op.nr}`] = op.qty;
+      }
+      const orderKeys = new Set(Object.keys(orderQtyByKey));
+      filtered = filtered.filter(p => p.catalogId && orderKeys.has(`${p.catalogId}_${p.nr}`));
+    }
+
     const rows = filtered.map(p => {
       const s = this.catalogsService.getStockThreeCol(p.catalogId, p.nr);
+      if (cart) {
+        const origQty = orderQtyByKey[`${p.catalogId}_${p.nr}`] ?? 0;
+        return { p, ...s, finalQty: s.finalQty + origQty, importAvailable: s.importAvailable + origQty };
+      }
       return { p, ...s };
     });
+
     const col = this.sortCol();
     const dir = this.sortDir();
     rows.sort((a, b) => {
@@ -190,13 +210,43 @@ export class AddProductsModalComponent implements OnInit {
     }, 0)
   );
 
-  readonly hasOverStock = computed(() =>
-    this.staged().some(p => {
+  readonly stagedTotalFaraTVA = computed(() =>
+    this.staged().reduce((s, p) => {
+      const price = p.pretFaraTVA ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.pretFaraTVA ?? 0;
+      return s + price * p.qty;
+    }, 0)
+  );
+
+  readonly hasCartChanges = computed(() => {
+    if (!this.cartMode()) return false;
+    // Compare against snapshot taken at enterCartMode() — stable, no signal timing issues
+    const orig = this._cartSnapshot();
+    const cur  = this.staged();
+    if (orig.length !== cur.length) return true;
+    return cur.some((p, i) => p.qty !== orig[i].qty);
+  });
+
+  readonly hasOverStock = computed(() => {
+    if (this.cartMode()) {
+      // In cart mode the current order's reservation is already deducted from stock,
+      // so we add back the original qty to get the true available ceiling.
+      const origQtyMap: Record<string, number> = {};
+      for (const op of this.order().products) {
+        if (op.catalogId) origQtyMap[`${op.catalogId}_${op.nr}`] = op.qty;
+      }
+      return this.staged().some(p => {
+        if (!p.catalogId) return false;
+        const avail = this.catalogsService.getStock(p.catalogId, p.nr) ?? Infinity;
+        const orig  = origQtyMap[`${p.catalogId}_${p.nr}`] ?? 0;
+        return p.qty > avail + orig;
+      });
+    }
+    return this.staged().some(p => {
       if (!p.catalogId) return false;
       const avail = this.catalogsService.getStock(p.catalogId, p.nr) ?? Infinity;
       return p.qty > avail;
-    })
-  );
+    });
+  });
 
   constructor(
     private ordersService: OrdersService,
@@ -313,6 +363,21 @@ export class AddProductsModalComponent implements OnInit {
       type: 'products_added',
       products: products.map(p => ({ name: p.name, qty: p.qty, um: p.um })),
     };
+
+    if (this.source() === 'transport') {
+      // In Transport, merge new products directly into order.products (no pendingProducts/adminProducts)
+      const newProducts = [...this.order().products, ...products];
+      const result = this.ordersService.updateOrderProducts(this.order().id, newProducts, event);
+      if (!result.ok) {
+        const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+        this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-warn'], verticalPosition: 'top' });
+        return;
+      }
+      this.snackBar.open(`${products.length} produs(e) adăugate la comanda #${this.order().orderNumber}.`, '', { duration: 3000 });
+      this.closed.emit();
+      return;
+    }
+
     const result = this.ordersService.addProductsToOrder(this.order().id, products, event);
     if (!result.ok) {
       const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
@@ -320,6 +385,48 @@ export class AddProductsModalComponent implements OnInit {
       return;
     }
     this.snackBar.open(`${products.length} produs(e) adăugate la comanda #${this.order().orderNumber}.`, '', { duration: 3000 });
+    this.closed.emit();
+  }
+
+  enterCartMode(): void {
+    const snapshot: OrderProduct[] = this.order().products
+      .filter(p => !!p.catalogId)
+      .map(p => ({ ...p }));
+    this._cartSnapshot.set(snapshot);
+    this.staged.set([...snapshot]);
+    this.cartMode.set(true);
+  }
+
+  exitCartMode(): void {
+    this.cartMode.set(false);
+    this.staged.set([]);
+    this.searchQ.set('');
+  }
+
+  cartModeConfirm(): void {
+    const catalogProducts = this.staged().filter(p => p.qty > 0);
+    const manualProducts  = this.order().products.filter(p => !p.catalogId);
+    const newProducts = [...catalogProducts, ...manualProducts];
+    if (!newProducts.length) {
+      this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
+      return;
+    }
+    const session = this.auth.session();
+    const event: Omit<OrderEvent, 'id'> = {
+      timestamp: new Date().toISOString(),
+      userId: session?.userId ?? 0,
+      userName: session?.name ?? '—',
+      source: this.source(),
+      type: 'products_updated',
+      products: newProducts.map(p => ({ name: p.name, qty: p.qty, um: p.um })),
+    };
+    const result = this.ordersService.updateOrderProducts(this.order().id, newProducts, event);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-warn'], verticalPosition: 'top' });
+      return;
+    }
+    this.snackBar.open('Comanda modificată!', '', { duration: 3000 });
     this.closed.emit();
   }
 }

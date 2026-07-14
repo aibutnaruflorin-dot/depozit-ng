@@ -138,6 +138,13 @@
 .exp-event-chip {
   display: inline-block; padding: 2px 8px; border-radius: 12px;
   background: #dbeafe; color: #1e40af; font-size: 0.73rem; font-weight: 600;
+  &--updated { background: #fef3c7; color: #92400e; }
+}
+
+.exp-event-type-badge {
+  margin-left: 6px; padding: 1px 6px; border-radius: 10px;
+  background: #fef3c7; color: #92400e; font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.03em;
 }
 
 .td-net-order {
