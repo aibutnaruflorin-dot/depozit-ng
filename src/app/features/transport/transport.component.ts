@@ -174,6 +174,16 @@ export class TransportComponent implements OnInit {
     return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
   });
 
+  // Modal preview produse pending
+  pendingPreviewOrderId = signal<string | null>(null);
+  readonly pendingPreviewOrder = computed(() => {
+    const id = this.pendingPreviewOrderId();
+    return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
+  });
+  pendingProducts(o: Order): Order['pendingProducts'] {
+    return [...(o.pendingProducts ?? []), ...(o.adminProducts ?? [])];
+  }
+
   readonly modalTotalWeight = computed(() => {
     return this.modalOrders().reduce((sum, order) => {
       const qtyMap = this.modalQty()[order.id] ?? {};
@@ -1213,6 +1223,7 @@ export class TransportComponent implements OnInit {
       this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 5000, panelClass: ['snack-error'] });
       return;
     }
+    this.pendingPreviewOrderId.set(null);
     this.snackBar.open('Comanda finalizată cu modificări!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 

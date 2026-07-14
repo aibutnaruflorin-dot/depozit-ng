@@ -91,7 +91,15 @@
                 @if (hasPendingChanges(o)) {
                   <div class="mt-pending-notice">
                     <mat-icon>pending_actions</mat-icon>
-                    <span>{{ (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }} produse adăugate, neconfirmate</span>
+                    <span>Produse adăugate, neconfirmate:</span>
+                  </div>
+                  <div class="mt-detail-products mt-detail-products--pending">
+                    @for (p of (o.pendingProducts ?? []).concat(o.adminProducts ?? []); track $index) {
+                      <div class="mt-detail-product-row mt-detail-product-row--new">
+                        <span class="mt-dp-name">{{ p.name }}</span>
+                        <span class="mt-dp-qty mt-dp-qty--new">+{{ p.qty }} {{ p.um }}</span>
+                      </div>
+                    }
                   </div>
                   <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
                     <mat-icon>check_circle</mat-icon>Finalizează cu modificări

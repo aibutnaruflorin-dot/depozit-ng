@@ -120,10 +120,14 @@
 
 .mt-pending-notice {
   display: flex; align-items: center; gap: 5px;
-  font-size: .78rem; color: #92400E;
-  background: #FEF3C7; border-radius: 6px; padding: 5px 8px;
-  mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; }
+  font-size: .78rem; font-weight: 600; color: #15803d;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; color: #15803d; }
 }
+.mt-detail-products--pending {
+  background: #F0FDF4; border: 1.5px solid #BBF7D0;
+}
+.mt-detail-product-row--new { }
+.mt-dp-qty--new { color: #15803d; font-weight: 700; }
 .mt-finalize-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; background: #16a34a; color: #fff;

@@ -147,6 +147,51 @@
   </app-add-products-modal>
 }
 
+<!-- ── Modal preview produse pending ── -->
+@if (pendingPreviewOrder(); as o) {
+  <div class="ppm-backdrop" (click)="pendingPreviewOrderId.set(null)">
+    <div class="ppm-panel" (click)="$event.stopPropagation()">
+      <div class="ppm-header">
+        <span class="ppm-title">Finalizează cu modificări — #{{ o.orderNumber }} {{ o.client.name }}</span>
+        <button class="ppm-close" (click)="pendingPreviewOrderId.set(null)"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="ppm-body">
+        <!-- Produse existente -->
+        <div class="ppm-section-label">Produse existente</div>
+        <div class="ppm-list ppm-list--existing">
+          @for (p of o.products; track $index) {
+            <div class="ppm-row">
+              <span class="ppm-name">{{ p.name }}</span>
+              <span class="ppm-qty">{{ p.qty }} {{ p.um }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Produse adăugate în așteptare -->
+        <div class="ppm-section-label ppm-section-label--new">
+          <mat-icon>add_circle</mat-icon>Produse adăugate (neconfirmate)
+        </div>
+        <div class="ppm-list ppm-list--pending">
+          @for (p of pendingProducts(o); track $index) {
+            <div class="ppm-row ppm-row--new">
+              <span class="ppm-name">{{ p.name }}</span>
+              <span class="ppm-qty">{{ p.qty }} {{ p.um }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="ppm-footer">
+        <button class="ppm-btn ppm-btn--cancel" (click)="pendingPreviewOrderId.set(null)">Anulează</button>
+        <button class="ppm-btn ppm-btn--confirm" (click)="finalizeWithChanges(o)">
+          <mat-icon>check_circle</mat-icon>Confirmă finalizarea
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 <!-- ════════════════════════════════════════════════════════════════════
      SHARED TEMPLATES
      ════════════════════════════════════════════════════════════════════ -->
@@ -326,7 +371,7 @@
               <td class="actions-cell col-actiuni">
                 @if (hasPendingChanges(o)) {
                   <button mat-icon-button class="btn-finalize-pending"
-                          (click)="finalizeWithChanges(o)"
+                          (click)="pendingPreviewOrderId.set(o.id)"
                           matTooltip="Finalizează cu modificări">
                     <mat-icon>check_circle</mat-icon>
                   </button>
