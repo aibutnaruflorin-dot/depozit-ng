@@ -11,15 +11,15 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Transport, TripDelivery, TripOrderItem } from '../../core/models/transport.model';
 import { Order, OrderProduct } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
+import { Router } from '@angular/router';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
-import { AddProductsModalComponent } from '../../shared/add-products-modal/add-products-modal.component';
 
 type TabKey = 'active' | 'done';
 
 @Component({
   selector: 'app-mobile-transport',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent, AddProductsModalComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent],
   templateUrl: './mobile-transport.component.html',
   styleUrl: './mobile-transport.component.scss'
 })
@@ -44,12 +44,6 @@ export class MobileTransportComponent implements OnInit {
   showDeleted        = signal(false);
   expandedPendingId  = signal<string | null>(null);
 
-  // Adaugă produse modal
-  addProductsOrderId = signal<string | null>(null);
-  readonly addProductsOrder = computed(() => {
-    const id = this.addProductsOrderId();
-    return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
-  });
 
   // WA groups
   waGroups = signal<WhatsAppContact[]>([]);
@@ -60,7 +54,8 @@ export class MobileTransportComponent implements OnInit {
     public  auth: AuthService,
     private storage: StorageService,
     private catalogsService: CatalogsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -263,6 +258,12 @@ export class MobileTransportComponent implements OnInit {
 
   togglePendingExpand(orderId: string): void {
     this.expandedPendingId.update(v => v === orderId ? null : orderId);
+  }
+
+  addProductsToOrder(orderId: string): void {
+    this.router.navigate(['/app/m-new-order'], {
+      state: { addToOrderId: orderId, addPending: true }
+    });
   }
 
   mapsLink(address: string): string {
