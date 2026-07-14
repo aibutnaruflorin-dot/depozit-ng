@@ -12,13 +12,14 @@ import { Transport, TripDelivery, TripOrderItem } from '../../core/models/transp
 import { Order, OrderProduct } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
+import { AddProductsModalComponent } from '../../shared/add-products-modal/add-products-modal.component';
 
 type TabKey = 'active' | 'done';
 
 @Component({
   selector: 'app-mobile-transport',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent, AddProductsModalComponent],
   templateUrl: './mobile-transport.component.html',
   styleUrl: './mobile-transport.component.scss'
 })
@@ -42,6 +43,13 @@ export class MobileTransportComponent implements OnInit {
   showPending        = signal(false);
   showDeleted        = signal(false);
   expandedPendingId  = signal<string | null>(null);
+
+  // Adaugă produse modal
+  addProductsOrderId = signal<string | null>(null);
+  readonly addProductsOrder = computed(() => {
+    const id = this.addProductsOrderId();
+    return id ? this.ordersService.orders().find(o => o.id === id) ?? null : null;
+  });
 
   // WA groups
   waGroups = signal<WhatsAppContact[]>([]);

@@ -52,8 +52,11 @@
                 <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
               }
               <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
-              <button class="mt-plan-btn" (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică această comandă">
-                <mat-icon>add_circle_outline</mat-icon>
+              <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsOrderId.set(o.id)" title="Adaugă produse">
+                <mat-icon>add_shopping_cart</mat-icon>
+              </button>
+              <button class="mt-plan-btn" (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică cursă">
+                <mat-icon>add_road</mat-icon>
               </button>
             </div>
 
@@ -357,3 +360,11 @@
 
   <app-mobile-nav />
 </div>
+
+@if (addProductsOrder()) {
+  <app-add-products-modal
+    [order]="addProductsOrder()!"
+    source="transport"
+    (closed)="addProductsOrderId.set(null)">
+  </app-add-products-modal>
+}
