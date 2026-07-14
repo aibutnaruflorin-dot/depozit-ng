@@ -39,8 +39,9 @@ export class MobileTransportComponent implements OnInit {
   formSelectedOrderIds = signal<Set<string>>(new Set());
 
   // UI toggles
-  showPending = signal(false);
-  showDeleted = signal(false);
+  showPending        = signal(false);
+  showDeleted        = signal(false);
+  expandedPendingId  = signal<string | null>(null);
 
   // WA groups
   waGroups = signal<WhatsAppContact[]>([]);
@@ -251,6 +252,14 @@ export class MobileTransportComponent implements OnInit {
   }
 
   toggleExpand(id: string): void { this.expandedId.update(v => v === id ? null : id); }
+
+  togglePendingExpand(orderId: string): void {
+    this.expandedPendingId.update(v => v === orderId ? null : orderId);
+  }
+
+  mapsLink(address: string): string {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  }
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
 

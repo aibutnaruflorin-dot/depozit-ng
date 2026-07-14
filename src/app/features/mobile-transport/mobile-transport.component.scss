@@ -60,19 +60,61 @@
 }
 
 .mt-pending-item {
-  display: flex; align-items: center; gap: 8px;
   background: var(--color-surface); border-radius: 8px;
-  padding: 8px 12px; margin-bottom: 4px;
-  border-left: 3px solid #f59e0b;
+  margin-bottom: 4px; border-left: 3px solid #f59e0b;
+  overflow: hidden; cursor: pointer;
+  &.mt-pending-item--open { border-left-color: var(--color-primary); }
+}
+.mt-pending-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+}
+.mt-expand-icon {
+  font-size: 18px; width: 18px; height: 18px;
+  color: var(--color-text-muted); flex-shrink: 0;
 }
 .mt-deadline-sm {
   font-size: .72rem; background: #FEF3C7; color: #92400E;
   border-radius: 8px; padding: 2px 6px; flex-shrink: 0;
 }
 .mt-plan-btn {
-  margin-left: auto; background: none; border: none; cursor: pointer; padding: 0;
-  color: var(--color-primary); display: flex; align-items: center;
+  margin-left: auto; background: none; border: none; cursor: pointer; padding: 4px;
+  color: var(--color-primary); display: flex; align-items: center; flex-shrink: 0;
   mat-icon { font-size: 22px; width: 22px; height: 22px; }
+}
+
+// Detalii comandă expandată
+.mt-pending-detail {
+  padding: 0 12px 10px; display: flex; flex-direction: column; gap: 6px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+}
+.mt-detail-link {
+  display: flex; align-items: center; gap: 5px;
+  font-size: .8rem; text-decoration: none; color: #1d4ed8;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; }
+  &[href^="tel"] { color: #16a34a; }
+}
+.mt-detail-obs {
+  display: flex; align-items: flex-start; gap: 5px;
+  font-size: .78rem; color: var(--color-text-muted); font-style: italic;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+}
+.mt-detail-products {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--color-surface-2, #F5F6FA); border-radius: 6px; padding: 6px 8px;
+}
+.mt-detail-product-row {
+  display: flex; justify-content: space-between; gap: 8px; font-size: .78rem;
+}
+.mt-dp-name { flex: 1; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-dp-qty  { flex-shrink: 0; font-weight: 600; color: var(--color-text); }
+.mt-plan-full-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; background: var(--color-primary); color: #fff;
+  border: none; border-radius: 8px; padding: 9px; font-size: .85rem; font-weight: 600;
+  cursor: pointer; margin-top: 2px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
 }
 
 // ── Cards ─────────────────────────────────────────────────────────────────────

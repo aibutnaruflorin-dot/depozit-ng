@@ -43,15 +43,50 @@
       </div>
       @if (showPending()) {
         @for (o of pendingOrders(); track o.id) {
-          <div class="mt-pending-item">
-            <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
-            <span class="mt-order-client">{{ o.client.name }}</span>
-            @if (o.deliveryDate) {
-              <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}</span>
+          <div class="mt-pending-item" [class.mt-pending-item--open]="expandedPendingId() === o.id"
+               (click)="togglePendingExpand(o.id)">
+            <div class="mt-pending-row">
+              <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+              <span class="mt-order-client">{{ o.client.name }}</span>
+              @if (o.deliveryDate) {
+                <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
+              }
+              <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+              <button class="mt-plan-btn" (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică această comandă">
+                <mat-icon>add_circle_outline</mat-icon>
+              </button>
+            </div>
+
+            @if (expandedPendingId() === o.id) {
+              <div class="mt-pending-detail" (click)="$event.stopPropagation()">
+                @if (o.client.phone) {
+                  <a [href]="'tel:' + o.client.phone" class="mt-detail-link">
+                    <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                  </a>
+                }
+                @if (o.client.address) {
+                  <a [href]="mapsLink(o.client.address)" target="_blank" class="mt-detail-link">
+                    <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                  </a>
+                }
+                @if (o.observatii || o.client.note) {
+                  <div class="mt-detail-obs">
+                    <mat-icon>notes</mat-icon>{{ o.observatii ?? o.client.note }}
+                  </div>
+                }
+                <div class="mt-detail-products">
+                  @for (p of o.products; track $index) {
+                    <div class="mt-detail-product-row">
+                      <span class="mt-dp-name">{{ p.name }}</span>
+                      <span class="mt-dp-qty">{{ p.qty }} {{ p.um }}</span>
+                    </div>
+                  }
+                </div>
+                <button class="mt-plan-full-btn" (click)="openCreate(o.id)">
+                  <mat-icon>add_road</mat-icon>Planifică cursă
+                </button>
+              </div>
             }
-            <button class="mt-plan-btn" (click)="openCreate(o.id)" title="Planifică această comandă">
-              <mat-icon>add_circle_outline</mat-icon>
-            </button>
           </div>
         }
       }
