@@ -16,7 +16,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { TransportService } from '../../core/services/transport.service';
-import { OrdersService } from '../../core/services/orders.service';
+import { OrdersService, generateId } from '../../core/services/orders.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { StorageService } from '../../core/services/storage.service';
@@ -1188,6 +1188,32 @@ export class TransportComponent implements OnInit {
   saveOrderObsBuffer(orderId: string): void {
     if (!this._orderObsBuffer.has(orderId)) return;
     this.ordersService.updateOrderObservatii(orderId, this._orderObsBuffer.get(orderId)!);
+  }
+
+  hasPendingChanges(o: Order): boolean {
+    return !!(o.pendingProducts?.length || o.adminProducts?.length);
+  }
+
+  finalizeWithChanges(o: Order): void {
+    const pending = [...(o.pendingProducts ?? []), ...(o.adminProducts ?? [])];
+    const newProducts = [...o.products, ...pending].filter(p => p.qty > 0);
+    if (!newProducts.length) return;
+    const allAdded = [...(o.addedProducts ?? []), ...pending];
+    const newOrder: Order = {
+      id: generateId(), timestamp: new Date().toISOString(),
+      agent: o.agent, client: o.client,
+      cuLivrare: o.cuLivrare, deliveryDate: o.deliveryDate, deliveryTime: o.deliveryTime,
+      helper: o.helper, observatii: o.observatii,
+      products: newProducts, status: 'acceptat', revisedFromId: o.id,
+      addedProducts: allAdded.length > 0 ? allAdded : undefined
+    };
+    const result = this.ordersService.reviseOrder(o.id, newOrder);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 5000, panelClass: ['snack-error'] });
+      return;
+    }
+    this.snackBar.open('Comanda finalizată cu modificări!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   selectedHelpers(): { orderNum: number | undefined; helper: string }[] {

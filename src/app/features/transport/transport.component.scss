@@ -154,7 +154,7 @@
   .col-valoare        { width: 105px; }
   .col-masa           { width: 72px;  }
   .col-obs            { width: 150px; }
-  .col-actiuni        { width: 60px;  }
+  .col-actiuni        { width: 84px;  }
 
   /* Coloane fixe stânga */
   .col-nr             { width: 44px;  }
@@ -230,6 +230,11 @@
   color: #991b1b;
   mat-icon { color: #dc2626; }
 }
+.btn-finalize-pending {
+  color: #16a34a !important;
+  mat-icon { color: #16a34a; }
+}
+
 .actions-cell,
 .delivery-actions {
   display: flex;

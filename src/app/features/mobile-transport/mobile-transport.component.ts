@@ -2,7 +2,7 @@ import { Component, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransportService } from '../../core/services/transport.service';
-import { OrdersService } from '../../core/services/orders.service';
+import { OrdersService, generateId } from '../../core/services/orders.service';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
@@ -264,6 +264,33 @@ export class MobileTransportComponent implements OnInit {
     this.router.navigate(['/app/m-new-order'], {
       state: { addToOrderId: orderId, addPending: true }
     });
+  }
+
+  hasPendingChanges(o: Order): boolean {
+    return !!(o.pendingProducts?.length || o.adminProducts?.length);
+  }
+
+  finalizeWithChanges(o: Order): void {
+    const pending = [...(o.pendingProducts ?? []), ...(o.adminProducts ?? [])];
+    const newProducts = [...o.products, ...pending].filter(p => p.qty > 0);
+    if (!newProducts.length) return;
+    const allAdded = [...(o.addedProducts ?? []), ...pending];
+    const newOrder: Order = {
+      id: generateId(), timestamp: new Date().toISOString(),
+      agent: o.agent, client: o.client,
+      cuLivrare: o.cuLivrare, deliveryDate: o.deliveryDate, deliveryTime: o.deliveryTime,
+      helper: o.helper, observatii: o.observatii,
+      products: newProducts, status: 'acceptat', revisedFromId: o.id,
+      addedProducts: allAdded.length > 0 ? allAdded : undefined
+    };
+    const result = this.ordersService.reviseOrder(o.id, newOrder);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 5000, panelClass: ['snack-error'] });
+      return;
+    }
+    this.expandedPendingId.set(null);
+    this.snackBar.open('Comanda finalizată cu modificări!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   mapsLink(address: string): string {

@@ -51,6 +51,9 @@
               @if (o.deliveryDate) {
                 <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
               }
+              @if (hasPendingChanges(o)) {
+                <span class="mt-pending-dot" title="Produse adăugate, neconfirmate"></span>
+              }
               <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
               <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
                 <mat-icon>add_shopping_cart</mat-icon>
@@ -85,6 +88,15 @@
                     </div>
                   }
                 </div>
+                @if (hasPendingChanges(o)) {
+                  <div class="mt-pending-notice">
+                    <mat-icon>pending_actions</mat-icon>
+                    <span>{{ (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }} produse adăugate, neconfirmate</span>
+                  </div>
+                  <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
+                    <mat-icon>check_circle</mat-icon>Finalizează cu modificări
+                  </button>
+                }
               </div>
             }
           </div>
