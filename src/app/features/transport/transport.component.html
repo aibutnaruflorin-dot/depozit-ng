@@ -317,7 +317,7 @@
               </td>
               <td class="notes-col col-obs">
                 <textarea class="chip-note-input" rows="1"
-                          [appInitValue]="o.observatii ?? ''"
+                          [appInitValue]="o.observatii ?? o.client.note ?? ''"
                           (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
                           (blur)="saveOrderObsBuffer(o.id)"
                           placeholder="Notă comandă">
@@ -1033,7 +1033,7 @@
                   </td>
                   <td class="notes-col col-obs" (click)="$event.stopPropagation()">
                     <textarea class="chip-note-input" rows="2"
-                              [appInitValue]="o.observatii ?? ''"
+                              [appInitValue]="o.observatii ?? o.client.note ?? ''"
                               (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
                               (blur)="saveOrderObsBuffer(o.id)"
                               placeholder="Notă comandă">
