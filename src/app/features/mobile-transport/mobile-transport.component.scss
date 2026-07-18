@@ -411,7 +411,7 @@
 .mt-cal-day-th {
   background: var(--color-surface-2, #F5F6FA); border-radius: 6px;
   padding: 4px 4px; text-align: center;
-  &.mt-cal-today { background: #EEF2FF; }
+  &.mt-cal-today { background: #f0fdf4; }
 }
 .mt-cal-day-name { font-size: .68rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; }
 .mt-cal-day-date { font-size: .72rem; font-weight: 700; color: var(--color-text); }
