@@ -224,6 +224,10 @@
 .badge-pill--overdue {
   background: #fff; color: #dc2626; box-shadow: 0 0 0 1.5px #dc2626;
 }
+.items-mini-list { display: flex; flex-direction: column; gap: 2px; }
+.item-chip { font-size: .75rem; color: var(--color-text-muted); }
+.client-name { font-size: .85rem; font-weight: 600; }
+.client-phone { font-size: .75rem; color: var(--color-text-muted); }
 .row--overdue td { background: #fff5f5; }
 .overdue-time { color: #dc2626; font-weight: 600; }
 .trip-status--overdue {

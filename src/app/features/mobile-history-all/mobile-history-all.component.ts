@@ -73,7 +73,7 @@ export class MobileHistoryAllComponent {
 
   readonly allOrders = computed(() =>
     this.ordersService.orders()
-      .filter(o => !o.superseded && o.status !== 'draft')
+      .filter(o => !o.superseded && o.status !== 'draft' && o.status !== 'sters')
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
   );
 

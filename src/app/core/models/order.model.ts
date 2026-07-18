@@ -37,7 +37,8 @@ export interface Order {
   pendingProducts?: OrderProduct[];
   adminProducts?: OrderProduct[];
   addedProducts?: OrderProduct[];
-  status: 'trimis' | 'acceptat' | 'planificat' | 'in_livrare' | 'livrat_partial' | 'livrat' | 'anulat' | string;
+  status: 'trimis' | 'acceptat' | 'planificat' | 'in_livrare' | 'livrat_partial' | 'livrat' | 'anulat' | 'sters' | string;
+  deletedAt?: string;
   revisedFromId?: string;
   superseded?: boolean;
   orderEvents?: OrderEvent[];

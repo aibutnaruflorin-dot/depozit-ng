@@ -188,10 +188,21 @@ export class OrdersService {
 
   hardDeleteOrder(id: string): void {
     const order = this._orders().find(o => o.id === id);
-    if (order && !order.superseded && order.status !== 'anulat') {
+    if (order && !order.superseded && order.status !== 'anulat' && order.status !== 'sters') {
       this._incrementStock(order.products, 'cancel');
     }
-    this._orders.update(orders => orders.filter(o => o.id !== id));
+    this._orders.update(orders =>
+      orders.map(o => o.id === id
+        ? { ...o, status: 'sters', deletedAt: new Date().toISOString() }
+        : o)
+    );
+    this.storage.set('app_orders', this._orders());
+  }
+
+  restoreOrder(id: string): void {
+    this._orders.update(orders =>
+      orders.map(o => o.id === id ? { ...o, status: 'anulat', deletedAt: undefined } : o)
+    );
     this.storage.set('app_orders', this._orders());
   }
 

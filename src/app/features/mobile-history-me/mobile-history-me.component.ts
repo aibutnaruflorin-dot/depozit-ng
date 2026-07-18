@@ -68,7 +68,7 @@ export class MobileHistoryMeComponent {
   readonly myOrders = computed(() => {
     const id = this.auth.session()?.userId;
     return this.ordersService.orders()
-      .filter(o => !o.superseded && o.agent?.id === id)
+      .filter(o => !o.superseded && o.agent?.id === id && o.status !== 'sters')
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   });
 

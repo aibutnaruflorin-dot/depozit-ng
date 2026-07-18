@@ -135,6 +135,7 @@
   <!-- 5, 6, 7: Curse finalizate + Curse șterse + Istoric comenzi -->
   <ng-container [ngTemplateOutlet]="historicSection"></ng-container>
   <ng-container [ngTemplateOutlet]="deletedSection"></ng-container>
+  <ng-container [ngTemplateOutlet]="deletedOrdersSection"></ng-container>
   <ng-container [ngTemplateOutlet]="orderHistorySection"></ng-container>
 
 </div><!-- /transport-page -->
@@ -947,6 +948,83 @@
         </div>
         } <!-- /else -->
       } <!-- /showDeleted -->
+  </div>
+</ng-template>
+
+<!-- ── Comenzi șterse ── -->
+<ng-template #deletedOrdersSection>
+  <div class="wide-section">
+    <div class="panel-title panel-title--toggle" (click)="showDeletedOrders.set(!showDeletedOrders())">
+      <mat-icon>delete_forever</mat-icon> Comenzi șterse
+      @if (deletedOrders().length) {
+        <span class="badge-pill badge-pill--muted">{{ deletedOrders().length }}</span>
+      }
+      <mat-icon class="toggle-chevron">{{ showDeletedOrders() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showDeletedOrders()) {
+      @if (!deletedOrders().length) {
+        <div class="empty-state"><mat-icon>delete_forever</mat-icon><p>Nicio comandă ștearsă.</p></div>
+      } @else {
+        <table class="delivery-table">
+          <colgroup>
+            <col style="width:60px">
+            <col style="width:180px">
+            <col style="width:120px">
+            <col style="width:120px">
+            <col>
+            <col style="width:100px">
+            <col style="width:100px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Client</th>
+              <th>Termen livrare</th>
+              <th>Șters la</th>
+              <th>Produse</th>
+              <th>Valoare</th>
+              <th>Acțiuni</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of deletedOrders(); track o.id) {
+              @let val = orderPendingValue(o);
+              <tr>
+                <td>#{{ o.orderNumber ?? '—' }}</td>
+                <td>
+                  <div class="client-name">{{ o.client.name }}</div>
+                  @if (o.client.phone) { <div class="client-phone">{{ o.client.phone }}</div> }
+                </td>
+                <td>
+                  @if (o.deliveryDate) {
+                    {{ o.deliveryDate | date:'dd.MM.yyyy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                  } @else { — }
+                </td>
+                <td>{{ o.deletedAt | date:'dd.MM.yyyy HH:mm' }}</td>
+                <td>
+                  <div class="items-mini-list">
+                    @for (p of o.products; track p.nr) {
+                      <span class="item-chip">{{ p.name }} · {{ p.qty }} {{ p.um }}</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  @if (val.tva > 0) {
+                    <span>{{ val.tva | number:'1.0-0' }} lei</span>
+                  } @else { — }
+                </td>
+                <td class="col-actiuni">
+                  <button mat-icon-button color="primary" matTooltip="Restaurează comanda"
+                          (click)="restoreDeletedOrder(o)">
+                    <mat-icon>restore</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
   </div>
 </ng-template>
 

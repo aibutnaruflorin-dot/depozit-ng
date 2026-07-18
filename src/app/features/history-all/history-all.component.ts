@@ -267,7 +267,7 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     const dateRange  = this._dateRange();
     const delivRange = this._deliveryRange();
 
-    let orders = this.ordersService.orders().filter(o => o.status !== 'draft');
+    let orders = this.ordersService.orders().filter(o => o.status !== 'draft' && o.status !== 'sters');
     if (agent)           orders = orders.filter(o => String(o.agent?.id) === agent);
     if (nr)              orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
     if (client)          orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));

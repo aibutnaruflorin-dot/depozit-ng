@@ -161,12 +161,13 @@ export class MobileTransportComponent implements OnInit {
 
   readonly orderHistoryList = computed<Order[]>(() =>
     this.ordersService.orders()
-      .filter(o => o.cuLivrare && !o.superseded && o.status !== 'anulat')
+      .filter(o => o.cuLivrare && !o.superseded && o.status !== 'anulat' && o.status !== 'sters')
       .sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp))
   );
 
   readonly pendingOrders = computed<Order[]>(() =>
     this.ordersService.orders().filter(o => {
+      if (o.status === 'sters') return false;
       if (!o.cuLivrare || o.superseded) return false;
       if (!['acceptat','livrat_partial','planificat'].includes(o.status)) return false;
       return this._hasRemainingItems(o);
@@ -177,6 +178,7 @@ export class MobileTransportComponent implements OnInit {
     const addedIds = new Set(this.formModalOrders().map(o => o.id));
     const editId   = this.editingId();
     return this.ordersService.orders().filter(o => {
+      if (o.status === 'sters') return false;
       if (o.superseded || !o.cuLivrare) return false;
       if (!['acceptat','livrat_partial','planificat'].includes(o.status)) return false;
       if (addedIds.has(o.id)) return false;

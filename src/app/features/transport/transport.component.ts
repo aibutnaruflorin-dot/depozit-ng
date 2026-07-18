@@ -225,6 +225,7 @@ export class TransportComponent implements OnInit {
   deliveryOrders = computed<Order[]>(() => {
     return this.ordersService.orders()
       .filter(o => {
+        if (o.status === 'sters') return false;
         if (!o.cuLivrare || o.superseded) return false;
         if (!['acceptat', 'livrat_partial', 'planificat'].includes(o.status)) return false;
         return this._hasRemainingItemsExcluding(o);
@@ -243,6 +244,7 @@ export class TransportComponent implements OnInit {
   eligibleOrders = computed<Order[]>(() => {
     const editId = this.editingId() ?? undefined;
     return this.ordersService.orders().filter(o => {
+      if (o.status === 'sters') return false;
       if (!o.cuLivrare || o.superseded) return false;
       if (!['acceptat', 'livrat_partial', 'planificat'].includes(o.status)) return false;
       return this._hasRemainingItemsExcluding(o, editId);
@@ -299,6 +301,14 @@ export class TransportComponent implements OnInit {
   readonly deletedTrips = computed(() =>
     this.transportService.transports().filter(t => t.status === 'sters')
   );
+
+  readonly deletedOrders = computed(() =>
+    this.ordersService.orders()
+      .filter(o => o.status === 'sters')
+      .sort((a, b) => (b.deletedAt ?? b.timestamp).localeCompare(a.deletedAt ?? a.timestamp))
+  );
+
+  showDeletedOrders = signal(false);
 
   showDeleted          = signal(false);
   showOrderHistory     = signal(false);
@@ -1101,7 +1111,7 @@ export class TransportComponent implements OnInit {
 
   readonly orderHistoryList = computed<Order[]>(() =>
     this.ordersService.orders()
-      .filter(o => o.cuLivrare && !o.superseded && o.status !== 'anulat')
+      .filter(o => o.cuLivrare && !o.superseded && o.status !== 'anulat' && o.status !== 'sters')
       .sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp))
   );
 
@@ -1210,9 +1220,14 @@ export class TransportComponent implements OnInit {
   }
 
   deleteOrder(o: Order): void {
-    if (!confirm(`Ștergi definitiv comanda #${o.orderNumber} - ${o.client.name}? Acțiunea nu poate fi anulată.`)) return;
+    if (!confirm(`Ștergi comanda #${o.orderNumber} - ${o.client.name}?`)) return;
     this.ordersService.hardDeleteOrder(o.id);
-    this.snackBar.open(`Comanda #${o.orderNumber} a fost ștearsă.`, '', { duration: 2500 });
+    this.snackBar.open(`Comanda #${o.orderNumber} a fost ștearsă.`, 'Anulează', { duration: 4000 });
+  }
+
+  restoreDeletedOrder(o: Order): void {
+    this.ordersService.restoreOrder(o.id);
+    this.snackBar.open(`Comanda #${o.orderNumber} a fost restaurată (status: Anulat).`, '', { duration: 3000 });
   }
 
   selectedHelpers(): { orderNum: number | undefined; helper: string }[] {

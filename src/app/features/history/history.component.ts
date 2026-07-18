@@ -309,7 +309,7 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
 
   readonly myOrders = computed(() => {
     const id = this.auth.session()?.userId;
-    return this.ordersService.orders().filter(o => o.agent?.id === id);
+    return this.ordersService.orders().filter(o => o.agent?.id === id && o.status !== 'sters');
   });
 
   readonly sortedOrders = computed(() => {
