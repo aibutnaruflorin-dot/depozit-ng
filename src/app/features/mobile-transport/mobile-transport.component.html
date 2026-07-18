@@ -145,14 +145,21 @@
     }
 
     <!-- ── 4. Curse planificate întârziate ── -->
-    @if (overdueTrips().length > 0) {
-      <div class="mt-section-hdr mt-section-hdr--overdue" (click)="showOverdueTrips.set(!showOverdueTrips())">
-        <mat-icon>warning</mat-icon>
-        <span>Curse planificate întârziate</span>
+    <div class="mt-section-hdr mt-section-hdr--overdue" (click)="showOverdueTrips.set(!showOverdueTrips())">
+      <mat-icon>warning</mat-icon>
+      <span>Curse planificate întârziate</span>
+      @if (overdueTrips().length) {
         <span class="mt-cnt mt-cnt--overdue">{{ overdueTrips().length }}</span>
-        <mat-icon class="mt-chevron">{{ showOverdueTrips() ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </div>
-      @if (showOverdueTrips()) {
+      }
+      <mat-icon class="mt-chevron">{{ showOverdueTrips() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showOverdueTrips()) {
+      @if (overdueTrips().length === 0) {
+        <div class="mt-empty">
+          <mat-icon>check_circle</mat-icon>
+          <p>Nicio cursă planificată întârziată.</p>
+        </div>
+      } @else {
         @for (t of overdueTrips(); track t.id) {
           <ng-container *ngTemplateOutlet="tripCard; context: { $implicit: t }"></ng-container>
         }
