@@ -421,19 +421,38 @@
 
   <!-- ── Pending order card template ── -->
   <ng-template #pendingOrderCard let-o>
+    @let ts  = orderTripStatus(o);
+    @let val = orderTotalValue(o);
+    @let wt  = orderTotalWeight(o);
     <div class="mt-pending-item" [class.mt-pending-item--open]="expandedPendingId() === o.id"
          (click)="togglePendingExpand(o.id)">
       <div class="mt-pending-row">
         <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
-        <span class="mt-order-client">{{ o.client.name }}</span>
-        @if (o.deliveryDate) {
-          <span class="mt-deadline-sm" [class.mt-deadline-sm--overdue]="isOrderDeadlineOverdue(o)">
-            {{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-          </span>
-        }
-        @if (hasPendingChanges(o)) {
-          <span class="mt-pending-dot" title="Produse adăugate, neconfirmate"></span>
-        }
+        <div class="mt-pending-info-col">
+          <div class="mt-pending-name-row">
+            <span class="mt-order-client">{{ o.client.name }}</span>
+            @if (o.deliveryDate) {
+              <span class="mt-deadline-sm" [class.mt-deadline-sm--overdue]="isOrderDeadlineOverdue(o)">
+                {{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+              </span>
+            }
+            @if (hasPendingChanges(o)) {
+              <span class="mt-pending-dot" title="Produse adăugate, neconfirmate"></span>
+            }
+          </div>
+          <div class="mt-pending-meta-row">
+            <span class="mto-badge" [ngClass]="ts.cls">{{ ts.label }}</span>
+            @if (val.net > 0) {
+              <span class="mt-pmeta-val">{{ val.net | number:'1.0-0' }} lei</span>
+              <span class="mt-sep">·</span>
+              <span class="mt-pmeta-tva">{{ val.tva | number:'1.0-0' }} cu TVA</span>
+            }
+            @if (wt > 0) {
+              <span class="mt-sep">·</span>
+              <span class="mt-pmeta-wt">{{ fmtWeight(wt) }}</span>
+            }
+          </div>
+        </div>
         <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
         @if (auth.isAdmin()) {
           <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
