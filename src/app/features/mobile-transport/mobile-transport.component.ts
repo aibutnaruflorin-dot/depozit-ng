@@ -1,4 +1,4 @@
-import { Component, computed, signal, OnInit } from '@angular/core';
+import { Component, computed, signal, OnInit, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransportService } from '../../core/services/transport.service';
@@ -13,6 +13,13 @@ import { Order, OrderProduct } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { Router } from '@angular/router';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
+
+interface CalDay {
+  isoDate: string;
+  isToday: boolean;
+  dayName: string;
+  dateStr: string;
+}
 
 @Component({
   selector: 'app-mobile-transport',
@@ -37,13 +44,16 @@ export class MobileTransportComponent implements OnInit {
   formSelectedOrderIds = signal<Set<string>>(new Set());
 
   // UI toggles
+  showCalendar       = signal(false);
   showPending        = signal(false);
   showOverdueOrders  = signal(true);
   showActive         = signal(true);
   showOverdueTrips   = signal(true);
   showDone           = signal(false);
   showDeleted        = signal(false);
+  showOrderHistory   = signal(false);
   expandedPendingId  = signal<string | null>(null);
+  expandedHistoryIds = signal<Set<string>>(new Set());
 
 
   // WA groups
@@ -111,6 +121,27 @@ export class MobileTransportComponent implements OnInit {
 
   readonly overdueTrips = computed(() =>
     this.active().filter(t => this.isOverdue(t))
+  );
+
+  readonly planningDays = computed<CalDay[]>(() => {
+    const days: CalDay[] = [];
+    const base = new Date(); base.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(base); d.setDate(d.getDate() + i);
+      days.push({
+        isoDate: d.toISOString().slice(0, 10),
+        isToday: i === 0,
+        dayName: d.toLocaleDateString('ro-RO', { weekday: 'short' }).replace('.', ''),
+        dateStr: d.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit' }),
+      });
+    }
+    return days;
+  });
+
+  readonly orderHistoryList = computed<Order[]>(() =>
+    this.ordersService.orders()
+      .filter(o => o.cuLivrare && !o.superseded && o.status !== 'anulat')
+      .sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp))
   );
 
   readonly pendingOrders = computed<Order[]>(() =>
@@ -271,6 +302,69 @@ export class MobileTransportComponent implements OnInit {
 
   togglePendingExpand(orderId: string): void {
     this.expandedPendingId.update(v => v === orderId ? null : orderId);
+  }
+
+  toggleHistoryExpand(orderId: string): void {
+    this.expandedHistoryIds.update(set => {
+      const copy = new Set(set);
+      copy.has(orderId) ? copy.delete(orderId) : copy.add(orderId);
+      return copy;
+    });
+  }
+
+  openCreateForVehicleDay(vehicleId: string, isoDate: string): void {
+    this.editingId.set(null);
+    this.formVehicleId    = vehicleId;
+    this.formDriverId     = '';
+    this.formHelperName   = '';
+    this.formPlecareDate  = isoDate;
+    this.formPlecareTime  = '08:00';
+    this.formSosireDate   = isoDate;
+    this.formSosireTime   = '18:00';
+    this.formSelectedOrderIds.set(new Set());
+    this.showForm.set(true);
+  }
+
+  tripsForVehicleDay(vehicleId: string, isoDate: string): Transport[] {
+    return this.transportService.transports()
+      .filter(t => {
+        if (t.vehicleId !== vehicleId) return false;
+        if (['livrat','anulat','sters'].includes(t.status)) return false;
+        const p = t.oraPlecare.slice(0, 10);
+        const s = t.oraSosire.slice(0, 10);
+        return p <= isoDate && isoDate <= s;
+      })
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  }
+
+  tripsForOrderHistory(orderId: string): Transport[] {
+    return this.transportService.transports()
+      .filter(t => t.status !== 'sters' && t.deliveries.some(d => d.orderId === orderId))
+      .sort((a, b) => a.oraPlecare.localeCompare(b.oraPlecare));
+  }
+
+  orderTripStatus(o: Order): { label: string; cls: string } {
+    const t = this.transportService.transports()
+      .filter(tr => tr.status !== 'livrat' && tr.status !== 'anulat' && tr.status !== 'sters')
+      .find(tr => tr.deliveries.some(d => d.orderId === o.id));
+    if (!t) return { label: 'Neplanificat', cls: 'mto-badge--unplanned' };
+    const map: Record<string, { label: string; cls: string }> = {
+      planificat:      { label: 'Planificat',  cls: 'mto-badge--plan'    },
+      confirmat_sofer: { label: 'Confirmat',   cls: 'mto-badge--confirm' },
+      in_livrare:      { label: 'În livrare', cls: 'mto-badge--active'  },
+    };
+    return map[t.status] ?? { label: t.status, cls: '' };
+  }
+
+  orderTotalValue(o: Order): { net: number; tva: number } {
+    return o.products.reduce((s, p) => {
+      const price = this.productPrice(p);
+      return { net: s.net + p.qty * price.net, tva: s.tva + p.qty * price.tva };
+    }, { net: 0, tva: 0 });
+  }
+
+  fmtTime(iso: string): string {
+    return iso.slice(11, 16);
   }
 
   addProductsToOrder(orderId: string): void {

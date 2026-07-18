@@ -25,10 +25,62 @@
       </div>
     }
 
-    <!-- ── Comenzi de planificat (admin) ── -->
+    <!-- ── 0. Planificare (calendar mini) ── -->
+    <div class="mt-section-hdr" (click)="showCalendar.set(!showCalendar())">
+      <mat-icon>calendar_month</mat-icon>
+      <span>Planificare</span>
+      <mat-icon class="mt-chevron">{{ showCalendar() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showCalendar()) {
+      @if (!transportService.vehicles().length) {
+        <div class="mt-empty">
+          <mat-icon>local_shipping</mat-icon>
+          <p>Nicio mașină adăugată în setări.</p>
+        </div>
+      } @else {
+        <div class="mt-cal-outer">
+          <div class="mt-cal-grid" [style.grid-template-columns]="'100px repeat(' + planningDays().length + ', 1fr)'">
+            <!-- header -->
+            <div class="mt-cal-corner">Mașini</div>
+            @for (day of planningDays(); track day.isoDate) {
+              <div class="mt-cal-day-th" [class.mt-cal-today]="day.isToday">
+                <div class="mt-cal-day-name">{{ day.dayName }}</div>
+                <div class="mt-cal-day-date">{{ day.dateStr }}</div>
+              </div>
+            }
+            <!-- vehicle rows -->
+            @for (v of transportService.vehicles(); track v.id) {
+              <div class="mt-cal-vehicle-th">
+                <strong>{{ v.alias || v.denumire }}</strong>
+                <small>{{ v.numarInmatriculare }}</small>
+              </div>
+              @for (day of planningDays(); track day.isoDate) {
+                <div class="mt-cal-cell" (click)="openCreateForVehicleDay(v.id, day.isoDate)">
+                  @for (t of tripsForVehicleDay(v.id, day.isoDate); track t.id) {
+                    <div class="mt-cal-chip" [class.mt-cal-chip--overdue]="isOverdue(t)"
+                         (click)="$event.stopPropagation(); toggleExpand(t.id)">
+                      {{ fmtTime(t.oraPlecare) }}
+                    </div>
+                  }
+                  @if (!tripsForVehicleDay(v.id, day.isoDate).length) {
+                    <div class="mt-cal-empty-cell">+</div>
+                  }
+                </div>
+              }
+            }
+          </div>
+          <div class="mt-cal-legend">
+            <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--plan"></span>Planificat</span>
+            <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--overdue"></span>Întârziat</span>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ── 1. Comenzi de planificat (admin) ── -->
     @if (auth.isAdmin() && pendingOnTime().length > 0) {
       <div class="mt-section-hdr" (click)="showPending.set(!showPending())">
-        <mat-icon>pending_actions</mat-icon>
+        <mat-icon>assignment</mat-icon>
         <span>Comenzi de planificat</span>
         <span class="mt-cnt mt-cnt--warn">{{ pendingOnTime().length }}</span>
         <mat-icon class="mt-chevron">{{ showPending() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -40,11 +92,33 @@
       }
     }
 
-    <!-- ── Comenzi cu termen depășit (admin) ── -->
+    <!-- ── 2. Status Curse planificate ── -->
+    <div class="mt-section-hdr" (click)="showActive.set(!showActive())">
+      <mat-icon>directions_car</mat-icon>
+      <span>Status Curse planificate</span>
+      @if (plannedTrips().length) {
+        <span class="mt-cnt">{{ plannedTrips().length }}</span>
+      }
+      <mat-icon class="mt-chevron">{{ showActive() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showActive()) {
+      @if (plannedTrips().length === 0) {
+        <div class="mt-empty">
+          <mat-icon>directions_car</mat-icon>
+          <p>Nicio cursă planificată.</p>
+        </div>
+      } @else {
+        @for (t of plannedTrips(); track t.id) {
+          <ng-container *ngTemplateOutlet="tripCard; context: { $implicit: t }"></ng-container>
+        }
+      }
+    }
+
+    <!-- ── 3. Comenzi neplanificate cu termen depășit (admin) ── -->
     @if (auth.isAdmin() && overdueUnplannedOrders().length > 0) {
       <div class="mt-section-hdr mt-section-hdr--overdue" (click)="showOverdueOrders.set(!showOverdueOrders())">
         <mat-icon>warning</mat-icon>
-        <span>Comenzi termen depășit</span>
+        <span>Comenzi neplanificate cu termen depășit</span>
         <span class="mt-cnt mt-cnt--overdue">{{ overdueUnplannedOrders().length }}</span>
         <mat-icon class="mt-chevron">{{ showOverdueOrders() ? 'expand_less' : 'expand_more' }}</mat-icon>
       </div>
@@ -55,27 +129,7 @@
       }
     }
 
-    <!-- ── Curse active ── -->
-    <div class="mt-section-hdr" (click)="showActive.set(!showActive())">
-      <mat-icon>local_shipping</mat-icon>
-      <span>Curse planificate</span>
-      <span class="mt-cnt">{{ plannedTrips().length }}</span>
-      <mat-icon class="mt-chevron">{{ showActive() ? 'expand_less' : 'expand_more' }}</mat-icon>
-    </div>
-    @if (showActive()) {
-      @if (plannedTrips().length === 0) {
-        <div class="mt-empty">
-          <mat-icon>local_shipping</mat-icon>
-          <p>Nicio cursă activă.</p>
-        </div>
-      } @else {
-        @for (t of plannedTrips(); track t.id) {
-          <ng-container *ngTemplateOutlet="tripCard; context: { $implicit: t }"></ng-container>
-        }
-      }
-    }
-
-    <!-- ── Curse planificate întârziate ── -->
+    <!-- ── 4. Curse planificate întârziate ── -->
     @if (overdueTrips().length > 0) {
       <div class="mt-section-hdr mt-section-hdr--overdue" (click)="showOverdueTrips.set(!showOverdueTrips())">
         <mat-icon>warning</mat-icon>
@@ -90,11 +144,13 @@
       }
     }
 
-    <!-- ── Curse finalizate ── -->
+    <!-- ── 5. Curse finalizate ── -->
     <div class="mt-section-hdr mt-section-hdr--done" (click)="showDone.set(!showDone())">
       <mat-icon>check_circle</mat-icon>
       <span>Curse finalizate</span>
-      <span class="mt-cnt mt-cnt--done">{{ done().length }}</span>
+      @if (done().length) {
+        <span class="mt-cnt mt-cnt--done">{{ done().length }}</span>
+      }
       <mat-icon class="mt-chevron">{{ showDone() ? 'expand_less' : 'expand_more' }}</mat-icon>
     </div>
     @if (showDone()) {
@@ -113,11 +169,11 @@
       }
     }
 
-    <!-- ── Deleted trips (admin) ── -->
+    <!-- ── 6. Curse planificate șterse (admin) ── -->
     @if (auth.isAdmin() && deleted().length > 0) {
       <div class="mt-section-hdr mt-section-hdr--del" (click)="showDeleted.set(!showDeleted())">
-        <mat-icon>delete_outline</mat-icon>
-        <span>Curse șterse</span>
+        <mat-icon>delete_sweep</mat-icon>
+        <span>Curse planificate șterse</span>
         <span class="mt-cnt mt-cnt--del">{{ deleted().length }}</span>
         <mat-icon class="mt-chevron">{{ showDeleted() ? 'expand_less' : 'expand_more' }}</mat-icon>
       </div>
@@ -151,6 +207,65 @@
         }
         @if (deletedTotal() > 20) {
           <div class="mt-cap-note">Se afișează ultimele 20 din {{ deletedTotal() }} curse șterse.</div>
+        }
+      }
+    }
+
+    <!-- ── 7. Istoric planificări comenzi ── -->
+    <div class="mt-section-hdr" (click)="showOrderHistory.set(!showOrderHistory())">
+      <mat-icon>history_edu</mat-icon>
+      <span>Istoric planificări comenzi</span>
+      @if (orderHistoryList().length) {
+        <span class="mt-cnt mt-cnt--muted">{{ orderHistoryList().length }}</span>
+      }
+      <mat-icon class="mt-chevron">{{ showOrderHistory() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showOrderHistory()) {
+      @if (!orderHistoryList().length) {
+        <div class="mt-empty">
+          <mat-icon>history_edu</mat-icon>
+          <p>Niciun istoric disponibil.</p>
+        </div>
+      } @else {
+        @for (o of orderHistoryList(); track o.id) {
+          @let trips = tripsForOrderHistory(o.id);
+          @let ts = orderTripStatus(o);
+          <div class="mt-hist-item" (click)="toggleHistoryExpand(o.id)">
+            <div class="mt-hist-row">
+              <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+              <span class="mt-order-client">{{ o.client.name }}</span>
+              @if (o.deliveryDate) {
+                <span class="mt-deadline-sm" [class.mt-deadline-sm--overdue]="isOrderDeadlineOverdue(o)">
+                  {{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                </span>
+              }
+              <span class="mto-badge" [ngClass]="ts.cls">{{ ts.label }}</span>
+              <mat-icon class="mt-expand-icon">{{ expandedHistoryIds().has(o.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </div>
+            @if (expandedHistoryIds().has(o.id)) {
+              <div class="mt-hist-detail" (click)="$event.stopPropagation()">
+                @if (!trips.length) {
+                  <div class="mt-hist-no-trips">
+                    <mat-icon>pending_actions</mat-icon>
+                    <span>Nicio planificare.</span>
+                  </div>
+                } @else {
+                  @for (t of trips; track t.id) {
+                    <div class="mt-hist-trip-line">
+                      <mat-icon [style.color]="t.status === 'livrat' ? '#16a34a' : '#3b82f6'">
+                        {{ t.status === 'livrat' ? 'check_circle' : 'local_shipping' }}
+                      </mat-icon>
+                      <div class="mt-hist-trip-info">
+                        <span class="mt-vehicle">{{ vehicleName(t) }}</span>
+                        <span class="mt-hist-trip-time">{{ fmtDT(t.oraPlecare) }}</span>
+                      </div>
+                      <span class="mt-chip mt-chip--sm" [class]="statusClass(t)">{{ statusLabel(t.status) }}</span>
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </div>
         }
       }
     }

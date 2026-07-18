@@ -36,6 +36,7 @@
   &.mt-cnt--del     { background: #dc2626; color: #fff; }
   &.mt-cnt--overdue { background: #dc2626; color: #fff; }
   &.mt-cnt--done    { background: #16a34a; color: #fff; }
+  &.mt-cnt--muted   { background: var(--color-border); color: var(--color-text-muted); }
 }
 
 // ── Body ─────────────────────────────────────────────────────────────────────
@@ -370,6 +371,98 @@
   display: flex; align-items: center; gap: 8px;
   color: var(--color-text-muted); font-size: .85rem; padding: 8px 0;
   mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+}
+
+// ── Mini calendar ─────────────────────────────────────────────────────────────
+.mt-cal-outer {
+  overflow-x: auto; margin-bottom: 6px;
+  background: var(--color-surface); border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05); padding: 8px;
+}
+.mt-cal-grid {
+  display: grid; min-width: 360px;
+  gap: 2px;
+}
+.mt-cal-corner {
+  font-size: .7rem; font-weight: 600; color: var(--color-text-muted);
+  padding: 4px 6px; display: flex; align-items: center;
+}
+.mt-cal-day-th {
+  background: var(--color-surface-2, #F5F6FA); border-radius: 6px;
+  padding: 4px 4px; text-align: center;
+  &.mt-cal-today { background: #EEF2FF; }
+}
+.mt-cal-day-name { font-size: .68rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; }
+.mt-cal-day-date { font-size: .72rem; font-weight: 700; color: var(--color-text); }
+.mt-cal-vehicle-th {
+  padding: 4px 6px; display: flex; flex-direction: column; justify-content: center;
+  strong { font-size: .72rem; color: var(--color-text); }
+  small  { font-size: .62rem; color: var(--color-text-muted); }
+}
+.mt-cal-cell {
+  background: var(--color-surface-2, #F5F6FA); border-radius: 4px;
+  min-height: 38px; padding: 3px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px;
+  &:active { background: #E0E7FF; }
+}
+.mt-cal-chip {
+  background: #E0E7FF; color: #3730A3;
+  font-size: .62rem; font-weight: 600; border-radius: 4px;
+  padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  &.mt-cal-chip--overdue { background: #FEE2E2; color: #991B1B; }
+}
+.mt-cal-empty-cell {
+  font-size: .9rem; color: var(--color-text-muted); opacity: .3;
+  text-align: center; line-height: 32px;
+}
+.mt-cal-legend {
+  display: flex; gap: 12px; margin-top: 6px; padding: 0 4px;
+}
+.mt-leg-item { display: flex; align-items: center; gap: 4px; font-size: .72rem; color: var(--color-text-muted); }
+.mt-leg-dot {
+  width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
+  &.mt-leg-dot--plan    { background: #E0E7FF; }
+  &.mt-leg-dot--overdue { background: #FEE2E2; }
+}
+
+// ── Chip small variant ─────────────────────────────────────────────────────────
+.mt-chip--sm {
+  font-size: .65rem !important; padding: 2px 7px !important; border-radius: 12px !important;
+}
+
+// ── Istoric planificări comenzi ───────────────────────────────────────────────
+.mt-hist-item {
+  background: var(--color-surface); border-radius: 8px;
+  margin-bottom: 4px; border-left: 3px solid var(--color-border);
+  overflow: hidden; cursor: pointer;
+}
+.mt-hist-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; flex-wrap: wrap;
+}
+.mt-hist-detail {
+  padding: 6px 12px 10px; border-top: 1px solid var(--color-border);
+  display: flex; flex-direction: column; gap: 5px;
+}
+.mt-hist-trip-line {
+  display: flex; align-items: center; gap: 8px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+}
+.mt-hist-trip-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.mt-hist-trip-time { font-size: .72rem; color: var(--color-text-muted); }
+.mt-hist-no-trips {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .78rem; color: var(--color-text-muted); font-style: italic;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+
+// Order trip status badges
+.mto-badge {
+  font-size: .68rem; font-weight: 600; border-radius: 10px; padding: 2px 7px; flex-shrink: 0;
+  &.mto-badge--unplanned { background: #F3F4F6; color: #6B7280; }
+  &.mto-badge--plan      { background: #E0E7FF; color: #3730A3; }
+  &.mto-badge--confirm   { background: #FEF3C7; color: #92400E; }
+  &.mto-badge--active    { background: #DBEAFE; color: #1E40AF; }
 }
 
 // ── Panel buttons ─────────────────────────────────────────────────────────────
