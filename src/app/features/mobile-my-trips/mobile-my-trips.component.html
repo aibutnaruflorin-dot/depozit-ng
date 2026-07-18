@@ -376,12 +376,18 @@
         </div>
       }
 
-      <!-- Advance button -->
-      @if (stepIndex(t) >= 0 && stepIndex(t) < STATUS_STEPS.length - 1) {
-        <button class="mm-advance-btn" (click)="$event.stopPropagation(); advance(t)">
-          {{ STEP_ACTIONS[stepIndex(t)] }}
-          <mat-icon>arrow_forward</mat-icon>
-        </button>
+      <!-- Status stepper — permite și revenire dacă s-a apăsat greșit -->
+      @if (t.status !== 'anulat') {
+        <div class="mm-mini-stepper" (click)="$event.stopPropagation()">
+          @for (step of STATUS_STEPS; track step; let i = $index) {
+            <button class="mm-step-btn"
+                    [class.mm-step-btn--done]="stepIndex(t) > i"
+                    [class.mm-step-btn--current]="t.status === step"
+                    (click)="setTripStatus(t, step)">
+              {{ STEP_LABELS[i] }}
+            </button>
+          }
+        </div>
       }
 
     </div>
