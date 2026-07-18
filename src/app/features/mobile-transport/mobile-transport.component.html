@@ -57,8 +57,11 @@
               @for (day of planningDays(); track day.isoDate) {
                 <div class="mt-cal-cell" (click)="openCreateForVehicleDay(v.id, day.isoDate)">
                   @for (t of tripsForVehicleDay(v.id, day.isoDate); track t.id) {
-                    <div class="mt-cal-chip" [class.mt-cal-chip--overdue]="isOverdue(t)"
-                         (click)="$event.stopPropagation(); toggleExpand(t.id)">
+                    <div class="mt-cal-chip"
+                         [class.mt-cal-chip--planificat]="t.status === 'planificat' && !isOverdue(t)"
+                         [class.mt-cal-chip--active]="t.status === 'in_livrare' && !isOverdue(t)"
+                         [class.mt-cal-chip--overdue]="isOverdue(t)"
+                         (click)="$event.stopPropagation(); openTripFromCalendar(t)">
                       {{ fmtTime(t.oraPlecare) }}
                     </div>
                   }

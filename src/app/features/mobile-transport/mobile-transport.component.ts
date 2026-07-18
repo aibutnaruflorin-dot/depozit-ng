@@ -390,6 +390,15 @@ export class MobileTransportComponent implements OnInit {
 
   toggleExpand(id: string): void { this.expandedId.update(v => v === id ? null : id); }
 
+  openTripFromCalendar(t: Transport): void {
+    if (this.isOverdue(t)) {
+      this.showOverdueTrips.set(true);
+    } else {
+      this.showActive.set(true);
+    }
+    this.expandedId.set(t.id);
+  }
+
   togglePendingExpand(orderId: string): void {
     this.expandedPendingId.update(v => v === orderId ? null : orderId);
   }
