@@ -324,14 +324,16 @@
                 </textarea>
               </td>
               <td class="actions-cell col-actiuni">
-                <button mat-icon-button color="primary"
-                        [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
-                        (click)="openCreateForOrder(o)" matTooltip="Planifică">
-                  <mat-icon>add_road</mat-icon>
-                </button>
-                <button mat-icon-button (click)="addProductsOrderId.set(o.id)" matTooltip="Adaugă produse">
-                  <mat-icon>add_shopping_cart</mat-icon>
-                </button>
+                @if (auth.hasFullAccess('transport')) {
+                  <button mat-icon-button color="primary"
+                          [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
+                          (click)="openCreateForOrder(o)" matTooltip="Planifică">
+                    <mat-icon>add_road</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="addProductsOrderId.set(o.id)" matTooltip="Adaugă produse">
+                    <mat-icon>add_shopping_cart</mat-icon>
+                  </button>
+                }
                 @if (auth.isAdmin()) {
                   <button mat-icon-button class="btn-delete-order"
                           (click)="deleteOrder(o)" matTooltip="Șterge comanda">
