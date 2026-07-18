@@ -417,9 +417,29 @@
             }
           }
 
+          @if (t.status === 'livrat') {
+            <div class="mt-log-section">
+              <div class="mt-log-entry"><mat-icon class="mt-log-icon">check_circle</mat-icon><span class="mt-log-label">Planificat</span><span class="mt-log-time">{{ fmtTs(t.createdAt) }}</span></div>
+              @if (t.confirmedAt) {
+                <div class="mt-log-entry"><mat-icon class="mt-log-icon">check_circle</mat-icon><span class="mt-log-label">Confirmat șofer</span><span class="mt-log-time">{{ fmtTs(t.confirmedAt) }}</span></div>
+              }
+              @if (t.startedAt) {
+                <div class="mt-log-entry"><mat-icon class="mt-log-icon">check_circle</mat-icon><span class="mt-log-label">Pornit</span><span class="mt-log-time">{{ fmtTs(t.startedAt) }}</span></div>
+              }
+              <div class="mt-log-entry mt-log-entry--final"><mat-icon class="mt-log-icon mt-log-icon--final">check_circle</mat-icon><span class="mt-log-label">Finalizat</span><span class="mt-log-time">{{ fmtTs(t.completedAt) }}</span></div>
+              <div class="mt-log-sep"></div>
+              @if (tripDuration(t) !== '—') {
+                <div class="mt-log-entry mt-log-entry--dur"><mat-icon class="mt-log-icon">timer</mat-icon><span class="mt-log-label">Durată livrare</span><span class="mt-log-time">{{ tripDuration(t) }}</span></div>
+              }
+              @if (tripTotalDuration(t) !== '—') {
+                <div class="mt-log-entry mt-log-entry--dur"><mat-icon class="mt-log-icon">schedule</mat-icon><span class="mt-log-label">Durată totală</span><span class="mt-log-time">{{ tripTotalDuration(t) }}</span></div>
+              }
+            </div>
+          }
+
           @if (auth.isAdmin()) {
             <div class="mt-act-row">
-              @if (t.status !== 'anulat') {
+              @if (t.status !== 'anulat' && t.status !== 'livrat') {
                 <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentDriverAt"
                         (click)="sendDriverWhatsApp(t)">
                   <mat-icon>local_shipping</mat-icon>WA Șofer

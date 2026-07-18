@@ -322,6 +322,29 @@ export class MobileTransportComponent implements OnInit {
     return this.ordersForTransport(t).some(o => this.isOrderDeadlineOverdue(o));
   }
 
+  fmtTs(iso: string | undefined): string {
+    if (!iso) return '—';
+    return this.fmtDT(iso);
+  }
+
+  tripDuration(t: Transport): string {
+    if (!t.startedAt || !t.completedAt) return '—';
+    const ms = new Date(t.completedAt).getTime() - new Date(t.startedAt).getTime();
+    if (ms <= 0) return '—';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  tripTotalDuration(t: Transport): string {
+    if (!t.completedAt) return '—';
+    const ms = new Date(t.completedAt).getTime() - new Date(t.createdAt).getTime();
+    if (ms <= 0) return '—';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
   fmtDT(iso: string): string {
     try {
       const d = new Date(iso);

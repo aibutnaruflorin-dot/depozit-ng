@@ -326,6 +326,23 @@
 .mt-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mt-item-qty { flex-shrink: 0; font-weight: 600; color: var(--color-text); }
 
+// ── Log tranziții (curse finalizate) ─────────────────────────────────────────
+.mt-log-section {
+  display: flex; flex-direction: column; gap: 5px; padding: 4px 2px; margin-top: 4px;
+}
+.mt-log-entry {
+  display: flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--color-text-muted);
+  &.mt-log-entry--final { color: var(--color-text); }
+  &.mt-log-entry--dur   { color: #065F46; font-weight: 600; }
+}
+.mt-log-icon {
+  font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; color: var(--color-primary);
+  &.mt-log-icon--final { color: #16a34a; }
+}
+.mt-log-label { flex: 1; }
+.mt-log-time  { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.mt-log-sep   { height: 1px; background: var(--color-border); margin: 2px 0; }
+
 .mt-note-input {
   width: 100%; box-sizing: border-box; resize: vertical;
   border: 1px solid var(--color-border); border-radius: 6px;
