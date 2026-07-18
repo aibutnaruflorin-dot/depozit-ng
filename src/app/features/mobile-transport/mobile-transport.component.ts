@@ -64,11 +64,12 @@ export class MobileTransportComponent implements OnInit {
   showCalendar       = signal(false);
   showPending        = signal(false);
   showOverdueOrders  = signal(true);
-  showActive         = signal(true);
-  showOverdueTrips   = signal(true);
-  showDone           = signal(false);
-  showDeleted        = signal(false);
-  showOrderHistory   = signal(false);
+  showActive           = signal(true);
+  showOverdueTrips     = signal(true);
+  showDone             = signal(false);
+  showDeleted          = signal(false);
+  showDeletedOrders    = signal(false);
+  showOrderHistory     = signal(false);
   expandedPendingId  = signal<string | null>(null);
   expandedHistoryIds = signal<Set<string>>(new Set());
 
@@ -530,10 +531,21 @@ export class MobileTransportComponent implements OnInit {
     });
   }
 
+  readonly deletedOrders = computed(() =>
+    this.ordersService.orders()
+      .filter(o => o.status === 'sters')
+      .sort((a, b) => (b.deletedAt ?? b.timestamp).localeCompare(a.deletedAt ?? a.timestamp))
+  );
+
   deleteOrder(o: Order): void {
-    if (!confirm(`Ștergi definitiv comanda #${o.orderNumber} - ${o.client.name}? Acțiunea nu poate fi anulată.`)) return;
+    if (!confirm(`Ștergi comanda #${o.orderNumber} - ${o.client.name}?`)) return;
     this.ordersService.hardDeleteOrder(o.id);
     this.snackBar.open(`Comanda #${o.orderNumber} a fost ștearsă.`, '', { duration: 2500 });
+  }
+
+  restoreDeletedOrder(o: Order): void {
+    this.ordersService.restoreOrder(o.id);
+    this.snackBar.open(`Comanda #${o.orderNumber} restaurată (status: Anulat).`, '', { duration: 3000 });
   }
 
   // ── Public qty helpers ────────────────────────────────────────────────────

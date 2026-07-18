@@ -247,6 +247,53 @@
       }
     }
 
+    <!-- ── 6b. Comenzi șterse ── -->
+    <div class="mt-section-hdr mt-section-hdr--del" (click)="showDeletedOrders.set(!showDeletedOrders())">
+      <mat-icon>delete_forever</mat-icon>
+      <span>Comenzi șterse</span>
+      @if (deletedOrders().length) {
+        <span class="mt-cnt mt-cnt--del">{{ deletedOrders().length }}</span>
+      }
+      <mat-icon class="mt-chevron">{{ showDeletedOrders() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showDeletedOrders()) {
+      @if (deletedOrders().length === 0) {
+        <div class="mt-empty">
+          <mat-icon>delete_forever</mat-icon>
+          <p>Nicio comandă ștearsă.</p>
+        </div>
+      } @else {
+        @for (o of deletedOrders(); track o.id) {
+          <div class="mt-pending-item">
+            <div class="mt-pending-row">
+              <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+              <div class="mt-pending-info-col">
+                <div class="mt-pending-name-row">
+                  <span class="mt-order-client">{{ o.client.name }}</span>
+                  @if (o.deliveryDate) {
+                    <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
+                  }
+                </div>
+                <div class="mt-pending-meta-row">
+                  <span class="mto-badge" style="background:#fee2e2;color:#991b1b">Șters</span>
+                  @if (o.deletedAt) {
+                    <span class="mt-pmeta-val">{{ o.deletedAt | date:'dd.MM.yyyy HH:mm' }}</span>
+                  }
+                  <span class="mt-sep">·</span>
+                  <span class="mt-pmeta-wt">{{ o.products.length }} prod.</span>
+                </div>
+              </div>
+              @if (auth.isAdmin()) {
+                <button class="mt-restore-btn" (click)="$event.stopPropagation(); restoreDeletedOrder(o)" title="Restaurează comanda">
+                  <mat-icon>restore</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      }
+    }
+
     <!-- ── 7. Istoric planificări comenzi ── -->
     <div class="mt-section-hdr" (click)="showOrderHistory.set(!showOrderHistory())">
       <mat-icon>history_edu</mat-icon>
