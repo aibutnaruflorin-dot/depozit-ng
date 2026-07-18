@@ -8,7 +8,7 @@ import { StorageService } from '../../core/services/storage.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Transport, TripDelivery, TripOrderItem } from '../../core/models/transport.model';
+import { Transport, TripDelivery, TripOrderItem, TransportStatus } from '../../core/models/transport.model';
 import { Order, OrderProduct } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { Router } from '@angular/router';
@@ -21,6 +21,9 @@ interface CalDay {
   dateStr: string;
 }
 
+const STATUS_STEPS: TransportStatus[] = ['planificat', 'confirmat_sofer', 'in_livrare', 'livrat'];
+const STEP_LABELS = ['Planificat', 'Confirmat', 'Pornit', 'Livrat'];
+
 @Component({
   selector: 'app-mobile-transport',
   standalone: true,
@@ -28,7 +31,11 @@ interface CalDay {
   templateUrl: './mobile-transport.component.html',
   styleUrl: './mobile-transport.component.scss'
 })
+
 export class MobileTransportComponent implements OnInit {
+  readonly STATUS_STEPS = STATUS_STEPS;
+  readonly STEP_LABELS  = STEP_LABELS;
+
   expandedId = signal<string | null>(null);
 
   // Admin form
@@ -389,6 +396,25 @@ export class MobileTransportComponent implements OnInit {
   }
 
   toggleExpand(id: string): void { this.expandedId.update(v => v === id ? null : id); }
+
+  stepIndex(t: Transport): number { return STATUS_STEPS.indexOf(t.status as TransportStatus); }
+
+  setTripStatus(t: Transport, status: TransportStatus): void {
+    if (status === t.status) return;
+    if (status === 'livrat' && !confirm('Marchezi cursa ca finalizată?')) return;
+    this.transportService.setStatus(t.id, status);
+    if (status === 'livrat') {
+      for (const { orderId } of t.deliveries) {
+        const order = this.ordersService.orders().find(o => o.id === orderId);
+        if (order) this.ordersService.updateDeliveryState(orderId, this._getDeliveredQtyArr(order));
+      }
+    }
+    const msgs: Partial<Record<TransportStatus, string>> = {
+      planificat: 'Cursă repusă pe Planificat.', confirmat_sofer: 'Cursa confirmată!',
+      in_livrare: 'Cursa a pornit!', livrat: 'Livrare finalizată!'
+    };
+    this.snackBar.open(msgs[status] ?? 'Status actualizat.', '', { duration: 2200, panelClass: ['snack-success'] });
+  }
 
   openTripFromCalendar(t: Transport): void {
     if (this.isOverdue(t)) {

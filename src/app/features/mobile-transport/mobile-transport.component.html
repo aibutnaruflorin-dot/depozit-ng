@@ -348,6 +348,21 @@
 
       @if (expandedId() === t.id) {
         <div class="mt-expanded" (click)="$event.stopPropagation()">
+
+          <!-- Status stepper -->
+          @if (t.status !== 'anulat') {
+            <div class="mt-mini-stepper">
+              @for (step of STATUS_STEPS; track step; let i = $index) {
+                <button class="mt-step-btn"
+                        [class.mt-step-btn--done]="stepIndex(t) > i"
+                        [class.mt-step-btn--current]="t.status === step"
+                        (click)="setTripStatus(t, step)">
+                  {{ STEP_LABELS[i] }}
+                </button>
+              }
+            </div>
+          }
+
           @if (t.helper) {
             <div class="mt-helper-row">
               <mat-icon class="mt-meta-icon">person_add</mat-icon>
@@ -355,10 +370,30 @@
             </div>
           }
           @for (o of ordersForTransport(t); track o.id) {
-            <div class="mt-order-row">
-              <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
-              <span class="mt-order-client">{{ o.client.name }}</span>
-              @if (o.cuLivrare) { <mat-icon class="mt-deliv-icon">home</mat-icon> }
+            <div class="mt-order-block">
+              <div class="mt-order-row">
+                <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+                <span class="mt-order-client">{{ o.client.name }}</span>
+                @if (o.cuLivrare) { <mat-icon class="mt-deliv-icon">home</mat-icon> }
+              </div>
+              @if (o.client.phone) {
+                <div class="mt-order-detail-row">
+                  <mat-icon class="mt-detail-icon">phone</mat-icon>
+                  <span>{{ o.client.phone }}</span>
+                </div>
+              }
+              @if (o.client.address) {
+                <div class="mt-order-detail-row">
+                  <mat-icon class="mt-detail-icon">location_on</mat-icon>
+                  <span>{{ o.client.address }}</span>
+                </div>
+              }
+              @if (o.deliveryDate) {
+                <div class="mt-order-detail-row" [class.mt-order-detail-row--warn]="isOrderDeadlineOverdue(o)">
+                  <mat-icon class="mt-detail-icon">event</mat-icon>
+                  <span>{{ o.deliveryDate | date:'dd.MM.yyyy' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
+                </div>
+              }
             </div>
             @let items = deliveryItemsForOrder(t, o.id);
             @if (items.length > 0) {

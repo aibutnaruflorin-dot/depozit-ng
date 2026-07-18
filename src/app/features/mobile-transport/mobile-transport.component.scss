@@ -278,9 +278,35 @@
   margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--color-border);
   display: flex; flex-direction: column; gap: 6px;
 }
+// ── Mini stepper ─────────────────────────────────────────────────────────────
+.mt-mini-stepper {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.mt-step-btn {
+  flex: 1; min-width: 60px; padding: 5px 6px; font-size: .73rem; font-weight: 500;
+  border: 1.5px solid var(--color-border); border-radius: 20px;
+  background: none; color: var(--color-text-muted); cursor: pointer;
+  white-space: nowrap; transition: background .15s, color .15s, border-color .15s;
+  &:active { opacity: .8; }
+  &.mt-step-btn--done {
+    background: #dcfce7; color: #166534; border-color: #86efac;
+  }
+  &.mt-step-btn--current {
+    background: var(--color-primary); color: #fff; border-color: var(--color-primary); font-weight: 700;
+  }
+}
+
+// ── Order block (row + detail rows) ──────────────────────────────────────────
+.mt-order-block { display: flex; flex-direction: column; gap: 3px; }
 .mt-order-row    { display: flex; align-items: center; gap: 8px; }
 .mt-order-nr     { font-size: .8rem; font-weight: 700; color: var(--color-text-muted); flex-shrink: 0; }
 .mt-order-client { font-size: .88rem; color: var(--color-text); flex: 1; }
+.mt-order-detail-row {
+  display: flex; align-items: flex-start; gap: 5px; padding-left: 4px;
+  font-size: .78rem; color: var(--color-text-muted);
+  &.mt-order-detail-row--warn { color: #dc2626; }
+}
+.mt-detail-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
 .mt-deliv-icon   { font-size: 15px; width: 15px; height: 15px; color: var(--color-primary); }
 
 .mt-helper-row { display: flex; align-items: center; gap: 6px; color: var(--color-text-muted); }
