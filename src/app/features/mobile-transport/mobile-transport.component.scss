@@ -32,8 +32,10 @@
 .mt-cnt {
   background: rgba(255,255,255,.25); border-radius: 10px; padding: 0 6px; font-size: .7rem; font-weight: 700;
   .mt-tab:not(.active) & { background: var(--color-border); color: var(--color-text-muted); }
-  &.mt-cnt--warn { background: #f59e0b; color: #fff; }
-  &.mt-cnt--del  { background: #dc2626; color: #fff; }
+  &.mt-cnt--warn    { background: #f59e0b; color: #fff; }
+  &.mt-cnt--del     { background: #dc2626; color: #fff; }
+  &.mt-cnt--overdue { background: #dc2626; color: #fff; }
+  &.mt-cnt--done    { background: #16a34a; color: #fff; }
 }
 
 // ── Body ─────────────────────────────────────────────────────────────────────
@@ -56,7 +58,13 @@
   > mat-icon:first-child { font-size: 18px; width: 18px; height: 18px; color: var(--color-primary); }
   > span { flex: 1; }
   .mt-chevron { font-size: 20px; width: 20px; height: 20px; color: var(--color-text-muted); margin-left: 2px; }
-  &.mt-section-hdr--del > mat-icon:first-child { color: #dc2626; }
+  &.mt-section-hdr--del     > mat-icon:first-child { color: #dc2626; }
+  &.mt-section-hdr--overdue {
+    background: #FFF7ED;
+    > mat-icon:first-child { color: #dc2626; }
+    > span { color: #92400E; }
+  }
+  &.mt-section-hdr--done > mat-icon:first-child { color: #16a34a; }
 }
 
 .mt-pending-item {
@@ -76,6 +84,7 @@
 .mt-deadline-sm {
   font-size: .72rem; background: #FEF3C7; color: #92400E;
   border-radius: 8px; padding: 2px 6px; flex-shrink: 0;
+  &.mt-deadline-sm--overdue { background: #FEE2E2; color: #991B1B; font-weight: 600; }
 }
 .mt-plan-btn {
   margin-left: auto; background: none; border: none; cursor: pointer; padding: 4px;

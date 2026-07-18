@@ -14,14 +14,6 @@
         </button>
       }
     </div>
-    <div class="mt-tabs">
-      <button class="mt-tab" [class.active]="activeTab() === 'active'" (click)="activeTab.set('active')">
-        Active <span class="mt-cnt">{{ active().length }}</span>
-      </button>
-      <button class="mt-tab" [class.active]="activeTab() === 'done'" (click)="activeTab.set('done')">
-        Livrate <span class="mt-cnt">{{ done().length }}</span>
-      </button>
-    </div>
   </div>
 
   <div class="mt-body">
@@ -34,239 +26,90 @@
     }
 
     <!-- ── Comenzi de planificat (admin) ── -->
-    @if (auth.isAdmin() && pendingOrders().length > 0) {
+    @if (auth.isAdmin() && pendingOnTime().length > 0) {
       <div class="mt-section-hdr" (click)="showPending.set(!showPending())">
         <mat-icon>pending_actions</mat-icon>
         <span>Comenzi de planificat</span>
-        <span class="mt-cnt mt-cnt--warn">{{ pendingOrders().length }}</span>
+        <span class="mt-cnt mt-cnt--warn">{{ pendingOnTime().length }}</span>
         <mat-icon class="mt-chevron">{{ showPending() ? 'expand_less' : 'expand_more' }}</mat-icon>
       </div>
       @if (showPending()) {
-        @for (o of pendingOrders(); track o.id) {
-          <div class="mt-pending-item" [class.mt-pending-item--open]="expandedPendingId() === o.id"
-               (click)="togglePendingExpand(o.id)">
-            <div class="mt-pending-row">
-              <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
-              <span class="mt-order-client">{{ o.client.name }}</span>
-              @if (o.deliveryDate) {
-                <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
-              }
-              @if (hasPendingChanges(o)) {
-                <span class="mt-pending-dot" title="Produse adăugate, neconfirmate"></span>
-              }
-              <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
-              <button class="mt-plan-btn mt-plan-btn--edit" (click)="$event.stopPropagation(); openMobileEdit(o)" title="Modificare comandă">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
-                <mat-icon>add_shopping_cart</mat-icon>
-              </button>
-              <button class="mt-plan-btn" (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică cursă">
-                <mat-icon>add_road</mat-icon>
-              </button>
-            </div>
-
-            @if (expandedPendingId() === o.id) {
-              <div class="mt-pending-detail" (click)="$event.stopPropagation()">
-                @if (o.client.phone) {
-                  <a [href]="'tel:' + o.client.phone" class="mt-detail-link">
-                    <mat-icon>phone</mat-icon>{{ o.client.phone }}
-                  </a>
-                }
-                @if (o.client.address) {
-                  <a [href]="mapsLink(o.client.address)" target="_blank" class="mt-detail-link">
-                    <mat-icon>location_on</mat-icon>{{ o.client.address }}
-                  </a>
-                }
-                @if (o.observatii || o.client.note) {
-                  <div class="mt-detail-obs">
-                    <mat-icon>notes</mat-icon>{{ o.observatii ?? o.client.note }}
-                  </div>
-                }
-                @if (editingMobileOrderId() === o.id) {
-                  <!-- ── Mod editare ── -->
-                  <div class="mt-edit-label">
-                    <mat-icon>edit</mat-icon>Modificare produse
-                  </div>
-                  <div class="mt-edit-list">
-                    @for (p of o.products; track $index) {
-                      @let qty = getMobileEditQty(o.id, $index, p.qty);
-                      @let maxQty = mobileEditMaxQty(p);
-                      <div class="mt-edit-row" [class.mt-edit-row--removed]="qty === 0">
-                        <div class="mt-edit-name-wrap">
-                          <span class="mt-dp-name">{{ p.name }}</span>
-                          @if (maxQty != null) {
-                            <span class="mt-edit-stock" [class.mt-edit-stock--warn]="qty > maxQty">
-                              stoc: {{ maxQty }} {{ p.um }}
-                            </span>
-                          }
-                        </div>
-                        <div class="mt-edit-stepper">
-                          <button class="mt-step-btn" (click)="setMobileEditQty(o.id, $index, qty - 1)">−</button>
-                          <span class="mt-step-qty" [class.mt-step-qty--zero]="qty === 0">{{ qty }}</span>
-                          <button class="mt-step-btn" (click)="setMobileEditQty(o.id, $index, qty + 1)">+</button>
-                        </div>
-                        <span class="mt-dp-qty">{{ p.um }}</span>
-                      </div>
-                    }
-                  </div>
-                  <div class="mt-edit-actions">
-                    <button class="mt-edit-cancel-btn" (click)="cancelMobileEdit()">Renunță</button>
-                    <button class="mt-edit-confirm-btn" (click)="confirmMobileEdit(o)">
-                      <mat-icon>check_circle</mat-icon>Salvează
-                    </button>
-                  </div>
-                } @else {
-                  <!-- ── Mod vizualizare ── -->
-                  <div class="mt-detail-products">
-                    @for (p of o.products; track $index) {
-                      <div class="mt-detail-product-row">
-                        <span class="mt-dp-name">{{ p.name }}</span>
-                        <span class="mt-dp-qty">{{ p.qty }} {{ p.um }}</span>
-                      </div>
-                    }
-                  </div>
-                  @if (hasPendingChanges(o)) {
-                    <div class="mt-pending-notice">
-                      <mat-icon>pending_actions</mat-icon>
-                      <span>Produse adăugate, neconfirmate:</span>
-                    </div>
-                    <div class="mt-detail-products mt-detail-products--pending">
-                      @for (p of (o.pendingProducts ?? []).concat(o.adminProducts ?? []); track $index) {
-                        <div class="mt-detail-product-row mt-detail-product-row--new">
-                          <span class="mt-dp-name">{{ p.name }}</span>
-                          <span class="mt-dp-qty mt-dp-qty--new">+{{ p.qty }} {{ p.um }}</span>
-                        </div>
-                      }
-                    </div>
-                    <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
-                      <mat-icon>check_circle</mat-icon>Finalizează cu modificări
-                    </button>
-                  }
-                }
-              </div>
-            }
-          </div>
+        @for (o of pendingOnTime(); track o.id) {
+          <ng-container *ngTemplateOutlet="pendingOrderCard; context: { $implicit: o }"></ng-container>
         }
       }
     }
 
-    <!-- ── Main list ── -->
-    @if (displayList().length === 0) {
-      <div class="mt-empty">
-        <mat-icon>local_shipping</mat-icon>
-        <p>Nicio cursă {{ activeTab() === 'done' ? 'livrată' : 'activă' }}.</p>
+    <!-- ── Comenzi cu termen depășit (admin) ── -->
+    @if (auth.isAdmin() && overdueUnplannedOrders().length > 0) {
+      <div class="mt-section-hdr mt-section-hdr--overdue" (click)="showOverdueOrders.set(!showOverdueOrders())">
+        <mat-icon>warning</mat-icon>
+        <span>Comenzi termen depășit</span>
+        <span class="mt-cnt mt-cnt--overdue">{{ overdueUnplannedOrders().length }}</span>
+        <mat-icon class="mt-chevron">{{ showOverdueOrders() ? 'expand_less' : 'expand_more' }}</mat-icon>
       </div>
-    } @else {
-      @for (t of displayList(); track t.id) { @let ov = isOverdue(t);
-        @let val = tripValue(t);
-        @let wt  = tripWeight(t);
-        <div class="mt-card" [class.mt-card--overdue]="ov" [class.mt-card--cancel]="t.status==='anulat'" (click)="toggleExpand(t.id)">
-
-          <div class="mt-card-top">
-            <div class="mt-trip-info">
-              <mat-icon class="mt-icon">local_shipping</mat-icon>
-              <div class="mt-trip-names">
-                <span class="mt-vehicle">{{ vehicleName(t) }}</span>
-                <span class="mt-driver">{{ driverName(t) }}</span>
-              </div>
-            </div>
-            <div class="mt-card-badge-row">
-              @if (ov) { <mat-icon class="mt-overdue-icon">warning</mat-icon> }
-              <span class="mt-chip" [class]="statusClass(t)">{{ statusLabel(t.status) }}</span>
-            </div>
-          </div>
-
-          <div class="mt-card-meta">
-            <mat-icon class="mt-meta-icon">schedule</mat-icon>
-            <span>{{ fmtDT(t.oraPlecare) }} – {{ fmtDT(t.oraSosire) }}</span>
-            <span class="mt-sep">·</span>
-            <span>{{ t.deliveries.length }} cm.</span>
-            @if (val.tva > 0) {
-              <span class="mt-sep">·</span>
-              <span>{{ val.net | number:'1.0-0' }} lei</span>
-              <span class="mt-val-tva">{{ val.tva | number:'1.0-0' }} cu TVA</span>
-            }
-            @if (wt > 0) {
-              <span class="mt-sep">·</span>
-              <span [class.mt-weight-warn]="tripWeightWarn(t)">{{ fmtWeight(wt) }}</span>
-            }
-          </div>
-
-          @if (expandedId() === t.id) {
-            <div class="mt-expanded" (click)="$event.stopPropagation()">
-              @if (t.helper) {
-                <div class="mt-helper-row">
-                  <mat-icon class="mt-meta-icon">person_add</mat-icon>
-                  <span class="mt-helper-name">{{ t.helper }}</span>
-                </div>
-              }
-              @for (o of ordersForTransport(t); track o.id) {
-                <div class="mt-order-row">
-                  <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
-                  <span class="mt-order-client">{{ o.client.name }}</span>
-                  @if (o.cuLivrare) { <mat-icon class="mt-deliv-icon">home</mat-icon> }
-                </div>
-                @let items = deliveryItemsForOrder(t, o.id);
-                @if (items.length > 0) {
-                  <div class="mt-items-list">
-                    @for (item of items; track item.name) {
-                      <div class="mt-item-row">
-                        <span class="mt-item-name">{{ item.name }}</span>
-                        <span class="mt-item-qty">{{ item.qty }} {{ item.um }}</span>
-                      </div>
-                    }
-                  </div>
-                }
-                @if (auth.isAdmin()) {
-                  <textarea class="mt-note-input" rows="1"
-                            [value]="getDeliveryNote(t, o.id)"
-                            (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
-                            (blur)="saveObsBuffer(t, o.id)"
-                            [placeholder]="'Notă #' + o.orderNumber"
-                            (click)="$event.stopPropagation()">
-                  </textarea>
-                }
-              }
-
-              @if (auth.isAdmin()) {
-                <div class="mt-act-row">
-                  @if (t.status !== 'anulat') {
-                    <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentDriverAt"
-                            (click)="sendDriverWhatsApp(t)">
-                      <mat-icon>local_shipping</mat-icon>WA Șofer
-                      @if (t.waSentDriverAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
-                    </button>
-                    @if (helperHasPhone(t)) {
-                      <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentHelperAt"
-                              (click)="sendHelperWhatsApp(t)">
-                        <mat-icon>person_add</mat-icon>WA Ajutor
-                        @if (t.waSentHelperAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
-                      </button>
-                    }
-                    @for (g of waGroups(); track g.id) {
-                      <button class="mt-act-btn mt-act-btn--wa" (click)="sendGroupWhatsApp(t, g)">
-                        <mat-icon>group</mat-icon>{{ g.name }}
-                      </button>
-                    }
-                  }
-                  @if (t.status === 'planificat') {
-                    <button class="mt-act-btn" (click)="openEdit(t)">
-                      <mat-icon>edit</mat-icon>Editează
-                    </button>
-                    <button class="mt-act-btn mt-act-btn--danger" (click)="deleteTransport(t)">
-                      <mat-icon>delete_outline</mat-icon>Șterge
-                    </button>
-                  }
-                </div>
-              }
-            </div>
-          }
-
-        </div>
+      @if (showOverdueOrders()) {
+        @for (o of overdueUnplannedOrders(); track o.id) {
+          <ng-container *ngTemplateOutlet="pendingOrderCard; context: { $implicit: o }"></ng-container>
+        }
       }
-      @if (activeTab() === 'done' && doneTotal() > 30) {
-        <div class="mt-cap-note">Se afișează ultimele 30 din {{ doneTotal() }} curse livrate.</div>
+    }
+
+    <!-- ── Curse active ── -->
+    <div class="mt-section-hdr" (click)="showActive.set(!showActive())">
+      <mat-icon>local_shipping</mat-icon>
+      <span>Curse planificate</span>
+      <span class="mt-cnt">{{ plannedTrips().length }}</span>
+      <mat-icon class="mt-chevron">{{ showActive() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showActive()) {
+      @if (plannedTrips().length === 0) {
+        <div class="mt-empty">
+          <mat-icon>local_shipping</mat-icon>
+          <p>Nicio cursă activă.</p>
+        </div>
+      } @else {
+        @for (t of plannedTrips(); track t.id) {
+          <ng-container *ngTemplateOutlet="tripCard; context: { $implicit: t }"></ng-container>
+        }
+      }
+    }
+
+    <!-- ── Curse planificate întârziate ── -->
+    @if (overdueTrips().length > 0) {
+      <div class="mt-section-hdr mt-section-hdr--overdue" (click)="showOverdueTrips.set(!showOverdueTrips())">
+        <mat-icon>warning</mat-icon>
+        <span>Curse planificate întârziate</span>
+        <span class="mt-cnt mt-cnt--overdue">{{ overdueTrips().length }}</span>
+        <mat-icon class="mt-chevron">{{ showOverdueTrips() ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </div>
+      @if (showOverdueTrips()) {
+        @for (t of overdueTrips(); track t.id) {
+          <ng-container *ngTemplateOutlet="tripCard; context: { $implicit: t }"></ng-container>
+        }
+      }
+    }
+
+    <!-- ── Curse finalizate ── -->
+    <div class="mt-section-hdr mt-section-hdr--done" (click)="showDone.set(!showDone())">
+      <mat-icon>check_circle</mat-icon>
+      <span>Curse finalizate</span>
+      <span class="mt-cnt mt-cnt--done">{{ done().length }}</span>
+      <mat-icon class="mt-chevron">{{ showDone() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showDone()) {
+      @if (done().length === 0) {
+        <div class="mt-empty">
+          <mat-icon>check_circle</mat-icon>
+          <p>Nicio cursă livrată.</p>
+        </div>
+      } @else {
+        @for (t of done(); track t.id) {
+          <ng-container *ngTemplateOutlet="tripCard; context: { $implicit: t }"></ng-container>
+        }
+        @if (doneTotal() > 30) {
+          <div class="mt-cap-note">Se afișează ultimele 30 din {{ doneTotal() }} curse livrate.</div>
+        }
       }
     }
 
@@ -314,6 +157,226 @@
 
     <div style="height:80px"></div>
   </div>
+
+  <!-- ── Trip card template ── -->
+  <ng-template #tripCard let-t>
+    @let ov = isOverdue(t);
+    @let val = tripValue(t);
+    @let wt  = tripWeight(t);
+    <div class="mt-card" [class.mt-card--overdue]="ov" [class.mt-card--cancel]="t.status==='anulat'" (click)="toggleExpand(t.id)">
+
+      <div class="mt-card-top">
+        <div class="mt-trip-info">
+          <mat-icon class="mt-icon">local_shipping</mat-icon>
+          <div class="mt-trip-names">
+            <span class="mt-vehicle">{{ vehicleName(t) }}</span>
+            <span class="mt-driver">{{ driverName(t) }}</span>
+          </div>
+        </div>
+        <div class="mt-card-badge-row">
+          @if (ov) { <mat-icon class="mt-overdue-icon">warning</mat-icon> }
+          <span class="mt-chip" [class]="statusClass(t)">{{ statusLabel(t.status) }}</span>
+        </div>
+      </div>
+
+      <div class="mt-card-meta">
+        <mat-icon class="mt-meta-icon">schedule</mat-icon>
+        <span>{{ fmtDT(t.oraPlecare) }} – {{ fmtDT(t.oraSosire) }}</span>
+        <span class="mt-sep">·</span>
+        <span>{{ t.deliveries.length }} cm.</span>
+        @if (val.tva > 0) {
+          <span class="mt-sep">·</span>
+          <span>{{ val.net | number:'1.0-0' }} lei</span>
+          <span class="mt-val-tva">{{ val.tva | number:'1.0-0' }} cu TVA</span>
+        }
+        @if (wt > 0) {
+          <span class="mt-sep">·</span>
+          <span [class.mt-weight-warn]="tripWeightWarn(t)">{{ fmtWeight(wt) }}</span>
+        }
+      </div>
+
+      @if (expandedId() === t.id) {
+        <div class="mt-expanded" (click)="$event.stopPropagation()">
+          @if (t.helper) {
+            <div class="mt-helper-row">
+              <mat-icon class="mt-meta-icon">person_add</mat-icon>
+              <span class="mt-helper-name">{{ t.helper }}</span>
+            </div>
+          }
+          @for (o of ordersForTransport(t); track o.id) {
+            <div class="mt-order-row">
+              <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+              <span class="mt-order-client">{{ o.client.name }}</span>
+              @if (o.cuLivrare) { <mat-icon class="mt-deliv-icon">home</mat-icon> }
+            </div>
+            @let items = deliveryItemsForOrder(t, o.id);
+            @if (items.length > 0) {
+              <div class="mt-items-list">
+                @for (item of items; track item.name) {
+                  <div class="mt-item-row">
+                    <span class="mt-item-name">{{ item.name }}</span>
+                    <span class="mt-item-qty">{{ item.qty }} {{ item.um }}</span>
+                  </div>
+                }
+              </div>
+            }
+            @if (auth.isAdmin()) {
+              <textarea class="mt-note-input" rows="1"
+                        [value]="getDeliveryNote(t, o.id)"
+                        (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
+                        (blur)="saveObsBuffer(t, o.id)"
+                        [placeholder]="'Notă #' + o.orderNumber"
+                        (click)="$event.stopPropagation()">
+              </textarea>
+            }
+          }
+
+          @if (auth.isAdmin()) {
+            <div class="mt-act-row">
+              @if (t.status !== 'anulat') {
+                <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentDriverAt"
+                        (click)="sendDriverWhatsApp(t)">
+                  <mat-icon>local_shipping</mat-icon>WA Șofer
+                  @if (t.waSentDriverAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
+                </button>
+                @if (helperHasPhone(t)) {
+                  <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentHelperAt"
+                          (click)="sendHelperWhatsApp(t)">
+                    <mat-icon>person_add</mat-icon>WA Ajutor
+                    @if (t.waSentHelperAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
+                  </button>
+                }
+                @for (g of waGroups(); track g.id) {
+                  <button class="mt-act-btn mt-act-btn--wa" (click)="sendGroupWhatsApp(t, g)">
+                    <mat-icon>group</mat-icon>{{ g.name }}
+                  </button>
+                }
+              }
+              @if (t.status === 'planificat') {
+                <button class="mt-act-btn" (click)="openEdit(t)">
+                  <mat-icon>edit</mat-icon>Editează
+                </button>
+                <button class="mt-act-btn mt-act-btn--danger" (click)="deleteTransport(t)">
+                  <mat-icon>delete_outline</mat-icon>Șterge
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+  </ng-template>
+
+  <!-- ── Pending order card template ── -->
+  <ng-template #pendingOrderCard let-o>
+    <div class="mt-pending-item" [class.mt-pending-item--open]="expandedPendingId() === o.id"
+         (click)="togglePendingExpand(o.id)">
+      <div class="mt-pending-row">
+        <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+        <span class="mt-order-client">{{ o.client.name }}</span>
+        @if (o.deliveryDate) {
+          <span class="mt-deadline-sm" [class.mt-deadline-sm--overdue]="isOrderDeadlineOverdue(o)">
+            {{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+          </span>
+        }
+        @if (hasPendingChanges(o)) {
+          <span class="mt-pending-dot" title="Produse adăugate, neconfirmate"></span>
+        }
+        <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+        <button class="mt-plan-btn mt-plan-btn--edit" (click)="$event.stopPropagation(); openMobileEdit(o)" title="Modificare comandă">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
+          <mat-icon>add_shopping_cart</mat-icon>
+        </button>
+        <button class="mt-plan-btn" (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică cursă">
+          <mat-icon>add_road</mat-icon>
+        </button>
+      </div>
+
+      @if (expandedPendingId() === o.id) {
+        <div class="mt-pending-detail" (click)="$event.stopPropagation()">
+          @if (o.client.phone) {
+            <a [href]="'tel:' + o.client.phone" class="mt-detail-link">
+              <mat-icon>phone</mat-icon>{{ o.client.phone }}
+            </a>
+          }
+          @if (o.client.address) {
+            <a [href]="mapsLink(o.client.address)" target="_blank" class="mt-detail-link">
+              <mat-icon>location_on</mat-icon>{{ o.client.address }}
+            </a>
+          }
+          @if (o.observatii || o.client.note) {
+            <div class="mt-detail-obs">
+              <mat-icon>notes</mat-icon>{{ o.observatii ?? o.client.note }}
+            </div>
+          }
+          @if (editingMobileOrderId() === o.id) {
+            <!-- ── Mod editare ── -->
+            <div class="mt-edit-label">
+              <mat-icon>edit</mat-icon>Modificare produse
+            </div>
+            <div class="mt-edit-list">
+              @for (p of o.products; track $index) {
+                @let qty = getMobileEditQty(o.id, $index, p.qty);
+                @let maxQty = mobileEditMaxQty(p);
+                <div class="mt-edit-row" [class.mt-edit-row--removed]="qty === 0">
+                  <div class="mt-edit-name-wrap">
+                    <span class="mt-dp-name">{{ p.name }}</span>
+                    @if (maxQty != null) {
+                      <span class="mt-edit-stock" [class.mt-edit-stock--warn]="qty > maxQty">
+                        stoc: {{ maxQty }} {{ p.um }}
+                      </span>
+                    }
+                  </div>
+                  <div class="mt-edit-stepper">
+                    <button class="mt-step-btn" (click)="setMobileEditQty(o.id, $index, qty - 1)">−</button>
+                    <span class="mt-step-qty" [class.mt-step-qty--zero]="qty === 0">{{ qty }}</span>
+                    <button class="mt-step-btn" (click)="setMobileEditQty(o.id, $index, qty + 1)">+</button>
+                  </div>
+                  <span class="mt-dp-qty">{{ p.um }}</span>
+                </div>
+              }
+            </div>
+            <div class="mt-edit-actions">
+              <button class="mt-edit-cancel-btn" (click)="cancelMobileEdit()">Renunță</button>
+              <button class="mt-edit-confirm-btn" (click)="confirmMobileEdit(o)">
+                <mat-icon>check_circle</mat-icon>Salvează
+              </button>
+            </div>
+          } @else {
+            <!-- ── Mod vizualizare ── -->
+            <div class="mt-detail-products">
+              @for (p of o.products; track $index) {
+                <div class="mt-detail-product-row">
+                  <span class="mt-dp-name">{{ p.name }}</span>
+                  <span class="mt-dp-qty">{{ p.qty }} {{ p.um }}</span>
+                </div>
+              }
+            </div>
+            @if (hasPendingChanges(o)) {
+              <div class="mt-pending-notice">
+                <mat-icon>pending_actions</mat-icon>
+                <span>Produse adăugate, neconfirmate:</span>
+              </div>
+              <div class="mt-detail-products mt-detail-products--pending">
+                @for (p of (o.pendingProducts ?? []).concat(o.adminProducts ?? []); track $index) {
+                  <div class="mt-detail-product-row mt-detail-product-row--new">
+                    <span class="mt-dp-name">{{ p.name }}</span>
+                    <span class="mt-dp-qty mt-dp-qty--new">+{{ p.qty }} {{ p.um }}</span>
+                  </div>
+                }
+              </div>
+              <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
+                <mat-icon>check_circle</mat-icon>Finalizează cu modificări
+              </button>
+            }
+          }
+        </div>
+      }
+    </div>
+  </ng-template>
 
   <!-- ── Create/Edit form (admin, slide-up overlay) ── -->
   @if (showForm()) {
@@ -416,4 +479,3 @@
 
   <app-mobile-nav />
 </div>
-

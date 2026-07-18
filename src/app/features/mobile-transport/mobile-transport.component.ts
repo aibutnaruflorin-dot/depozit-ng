@@ -14,8 +14,6 @@ import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { Router } from '@angular/router';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
-type TabKey = 'active' | 'done';
-
 @Component({
   selector: 'app-mobile-transport',
   standalone: true,
@@ -24,7 +22,6 @@ type TabKey = 'active' | 'done';
   styleUrl: './mobile-transport.component.scss'
 })
 export class MobileTransportComponent implements OnInit {
-  activeTab  = signal<TabKey>('active');
   expandedId = signal<string | null>(null);
 
   // Admin form
@@ -41,6 +38,10 @@ export class MobileTransportComponent implements OnInit {
 
   // UI toggles
   showPending        = signal(false);
+  showOverdueOrders  = signal(true);
+  showActive         = signal(true);
+  showOverdueTrips   = signal(true);
+  showDone           = signal(false);
   showDeleted        = signal(false);
   expandedPendingId  = signal<string | null>(null);
 
@@ -96,8 +97,20 @@ export class MobileTransportComponent implements OnInit {
     this.transportService.transports().filter(t => t.status === 'sters').length
   );
 
-  readonly displayList = computed(() =>
-    this.activeTab() === 'done' ? this.done() : this.active()
+  readonly pendingOnTime = computed<Order[]>(() =>
+    this.pendingOrders().filter(o => !this.isOrderDeadlineOverdue(o))
+  );
+
+  readonly overdueUnplannedOrders = computed<Order[]>(() =>
+    this.pendingOrders().filter(o => this.isOrderDeadlineOverdue(o))
+  );
+
+  readonly plannedTrips = computed(() =>
+    this.active().filter(t => !this.isOverdue(t))
+  );
+
+  readonly overdueTrips = computed(() =>
+    this.active().filter(t => this.isOverdue(t))
   );
 
   readonly pendingOrders = computed<Order[]>(() =>
