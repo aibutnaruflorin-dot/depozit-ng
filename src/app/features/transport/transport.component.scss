@@ -63,10 +63,11 @@
 .badge-pill {
   display: inline-block; padding: 1px 7px; border-radius: 12px;
   font-size: 0.72rem; font-weight: 700;
-  background: var(--color-primary); color: #fff;
-  &--warn    { background: #f59e0b; }
-  &--muted   { background: var(--color-text-muted); }
-  &--overdue { background: #dc2626; }
+  background: #fff; color: var(--color-primary);
+  box-shadow: 0 0 0 1.5px var(--color-primary);
+  &--warn    { color: #b45309; box-shadow: 0 0 0 1.5px #f59e0b; }
+  &--muted   { color: var(--color-text-muted); box-shadow: 0 0 0 1.5px var(--color-text-muted); }
+  &--overdue { color: #dc2626; box-shadow: 0 0 0 1.5px #dc2626; }
 }
 
 /* ── Layouts ─────────────────────────────────────────────────── */
@@ -221,7 +222,7 @@
   mat-icon { color: #dc2626; }
 }
 .badge-pill--overdue {
-  background: #dc2626; color: #fff;
+  background: #fff; color: #dc2626; box-shadow: 0 0 0 1.5px #dc2626;
 }
 .row--overdue td { background: #fff5f5; }
 .overdue-time { color: #dc2626; font-weight: 600; }
