@@ -94,8 +94,53 @@
                       <span class="mm-admin-client-chip">{{ o.client.name }}</span>
                     }
                   </div>
+                  @let tw = tripTotalWeight(t);
+                  @if (tw > 0) {
+                    <div class="mm-weight-row" [class.mm-weight-warn]="tripWeightWarn(t)">
+                      <mat-icon>scale</mat-icon>{{ fmtWeight(tw) }}
+                    </div>
+                  }
                   @if (expandedId() === t.id) {
                     <div class="mm-expanded" (click)="$event.stopPropagation()">
+                      @for (o of ordersForTransport(t); track o.id) {
+                        <div class="mm-order-block">
+                          <div class="mm-order-header">
+                            <span class="mm-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+                            <span class="mm-order-client">{{ o.client.name }}</span>
+                            @if (o.deliveryDate) {
+                              <span class="mm-deadline">{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
+                            }
+                            @let cnt = deliveryItemsCount(t, o.id);
+                            @if (cnt > 0) { <span class="mm-art-count">{{ cnt }} art.</span> }
+                          </div>
+                          @if (o.cuLivrare && o.client.address) {
+                            <a [href]="mapsLink(o.client.address)" target="_blank"
+                               class="mm-addr-link" (click)="$event.stopPropagation()">
+                              <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                            </a>
+                          }
+                          @if (o.client.phone) {
+                            <a [href]="'tel:' + o.client.phone" class="mm-phone-link" (click)="$event.stopPropagation()">
+                              <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                            </a>
+                          }
+                          @let items = deliveryItems(t, o.id);
+                          @if (items.length > 0) {
+                            <div class="mm-items-list">
+                              @for (item of items; track item.name) {
+                                <div class="mm-item-row">
+                                  <span class="mm-item-name">{{ item.name }}</span>
+                                  <span class="mm-item-qty">{{ item.qty }} {{ item.um }}</span>
+                                </div>
+                              }
+                            </div>
+                          }
+                          @let note = getDeliveryNote(t, o.id);
+                          @if (note) {
+                            <div class="mm-obs"><mat-icon>notes</mat-icon>{{ note }}</div>
+                          }
+                        </div>
+                      }
                       <div class="mm-log-section">
                         <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Planificat</span><span class="mm-log-time">{{ fmtTs(t.createdAt) }}</span></div>
                         @if (t.confirmedAt) {
@@ -235,10 +280,55 @@
                     <span class="mm-hist-client">{{ o.client.name }}</span>
                   }
                 </div>
+                @let tw2 = tripTotalWeight(t);
+                @if (tw2 > 0) {
+                  <div class="mm-weight-row" [class.mm-weight-warn]="tripWeightWarn(t)">
+                    <mat-icon>scale</mat-icon>{{ fmtWeight(tw2) }}
+                  </div>
+                }
 
-                <!-- F-02: log complet la expand -->
+                <!-- F-02: log complet + detalii comenzi la expand -->
                 @if (expandedId() === t.id) {
                   <div class="mm-expanded" (click)="$event.stopPropagation()">
+                    @for (o of ordersForTransport(t); track o.id) {
+                      <div class="mm-order-block">
+                        <div class="mm-order-header">
+                          <span class="mm-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+                          <span class="mm-order-client">{{ o.client.name }}</span>
+                          @if (o.deliveryDate) {
+                            <span class="mm-deadline">{{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}</span>
+                          }
+                          @let cnt2 = deliveryItemsCount(t, o.id);
+                          @if (cnt2 > 0) { <span class="mm-art-count">{{ cnt2 }} art.</span> }
+                        </div>
+                        @if (o.cuLivrare && o.client.address) {
+                          <a [href]="mapsLink(o.client.address)" target="_blank"
+                             class="mm-addr-link" (click)="$event.stopPropagation()">
+                            <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                          </a>
+                        }
+                        @if (o.client.phone) {
+                          <a [href]="'tel:' + o.client.phone" class="mm-phone-link" (click)="$event.stopPropagation()">
+                            <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                          </a>
+                        }
+                        @let items2 = deliveryItems(t, o.id);
+                        @if (items2.length > 0) {
+                          <div class="mm-items-list">
+                            @for (item of items2; track item.name) {
+                              <div class="mm-item-row">
+                                <span class="mm-item-name">{{ item.name }}</span>
+                                <span class="mm-item-qty">{{ item.qty }} {{ item.um }}</span>
+                              </div>
+                            }
+                          </div>
+                        }
+                        @let note2 = getDeliveryNote(t, o.id);
+                        @if (note2) {
+                          <div class="mm-obs"><mat-icon>notes</mat-icon>{{ note2 }}</div>
+                        }
+                      </div>
+                    }
                     <div class="mm-log-section">
                       <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Planificat</span><span class="mm-log-time">{{ fmtTs(t.createdAt) }}</span></div>
                       @if (t.confirmedAt) {
