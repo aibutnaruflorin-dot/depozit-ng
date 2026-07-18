@@ -345,6 +345,7 @@
   border: 1.5px solid var(--color-border); background: var(--color-surface);
   color: var(--color-text); box-sizing: border-box;
   &:focus { outline: none; border-color: var(--color-primary); }
+  &.mt-sel--busy { border-color: #fca5a5; background: #FEF2F2; }
 }
 .mt-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
@@ -422,6 +423,7 @@
 .mt-leg-dot {
   width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
   &.mt-leg-dot--plan    { background: #E0E7FF; }
+  &.mt-leg-dot--active  { background: #DBEAFE; }
   &.mt-leg-dot--overdue { background: #FEE2E2; }
 }
 
@@ -461,7 +463,8 @@
   font-size: .68rem; font-weight: 600; border-radius: 10px; padding: 2px 7px; flex-shrink: 0;
   &.mto-badge--unplanned { background: #F3F4F6; color: #6B7280; }
   &.mto-badge--plan      { background: #E0E7FF; color: #3730A3; }
-  &.mto-badge--confirm   { background: #FEF3C7; color: #92400E; }
+  &.mto-badge--partial   { background: #FEF3C7; color: #92400E; }
+  &.mto-badge--confirm   { background: #FEF9C3; color: #713F12; }
   &.mto-badge--active    { background: #DBEAFE; color: #1E40AF; }
 }
 
@@ -471,3 +474,137 @@
   &.mt-btn--ghost   { background: none; border: 1.5px solid var(--color-border); color: var(--color-text-muted); }
   &.mt-btn--primary { border: none; background: var(--color-primary); color: #fff; }
 }
+
+// ── Busy indicator (form selects) ─────────────────────────────────────────────
+.mt-busy-hint {
+  font-size: .73rem; color: #dc2626; font-weight: 600;
+  display: flex; align-items: center; gap: 3px; margin-top: 2px;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+}
+
+// ── Form added-order cards ────────────────────────────────────────────────────
+.mt-form-orders-list {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.mt-form-order-card {
+  border: 1.5px solid var(--color-border); border-radius: 10px;
+  background: var(--color-surface); overflow: hidden;
+}
+.mt-form-order-hdr {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px; background: var(--color-surface-2, #F5F6FA);
+  border-bottom: 1px solid var(--color-border);
+}
+.mt-form-order-move-col {
+  display: flex; flex-direction: column; gap: 0; flex-shrink: 0;
+}
+.mt-form-move-btn {
+  background: none; border: none; cursor: pointer; padding: 1px;
+  color: var(--color-text-muted); display: flex; align-items: center; line-height: 1;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &:disabled { opacity: .3; cursor: default; }
+}
+.mt-form-order-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.mt-form-order-name {
+  font-size: .84rem; font-weight: 700; color: var(--color-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mt-form-order-meta { font-size: .72rem; color: var(--color-text-muted); }
+.mt-form-order-deadline {
+  font-size: .72rem; border-radius: 8px; padding: 2px 6px; flex-shrink: 0;
+  background: #FEF3C7; color: #92400E;
+  &.mt-form-order-deadline--warn { background: #FEE2E2; color: #991B1B; font-weight: 600; }
+}
+.mt-form-order-remove {
+  background: none; border: none; cursor: pointer; padding: 3px; flex-shrink: 0;
+  color: #9ca3af; display: flex; align-items: center;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { color: #dc2626; }
+}
+.mt-form-order-body { padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; }
+
+// Per-product qty steppers in form
+.mt-form-products { display: flex; flex-direction: column; gap: 5px; }
+.mt-form-prod-row {
+  display: flex; align-items: center; gap: 6px;
+}
+.mt-form-prod-name {
+  flex: 1; font-size: .8rem; color: var(--color-text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.mt-form-prod-um { font-size: .75rem; color: var(--color-text-muted); flex-shrink: 0; }
+.mt-form-prod-max { font-size: .68rem; color: var(--color-text-muted); flex-shrink: 0; font-style: italic; }
+
+// Inline address/deadline edit
+.mt-form-inline-edit {
+  display: flex; flex-direction: column; gap: 5px;
+}
+.mt-form-inline-row {
+  display: flex; align-items: center; gap: 5px;
+}
+.mt-form-inline-inp {
+  flex: 1; padding: 5px 8px; border-radius: 7px; font-size: .82rem;
+  border: 1.5px solid var(--color-primary); background: var(--color-surface);
+  color: var(--color-text); box-sizing: border-box;
+  &:focus { outline: none; }
+}
+.mt-form-inline-save {
+  background: var(--color-primary); color: #fff; border: none;
+  border-radius: 7px; padding: 5px 10px; font-size: .78rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap;
+}
+.mt-form-inline-cancel {
+  background: none; border: 1.5px solid var(--color-border); border-radius: 7px;
+  padding: 5px 8px; font-size: .78rem; cursor: pointer; color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.mt-form-meta-actions {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.mt-form-meta-btn {
+  display: inline-flex; align-items: center; gap: 3px; font-size: .72rem;
+  background: none; border: 1px solid var(--color-border); border-radius: 6px;
+  padding: 3px 7px; cursor: pointer; color: var(--color-text-muted);
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+  &:hover { border-color: var(--color-primary); color: var(--color-primary); }
+}
+.mt-form-meta-text { font-size: .75rem; color: var(--color-text-muted); flex: 1; }
+
+// Delivery note in form
+.mt-form-note {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  border: 1.5px solid var(--color-border); border-radius: 7px;
+  padding: 5px 8px; font-size: .8rem; color: var(--color-text);
+  background: var(--color-surface);
+  &:focus { outline: none; border-color: var(--color-primary); }
+}
+
+// Add orders search area
+.mt-form-add-sec-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .8rem; font-weight: 600; color: var(--color-text-muted);
+  margin-top: 2px;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+.mt-form-add-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 8px; cursor: pointer;
+  border: 1.5px solid var(--color-border); background: var(--color-surface);
+  &:hover { border-color: var(--color-primary); }
+}
+.mt-form-add-btn {
+  background: var(--color-primary); color: #fff; border: none;
+  border-radius: 50%; width: 26px; height: 26px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+// Weight bar in form footer
+.mt-form-weight-bar {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .78rem; padding: 6px 0;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+}
+.mt-form-weight-ok   { color: #16a34a; }
+.mt-form-weight-warn { color: #dc2626; font-weight: 600; }
+.mt-form-weight-none { color: var(--color-text-muted); }

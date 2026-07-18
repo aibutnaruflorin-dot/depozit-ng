@@ -34,14 +34,23 @@ export class MobileTransportComponent implements OnInit {
   // Admin form
   showForm    = signal(false);
   editingId   = signal<string | null>(null);
-  formVehicleId   = '';
-  formDriverId    = '';
-  formHelperName  = '';
-  formPlecareDate = '';
-  formPlecareTime = '08:00';
-  formSosireDate  = '';
-  formSosireTime  = '18:00';
-  formSelectedOrderIds = signal<Set<string>>(new Set());
+  formVehicleId   = signal('');
+  formDriverId    = signal('');
+  formHelperName  = signal('');
+  formPlecareDate = signal('');
+  formPlecareTime = signal('08:00');
+  formSosireDate  = signal('');
+  formSosireTime  = signal('18:00');
+
+  // New form state — per-order qty selection, notes, inline edit
+  formModalOrders   = signal<Order[]>([]);
+  formModalQty      = signal<Record<string, Record<number, number>>>({});
+  formDeliveryNotes = signal<Record<string, string>>({});
+  editingAddrId     = signal<string | null>(null);
+  addrEdit          = signal('');
+  editingDeadlineId = signal<string | null>(null);
+  deadlineDateEdit  = signal('');
+  deadlineTimeEdit  = signal('');
 
   // UI toggles
   showCalendar       = signal(false);
@@ -148,25 +157,65 @@ export class MobileTransportComponent implements OnInit {
     this.ordersService.orders().filter(o => {
       if (!o.cuLivrare || o.superseded) return false;
       if (!['acceptat','livrat_partial','planificat'].includes(o.status)) return false;
-      if (!this._hasRemainingItems(o)) return false;
-      return !this.transportService.transports()
-        .some(t => ['planificat','confirmat_sofer','in_livrare'].includes(t.status) &&
-                   t.deliveries.some(d => d.orderId === o.id));
+      return this._hasRemainingItems(o);
     }).sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp))
   );
 
   readonly formEligibleOrders = computed<Order[]>(() => {
-    const editId = this.editingId();
-    const tripOrderIds = editId
-      ? new Set((this.transportService.transports().find(t => t.id === editId)?.deliveries ?? []).map(d => d.orderId))
-      : new Set<string>();
-
+    const addedIds = new Set(this.formModalOrders().map(o => o.id));
+    const editId   = this.editingId();
     return this.ordersService.orders().filter(o => {
       if (o.superseded || !o.cuLivrare) return false;
       if (!['acceptat','livrat_partial','planificat'].includes(o.status)) return false;
-      if (tripOrderIds.has(o.id)) return true;
-      return this._hasRemainingItems(o);
+      if (addedIds.has(o.id)) return false;
+      return this._hasRemainingItems(o, editId);
     }).sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp));
+  });
+
+  readonly formBusyVehicleIds = computed<Set<string>>(() => {
+    const pd = this.formPlecareDate(), pt = this.formPlecareTime();
+    const sd = this.formSosireDate(),  st = this.formSosireTime();
+    if (!pd || !sd) return new Set();
+    const pA = new Date(`${pd}T${pt}:00`).getTime();
+    const sA = new Date(`${sd}T${st}:00`).getTime();
+    if (isNaN(pA) || isNaN(sA) || sA <= pA) return new Set();
+    const eA = this._effectiveEndMs(pA, sA);
+    const editId = this.editingId();
+    const busy = new Set<string>();
+    for (const t of this.transportService.transports()) {
+      if (['livrat','anulat','sters'].includes(t.status) || t.id === editId) continue;
+      const pB = new Date(t.oraPlecare).getTime(), sB = new Date(t.oraSosire).getTime();
+      if (pA < this._effectiveEndMs(pB, sB) && pB < eA) busy.add(t.vehicleId);
+    }
+    return busy;
+  });
+
+  readonly formBusyDriverIds = computed<Set<string>>(() => {
+    const pd = this.formPlecareDate(), pt = this.formPlecareTime();
+    const sd = this.formSosireDate(),  st = this.formSosireTime();
+    if (!pd || !sd) return new Set();
+    const pA = new Date(`${pd}T${pt}:00`).getTime();
+    const sA = new Date(`${sd}T${st}:00`).getTime();
+    if (isNaN(pA) || isNaN(sA) || sA <= pA) return new Set();
+    const eA = this._effectiveEndMs(pA, sA);
+    const editId = this.editingId();
+    const busy = new Set<string>();
+    for (const t of this.transportService.transports()) {
+      if (['livrat','anulat','sters'].includes(t.status) || t.id === editId) continue;
+      const pB = new Date(t.oraPlecare).getTime(), sB = new Date(t.oraSosire).getTime();
+      if (pA < this._effectiveEndMs(pB, sB) && pB < eA) busy.add(t.driverId);
+    }
+    return busy;
+  });
+
+  readonly formTotalWeight = computed<number>(() => {
+    const qty = this.formModalQty();
+    let total = 0;
+    for (const order of this.formModalOrders()) {
+      const oq = qty[order.id] ?? {};
+      order.products.forEach((p, i) => { total += this.productMasa(p) * (oq[i] ?? 0); });
+    }
+    return total;
   });
 
   // ── Display helpers ───────────────────────────────────────────────────────
@@ -314,14 +363,15 @@ export class MobileTransportComponent implements OnInit {
 
   openCreateForVehicleDay(vehicleId: string, isoDate: string): void {
     this.editingId.set(null);
-    this.formVehicleId    = vehicleId;
-    this.formDriverId     = '';
-    this.formHelperName   = '';
-    this.formPlecareDate  = isoDate;
-    this.formPlecareTime  = '08:00';
-    this.formSosireDate   = isoDate;
-    this.formSosireTime   = '18:00';
-    this.formSelectedOrderIds.set(new Set());
+    this.formVehicleId.set(vehicleId);
+    this.formDriverId.set('');
+    this.formHelperName.set('');
+    this.formPlecareDate.set(isoDate);
+    this.formPlecareTime.set('08:00');
+    this.formSosireDate.set(isoDate);
+    this.formSosireTime.set('18:00');
+    this.formModalOrders.set([]); this.formModalQty.set({}); this.formDeliveryNotes.set({});
+    this.editingAddrId.set(null); this.editingDeadlineId.set(null);
     this.showForm.set(true);
   }
 
@@ -348,12 +398,11 @@ export class MobileTransportComponent implements OnInit {
       .filter(tr => tr.status !== 'livrat' && tr.status !== 'anulat' && tr.status !== 'sters')
       .find(tr => tr.deliveries.some(d => d.orderId === o.id));
     if (!t) return { label: 'Neplanificat', cls: 'mto-badge--unplanned' };
-    const map: Record<string, { label: string; cls: string }> = {
-      planificat:      { label: 'Planificat',  cls: 'mto-badge--plan'    },
-      confirmat_sofer: { label: 'Confirmat',   cls: 'mto-badge--confirm' },
-      in_livrare:      { label: 'În livrare', cls: 'mto-badge--active'  },
-    };
-    return map[t.status] ?? { label: t.status, cls: '' };
+    if (t.status === 'in_livrare') return { label: 'În livrare', cls: 'mto-badge--active' };
+    const fullyPlanned = this.getRemainingQtyArr(o).every(q => q === 0);
+    return fullyPlanned
+      ? { label: 'Planificat',         cls: 'mto-badge--plan'    }
+      : { label: 'Parțial planificat', cls: 'mto-badge--partial' };
   }
 
   orderTotalValue(o: Order): { net: number; tva: number } {
@@ -371,6 +420,113 @@ export class MobileTransportComponent implements OnInit {
     this.router.navigate(['/app/m-new-order'], {
       state: { addToOrderId: orderId, addPending: true }
     });
+  }
+
+  deleteOrder(o: Order): void {
+    if (!confirm(`Ștergi definitiv comanda #${o.orderNumber} - ${o.client.name}? Acțiunea nu poate fi anulată.`)) return;
+    this.ordersService.hardDeleteOrder(o.id);
+    this.snackBar.open(`Comanda #${o.orderNumber} a fost ștearsă.`, '', { duration: 2500 });
+  }
+
+  // ── Public qty helpers ────────────────────────────────────────────────────
+
+  getRemainingQtyArr(order: Order, excludeId?: string | null): number[] {
+    return order.products.map((_, i) => this._getRemainingQty(order, i, excludeId));
+  }
+
+  getFormMaxQty(order: Order, idx: number): number {
+    return this._getRemainingQty(order, idx, this.editingId());
+  }
+
+  // ── Form modal methods ────────────────────────────────────────────────────
+
+  addOrderToForm(order: Order): void {
+    if (this.formModalOrders().some(o => o.id === order.id)) return;
+    const rem = this.getRemainingQtyArr(order, this.editingId());
+    const qtyMap: Record<number, number> = {};
+    rem.forEach((q, i) => { if (q > 0) qtyMap[i] = q; });
+    this.formModalOrders.update(arr => [...arr, order]);
+    this.formModalQty.update(m => ({ ...m, [order.id]: qtyMap }));
+  }
+
+  removeOrderFromForm(orderId: string): void {
+    this.formModalOrders.update(arr => arr.filter(o => o.id !== orderId));
+    this.formModalQty.update(m => { const c = { ...m }; delete c[orderId]; return c; });
+    this.formDeliveryNotes.update(m => { const c = { ...m }; delete c[orderId]; return c; });
+    if (this.editingAddrId() === orderId) this.editingAddrId.set(null);
+    if (this.editingDeadlineId() === orderId) this.editingDeadlineId.set(null);
+  }
+
+  getFormQty(orderId: string, idx: number): number {
+    return this.formModalQty()[orderId]?.[idx] ?? 0;
+  }
+
+  setFormQty(orderId: string, idx: number, val: number): void {
+    const order = this.formModalOrders().find(o => o.id === orderId);
+    if (!order) return;
+    const max = this._getRemainingQty(order, idx, this.editingId());
+    this.formModalQty.update(m => ({
+      ...m,
+      [orderId]: { ...(m[orderId] ?? {}), [idx]: Math.max(0, Math.min(val, max)) }
+    }));
+  }
+
+  getFormNote(orderId: string): string { return this.formDeliveryNotes()[orderId] ?? ''; }
+
+  setFormNote(orderId: string, val: string): void {
+    this.formDeliveryNotes.update(m => ({ ...m, [orderId]: val }));
+  }
+
+  formMoveOrderUp(orderId: string): void {
+    this.formModalOrders.update(arr => {
+      const idx = arr.findIndex(o => o.id === orderId);
+      if (idx <= 0) return arr;
+      const n = [...arr];
+      [n[idx - 1], n[idx]] = [n[idx], n[idx - 1]];
+      return n;
+    });
+  }
+
+  formMoveOrderDown(orderId: string): void {
+    this.formModalOrders.update(arr => {
+      const idx = arr.findIndex(o => o.id === orderId);
+      if (idx < 0 || idx >= arr.length - 1) return arr;
+      const n = [...arr];
+      [n[idx], n[idx + 1]] = [n[idx + 1], n[idx]];
+      return n;
+    });
+  }
+
+  startEditAddr(order: Order): void {
+    this.editingAddrId.set(order.id);
+    this.addrEdit.set(order.client.address ?? '');
+  }
+
+  saveAddr(order: Order): void {
+    this.ordersService.updateOrderClient(order.id, { address: this.addrEdit().trim() });
+    this.editingAddrId.set(null);
+  }
+
+  cancelEditAddr(): void { this.editingAddrId.set(null); }
+
+  startEditDeadline(order: Order): void {
+    this.editingDeadlineId.set(order.id);
+    this.deadlineDateEdit.set(order.deliveryDate ?? '');
+    this.deadlineTimeEdit.set(order.deliveryTime ?? '');
+  }
+
+  saveDeadline(order: Order): void {
+    this.ordersService.updateOrderDeliveryDateTime(order.id, this.deadlineDateEdit(), this.deadlineTimeEdit());
+    this.editingDeadlineId.set(null);
+  }
+
+  cancelEditDeadline(): void { this.editingDeadlineId.set(null); }
+
+  formOrderDeadlineStatus(order: Order): 'ok' | 'warn' | 'no-deadline' {
+    if (!order.deliveryDate) return 'no-deadline';
+    const pd = this.formPlecareDate();
+    if (!pd) return 'ok';
+    return order.deliveryDate < pd ? 'warn' : 'ok';
   }
 
   hasPendingChanges(o: Order): boolean {
@@ -466,100 +622,120 @@ export class MobileTransportComponent implements OnInit {
 
   openCreate(preselect?: string): void {
     this.editingId.set(null);
-    this.formVehicleId = '';
-    this.formDriverId  = '';
-    this.formHelperName = '';
+    this.formVehicleId.set('');
+    this.formDriverId.set('');
+    this.formHelperName.set('');
     const today = new Date().toISOString().slice(0, 10);
-    this.formPlecareDate = today; this.formPlecareTime = '08:00';
-    this.formSosireDate  = today; this.formSosireTime  = '18:00';
-    this.formSelectedOrderIds.set(preselect ? new Set([preselect]) : new Set());
+    this.formPlecareDate.set(today); this.formPlecareTime.set('08:00');
+    this.formSosireDate.set(today);  this.formSosireTime.set('18:00');
+    this.formModalOrders.set([]); this.formModalQty.set({}); this.formDeliveryNotes.set({});
+    this.editingAddrId.set(null); this.editingDeadlineId.set(null);
+    if (preselect) {
+      const o = this.ordersService.orders().find(x => x.id === preselect);
+      if (o) this.addOrderToForm(o);
+    }
     this.showForm.set(true);
   }
 
   openEdit(t: Transport): void {
     this.editingId.set(t.id);
-    this.formVehicleId   = t.vehicleId;
-    this.formDriverId    = t.driverId;
-    this.formHelperName  = t.helper ?? '';
-    this.formPlecareDate = t.oraPlecare.slice(0, 10);
-    this.formPlecareTime = t.oraPlecare.slice(11, 16);
-    this.formSosireDate  = t.oraSosire.slice(0, 10);
-    this.formSosireTime  = t.oraSosire.slice(11, 16);
-    const ids = new Set<string>();
-    t.deliveries.forEach(d => ids.add(d.orderId));
-    this.formSelectedOrderIds.set(ids);
+    this.formVehicleId.set(t.vehicleId);
+    this.formDriverId.set(t.driverId);
+    this.formHelperName.set(t.helper ?? '');
+    this.formPlecareDate.set(t.oraPlecare.slice(0, 10));
+    this.formPlecareTime.set(t.oraPlecare.slice(11, 16));
+    this.formSosireDate.set(t.oraSosire.slice(0, 10));
+    this.formSosireTime.set(t.oraSosire.slice(11, 16));
+    this.editingAddrId.set(null); this.editingDeadlineId.set(null);
+    const modalOrders: Order[] = [];
+    const modalQty: Record<string, Record<number, number>> = {};
+    const notes: Record<string, string> = {};
+    for (const del of t.deliveries) {
+      const order = this.ordersService.orders().find(o => o.id === del.orderId);
+      if (!order) continue;
+      modalOrders.push(order);
+      const qm: Record<number, number> = {};
+      for (const item of del.items) qm[item.productIndex] = item.qty;
+      modalQty[order.id] = qm;
+      if (del.observatii) notes[order.id] = del.observatii;
+    }
+    this.formModalOrders.set(modalOrders);
+    this.formModalQty.set(modalQty);
+    this.formDeliveryNotes.set(notes);
     this.showForm.set(true);
   }
 
   closeForm(): void { this.showForm.set(false); }
 
-  toggleOrderInForm(orderId: string): void {
-    this.formSelectedOrderIds.update(set => {
-      const copy = new Set(set);
-      if (copy.has(orderId)) copy.delete(orderId); else copy.add(orderId);
-      return copy;
-    });
-  }
-
   save(): void {
-    if (!this.formVehicleId || !this.formDriverId) {
+    const vId = this.formVehicleId(), dId = this.formDriverId();
+    if (!vId || !dId) {
       this.snackBar.open('Selectați mașina și șoferul.', '', { duration: 2500 }); return;
     }
-    if (!this.formPlecareDate || !this.formSosireDate) {
+    if (!this.formPlecareDate() || !this.formSosireDate()) {
       this.snackBar.open('Completați datele de plecare și sosire.', '', { duration: 2500 }); return;
     }
-    if (this.formSelectedOrderIds().size === 0) {
+    if (this.formModalOrders().length === 0) {
       this.snackBar.open('Adaugă cel puțin o comandă la cursă.', '', { duration: 2500 }); return;
     }
 
-    const oraPlecare = `${this.formPlecareDate}T${this.formPlecareTime}:00`;
-    const oraSosire  = `${this.formSosireDate}T${this.formSosireTime}:00`;
+    const oraPlecare = `${this.formPlecareDate()}T${this.formPlecareTime()}:00`;
+    const oraSosire  = `${this.formSosireDate()}T${this.formSosireTime()}:00`;
 
     if (new Date(oraPlecare) < new Date()) {
       this.snackBar.open('Ora de plecare nu poate fi în trecut.', '', { duration: 3500 }); return;
     }
-
     if (oraSosire <= oraPlecare) {
       this.snackBar.open('Data/ora de sosire trebuie să fie după plecare.', '', { duration: 3000 }); return;
     }
 
-    const editId = this.editingId();
-    const existingTrip = editId ? this.transportService.transports().find(t => t.id === editId) : undefined;
+    const editId  = this.editingId();
+    const qtyMap  = this.formModalQty();
+    const notesMap = this.formDeliveryNotes();
     const deliveries: TripDelivery[] = [];
 
-    for (const orderId of this.formSelectedOrderIds()) {
-      const order = this.ordersService.orders().find(o => o.id === orderId);
-      if (!order) continue;
-      const items: TripOrderItem[] = [];
-      order.products.forEach((_, productIndex) => {
-        const rem = this._getRemainingQty(order, productIndex, editId);
-        if (rem > 0) items.push({ productIndex, qty: rem });
-      });
-      if (items.length > 0) {
-        const del: TripDelivery = { orderId, items };
-        const existingObs = existingTrip?.deliveries.find(d => d.orderId === orderId)?.observatii;
-        if (existingObs) del.observatii = existingObs;
-        deliveries.push(del);
-      }
+    for (const order of this.formModalOrders()) {
+      const oq = qtyMap[order.id] ?? {};
+      const items: TripOrderItem[] = Object.entries(oq)
+        .filter(([, q]) => q > 0)
+        .map(([idx, q]) => ({ productIndex: Number(idx), qty: q }));
+      if (!items.length) continue;
+      const del: TripDelivery = { orderId: order.id, items };
+      const note = notesMap[order.id];
+      if (note?.trim()) del.observatii = note.trim();
+      deliveries.push(del);
     }
 
     if (deliveries.length === 0) {
-      this.snackBar.open('Nu există cantități disponibile pentru comenzile selectate.', '', { duration: 3000 }); return;
+      this.snackBar.open('Setează cel puțin o cantitate > 0 pentru un produs.', '', { duration: 2500 }); return;
     }
 
-    const overlap = this._checkOverlap(oraPlecare, oraSosire, this.formVehicleId, this.formDriverId, editId);
+    const overlap = this._checkOverlap(oraPlecare, oraSosire, vId, dId, editId);
     if (overlap.vehicle || overlap.driver) {
       const who = overlap.vehicle && overlap.driver ? 'Mașina și șoferul'
         : overlap.vehicle ? 'Mașina' : 'Șoferul';
-      this.snackBar.open(`${who} nu este disponibil în această perioadă.`, 'OK', { duration: 5000 }); return;
+      const conflictTrip = this.transportService.transports()
+        .filter(t => !['livrat','anulat','sters'].includes(t.status) && t.id !== editId)
+        .find(t => {
+          const pA = new Date(oraPlecare).getTime(), sA = new Date(oraSosire).getTime();
+          const pB = new Date(t.oraPlecare).getTime(), sB = new Date(t.oraSosire).getTime();
+          return pA < this._effectiveEndMs(pB, sB) && pB < this._effectiveEndMs(pA, sA) &&
+            (overlap.vehicle ? t.vehicleId === vId : t.driverId === dId);
+        });
+      let msg = `${who} nu este disponibil în această perioadă.`;
+      if (conflictTrip) {
+        const clients = this.ordersForTransport(conflictTrip).map(o => o.client.name).join(', ');
+        msg += ` Cursă existentă: ${this.fmtDT(conflictTrip.oraPlecare)} → ${this.fmtDT(conflictTrip.oraSosire)} (${clients})`;
+      }
+      this.snackBar.open(msg, 'OK', { duration: 8000 }); return;
     }
 
-    const helperName = this.formHelperName.trim() || undefined;
+    const helperName = this.formHelperName().trim() || undefined;
     if (helperName) {
       const pA = new Date(oraPlecare).getTime(), sA = new Date(oraSosire).getTime();
       const eA = this._effectiveEndMs(pA, sA);
       const helperBusy = this.transportService.transports()
-        .filter(t => t.status !== 'livrat' && t.status !== 'anulat' && t.status !== 'sters' && t.id !== editId && t.helper === helperName)
+        .filter(t => !['livrat','anulat','sters'].includes(t.status) && t.id !== editId && t.helper === helperName)
         .some(t => {
           const pB = new Date(t.oraPlecare).getTime(), sB = new Date(t.oraSosire).getTime();
           return pA < this._effectiveEndMs(pB, sB) && pB < eA;
@@ -570,19 +746,12 @@ export class MobileTransportComponent implements OnInit {
     }
 
     if (editId) {
-      this.transportService.updateTransport(editId, {
-        vehicleId: this.formVehicleId, driverId: this.formDriverId,
-        helper: helperName, deliveries, oraPlecare, oraSosire
-      });
+      this.transportService.updateTransport(editId, { vehicleId: vId, driverId: dId, helper: helperName, deliveries, oraPlecare, oraSosire });
       this.snackBar.open('Cursa actualizată.', '', { duration: 2000 });
     } else {
-      this.transportService.createTransport({
-        vehicleId: this.formVehicleId, driverId: this.formDriverId,
-        helper: helperName, deliveries, oraPlecare, oraSosire
-      });
-      for (const orderId of this.formSelectedOrderIds()) {
-        const order = this.ordersService.orders().find(o => o.id === orderId);
-        if (order && order.status === 'acceptat') this.ordersService.updateOrderStatus(orderId, 'planificat');
+      this.transportService.createTransport({ vehicleId: vId, driverId: dId, helper: helperName, deliveries, oraPlecare, oraSosire });
+      for (const order of this.formModalOrders()) {
+        if (order.status === 'acceptat') this.ordersService.updateOrderStatus(order.id, 'planificat');
       }
       this.snackBar.open('Cursă planificată.', '', { duration: 2000 });
     }
@@ -726,8 +895,8 @@ export class MobileTransportComponent implements OnInit {
     return qty;
   }
 
-  private _hasRemainingItems(order: Order): boolean {
-    return order.products.some((_, i) => this._getRemainingQty(order, i) > 0);
+  private _hasRemainingItems(order: Order, excludeId?: string | null): boolean {
+    return order.products.some((_, i) => this._getRemainingQty(order, i, excludeId) > 0);
   }
 
   private _getRemainingQty(order: Order, productIndex: number, excludeId?: string | null): number {

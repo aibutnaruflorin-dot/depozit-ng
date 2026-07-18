@@ -480,15 +480,17 @@
                 }
               </td>
               <td class="notes-col col-obs">
-                @for (o of ordersForTransport(t); track o.id) {
-                  <div class="obs-row">
-                    <textarea class="chip-note-input" rows="2"
-                              [appInitValue]="getTripDelivery(t, o.id)?.observatii ?? ''"
-                              (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
-                              (blur)="saveObsBuffer(t, o.id)"
-                              [placeholder]="'Notă #' + o.orderNumber">
-                    </textarea>
-                  </div>
+                @if (auth.isAdmin()) {
+                  @for (o of ordersForTransport(t); track o.id) {
+                    <div class="obs-row">
+                      <textarea class="chip-note-input" rows="2"
+                                [appInitValue]="getTripDelivery(t, o.id)?.observatii ?? ''"
+                                (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
+                                (blur)="saveObsBuffer(t, o.id)"
+                                [placeholder]="'Notă #' + o.orderNumber">
+                      </textarea>
+                    </div>
+                  }
                 }
               </td>
               <td class="actions-cell col-actiuni">
@@ -671,15 +673,17 @@
                 }
               </td>
               <td class="notes-col col-obs">
-                @for (o of ordersForTransport(t); track o.id) {
-                  <div class="obs-row">
-                    <textarea class="chip-note-input" rows="2"
-                              [appInitValue]="getTripDelivery(t, o.id)?.observatii ?? ''"
-                              (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
-                              (blur)="saveObsBuffer(t, o.id)"
-                              [placeholder]="'Notă #' + o.orderNumber">
-                    </textarea>
-                  </div>
+                @if (auth.isAdmin()) {
+                  @for (o of ordersForTransport(t); track o.id) {
+                    <div class="obs-row">
+                      <textarea class="chip-note-input" rows="2"
+                                [appInitValue]="getTripDelivery(t, o.id)?.observatii ?? ''"
+                                (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
+                                (blur)="saveObsBuffer(t, o.id)"
+                                [placeholder]="'Notă #' + o.orderNumber">
+                      </textarea>
+                    </div>
+                  }
                 }
               </td>
               <td class="actions-cell col-actiuni">

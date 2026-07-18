@@ -951,7 +951,8 @@ export class TransportComponent implements OnInit {
       this.snackBar.open('Șoferul nu are număr de telefon configurat.', 'OK', { duration: 3000 });
       return;
     }
-    const phone = driver.telefon.replace(/\D/g, '');
+    const rawPhone = driver.telefon.replace(/\D/g, '');
+    const phone = rawPhone.startsWith('0') ? '4' + rawPhone : rawPhone;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(this.tripWhatsAppMsg(t))}`, '_blank');
     this.transportService.markWaSent(t.id, 'driver');
   }
@@ -963,7 +964,8 @@ export class TransportComponent implements OnInit {
       this.snackBar.open(`${t.helper} nu are număr de telefon configurat.`, 'OK', { duration: 3000 });
       return;
     }
-    const phone = (person.telefon as string).replace(/\D/g, '');
+    const rawPhone = (person.telefon as string).replace(/\D/g, '');
+    const phone = rawPhone.startsWith('0') ? '4' + rawPhone : rawPhone;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(this.tripWhatsAppMsg(t))}`, '_blank');
     this.transportService.markWaSent(t.id, 'helper');
   }
@@ -986,7 +988,8 @@ export class TransportComponent implements OnInit {
       return;
     }
     const msg = `Cursa ta din ${this.transportService.formatDateTime(t.oraPlecare)} a fost ANULATĂ.`;
-    const phone = driver.telefon.replace(/\D/g, '');
+    const rawPhone = driver.telefon.replace(/\D/g, '');
+    const phone = rawPhone.startsWith('0') ? '4' + rawPhone : rawPhone;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 

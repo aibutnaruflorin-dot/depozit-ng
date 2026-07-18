@@ -71,21 +71,29 @@
           </div>
           <div class="mt-cal-legend">
             <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--plan"></span>Planificat</span>
+            <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--active"></span>În livrare</span>
             <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--overdue"></span>Întârziat</span>
           </div>
         </div>
       }
     }
 
-    <!-- ── 1. Comenzi de planificat (admin) ── -->
-    @if (auth.isAdmin() && pendingOnTime().length > 0) {
-      <div class="mt-section-hdr" (click)="showPending.set(!showPending())">
-        <mat-icon>assignment</mat-icon>
-        <span>Comenzi de planificat</span>
+    <!-- ── 1. Comenzi de planificat ── -->
+    <div class="mt-section-hdr" (click)="showPending.set(!showPending())">
+      <mat-icon>assignment</mat-icon>
+      <span>Comenzi de planificat</span>
+      @if (pendingOnTime().length) {
         <span class="mt-cnt mt-cnt--warn">{{ pendingOnTime().length }}</span>
-        <mat-icon class="mt-chevron">{{ showPending() ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </div>
-      @if (showPending()) {
+      }
+      <mat-icon class="mt-chevron">{{ showPending() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showPending()) {
+      @if (pendingOnTime().length === 0) {
+        <div class="mt-empty">
+          <mat-icon>assignment</mat-icon>
+          <p>Nicio comandă de planificat.</p>
+        </div>
+      } @else {
         @for (o of pendingOnTime(); track o.id) {
           <ng-container *ngTemplateOutlet="pendingOrderCard; context: { $implicit: o }"></ng-container>
         }
@@ -114,15 +122,22 @@
       }
     }
 
-    <!-- ── 3. Comenzi neplanificate cu termen depășit (admin) ── -->
-    @if (auth.isAdmin() && overdueUnplannedOrders().length > 0) {
-      <div class="mt-section-hdr mt-section-hdr--overdue" (click)="showOverdueOrders.set(!showOverdueOrders())">
-        <mat-icon>warning</mat-icon>
-        <span>Comenzi neplanificate cu termen depășit</span>
+    <!-- ── 3. Comenzi neplanificate cu termen depășit ── -->
+    <div class="mt-section-hdr mt-section-hdr--overdue" (click)="showOverdueOrders.set(!showOverdueOrders())">
+      <mat-icon>warning</mat-icon>
+      <span>Comenzi neplanificate cu termen depășit</span>
+      @if (overdueUnplannedOrders().length) {
         <span class="mt-cnt mt-cnt--overdue">{{ overdueUnplannedOrders().length }}</span>
-        <mat-icon class="mt-chevron">{{ showOverdueOrders() ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </div>
-      @if (showOverdueOrders()) {
+      }
+      <mat-icon class="mt-chevron">{{ showOverdueOrders() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showOverdueOrders()) {
+      @if (overdueUnplannedOrders().length === 0) {
+        <div class="mt-empty">
+          <mat-icon>warning</mat-icon>
+          <p>Nicio comandă cu termen depășit.</p>
+        </div>
+      } @else {
         @for (o of overdueUnplannedOrders(); track o.id) {
           <ng-container *ngTemplateOutlet="pendingOrderCard; context: { $implicit: o }"></ng-container>
         }
@@ -169,15 +184,22 @@
       }
     }
 
-    <!-- ── 6. Curse planificate șterse (admin) ── -->
-    @if (auth.isAdmin() && deleted().length > 0) {
-      <div class="mt-section-hdr mt-section-hdr--del" (click)="showDeleted.set(!showDeleted())">
-        <mat-icon>delete_sweep</mat-icon>
-        <span>Curse planificate șterse</span>
+    <!-- ── 6. Curse planificate șterse ── -->
+    <div class="mt-section-hdr mt-section-hdr--del" (click)="showDeleted.set(!showDeleted())">
+      <mat-icon>delete_sweep</mat-icon>
+      <span>Curse planificate șterse</span>
+      @if (deleted().length) {
         <span class="mt-cnt mt-cnt--del">{{ deleted().length }}</span>
-        <mat-icon class="mt-chevron">{{ showDeleted() ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </div>
-      @if (showDeleted()) {
+      }
+      <mat-icon class="mt-chevron">{{ showDeleted() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    @if (showDeleted()) {
+      @if (deleted().length === 0) {
+        <div class="mt-empty">
+          <mat-icon>delete_sweep</mat-icon>
+          <p>Nicio cursă ștearsă.</p>
+        </div>
+      } @else {
         @for (t of deleted(); track t.id) {
           <div class="mt-card mt-card--del">
             <div class="mt-card-top">
@@ -188,20 +210,27 @@
                   <span class="mt-driver">{{ driverName(t) }}</span>
                 </div>
               </div>
-              <div class="mt-del-actions">
-                <button class="mt-restore-btn" (click)="notifyDriverDeleted(t)" title="Notifică șofer că cursa a fost anulată" style="color:#16a34a">
-                  <mat-icon>chat</mat-icon>
-                </button>
-                <button class="mt-restore-btn" (click)="restoreTransport(t)" title="Redeschide cursa">
-                  <mat-icon>restore</mat-icon>
-                </button>
-              </div>
+              @if (auth.isAdmin()) {
+                <div class="mt-del-actions">
+                  <button class="mt-restore-btn" (click)="notifyDriverDeleted(t)" title="Notifică șofer că cursa a fost anulată" style="color:#16a34a">
+                    <mat-icon>chat</mat-icon>
+                  </button>
+                  <button class="mt-restore-btn" (click)="restoreTransport(t)" title="Redeschide cursa">
+                    <mat-icon>restore</mat-icon>
+                  </button>
+                </div>
+              }
             </div>
             <div class="mt-card-meta">
               <mat-icon class="mt-meta-icon">schedule</mat-icon>
-              <span>{{ fmtDT(t.oraPlecare) }}</span>
+              <span>{{ fmtDT(t.oraPlecare) }} – {{ fmtDT(t.oraSosire) }}</span>
               <span class="mt-sep">·</span>
               <span>{{ t.deliveries.length }} cm.</span>
+              @let wt = tripWeight(t);
+              @if (wt > 0) {
+                <span class="mt-sep">·</span>
+                <span>{{ fmtWeight(wt) }}</span>
+              }
             </div>
           </div>
         }
@@ -399,15 +428,20 @@
           <span class="mt-pending-dot" title="Produse adăugate, neconfirmate"></span>
         }
         <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
-        <button class="mt-plan-btn mt-plan-btn--edit" (click)="$event.stopPropagation(); openMobileEdit(o)" title="Modificare comandă">
-          <mat-icon>edit</mat-icon>
-        </button>
-        <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
-          <mat-icon>add_shopping_cart</mat-icon>
-        </button>
-        <button class="mt-plan-btn" (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică cursă">
-          <mat-icon>add_road</mat-icon>
-        </button>
+        @if (auth.isAdmin()) {
+          <button class="mt-plan-btn mt-plan-btn--edit" (click)="$event.stopPropagation(); openMobileEdit(o)" title="Modificare comandă">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
+            <mat-icon>add_shopping_cart</mat-icon>
+          </button>
+          <button class="mt-plan-btn" (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică cursă">
+            <mat-icon>add_road</mat-icon>
+          </button>
+          <button class="mt-plan-btn" style="color:#dc2626" (click)="$event.stopPropagation(); deleteOrder(o)" title="Șterge comanda definitiv">
+            <mat-icon>delete_forever</mat-icon>
+          </button>
+        }
       </div>
 
       @if (expandedPendingId() === o.id) {
@@ -505,87 +539,228 @@
 
         <div class="mt-panel-body">
 
+          <!-- Mașină -->
           <div class="mt-field">
             <label class="mt-lbl">Mașină *</label>
-            <select class="mt-sel" [(ngModel)]="formVehicleId">
+            <select class="mt-sel" [ngModel]="formVehicleId()" (ngModelChange)="formVehicleId.set($event)"
+                    [class.mt-sel--busy]="formBusyVehicleIds().has(formVehicleId())">
               <option value="">Selectați mașina...</option>
               @for (v of transportService.vehicles(); track v.id) {
                 <option [value]="v.id">{{ v.alias || v.denumire }} — {{ v.numarInmatriculare }}</option>
               }
             </select>
+            @if (formVehicleId() && formBusyVehicleIds().has(formVehicleId())) {
+              <div class="mt-busy-hint">
+                <mat-icon>warning</mat-icon>Mașina are o altă cursă în această perioadă
+              </div>
+            }
           </div>
 
+          <!-- Șofer -->
           <div class="mt-field">
             <label class="mt-lbl">Șofer *</label>
-            <select class="mt-sel" [(ngModel)]="formDriverId">
+            <select class="mt-sel" [ngModel]="formDriverId()" (ngModelChange)="formDriverId.set($event)"
+                    [class.mt-sel--busy]="formBusyDriverIds().has(formDriverId())">
               <option value="">Selectați șoferul...</option>
               @for (d of transportService.drivers(); track d.id) {
                 <option [value]="d.id">{{ d.nume }}</option>
               }
             </select>
+            @if (formDriverId() && formBusyDriverIds().has(formDriverId())) {
+              <div class="mt-busy-hint">
+                <mat-icon>warning</mat-icon>Șoferul are o altă cursă în această perioadă
+              </div>
+            }
           </div>
 
+          <!-- Plecare / Sosire -->
           <div class="mt-row-2">
             <div class="mt-field">
               <label class="mt-lbl">Data plecare *</label>
-              <input class="mt-inp" type="date" [(ngModel)]="formPlecareDate">
+              <input class="mt-inp" type="date" [ngModel]="formPlecareDate()" (ngModelChange)="formPlecareDate.set($event)">
             </div>
             <div class="mt-field">
               <label class="mt-lbl">Ora plecare</label>
-              <input class="mt-inp" type="time" [(ngModel)]="formPlecareTime">
+              <input class="mt-inp" type="time" [ngModel]="formPlecareTime()" (ngModelChange)="formPlecareTime.set($event)">
             </div>
           </div>
-
           <div class="mt-row-2">
             <div class="mt-field">
               <label class="mt-lbl">Data sosire *</label>
-              <input class="mt-inp" type="date" [(ngModel)]="formSosireDate">
+              <input class="mt-inp" type="date" [ngModel]="formSosireDate()" (ngModelChange)="formSosireDate.set($event)">
             </div>
             <div class="mt-field">
               <label class="mt-lbl">Ora sosire</label>
-              <input class="mt-inp" type="time" [(ngModel)]="formSosireTime">
+              <input class="mt-inp" type="time" [ngModel]="formSosireTime()" (ngModelChange)="formSosireTime.set($event)">
             </div>
           </div>
 
+          <!-- Ajutor -->
           <div class="mt-field">
             <label class="mt-lbl">Ajutor (opțional)</label>
-            <input class="mt-inp" type="text" [(ngModel)]="formHelperName" placeholder="Nume ajutor…">
+            <input class="mt-inp" type="text" [ngModel]="formHelperName()" (ngModelChange)="formHelperName.set($event)"
+                   placeholder="Nume ajutor…">
           </div>
 
+          <!-- ── Comenzi adăugate ── -->
           <div class="mt-form-sec-title">
             <mat-icon>receipt_long</mat-icon>
             Comenzi pe cursă
-            <span class="mt-cnt">{{ formSelectedOrderIds().size }}</span>
+            @if (formModalOrders().length) {
+              <span class="mt-cnt">{{ formModalOrders().length }}</span>
+            }
           </div>
 
-          @if (formEligibleOrders().length === 0) {
+          @if (formModalOrders().length > 0) {
+            <div class="mt-form-orders-list">
+              @for (o of formModalOrders(); track o.id; let fi = $index; let last = $last) {
+                <div class="mt-form-order-card">
+
+                  <!-- Card header: ↑↓ | info | deadline | × -->
+                  <div class="mt-form-order-hdr">
+                    <div class="mt-form-order-move-col">
+                      <button class="mt-form-move-btn" [disabled]="fi === 0" (click)="formMoveOrderUp(o.id)">
+                        <mat-icon>arrow_drop_up</mat-icon>
+                      </button>
+                      <button class="mt-form-move-btn" [disabled]="last" (click)="formMoveOrderDown(o.id)">
+                        <mat-icon>arrow_drop_down</mat-icon>
+                      </button>
+                    </div>
+                    <div class="mt-form-order-info">
+                      <span class="mt-form-order-name">#{{ o.orderNumber ?? '—' }} {{ o.client.name }}</span>
+                      @if (o.client.address) {
+                        <span class="mt-form-order-meta">{{ o.client.address }}</span>
+                      }
+                    </div>
+                    @if (o.deliveryDate) {
+                      @let dlStatus = formOrderDeadlineStatus(o);
+                      <span class="mt-form-order-deadline" [class.mt-form-order-deadline--warn]="dlStatus === 'warn'">
+                        {{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                      </span>
+                    }
+                    <button class="mt-form-order-remove" (click)="removeOrderFromForm(o.id)" title="Elimină comanda din cursă">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+
+                  <!-- Card body: qtys, meta actions, note -->
+                  <div class="mt-form-order-body">
+
+                    <!-- Per-product qty steppers -->
+                    <div class="mt-form-products">
+                      @for (p of o.products; track $index; let pi = $index) {
+                        @let qty = getFormQty(o.id, pi);
+                        @let maxQty = getFormMaxQty(o, pi);
+                        <div class="mt-form-prod-row">
+                          <span class="mt-form-prod-name">{{ p.name }}</span>
+                          <span class="mt-form-prod-max">(max {{ maxQty }})</span>
+                          <div class="mt-edit-stepper">
+                            <button class="mt-step-btn" (click)="setFormQty(o.id, pi, qty - 1)">−</button>
+                            <span class="mt-step-qty" [class.mt-step-qty--zero]="qty === 0">{{ qty }}</span>
+                            <button class="mt-step-btn" (click)="setFormQty(o.id, pi, qty + 1)">+</button>
+                          </div>
+                          <span class="mt-form-prod-um">{{ p.um }}</span>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Inline edit address / deadline -->
+                    @if (editingAddrId() === o.id) {
+                      <div class="mt-form-inline-edit">
+                        <div class="mt-form-inline-row">
+                          <input class="mt-form-inline-inp" type="text" [ngModel]="addrEdit()" (ngModelChange)="addrEdit.set($event)"
+                                 placeholder="Adresă livrare…">
+                          <button class="mt-form-inline-save" (click)="saveAddr(o)">Salvează</button>
+                          <button class="mt-form-inline-cancel" (click)="cancelEditAddr()">✕</button>
+                        </div>
+                      </div>
+                    } @else if (editingDeadlineId() === o.id) {
+                      <div class="mt-form-inline-edit">
+                        <div class="mt-form-inline-row">
+                          <input class="mt-form-inline-inp" type="date" style="flex:2"
+                                 [ngModel]="deadlineDateEdit()" (ngModelChange)="deadlineDateEdit.set($event)">
+                          <input class="mt-form-inline-inp" type="time" style="flex:1"
+                                 [ngModel]="deadlineTimeEdit()" (ngModelChange)="deadlineTimeEdit.set($event)">
+                          <button class="mt-form-inline-save" (click)="saveDeadline(o)">Salvează</button>
+                          <button class="mt-form-inline-cancel" (click)="cancelEditDeadline()">✕</button>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="mt-form-meta-actions">
+                        <button class="mt-form-meta-btn" (click)="startEditAddr(o)">
+                          <mat-icon>location_on</mat-icon>Adresă
+                        </button>
+                        <button class="mt-form-meta-btn" (click)="startEditDeadline(o)">
+                          <mat-icon>event</mat-icon>Termen
+                        </button>
+                      </div>
+                    }
+
+                    <!-- Delivery note -->
+                    <textarea class="mt-form-note" rows="1"
+                              [ngModel]="getFormNote(o.id)"
+                              (ngModelChange)="setFormNote(o.id, $event)"
+                              [placeholder]="'Notă livrare #' + (o.orderNumber ?? '')">
+                    </textarea>
+
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- ── Adaugă comenzi ── -->
+          @if (formEligibleOrders().length > 0) {
+            <div class="mt-form-add-sec-title">
+              <mat-icon>add_circle_outline</mat-icon>
+              Adaugă comenzi
+            </div>
+            @for (o of formEligibleOrders(); track o.id) {
+              <div class="mt-form-add-item">
+                <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
+                <span class="mt-pick-name">{{ o.client.name }}</span>
+                @if (o.deliveryDate) {
+                  <span class="mt-deadline-sm" [class.mt-deadline-sm--overdue]="isOrderDeadlineOverdue(o)">
+                    {{ o.deliveryDate | date:'dd.MM' }}
+                  </span>
+                }
+                <button class="mt-form-add-btn" (click)="addOrderToForm(o)" title="Adaugă la cursă">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            }
+          } @else if (formModalOrders().length === 0) {
             <div class="mt-no-orders">
               <mat-icon>info_outline</mat-icon>
               <span>Nu există comenzi disponibile pentru livrare.</span>
             </div>
-          } @else {
-            @for (o of formEligibleOrders(); track o.id) {
-              <div class="mt-pick-item" [class.mt-pick-item--sel]="formSelectedOrderIds().has(o.id)"
-                   (click)="toggleOrderInForm(o.id)">
-                <mat-icon class="mt-pick-chk">
-                  {{ formSelectedOrderIds().has(o.id) ? 'check_box' : 'check_box_outline_blank' }}
-                </mat-icon>
-                <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
-                <span class="mt-pick-name">{{ o.client.name }}</span>
-                @if (o.deliveryDate) {
-                  <span class="mt-deadline-sm">{{ o.deliveryDate | date:'dd.MM' }}</span>
-                }
-              </div>
-            }
           }
 
         </div>
 
-        <div class="mt-panel-ftr">
-          <button class="mt-btn mt-btn--ghost" (click)="closeForm()">Anulează</button>
-          <button class="mt-btn mt-btn--primary" (click)="save()">
-            {{ editingId() ? 'Salvează' : 'Creează cursa' }}
-          </button>
+        <!-- Footer: weight bar + buttons -->
+        <div class="mt-panel-ftr" style="flex-direction:column; gap:8px">
+          @let wt = formTotalWeight();
+          @let tonaj = (transportService.getVehicle(formVehicleId())?.tonajMaxim) ?? 0;
+          @if (wt > 0) {
+            @if (tonaj > 0 && wt > tonaj) {
+              <div class="mt-form-weight-bar mt-form-weight-warn">
+                <mat-icon>scale</mat-icon>
+                Greutate: {{ fmtWeight(wt) }} — depășit tonaj {{ fmtWeight(tonaj) }}!
+              </div>
+            } @else {
+              <div class="mt-form-weight-bar mt-form-weight-ok">
+                <mat-icon>scale</mat-icon>
+                Greutate totală: {{ fmtWeight(wt) }}@if (tonaj > 0) { / {{ fmtWeight(tonaj) }} }
+              </div>
+            }
+          }
+          <div style="display:flex; gap:10px; width:100%">
+            <button class="mt-btn mt-btn--ghost" (click)="closeForm()">Anulează</button>
+            <button class="mt-btn mt-btn--primary" (click)="save()">
+              {{ editingId() ? 'Salvează' : 'Creează cursa' }}
+            </button>
+          </div>
         </div>
 
       </div>
