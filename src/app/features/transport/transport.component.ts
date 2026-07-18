@@ -1052,9 +1052,10 @@ export class TransportComponent implements OnInit {
       .map(t => {
         const pT = new Date(t.oraPlecare).getTime();
         const sT = new Date(t.oraSosire).getTime();
-        const overdue = sT <= dayStart;
-        if (overdue) {
-          // Pin to left edge of today, fixed 6% width
+        const now = Date.now();
+        const overdue = sT < now || this.ordersForTransport(t).some(o => this.isOrderDeadlineOverdue(o));
+        if (sT <= dayStart) {
+          // Trip ended before this day — pin to left edge, fixed 6% width
           return { transport: t, leftPct: 0, widthPct: 6, overdue: true };
         }
         const clampedP = Math.max(pT, dayStart);
@@ -1062,7 +1063,8 @@ export class TransportComponent implements OnInit {
         return {
           transport: t,
           leftPct:  Math.max(0, ((clampedP - dayStart) / duration) * 100),
-          widthPct: Math.max(1, ((clampedS - clampedP) / duration) * 100)
+          widthPct: Math.max(1, ((clampedS - clampedP) / duration) * 100),
+          overdue
         };
       });
   }
