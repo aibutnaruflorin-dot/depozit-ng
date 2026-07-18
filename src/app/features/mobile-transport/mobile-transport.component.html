@@ -429,9 +429,6 @@
         }
         <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
         @if (auth.isAdmin()) {
-          <button class="mt-plan-btn mt-plan-btn--edit" (click)="$event.stopPropagation(); openMobileEdit(o)" title="Modificare comandă">
-            <mat-icon>edit</mat-icon>
-          </button>
           <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
             <mat-icon>add_shopping_cart</mat-icon>
           </button>
