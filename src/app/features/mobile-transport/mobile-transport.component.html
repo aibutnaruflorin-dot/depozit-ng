@@ -55,19 +55,19 @@
                 <small>{{ v.numarInmatriculare }}</small>
               </div>
               @for (day of planningDays(); track day.isoDate) {
-                <div class="mt-cal-cell" (click)="openCreateForVehicleDay(v.id, day.isoDate)">
-                  @for (t of tripsForVehicleDay(v.id, day.isoDate); track t.id) {
+                @let dayTrips = tripsForVehicleDay(v.id, day.isoDate);
+                <div class="mt-cal-cell">
+                  @for (t of dayTrips; track t.id) {
                     <div class="mt-cal-chip"
                          [class.mt-cal-chip--planificat]="t.status === 'planificat' && !isOverdue(t)"
                          [class.mt-cal-chip--active]="t.status === 'in_livrare' && !isOverdue(t)"
                          [class.mt-cal-chip--overdue]="isOverdue(t)"
-                         (click)="$event.stopPropagation(); openTripFromCalendar(t)">
+                         (click)="openTripFromCalendar(t)">
                       {{ fmtTime(t.oraPlecare) }}
                     </div>
                   }
-                  @if (!tripsForVehicleDay(v.id, day.isoDate).length) {
-                    <div class="mt-cal-empty-cell">+</div>
-                  }
+                  <div class="mt-cal-add" (click)="openCreateForVehicleDay(v.id, day.isoDate)"
+                       [class.mt-cal-add--empty]="!dayTrips.length">+</div>
                 </div>
               }
             }
@@ -317,7 +317,7 @@
     @let ov = isOverdue(t);
     @let val = tripValue(t);
     @let wt  = tripWeight(t);
-    <div class="mt-card" [class.mt-card--overdue]="ov" [class.mt-card--cancel]="t.status==='anulat'" (click)="toggleExpand(t.id)">
+    <div class="mt-card" [id]="'trip-' + t.id" [class.mt-card--overdue]="ov" [class.mt-card--cancel]="t.status==='anulat'" (click)="toggleExpand(t.id)">
 
       <div class="mt-card-top">
         <div class="mt-trip-info">

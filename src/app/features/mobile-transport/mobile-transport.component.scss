@@ -435,9 +435,12 @@
   &.mt-cal-chip--active     { background: #DCFCE7; color: #166534; }
   &.mt-cal-chip--overdue    { background: #FEE2E2; color: #991B1B; }
 }
-.mt-cal-empty-cell {
-  font-size: .9rem; color: var(--color-text-muted); opacity: .3;
-  text-align: center; line-height: 32px;
+.mt-cal-add {
+  text-align: center; font-size: .75rem; font-weight: 700;
+  color: var(--color-text-muted); opacity: .35; cursor: pointer; line-height: 14px;
+  padding: 1px 0; border-radius: 3px;
+  &:active { opacity: .7; background: rgba(0,0,0,.06); }
+  &.mt-cal-add--empty { font-size: .9rem; opacity: .3; line-height: 30px; }
 }
 .mt-cal-legend {
   display: flex; gap: 12px; margin-top: 6px; padding: 0 4px;

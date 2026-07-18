@@ -397,6 +397,9 @@ export class MobileTransportComponent implements OnInit {
       this.showActive.set(true);
     }
     this.expandedId.set(t.id);
+    setTimeout(() => {
+      document.getElementById('trip-' + t.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
   }
 
   togglePendingExpand(orderId: string): void {
