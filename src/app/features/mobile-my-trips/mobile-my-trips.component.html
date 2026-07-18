@@ -158,6 +158,18 @@
                       </div>
                     </div>
                   }
+                  @if (t.status !== 'anulat') {
+                    <div class="mm-mini-stepper" (click)="$event.stopPropagation()">
+                      @for (step of STATUS_STEPS; track step; let i = $index) {
+                        <button class="mm-step-btn"
+                                [class.mm-step-btn--done]="stepIndex(t) > i"
+                                [class.mm-step-btn--current]="t.status === step"
+                                (click)="setTripStatus(t, step)">
+                          {{ STEP_LABELS[i] }}
+                        </button>
+                      }
+                    </div>
+                  }
                 </div>
               }
             }
@@ -344,6 +356,18 @@
                         <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">schedule</mat-icon><span class="mm-log-label">Durată totală</span><span class="mm-log-time">{{ tripTotalDuration(t) }}</span></div>
                       }
                     </div>
+                  </div>
+                }
+                @if (t.status !== 'anulat') {
+                  <div class="mm-mini-stepper" (click)="$event.stopPropagation()">
+                    @for (step of STATUS_STEPS; track step; let i = $index) {
+                      <button class="mm-step-btn"
+                              [class.mm-step-btn--done]="stepIndex(t) > i"
+                              [class.mm-step-btn--current]="t.status === step"
+                              (click)="setTripStatus(t, step)">
+                        {{ STEP_LABELS[i] }}
+                      </button>
+                    }
                   </div>
                 }
               </div>
