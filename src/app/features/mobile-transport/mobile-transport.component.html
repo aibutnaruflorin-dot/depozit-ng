@@ -454,13 +454,14 @@
           </div>
         </div>
         <mat-icon class="mt-expand-icon">{{ expandedPendingId() === o.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+        <button class="mt-plan-btn" [disabled]="!transportService.vehicles().length || !transportService.drivers().length"
+                (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică cursă">
+          <mat-icon>add_road</mat-icon>
+        </button>
+        <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
+          <mat-icon>add_shopping_cart</mat-icon>
+        </button>
         @if (auth.isAdmin()) {
-          <button class="mt-plan-btn mt-plan-btn--cart" (click)="$event.stopPropagation(); addProductsToOrder(o.id)" title="Adaugă produse">
-            <mat-icon>add_shopping_cart</mat-icon>
-          </button>
-          <button class="mt-plan-btn" (click)="$event.stopPropagation(); openCreate(o.id)" title="Planifică cursă">
-            <mat-icon>add_road</mat-icon>
-          </button>
           <button class="mt-plan-btn" style="color:#dc2626" (click)="$event.stopPropagation(); deleteOrder(o)" title="Șterge comanda definitiv">
             <mat-icon>delete_forever</mat-icon>
           </button>
