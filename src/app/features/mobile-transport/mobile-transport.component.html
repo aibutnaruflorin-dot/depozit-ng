@@ -376,7 +376,7 @@
                         [value]="getDeliveryNote(t, o.id)"
                         (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
                         (blur)="saveObsBuffer(t, o.id)"
-                        [placeholder]="'Notă #' + o.orderNumber"
+                        [placeholder]="'Observații #' + o.orderNumber"
                         (click)="$event.stopPropagation()">
               </textarea>
             }
@@ -603,30 +603,62 @@
           <div class="mt-row-2">
             <div class="mt-field">
               <label class="mt-lbl">Data plecare *</label>
-              <input class="mt-inp" type="date" [ngModel]="formPlecareDate()" (ngModelChange)="formPlecareDate.set($event)">
+              <input class="mt-inp" type="date" [min]="todayIso" [ngModel]="formPlecareDate()" (ngModelChange)="formPlecareDate.set($event)">
             </div>
             <div class="mt-field">
               <label class="mt-lbl">Ora plecare</label>
               <input class="mt-inp" type="time" [ngModel]="formPlecareTime()" (ngModelChange)="formPlecareTime.set($event)">
             </div>
           </div>
+          @if (formPlecareInPast()) {
+            <div class="mt-form-error-banner">
+              <mat-icon>history_toggle_off</mat-icon> Ora de plecare nu poate fi în trecut.
+            </div>
+          }
           <div class="mt-row-2">
             <div class="mt-field">
               <label class="mt-lbl">Data sosire *</label>
-              <input class="mt-inp" type="date" [ngModel]="formSosireDate()" (ngModelChange)="formSosireDate.set($event)">
+              <input class="mt-inp" type="date" [min]="formPlecareDate() || todayIso" [ngModel]="formSosireDate()" (ngModelChange)="formSosireDate.set($event)">
             </div>
             <div class="mt-field">
               <label class="mt-lbl">Ora sosire</label>
               <input class="mt-inp" type="time" [ngModel]="formSosireTime()" (ngModelChange)="formSosireTime.set($event)">
             </div>
           </div>
+          @if (formSosireBeforePlecare()) {
+            <div class="mt-form-error-banner">
+              <mat-icon>error_outline</mat-icon> Sosirea trebuie să fie după plecare.
+            </div>
+          }
 
           <!-- Ajutor -->
           <div class="mt-field">
             <label class="mt-lbl">Ajutor (opțional)</label>
-            <input class="mt-inp" type="text" [ngModel]="formHelperName()" (ngModelChange)="formHelperName.set($event)"
+            <input class="mt-inp" type="text" list="mt-helper-list"
+                   [ngModel]="formHelperName()" (ngModelChange)="formHelperName.set($event)"
+                   [class.mt-sel--busy]="formHelperBusy()"
                    placeholder="Nume ajutor…">
+            <datalist id="mt-helper-list">
+              @for (grp of transportService.helperOptions(); track grp.group) {
+                @for (d of grp.items; track d.id) {
+                  <option [value]="d.nume"></option>
+                }
+              }
+            </datalist>
+            @if (formHelperBusy()) {
+              <div class="mt-busy-hint">
+                <mat-icon>warning</mat-icon>{{ formHelperName() }} este deja în cursă în intervalul selectat
+              </div>
+            }
           </div>
+
+          <!-- Deadline conflict warning -->
+          @if (formHasDeadlineConflicts()) {
+            <div class="mt-form-warn-banner">
+              <mat-icon>warning_amber</mat-icon>
+              Atenție: termenul de livrare al unor comenzi este în afara ferestrei de transport.
+            </div>
+          }
 
           <!-- ── Comenzi adăugate ── -->
           <div class="mt-form-sec-title">
@@ -642,7 +674,7 @@
               @for (o of formModalOrders(); track o.id; let fi = $index; let last = $last) {
                 <div class="mt-form-order-card">
 
-                  <!-- Card header: ↑↓ | info | deadline | × -->
+                  <!-- Header: ↑↓ | info+address | deadline chip | × -->
                   <div class="mt-form-order-hdr">
                     <div class="mt-form-order-move-col">
                       <button class="mt-form-move-btn" [disabled]="fi === 0" (click)="formMoveOrderUp(o.id)">
@@ -654,29 +686,66 @@
                     </div>
                     <div class="mt-form-order-info">
                       <span class="mt-form-order-name">#{{ o.orderNumber ?? '—' }} {{ o.client.name }}</span>
-                      @if (o.client.address) {
-                        <span class="mt-form-order-meta">{{ o.client.address }}</span>
-                      }
+                      <!-- Address: click to edit -->
+                      <button class="mt-form-addr-chip" (click)="startEditAddr(o)" title="Editează adresa">
+                        <mat-icon>location_on</mat-icon>
+                        <span>{{ o.client.address || 'Adaugă adresă…' }}</span>
+                      </button>
                     </div>
-                    @if (o.deliveryDate) {
-                      @let dlStatus = formOrderDeadlineStatus(o);
-                      <span class="mt-form-order-deadline" [class.mt-form-order-deadline--warn]="dlStatus === 'warn'">
+                    <!-- Deadline chip: click to edit -->
+                    @let dlStatus = formOrderDeadlineStatus(o);
+                    <button class="mt-form-order-deadline"
+                            [class.mt-form-order-deadline--warn]="dlStatus === 'warn'"
+                            [class.mt-form-order-deadline--empty]="!o.deliveryDate"
+                            (click)="startEditDeadline(o)" title="Editează termenul">
+                      @if (o.deliveryDate) {
+                        <mat-icon style="font-size:12px;width:12px;height:12px;line-height:12px">event</mat-icon>
                         {{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                      </span>
-                    }
+                      } @else {
+                        <mat-icon style="font-size:14px;width:14px;height:14px">event</mat-icon>
+                      }
+                    </button>
                     <button class="mt-form-order-remove" (click)="removeOrderFromForm(o.id)" title="Elimină comanda din cursă">
                       <mat-icon>close</mat-icon>
                     </button>
                   </div>
 
-                  <!-- Card body: qtys, meta actions, note -->
+                  <!-- Card body -->
                   <div class="mt-form-order-body">
+
+                    <!-- Inline edit address -->
+                    @if (editingAddrId() === o.id) {
+                      <div class="mt-form-inline-edit">
+                        <div class="mt-form-inline-row">
+                          <input class="mt-form-inline-inp" type="text" [ngModel]="addrEdit()" (ngModelChange)="addrEdit.set($event)"
+                                 placeholder="Adresă livrare…">
+                          <button class="mt-form-inline-save" (click)="saveAddr(o)">✓</button>
+                          <button class="mt-form-inline-cancel" (click)="cancelEditAddr()">✕</button>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- Inline edit deadline -->
+                    @if (editingDeadlineId() === o.id) {
+                      <div class="mt-form-inline-edit">
+                        <div class="mt-form-inline-row">
+                          <input class="mt-form-inline-inp" type="date" style="flex:2"
+                                 [ngModel]="deadlineDateEdit()" (ngModelChange)="deadlineDateEdit.set($event)">
+                          <input class="mt-form-inline-inp" type="time" style="flex:1"
+                                 [ngModel]="deadlineTimeEdit()" (ngModelChange)="deadlineTimeEdit.set($event)">
+                          <button class="mt-form-inline-save" (click)="saveDeadline(o)">✓</button>
+                          <button class="mt-form-inline-cancel" (click)="cancelEditDeadline()">✕</button>
+                        </div>
+                      </div>
+                    }
 
                     <!-- Per-product qty steppers -->
                     <div class="mt-form-products">
                       @for (p of o.products; track $index; let pi = $index) {
                         @let qty = getFormQty(o.id, pi);
                         @let maxQty = getFormMaxQty(o, pi);
+                        @let masa = getProductMasa(p);
+                        @let pret = getProductPret(p);
                         <div class="mt-form-prod-row">
                           <span class="mt-form-prod-name">{{ p.name }}</span>
                           <span class="mt-form-prod-max">(max {{ maxQty }})</span>
@@ -687,46 +756,25 @@
                           </div>
                           <span class="mt-form-prod-um">{{ p.um }}</span>
                         </div>
+                        @if (qty > 0 && (masa > 0 || pret > 0)) {
+                          <div class="mt-form-prod-detail">
+                            @if (masa > 0) {
+                              <span>{{ (masa * qty) | number:'1.0-2' }} kg</span>
+                            }
+                            @if (masa > 0 && pret > 0) { <span class="mt-form-prod-sep">·</span> }
+                            @if (pret > 0) {
+                              <span>{{ (pret * qty) | number:'1.0-2' }} lei c.TVA</span>
+                            }
+                          </div>
+                        }
                       }
                     </div>
 
-                    <!-- Inline edit address / deadline -->
-                    @if (editingAddrId() === o.id) {
-                      <div class="mt-form-inline-edit">
-                        <div class="mt-form-inline-row">
-                          <input class="mt-form-inline-inp" type="text" [ngModel]="addrEdit()" (ngModelChange)="addrEdit.set($event)"
-                                 placeholder="Adresă livrare…">
-                          <button class="mt-form-inline-save" (click)="saveAddr(o)">Salvează</button>
-                          <button class="mt-form-inline-cancel" (click)="cancelEditAddr()">✕</button>
-                        </div>
-                      </div>
-                    } @else if (editingDeadlineId() === o.id) {
-                      <div class="mt-form-inline-edit">
-                        <div class="mt-form-inline-row">
-                          <input class="mt-form-inline-inp" type="date" style="flex:2"
-                                 [ngModel]="deadlineDateEdit()" (ngModelChange)="deadlineDateEdit.set($event)">
-                          <input class="mt-form-inline-inp" type="time" style="flex:1"
-                                 [ngModel]="deadlineTimeEdit()" (ngModelChange)="deadlineTimeEdit.set($event)">
-                          <button class="mt-form-inline-save" (click)="saveDeadline(o)">Salvează</button>
-                          <button class="mt-form-inline-cancel" (click)="cancelEditDeadline()">✕</button>
-                        </div>
-                      </div>
-                    } @else {
-                      <div class="mt-form-meta-actions">
-                        <button class="mt-form-meta-btn" (click)="startEditAddr(o)">
-                          <mat-icon>location_on</mat-icon>Adresă
-                        </button>
-                        <button class="mt-form-meta-btn" (click)="startEditDeadline(o)">
-                          <mat-icon>event</mat-icon>Termen
-                        </button>
-                      </div>
-                    }
-
-                    <!-- Delivery note -->
+                    <!-- Observații comandă (editabil direct pe comandă) -->
                     <textarea class="mt-form-note" rows="1"
-                              [ngModel]="getFormNote(o.id)"
-                              (ngModelChange)="setFormNote(o.id, $event)"
-                              [placeholder]="'Notă livrare #' + (o.orderNumber ?? '')">
+                              [ngModel]="formOrderObs()[o.id] ?? ''"
+                              (ngModelChange)="setFormObs(o.id, $event)"
+                              [placeholder]="'Observații #' + (o.orderNumber ?? '')">
                     </textarea>
 
                   </div>
@@ -772,10 +820,10 @@
             @if (tonaj > 0 && wt > tonaj) {
               <div class="mt-form-weight-bar mt-form-weight-warn">
                 <mat-icon>scale</mat-icon>
-                Greutate: {{ fmtWeight(wt) }} — depășit tonaj {{ fmtWeight(tonaj) }}!
+                Greutate: {{ fmtWeight(wt) }} / max {{ fmtWeight(tonaj) }} — depășit cu {{ fmtWeight(wt - tonaj) }}!
               </div>
             } @else {
-              <div class="mt-form-weight-bar mt-form-weight-ok">
+              <div class="mt-form-weight-bar" [class.mt-form-weight-ok]="tonaj > 0" [class.mt-form-weight-none]="tonaj === 0">
                 <mat-icon>scale</mat-icon>
                 Greutate totală: {{ fmtWeight(wt) }}@if (tonaj > 0) { / {{ fmtWeight(tonaj) }} }
               </div>

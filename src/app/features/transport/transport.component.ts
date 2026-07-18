@@ -1,4 +1,6 @@
-import { Component, signal, computed, OnInit, WritableSignal } from '@angular/core';
+import { Component, signal, computed, OnInit, WritableSignal, Signal, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -186,6 +188,9 @@ export class TransportComponent implements OnInit {
       }, 0);
     }, 0);
   });
+
+  private _formVehicleIdSig!: ReturnType<typeof toSignal<string>>;
+  modalVehicleMaxKg!: Signal<number>;
 
   // ── Inline edit state for order meta fields ────────────────────────────────
   editingAddressId  = signal<string | null>(null);
@@ -505,6 +510,15 @@ export class TransportComponent implements OnInit {
       sosireTime:  ['', Validators.required],
       helper:      ['']
     }, { validators: [plecareNotInPast, sosireAfterPlecare] });
+
+    this._formVehicleIdSig = toSignal(
+      this.form.get('vehicleId')!.valueChanges.pipe(startWith(this.form.get('vehicleId')!.value ?? '')),
+      { initialValue: this.form.get('vehicleId')!.value ?? '' }
+    );
+    this.modalVehicleMaxKg = computed(() => {
+      const id = this._formVehicleIdSig!();
+      return id ? (this.transportService.getVehicle(id)?.tonajMaxim ?? 0) : 0;
+    });
   }
 
   ngOnInit(): void {

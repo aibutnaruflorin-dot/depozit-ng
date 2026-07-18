@@ -46,6 +46,7 @@ export class MobileTransportComponent implements OnInit {
   formModalOrders   = signal<Order[]>([]);
   formModalQty      = signal<Record<string, Record<number, number>>>({});
   formDeliveryNotes = signal<Record<string, string>>({});
+  formOrderObs      = signal<Record<string, string>>({});
   editingAddrId     = signal<string | null>(null);
   addrEdit          = signal('');
   editingDeadlineId = signal<string | null>(null);
@@ -77,6 +78,10 @@ export class MobileTransportComponent implements OnInit {
     private snackBar: MatSnackBar,
     private router: Router
   ) {}
+
+  get todayIso(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
 
   ngOnInit(): void {
     const contacts = this.storage.get<WhatsAppContact[]>('app_whatsapp_contacts') ?? [];
@@ -171,6 +176,42 @@ export class MobileTransportComponent implements OnInit {
       return this._hasRemainingItems(o, editId);
     }).sort((a, b) => (a.deliveryDate ?? a.timestamp).localeCompare(b.deliveryDate ?? b.timestamp));
   });
+
+  readonly formPlecareInPast = computed<boolean>(() => {
+    const pd = this.formPlecareDate(), pt = this.formPlecareTime();
+    if (!pd) return false;
+    return new Date(`${pd}T${pt}:00`) < new Date();
+  });
+
+  readonly formSosireBeforePlecare = computed<boolean>(() => {
+    const pd = this.formPlecareDate(), pt = this.formPlecareTime();
+    const sd = this.formSosireDate(), st = this.formSosireTime();
+    if (!pd || !sd) return false;
+    return `${sd}T${st}:00` <= `${pd}T${pt}:00`;
+  });
+
+  readonly formHelperBusy = computed<boolean>(() => {
+    const name = this.formHelperName().trim();
+    if (!name) return false;
+    const pd = this.formPlecareDate(), pt = this.formPlecareTime();
+    const sd = this.formSosireDate(), st = this.formSosireTime();
+    if (!pd || !sd) return false;
+    const pA = new Date(`${pd}T${pt}:00`).getTime();
+    const sA = new Date(`${sd}T${st}:00`).getTime();
+    if (isNaN(pA) || isNaN(sA) || sA <= pA) return false;
+    const eA = this._effectiveEndMs(pA, sA);
+    const editId = this.editingId();
+    return this.transportService.transports()
+      .filter(t => !['livrat','anulat','sters'].includes(t.status) && t.id !== editId && t.helper === name)
+      .some(t => {
+        const pB = new Date(t.oraPlecare).getTime(), sB = new Date(t.oraSosire).getTime();
+        return pA < this._effectiveEndMs(pB, sB) && pB < eA;
+      });
+  });
+
+  readonly formHasDeadlineConflicts = computed<boolean>(() =>
+    this.formModalOrders().some(o => this.formOrderDeadlineStatus(o) === 'warn')
+  );
 
   readonly formBusyVehicleIds = computed<Set<string>>(() => {
     const pd = this.formPlecareDate(), pt = this.formPlecareTime();
@@ -370,7 +411,7 @@ export class MobileTransportComponent implements OnInit {
     this.formPlecareTime.set('08:00');
     this.formSosireDate.set(isoDate);
     this.formSosireTime.set('18:00');
-    this.formModalOrders.set([]); this.formModalQty.set({}); this.formDeliveryNotes.set({});
+    this.formModalOrders.set([]); this.formModalQty.set({}); this.formDeliveryNotes.set({}); this.formOrderObs.set({});
     this.editingAddrId.set(null); this.editingDeadlineId.set(null);
     this.showForm.set(true);
   }
@@ -451,12 +492,15 @@ export class MobileTransportComponent implements OnInit {
     rem.forEach((q, i) => { if (q > 0) qtyMap[i] = q; });
     this.formModalOrders.update(arr => [...arr, order]);
     this.formModalQty.update(m => ({ ...m, [order.id]: qtyMap }));
+    // pre-populate obs buffer: observatii proprii sau nota clientului (fallback ca în card)
+    this.formOrderObs.update(m => ({ ...m, [order.id]: order.observatii ?? order.client.note ?? '' }));
   }
 
   removeOrderFromForm(orderId: string): void {
     this.formModalOrders.update(arr => arr.filter(o => o.id !== orderId));
     this.formModalQty.update(m => { const c = { ...m }; delete c[orderId]; return c; });
     this.formDeliveryNotes.update(m => { const c = { ...m }; delete c[orderId]; return c; });
+    this.formOrderObs.update(m => { const c = { ...m }; delete c[orderId]; return c; });
     if (this.editingAddrId() === orderId) this.editingAddrId.set(null);
     if (this.editingDeadlineId() === orderId) this.editingDeadlineId.set(null);
   }
@@ -479,6 +523,23 @@ export class MobileTransportComponent implements OnInit {
 
   setFormNote(orderId: string, val: string): void {
     this.formDeliveryNotes.update(m => ({ ...m, [orderId]: val }));
+  }
+
+  getProductMasa(p: OrderProduct): number {
+    return p.masaNeta ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta ?? 0;
+  }
+
+  getProductPret(p: OrderProduct): number {
+    return p.pretCuTVA ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.pretCuTVA ?? 0;
+  }
+
+  getFormObs(orderId: string): string {
+    return this.formOrderObs()[orderId] ?? '';
+  }
+
+  setFormObs(orderId: string, val: string): void {
+    this.formOrderObs.update(m => ({ ...m, [orderId]: val }));
+    this.ordersService.updateOrderObservatii(orderId, val);
   }
 
   formMoveOrderUp(orderId: string): void {
@@ -528,9 +589,14 @@ export class MobileTransportComponent implements OnInit {
 
   formOrderDeadlineStatus(order: Order): 'ok' | 'warn' | 'no-deadline' {
     if (!order.deliveryDate) return 'no-deadline';
-    const pd = this.formPlecareDate();
-    if (!pd) return 'ok';
-    return order.deliveryDate < pd ? 'warn' : 'ok';
+    const pd = this.formPlecareDate(), pt = this.formPlecareTime();
+    const sd = this.formSosireDate(), st = this.formSosireTime();
+    if (!pd || !sd) return 'ok';
+    const from = new Date(`${pd}T${pt}:00`).getTime();
+    const to   = new Date(`${sd}T${st}:00`).getTime();
+    const deadlineStr = order.deliveryDate + 'T' + (order.deliveryTime ?? '23:59') + ':00';
+    const dl = new Date(deadlineStr).getTime();
+    return (dl >= from && dl <= to) ? 'ok' : 'warn';
   }
 
   hasPendingChanges(o: Order): boolean {
@@ -632,7 +698,7 @@ export class MobileTransportComponent implements OnInit {
     const today = new Date().toISOString().slice(0, 10);
     this.formPlecareDate.set(today); this.formPlecareTime.set('08:00');
     this.formSosireDate.set(today);  this.formSosireTime.set('18:00');
-    this.formModalOrders.set([]); this.formModalQty.set({}); this.formDeliveryNotes.set({});
+    this.formModalOrders.set([]); this.formModalQty.set({}); this.formDeliveryNotes.set({}); this.formOrderObs.set({});
     this.editingAddrId.set(null); this.editingDeadlineId.set(null);
     if (preselect) {
       const o = this.ordersService.orders().find(x => x.id === preselect);
@@ -654,6 +720,7 @@ export class MobileTransportComponent implements OnInit {
     const modalOrders: Order[] = [];
     const modalQty: Record<string, Record<number, number>> = {};
     const notes: Record<string, string> = {};
+    const obsMap: Record<string, string> = {};
     for (const del of t.deliveries) {
       const order = this.ordersService.orders().find(o => o.id === del.orderId);
       if (!order) continue;
@@ -662,10 +729,12 @@ export class MobileTransportComponent implements OnInit {
       for (const item of del.items) qm[item.productIndex] = item.qty;
       modalQty[order.id] = qm;
       if (del.observatii) notes[order.id] = del.observatii;
+      obsMap[order.id] = order.observatii ?? order.client.note ?? '';
     }
     this.formModalOrders.set(modalOrders);
     this.formModalQty.set(modalQty);
     this.formDeliveryNotes.set(notes);
+    this.formOrderObs.set(obsMap);
     this.showForm.set(true);
   }
 
@@ -838,7 +907,8 @@ export class MobileTransportComponent implements OnInit {
   }
 
   getDeliveryNote(t: Transport, orderId: string): string {
-    return t.deliveries.find(d => d.orderId === orderId)?.observatii ?? '';
+    const order = this.ordersService.orders().find(o => o.id === orderId);
+    return order?.observatii ?? order?.client.note ?? '';
   }
 
   setObsBuffer(tripId: string, orderId: string, val: string): void {
@@ -849,10 +919,7 @@ export class MobileTransportComponent implements OnInit {
     const key = `${t.id}::${orderId}`;
     if (!this._obsBuffer.has(key)) return;
     const note = this._obsBuffer.get(key)!;
-    const deliveries = t.deliveries.map(d =>
-      d.orderId === orderId ? { ...d, observatii: note.trim() || undefined } : d
-    );
-    this.transportService.updateTransport(t.id, { deliveries });
+    this.ordersService.updateOrderObservatii(orderId, note.trim());
     this._obsBuffer.delete(key);
   }
 

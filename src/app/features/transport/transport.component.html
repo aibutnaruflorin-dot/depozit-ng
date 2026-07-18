@@ -237,8 +237,8 @@
           <col style="width:108px">
           <col style="width:105px">
           <col style="width:72px">
-          <col style="width:150px">
-          <col style="width:60px">
+          <col style="width:120px">
+          <col style="width:155px">
         </colgroup>
         <thead>
           <tr>
@@ -368,8 +368,8 @@
           <col style="width:108px">
           <col style="width:105px">
           <col style="width:72px">
-          <col style="width:150px">
-          <col style="width:60px">
+          <col style="width:120px">
+          <col style="width:155px">
         </colgroup>
         <thead>
           <tr>
@@ -486,10 +486,10 @@
                   @for (o of ordersForTransport(t); track o.id) {
                     <div class="obs-row">
                       <textarea class="chip-note-input" rows="2"
-                                [appInitValue]="getTripDelivery(t, o.id)?.observatii ?? ''"
-                                (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
-                                (blur)="saveObsBuffer(t, o.id)"
-                                [placeholder]="'Notă #' + o.orderNumber">
+                                [appInitValue]="o.observatii ?? o.client.note ?? ''"
+                                (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
+                                (blur)="saveOrderObsBuffer(o.id)"
+                                [placeholder]="'Observații #' + o.orderNumber">
                       </textarea>
                     </div>
                   }
@@ -497,9 +497,6 @@
               </td>
               <td class="actions-cell col-actiuni">
                 @if (auth.isAdmin()) {
-                  @if (t.status === 'planificat') {
-                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
-                  }
                   @if (t.status === 'planificat' || t.status === 'confirmat_sofer' || t.status === 'in_livrare') {
                     <button mat-icon-button (click)="sendDriverWhatsApp(t)"
                             [matTooltip]="t.waSentDriverAt ? 'WA şofer · ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp şofer'"
@@ -533,6 +530,7 @@
                     }
                   }
                   @if (t.status === 'planificat') {
+                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                     <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
                   }
                 }
@@ -564,8 +562,8 @@
           <col style="width:108px">
           <col style="width:105px">
           <col style="width:72px">
-          <col style="width:150px">
-          <col style="width:60px">
+          <col style="width:120px">
+          <col style="width:155px">
         </colgroup>
         <thead>
           <tr>
@@ -679,10 +677,10 @@
                   @for (o of ordersForTransport(t); track o.id) {
                     <div class="obs-row">
                       <textarea class="chip-note-input" rows="2"
-                                [appInitValue]="getTripDelivery(t, o.id)?.observatii ?? ''"
-                                (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
-                                (blur)="saveObsBuffer(t, o.id)"
-                                [placeholder]="'Notă #' + o.orderNumber">
+                                [appInitValue]="o.observatii ?? o.client.note ?? ''"
+                                (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
+                                (blur)="saveOrderObsBuffer(o.id)"
+                                [placeholder]="'Observații #' + o.orderNumber">
                       </textarea>
                     </div>
                   }
@@ -691,7 +689,6 @@
               <td class="actions-cell col-actiuni">
                 @if (auth.isAdmin()) {
                   @if (t.status !== 'anulat') {
-                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                     <button mat-icon-button (click)="sendDriverWhatsApp(t)"
                             [matTooltip]="t.waSentDriverAt ? 'WA şofer · ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp şofer'"
                             [style.color]="t.waSentDriverAt ? '#888' : '#25d366'">
@@ -724,6 +721,7 @@
                     }
                   }
                   @if (t.status === 'planificat') {
+                    <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                     <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
                   }
                 }
@@ -1511,16 +1509,14 @@
       </mat-card-content>
       <mat-card-actions class="modal-actions">
         @if (modalTotalWeight() > 0) {
-          @let selVehicleId = form.get('vehicleId')?.value;
-          @let maxKg = (selVehicleId ? (transportService.getVehicle(selVehicleId)?.tonajMaxim ?? 0) : 0);
-          <div class="modal-weight-row" [class.modal-weight-warn]="maxKg > 0 && modalTotalWeight() > maxKg">
+          @let maxKg = modalVehicleMaxKg();
+          @let over  = maxKg > 0 && modalTotalWeight() > maxKg;
+          <div class="modal-weight-row" [class.modal-weight-warn]="over" [class.modal-weight-ok]="maxKg > 0 && !over">
             <mat-icon class="modal-weight-icon">scale</mat-icon>
-            <span>Greutate cursă: <strong>{{ fmtWeight(modalTotalWeight()) }}</strong></span>
-            @if (maxKg > 0) {
-              <span class="modal-weight-max"> / max {{ fmtWeight(maxKg) }}</span>
-              @if (modalTotalWeight() > maxKg) {
-                <span class="modal-weight-over">Depășit tonaj!</span>
-              }
+            @if (over) {
+              <span>Greutate: <strong>{{ fmtWeight(modalTotalWeight()) }}</strong> / max {{ fmtWeight(maxKg) }} — depășit cu <strong>{{ fmtWeight(modalTotalWeight() - maxKg) }}</strong>!</span>
+            } @else {
+              <span>Greutate cursă: <strong>{{ fmtWeight(modalTotalWeight()) }}</strong>@if (maxKg > 0) { / max {{ fmtWeight(maxKg) }} }</span>
             }
           </div>
         }

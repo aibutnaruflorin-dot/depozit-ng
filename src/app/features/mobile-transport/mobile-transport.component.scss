@@ -323,7 +323,8 @@
 
 // ── Overlay & panel ───────────────────────────────────────────────────────────
 .mt-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200;
+  position: fixed; inset: 0; bottom: 64px;
+  background: rgba(0,0,0,.45); z-index: 200;
   display: flex; align-items: flex-end;
 }
 .mt-panel {
@@ -488,6 +489,22 @@
   &.mt-btn--primary { border: none; background: var(--color-primary); color: #fff; }
 }
 
+// ── Form validation banners ──────────────────────────────────────────────────
+.mt-form-error-banner {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 8px; margin: 4px 0;
+  font-size: .8rem; font-weight: 600;
+  background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
+}
+.mt-form-warn-banner {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 8px; margin: 4px 0;
+  font-size: .8rem; font-weight: 600;
+  background: #fffbeb; color: #92400e; border: 1px solid #fcd34d;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
+}
+
 // ── Busy indicator (form selects) ─────────────────────────────────────────────
 .mt-busy-hint {
   font-size: .73rem; color: #dc2626; font-weight: 600;
@@ -523,10 +540,27 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mt-form-order-meta { font-size: .72rem; color: var(--color-text-muted); }
+
+// Address chip inside info col
+.mt-form-addr-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-size: .72rem; color: var(--color-text-muted); text-align: left;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  mat-icon { font-size: 12px; width: 12px; height: 12px; flex-shrink: 0; }
+  &:hover { color: var(--color-primary); }
+  span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+// Deadline chip — now a button
 .mt-form-order-deadline {
+  display: inline-flex; align-items: center; gap: 2px;
   font-size: .72rem; border-radius: 8px; padding: 2px 6px; flex-shrink: 0;
   background: #FEF3C7; color: #92400E;
+  border: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  &:hover { filter: brightness(.95); }
   &.mt-form-order-deadline--warn { background: #FEE2E2; color: #991B1B; font-weight: 600; }
+  &.mt-form-order-deadline--empty { background: var(--color-surface); color: var(--color-text-muted); border: 1px dashed var(--color-border); }
 }
 .mt-form-order-remove {
   background: none; border: none; cursor: pointer; padding: 3px; flex-shrink: 0;
@@ -547,6 +581,12 @@
 }
 .mt-form-prod-um { font-size: .75rem; color: var(--color-text-muted); flex-shrink: 0; }
 .mt-form-prod-max { font-size: .68rem; color: var(--color-text-muted); flex-shrink: 0; font-style: italic; }
+.mt-form-prod-detail {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .7rem; color: var(--color-text-muted);
+  padding: 1px 0 3px 0; margin-top: -2px;
+}
+.mt-form-prod-sep { color: var(--color-border); }
 
 // Inline address/deadline edit
 .mt-form-inline-edit {
@@ -570,16 +610,6 @@
   background: none; border: 1.5px solid var(--color-border); border-radius: 7px;
   padding: 5px 8px; font-size: .78rem; cursor: pointer; color: var(--color-text-muted);
   white-space: nowrap;
-}
-.mt-form-meta-actions {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-}
-.mt-form-meta-btn {
-  display: inline-flex; align-items: center; gap: 3px; font-size: .72rem;
-  background: none; border: 1px solid var(--color-border); border-radius: 6px;
-  padding: 3px 7px; cursor: pointer; color: var(--color-text-muted);
-  mat-icon { font-size: 13px; width: 13px; height: 13px; }
-  &:hover { border-color: var(--color-primary); color: var(--color-primary); }
 }
 .mt-form-meta-text { font-size: .75rem; color: var(--color-text-muted); flex: 1; }
 
