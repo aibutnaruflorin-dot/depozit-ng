@@ -55,9 +55,8 @@
                 <small>{{ v.numarInmatriculare }}</small>
               </div>
               @for (day of planningDays(); track day.isoDate) {
-                @let dayTrips = tripsForVehicleDay(v.id, day.isoDate);
                 <div class="mt-cal-cell">
-                  @for (t of dayTrips; track t.id) {
+                  @for (t of tripsForVehicleDay(v.id, day.isoDate); track t.id) {
                     <div class="mt-cal-chip"
                          [class.mt-cal-chip--planificat]="t.status === 'planificat' && !isOverdue(t)"
                          [class.mt-cal-chip--active]="t.status === 'in_livrare' && !isOverdue(t)"
@@ -66,8 +65,6 @@
                       {{ fmtTime(t.oraPlecare) }}
                     </div>
                   }
-                  <div class="mt-cal-add" (click)="openCreateForVehicleDay(v.id, day.isoDate)"
-                       [class.mt-cal-add--empty]="!dayTrips.length">+</div>
                 </div>
               }
             }
