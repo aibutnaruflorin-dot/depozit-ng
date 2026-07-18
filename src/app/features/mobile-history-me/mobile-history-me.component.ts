@@ -45,7 +45,7 @@ export class MobileHistoryMeComponent {
   readonly TABS: { key: StatusTab; label: string }[] = [
     { key: 'toate',    label: 'Toate'   },
     { key: 'draft',    label: 'Ciornă'  },
-    { key: 'asteapta', label: 'Trimise' },
+    { key: 'asteapta', label: 'În așteptare' },
     { key: 'activ',    label: 'Active'  },
     { key: 'livrat',   label: 'Livrat'  },
     { key: 'anulat',   label: 'Anulat'  },
@@ -104,7 +104,7 @@ export class MobileHistoryMeComponent {
   statusLabel(o: Order): string {
     if (o.status === 'draft')   return 'Ciornă';
     if (o.status === 'trimis')  return 'În aşteptare';
-    if (o.status === 'anulat')  return 'Anulat';
+    if (o.status === 'anulat')  return 'Anulată';
     if (o.status === 'livrat')  return 'Livrat';
     return this.transportService.deriveOrderPlanningStatus(o).label;
   }
@@ -115,8 +115,10 @@ export class MobileHistoryMeComponent {
     if (o.status === 'anulat')  return 'chip-cancel';
     if (o.status === 'livrat')  return 'chip-done';
     const s = this.transportService.deriveOrderPlanningStatus(o);
-    if (s.key === 'neplanificat') return 'chip-warn';
-    if (s.key === 'livrat')       return 'chip-done';
+    if (s.key === 'livrat')             return 'chip-done';
+    if (s.key === 'neplanificat')       return 'chip-secondary';
+    if (s.key === 'in_livrare')         return 'chip-contrast';
+    if (s.key === 'planificat_partial' || s.key === 'livrare_partiala') return 'chip-warn';
     return 'chip-active';
   }
 

@@ -101,12 +101,14 @@
 /* ── Status chips ───────────────────── */
 .mh-chip {
   flex-shrink: 0; border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700;
-  &.chip-draft   { background: #F0F2F5; color: #6B7280; }
-  &.chip-wait    { background: #FEF3C7; color: #92400E; }
-  &.chip-active  { background: #DBEAFE; color: #1E40AF; }
-  &.chip-warn    { background: #FEF3C7; color: #92400E; }
-  &.chip-done    { background: #D1FAE5; color: #065F46; }
-  &.chip-cancel  { background: #FEE2E2; color: #991B1B; }
+  &.chip-draft      { background: #F0F2F5; color: #6B7280; }
+  &.chip-wait       { background: #FEF3C7; color: #92400E; }
+  &.chip-active     { background: #DBEAFE; color: #1E40AF; }
+  &.chip-warn       { background: #FEF3C7; color: #92400E; }
+  &.chip-done       { background: #D1FAE5; color: #065F46; }
+  &.chip-cancel     { background: #FEE2E2; color: #991B1B; }
+  &.chip-secondary  { background: #F3F4F6; color: #6B7280; }
+  &.chip-contrast   { background: #CCFBF1; color: #0F766E; }
 }
 
 /* ── Detail Bottom Sheet ────────────── */

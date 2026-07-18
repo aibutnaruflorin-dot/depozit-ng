@@ -47,11 +47,11 @@ export class MobileHistoryAllComponent {
   }
 
   readonly TABS: { key: StatusTab; label: string }[] = [
-    { key: 'toate',    label: 'Toate'   },
-    { key: 'asteapta', label: 'Trimise' },
-    { key: 'activ',    label: 'Active'  },
-    { key: 'livrat',   label: 'Livrat'  },
-    { key: 'anulat',   label: 'Anulat'  },
+    { key: 'toate',    label: 'Toate'         },
+    { key: 'asteapta', label: 'În așteptare'  },
+    { key: 'activ',    label: 'Active'        },
+    { key: 'livrat',   label: 'Livrat'        },
+    { key: 'anulat',   label: 'Anulat'        },
   ];
 
   readonly whatsappContacts = computed<WhatsAppContact[]>(() =>
@@ -133,7 +133,7 @@ export class MobileHistoryAllComponent {
 
   statusLabel(o: Order): string {
     if (o.status === 'trimis')  return 'În aşteptare';
-    if (o.status === 'anulat')  return 'Anulat';
+    if (o.status === 'anulat')  return 'Anulată';
     if (o.status === 'livrat')  return 'Livrat';
     return this.transportService.deriveOrderPlanningStatus(o).label;
   }
@@ -143,8 +143,10 @@ export class MobileHistoryAllComponent {
     if (o.status === 'anulat')  return 'chip-cancel';
     if (o.status === 'livrat')  return 'chip-done';
     const s = this.transportService.deriveOrderPlanningStatus(o);
-    if (s.key === 'neplanificat') return 'chip-warn';
-    if (s.key === 'livrat')       return 'chip-done';
+    if (s.key === 'livrat')             return 'chip-done';
+    if (s.key === 'neplanificat')       return 'chip-secondary';
+    if (s.key === 'in_livrare')         return 'chip-contrast';
+    if (s.key === 'planificat_partial' || s.key === 'livrare_partiala') return 'chip-warn';
     return 'chip-active';
   }
 
@@ -258,7 +260,10 @@ export class MobileHistoryAllComponent {
   }
 
   hasEditedQty(order: Order): boolean {
-    return order.products.some((_, i) => this._editQty()[this.ekey(order.id, i)] !== undefined);
+    return order.products.some((p, i) => {
+      const edited = this._editQty()[this.ekey(order.id, i)];
+      return edited !== undefined && edited !== p.qty;
+    });
   }
 
   incPendingQty(orderId: string, idx: number): void {

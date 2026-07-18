@@ -121,6 +121,9 @@ export class TransportService {
       t.deliveries.some(d => d.orderId === order.id)
     );
     if (!activeTrips.length) {
+      if (order.status === 'acceptat') {
+        return { key: 'acceptat', label: 'Acceptată', severity: 'info' };
+      }
       return { key: 'neplanificat', label: 'Neplanificat', severity: 'secondary' };
     }
     const hasItemTracking = activeTrips.some(t =>

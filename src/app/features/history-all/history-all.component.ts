@@ -280,6 +280,7 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
       if (status === 'Anulată')            return o.status === 'anulat';
       if (o.status === 'trimis' || o.status === 'anulat') return false;
       const ts = this.transportService.deriveOrderPlanningStatus(o);
+      if (status === 'Acceptată')          return ts.key === 'acceptat';
       if (status === 'Neplanificat')       return ts.key === 'neplanificat';
       if (status === 'Planificat parțial') return ts.key === 'planificat_partial';
       if (status === 'Planificat')         return ts.key === 'planificat';
