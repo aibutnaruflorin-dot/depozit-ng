@@ -58,13 +58,12 @@
                 <div class="mt-cal-cell">
                   @for (t of tripsForVehicleDay(v.id, day.isoDate); track t.id) {
                     <div class="mt-cal-chip"
-                         [class.mt-cal-chip--planificat]="t.status === 'planificat' && !isOverdue(t)"
-                         [class.mt-cal-chip--confirmat]="t.status === 'confirmat_sofer' && !isOverdue(t)"
-                         [class.mt-cal-chip--active]="t.status === 'in_livrare' && !isOverdue(t)"
+                         [class.mt-cal-chip--planificat]="t.status === 'planificat'"
+                         [class.mt-cal-chip--confirmat]="t.status === 'confirmat_sofer'"
+                         [class.mt-cal-chip--active]="t.status === 'in_livrare'"
                          [class.mt-cal-chip--livrat]="t.status === 'livrat'"
-                         [class.mt-cal-chip--overdue]="isOverdue(t)"
                          (click)="openTripFromCalendar(t)">
-                      {{ isOverdue(t) ? '⚠ Întârziat' : calChipLabel(t) }}
+                      {{ calChipLabel(t) }}
                     </div>
                   }
                 </div>
@@ -75,7 +74,6 @@
             <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--plan"></span>Planificat</span>
             <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--confirmat"></span>Confirmat</span>
             <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--active"></span>În livrare</span>
-            <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--overdue"></span>Întârziat</span>
           </div>
         </div>
       }

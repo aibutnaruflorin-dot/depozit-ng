@@ -193,18 +193,17 @@
                 }
                 @for (bar of tripsForVehicleDay(vehicle.id, day); track bar.transport.id) {
                   <div class="cal-bar"
-                       [class.cal-bar--planificat]="bar.transport.status === 'planificat' && !bar.overdue"
-                       [class.cal-bar--confirmat]="bar.transport.status === 'confirmat_sofer' && !bar.overdue"
-                       [class.cal-bar--in-livrare]="bar.transport.status === 'in_livrare' && !bar.overdue"
-                       [class.cal-bar--livrat]="bar.transport.status === 'livrat' && !bar.overdue"
+                       [class.cal-bar--planificat]="bar.transport.status === 'planificat'"
+                       [class.cal-bar--confirmat]="bar.transport.status === 'confirmat_sofer'"
+                       [class.cal-bar--in-livrare]="bar.transport.status === 'in_livrare'"
+                       [class.cal-bar--livrat]="bar.transport.status === 'livrat'"
                        [class.cal-bar--overlap]="overlapIds().has(bar.transport.id)"
-                       [class.cal-bar--overdue]="bar.overdue"
                        [style.left.%]="bar.leftPct"
                        [style.width.%]="bar.widthPct"
                        [matTooltip]="calBarTooltip(bar)"
                        matTooltipClass="cal-tooltip"
                        (click)="$event.stopPropagation(); openEdit(bar.transport)">
-                    <span class="cal-bar-text">{{ bar.overdue ? '⚠ Întârziat' : calBarLabel(bar) }}</span>
+                    <span class="cal-bar-text">{{ calBarLabel(bar) }}</span>
                   </div>
                 }
               </div>
@@ -216,7 +215,6 @@
         <span class="cal-legend-item"><span class="cal-dot cal-dot--planificat"></span> Planificat</span>
         <span class="cal-legend-item"><span class="cal-dot cal-dot--confirmat"></span> Confirmat șofer</span>
         <span class="cal-legend-item"><span class="cal-dot cal-dot--in-livrare"></span> În livrare</span>
-        <span class="cal-legend-item"><span class="cal-dot cal-dot--overdue"></span> Întârziat</span>
       </div>
     </div>
   }
