@@ -758,6 +758,7 @@
               <th class="th-sort" (click)="sortHistoric('oraPlecare')">Plecare → Sosire <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'oraPlecare') }}</mat-icon></th>
               <th>Comenzi / Articole</th>
               <th class="th-sort" (click)="sortHistoric('valoare')">Valoare <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'valoare') }}</mat-icon></th>
+              <th class="th-sort col-masa" (click)="sortHistoric('masa')">Masă <mat-icon class="sort-icon">{{ sortIcon(sort_historic(), 'masa') }}</mat-icon></th>
               <th>Log tranziții</th>
             </tr>
           </thead>
@@ -813,6 +814,14 @@
                   @let hv = tripValue(t);
                   <span class="val-net">{{ hv.net | number:'1.2-2' }} lei</span>
                   <span class="val-tva">{{ hv.tva | number:'1.2-2' }} cu TVA</span>
+                </td>
+                <td class="masa-cell col-masa">
+                  @let hw = tripTotalWeight(t);
+                  @if (hw > 0) {
+                    <span class="val-weight" [class.val-weight-warn]="tripWeightWarn(t)">
+                      <mat-icon>monitor_weight</mat-icon>{{ fmtWeight(hw) }}
+                    </span>
+                  }
                 </td>
                 <td class="log-cell">
                   <div class="log-entry">
