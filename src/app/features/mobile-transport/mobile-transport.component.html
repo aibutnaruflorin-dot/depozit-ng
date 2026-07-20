@@ -967,7 +967,7 @@
           }
 
           <!-- ── Adaugă comenzi ── -->
-          @if (formEligibleOrders().length > 0) {
+          @if (!formLockedToOrder() && formEligibleOrders().length > 0) {
             <div class="mt-form-add-sec-title">
               <mat-icon>add_circle_outline</mat-icon>
               Adaugă comenzi

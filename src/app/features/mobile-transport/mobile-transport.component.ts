@@ -51,6 +51,7 @@ export class MobileTransportComponent implements OnInit {
   formSosireTime  = signal('18:00');
 
   // New form state — per-order qty selection, notes, inline edit
+  formLockedToOrder = signal(false);
   formModalOrders   = signal<Order[]>([]);
   formModalQty      = signal<Record<string, Record<number, number>>>({});
   formDeliveryNotes = signal<Record<string, string>>({});
@@ -501,6 +502,7 @@ export class MobileTransportComponent implements OnInit {
 
   openCreateForVehicleDay(vehicleId: string, isoDate: string): void {
     this.editingId.set(null);
+    this.formLockedToOrder.set(false);
     this.formVehicleId.set(vehicleId);
     this.formDriverId.set('');
     this.formHelperName.set('');
@@ -864,12 +866,16 @@ export class MobileTransportComponent implements OnInit {
     if (preselect) {
       const o = this.ordersService.orders().find(x => x.id === preselect);
       if (o) this.addOrderToForm(o);
+      this.formLockedToOrder.set(true);
+    } else {
+      this.formLockedToOrder.set(false);
     }
     this.showForm.set(true);
   }
 
   openEdit(t: Transport): void {
     this.editingId.set(t.id);
+    this.formLockedToOrder.set(false);
     this.formVehicleId.set(t.vehicleId);
     this.formDriverId.set(t.driverId);
     this.formHelperName.set(t.helper ?? '');
