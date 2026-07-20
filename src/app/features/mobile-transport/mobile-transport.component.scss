@@ -94,8 +94,8 @@
   display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
   font-size: .72rem; color: var(--color-text-muted);
 }
-.mt-pmeta-val  { font-weight: 600; color: var(--color-text); }
-.mt-pmeta-tva  { font-size: .68rem; color: var(--color-text-muted); }
+.mt-pmeta-val  { font-size: .72rem; color: var(--color-text-muted); }
+.mt-pmeta-tva  { font-weight: 700; color: var(--color-text); }
 .mt-pmeta-wt   { font-weight: 600; color: var(--color-text); }
 .mt-expand-icon {
   font-size: 18px; width: 18px; height: 18px;
@@ -254,7 +254,7 @@
 }
 .mt-meta-icon { font-size: 14px; width: 14px; height: 14px; }
 .mt-sep { opacity: .4; }
-.mt-val-tva { font-size: .72rem; color: var(--color-text-muted); }
+.mt-val-tva { font-size: .8rem; font-weight: 700; color: var(--color-text); }
 
 .mt-restore-btn {
   background: none; border: 1.5px solid var(--color-border); border-radius: 8px;

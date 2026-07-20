@@ -805,10 +805,10 @@
 
 .value-cell { white-space: nowrap; }
 .val-net {
-  display: block; font-weight: 700; font-size: 0.85rem; color: var(--color-text);
+  display: block; font-size: 0.72rem; color: var(--color-text-muted, #888);
 }
 .val-tva {
-  display: block; font-size: 0.72rem; color: var(--color-text-muted, #888);
+  display: block; font-weight: 700; font-size: 0.88rem; color: var(--color-text);
 }
 .val-remaining {
   display: block; font-size: 0.72rem; color: var(--color-primary); font-weight: 600;
