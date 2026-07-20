@@ -475,6 +475,22 @@
 
       <!-- Action footer -->
       <div class="mh-ds-footer">
+        @if (canAccept(o)) {
+          <button class="mh-act-btn primary" (click)="acceptOrder(o)">
+            <mat-icon>check_circle</mat-icon> Acceptă comanda
+          </button>
+        }
+        @if (canFinalizeWithChanges(o)) {
+          <button class="mh-act-btn primary" (click)="finalizeOrder(o)">
+            <mat-icon>done_all</mat-icon> Finalizează cu modificări
+          </button>
+        }
+        @if (isActiveOrder(o) && isKeyUser()) {
+          <button class="mh-act-btn" [class.mh-act-lock-active]="o.locked" (click)="toggleLock(o)">
+            <mat-icon>{{ o.locked ? 'lock' : 'lock_open' }}</mat-icon>
+            {{ o.locked ? 'Deblochează' : 'Blochează' }}
+          </button>
+        }
         @if (canSend(o)) {
           <button class="mh-act-btn primary" (click)="sendDraft(o)">
             <mat-icon>send</mat-icon> Trimite comanda

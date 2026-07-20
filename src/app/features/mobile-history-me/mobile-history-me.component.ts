@@ -175,6 +175,24 @@ export class MobileHistoryMeComponent {
   openDetail(o: Order): void { this.detailId.set(o.id); }
   closeDetail(): void { this.detailId.set(null); }
 
+  isKeyUser(): boolean { return this.auth.isKeyUser(); }
+
+  isActiveOrder(o: Order): boolean {
+    return ['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded;
+  }
+
+  hasQtyChanges(o: Order): boolean {
+    return this.hasEditedQty(o) || !!(o.pendingProducts?.length) || !!(o.adminProducts?.length);
+  }
+
+  canAccept(o: Order): boolean {
+    return o.status === 'trimis' && !o.superseded && this.isKeyUser() && !this.hasQtyChanges(o);
+  }
+
+  canFinalizeWithChanges(o: Order): boolean {
+    return this.isActiveOrder(o) && this.isKeyUser() && this.hasQtyChanges(o);
+  }
+
   canSend(o: Order): boolean        { return o.status === 'draft'; }
   canRevise(o: Order): boolean {
     if (o.locked) return false;
@@ -312,6 +330,70 @@ export class MobileHistoryMeComponent {
     this.ordersService.reopenOrder(o.id);
     this.snackBar.open('Comanda redeschisă.', '', { duration: 2500 });
     // keep sheet open — currentDetailOrder() will reactively show new status
+  }
+
+  acceptOrder(o: Order): void {
+    this.ordersService.acceptOrder(o.id);
+    this.snackBar.open(`Comanda #${o.orderNumber ?? '?'} acceptată!`, 'OK', { duration: 2500, panelClass: ['snack-success'] });
+  }
+
+  toggleLock(o: Order): void {
+    this.ordersService.setOrderLocked(o.id, !o.locked);
+    const msg = o.locked
+      ? 'Comanda deblocată — agentul poate modifica din nou.'
+      : 'Comanda blocată — agentul nu mai poate face modificări.';
+    this.snackBar.open(msg, 'OK', { duration: 3000 });
+  }
+
+  finalizeOrder(o: Order): void {
+    const withEditedQty = o.products.map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }));
+    const overStock = withEditedQty.filter(p => {
+      if (!p.catalogId) return false;
+      const max = this.maxEditableQty(o, p);
+      return p.qty > max;
+    });
+    if (overStock.length > 0) {
+      const list = overStock.map(p => {
+        const max = this.maxEditableQty(o, p);
+        return `• ${p.name}: disponibil ${max}, solicitat ${p.qty}`;
+      }).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-error'], verticalPosition: 'top' });
+      return;
+    }
+    const addedPending = [...(o.pendingProducts ?? []), ...(o.adminProducts ?? [])].filter(p => p.qty > 0);
+    const newProducts = [...withEditedQty.filter(p => p.qty > 0), ...addedPending];
+    if (newProducts.length === 0) {
+      this.snackBar.open('Cel puțin un produs trebuie să rămână.', '', { duration: 2500 });
+      return;
+    }
+    const newOrder: Order = {
+      id:            generateId(),
+      timestamp:     new Date().toISOString(),
+      agent:         o.agent,
+      client:        o.client,
+      cuLivrare:     o.cuLivrare,
+      deliveryDate:  o.deliveryDate,
+      deliveryTime:  o.deliveryTime,
+      products:      newProducts,
+      status:        'acceptat',
+      revisedFromId: o.id,
+      addedProducts: [...(o.addedProducts ?? []), ...addedPending].length > 0
+        ? [...(o.addedProducts ?? []), ...addedPending]
+        : undefined
+    };
+    const result = this.ordersService.reviseOrder(o.id, newOrder);
+    if (!result.ok) {
+      const list = result.insufficient.map(i => `• ${i.name}: disponibil ${i.available}, solicitat ${i.requested}`).join('\n');
+      this.snackBar.open(`Stoc insuficient:\n${list}`, 'Închide', { duration: 6000, panelClass: ['snack-warn'], verticalPosition: 'top' });
+      return;
+    }
+    this._editQty.update(m => {
+      const n = { ...m };
+      o.products.forEach((_, i) => delete n[this.ekey(o.id, i)]);
+      return n;
+    });
+    this.detailId.set(newOrder.id);
+    this.snackBar.open('Comanda finalizată cu modificări!', 'OK', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   reviseOrder(o: Order): void {
