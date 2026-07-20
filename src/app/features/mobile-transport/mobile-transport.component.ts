@@ -1,4 +1,4 @@
-import { Component, computed, signal, OnInit, WritableSignal } from '@angular/core';
+import { Component, computed, signal, effect, OnInit, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransportService } from '../../core/services/transport.service';
@@ -85,7 +85,39 @@ export class MobileTransportComponent implements OnInit {
     private catalogsService: CatalogsService,
     private snackBar: MatSnackBar,
     private router: Router
-  ) {}
+  ) {
+    this._loadSectionState();
+    effect(() => {
+      localStorage.setItem('mt_sections', JSON.stringify({
+        showCalendar:      this.showCalendar(),
+        showPending:       this.showPending(),
+        showOverdueOrders: this.showOverdueOrders(),
+        showActive:        this.showActive(),
+        showOverdueTrips:  this.showOverdueTrips(),
+        showDone:          this.showDone(),
+        showDeleted:       this.showDeleted(),
+        showDeletedOrders: this.showDeletedOrders(),
+        showOrderHistory:  this.showOrderHistory(),
+      }));
+    });
+  }
+
+  private _loadSectionState(): void {
+    try {
+      const raw = localStorage.getItem('mt_sections');
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (typeof s.showCalendar      === 'boolean') this.showCalendar.set(s.showCalendar);
+      if (typeof s.showPending       === 'boolean') this.showPending.set(s.showPending);
+      if (typeof s.showOverdueOrders === 'boolean') this.showOverdueOrders.set(s.showOverdueOrders);
+      if (typeof s.showActive        === 'boolean') this.showActive.set(s.showActive);
+      if (typeof s.showOverdueTrips  === 'boolean') this.showOverdueTrips.set(s.showOverdueTrips);
+      if (typeof s.showDone          === 'boolean') this.showDone.set(s.showDone);
+      if (typeof s.showDeleted       === 'boolean') this.showDeleted.set(s.showDeleted);
+      if (typeof s.showDeletedOrders === 'boolean') this.showDeletedOrders.set(s.showDeletedOrders);
+      if (typeof s.showOrderHistory  === 'boolean') this.showOrderHistory.set(s.showOrderHistory);
+    } catch { /* date corupte — ignoră */ }
+  }
 
   get todayIso(): string {
     return new Date().toISOString().slice(0, 10);
