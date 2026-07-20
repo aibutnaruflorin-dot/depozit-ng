@@ -68,7 +68,7 @@ export class MobileHistoryMeComponent {
   readonly myOrders = computed(() => {
     const id = this.auth.session()?.userId;
     return this.ordersService.orders()
-      .filter(o => !o.superseded && o.agent?.id === id && o.status !== 'sters')
+      .filter(o => !o.superseded && o.agent?.id === id)
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   });
 
@@ -80,7 +80,7 @@ export class MobileHistoryMeComponent {
     if (tab === 'asteapta') return orders.filter(o => o.status === 'trimis');
     if (tab === 'anulat')   return orders.filter(o => o.status === 'anulat');
     if (tab === 'livrat')   return orders.filter(o => o.status === 'livrat');
-    return orders.filter(o => !['draft','trimis','anulat','livrat'].includes(o.status));
+    return orders.filter(o => !['draft','trimis','anulat','livrat','sters'].includes(o.status));
   });
 
   readonly counts = computed(() => {
@@ -89,7 +89,7 @@ export class MobileHistoryMeComponent {
       toate:    orders.length,
       draft:    orders.filter(o => o.status === 'draft').length,
       asteapta: orders.filter(o => o.status === 'trimis').length,
-      activ:    orders.filter(o => !['draft','trimis','anulat','livrat'].includes(o.status)).length,
+      activ:    orders.filter(o => !['draft','trimis','anulat','livrat','sters'].includes(o.status)).length,
       livrat:   orders.filter(o => o.status === 'livrat').length,
       anulat:   orders.filter(o => o.status === 'anulat').length,
     };
@@ -102,6 +102,7 @@ export class MobileHistoryMeComponent {
   });
 
   statusLabel(o: Order): string {
+    if (o.status === 'sters')   return 'Șters din transport';
     if (o.status === 'draft')   return 'Ciornă';
     if (o.status === 'trimis')  return 'În aşteptare';
     if (o.status === 'anulat')  return 'Anulată';
@@ -110,6 +111,7 @@ export class MobileHistoryMeComponent {
   }
 
   statusClass(o: Order): string {
+    if (o.status === 'sters')   return 'chip-deleted';
     if (o.status === 'draft')   return 'chip-draft';
     if (o.status === 'trimis')  return 'chip-wait';
     if (o.status === 'anulat')  return 'chip-cancel';

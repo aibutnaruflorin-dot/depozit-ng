@@ -214,6 +214,10 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
   }
 
+  canRestoreFromTransport(order: Order): boolean {
+    return order.status === 'sters' && this.auth.isKeyUser();
+  }
+
   readonly PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
   pageSize = signal(loadPageSize());
 
@@ -267,7 +271,7 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     const dateRange  = this._dateRange();
     const delivRange = this._deliveryRange();
 
-    let orders = this.ordersService.orders().filter(o => o.status !== 'draft' && o.status !== 'sters');
+    let orders = this.ordersService.orders().filter(o => o.status !== 'draft');
     if (agent)           orders = orders.filter(o => String(o.agent?.id) === agent);
     if (nr)              orders = orders.filter(o => String(o.orderNumber ?? '').includes(nr));
     if (client)          orders = orders.filter(o => o.client?.name?.toLowerCase().includes(client));
@@ -276,9 +280,10 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     if (livrare === 'fara') orders = orders.filter(o => !o.cuLivrare);
     if (address)         orders = orders.filter(o => (o.client?.address ?? '').toLowerCase().includes(address));
     if (status) orders = orders.filter(o => {
-      if (status === 'În așteptare')       return o.status === 'trimis' && !o.superseded;
-      if (status === 'Anulată')            return o.status === 'anulat';
-      if (o.status === 'trimis' || o.status === 'anulat') return false;
+      if (status === 'Șters din transport')  return o.status === 'sters';
+      if (status === 'În așteptare')         return o.status === 'trimis' && !o.superseded;
+      if (status === 'Anulată')              return o.status === 'anulat';
+      if (o.status === 'trimis' || o.status === 'anulat' || o.status === 'sters') return false;
       const ts = this.transportService.deriveOrderPlanningStatus(o);
       if (status === 'Acceptată')          return ts.key === 'acceptat';
       if (status === 'Neplanificat')       return ts.key === 'neplanificat';
@@ -575,6 +580,11 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     this.expandRow(order.id);
   }
 
+  restoreDeletedOrder(order: Order): void {
+    this.ordersService.restoreOrder(order.id);
+    this.snackBar.open('Comanda restaurată (status: Anulat).', 'OK', { duration: 2500 });
+  }
+
   finalizeOrder(order: Order): void {
     if (!this._checkDelivery(order)) return;
     const withEditedQty = order.products.map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }));
@@ -662,6 +672,7 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
   private _orderStatusLabel(o: Order): string {
     if (o.superseded) return 'Înlocuită';
     if (o.status === 'anulat') return 'Anulată';
+    if (o.status === 'sters') return 'Șters din transport';
     if (o.status === 'trimis') return 'În așteptare';
     return this.transportService.deriveOrderPlanningStatus(o).label;
   }

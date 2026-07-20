@@ -573,7 +573,7 @@
                   <mat-icon>local_shipping</mat-icon>WA Șofer
                   @if (t.waSentDriverAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
                 </button>
-                @if (helperHasPhone(t)) {
+                @if (t.helper) {
                   <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentHelperAt"
                           (click)="sendHelperWhatsApp(t)">
                     <mat-icon>person_add</mat-icon>WA Ajutor

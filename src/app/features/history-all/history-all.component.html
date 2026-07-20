@@ -221,6 +221,7 @@
               <option value="Livrare parțială">Livrare parțială</option>
               <option value="În livrare">În livrare</option>
               <option value="Livrat">Livrat</option>
+              <option value="Șters din transport">Șters din transport</option>
             </select>
           </div>
         </th>
@@ -368,6 +369,8 @@
             <p-tag value="Anulată" severity="danger" />
           } @else if (order.status === 'trimis') {
             <p-tag value="În așteptare" severity="warn" />
+          } @else if (order.status === 'sters') {
+            <p-tag value="Șters din transport" severity="secondary" />
           } @else {
             @let ts = transportService.deriveOrderPlanningStatus(order);
             <p-tag [value]="ts.label" [severity]="ts.severity" />
@@ -380,6 +383,11 @@
             <button mat-icon-button (click)="addProductsOrderId.set(order.id); expandRow(order.id)"
                     matTooltip="Adaugă produse la comandă">
               <mat-icon>add_shopping_cart</mat-icon>
+            </button>
+          } @else if (canRestoreFromTransport(order)) {
+            <button mat-icon-button (click)="restoreDeletedOrder(order)"
+                    matTooltip="Restaurează comanda">
+              <mat-icon>restore</mat-icon>
             </button>
           } @else if (canReopen(order)) {
             <button mat-icon-button (click)="reopenOrder(order)"

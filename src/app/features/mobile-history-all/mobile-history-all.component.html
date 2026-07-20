@@ -469,6 +469,11 @@
             <mat-icon>refresh</mat-icon> Redeschide
           </button>
         }
+        @if (canRestoreFromTransport(o)) {
+          <button class="mh-act-btn secondary" (click)="restoreDeletedOrder(o)">
+            <mat-icon>restore</mat-icon> Restaurează
+          </button>
+        }
       </div>
 
     </div>

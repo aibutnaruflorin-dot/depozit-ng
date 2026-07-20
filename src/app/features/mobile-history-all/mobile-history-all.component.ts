@@ -73,7 +73,7 @@ export class MobileHistoryAllComponent {
 
   readonly allOrders = computed(() =>
     this.ordersService.orders()
-      .filter(o => !o.superseded && o.status !== 'draft' && o.status !== 'sters')
+      .filter(o => !o.superseded && o.status !== 'draft')
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
   );
 
@@ -91,7 +91,7 @@ export class MobileHistoryAllComponent {
     if (tab === 'asteapta') return orders.filter(o => o.status === 'trimis');
     if (tab === 'anulat')   return orders.filter(o => o.status === 'anulat');
     if (tab === 'livrat')   return orders.filter(o => o.status === 'livrat');
-    if (tab === 'activ')    return orders.filter(o => !['trimis', 'anulat', 'livrat'].includes(o.status));
+    if (tab === 'activ')    return orders.filter(o => !['trimis', 'anulat', 'livrat', 'sters'].includes(o.status));
     return orders;
   });
 
@@ -100,7 +100,7 @@ export class MobileHistoryAllComponent {
     return {
       toate:    orders.length,
       asteapta: orders.filter(o => o.status === 'trimis').length,
-      activ:    orders.filter(o => !['trimis', 'anulat', 'livrat'].includes(o.status)).length,
+      activ:    orders.filter(o => !['trimis', 'anulat', 'livrat', 'sters'].includes(o.status)).length,
       livrat:   orders.filter(o => o.status === 'livrat').length,
       anulat:   orders.filter(o => o.status === 'anulat').length,
     };
@@ -132,6 +132,7 @@ export class MobileHistoryAllComponent {
   }
 
   statusLabel(o: Order): string {
+    if (o.status === 'sters')   return 'Șters din transport';
     if (o.status === 'trimis')  return 'În aşteptare';
     if (o.status === 'anulat')  return 'Anulată';
     if (o.status === 'livrat')  return 'Livrat';
@@ -139,6 +140,7 @@ export class MobileHistoryAllComponent {
   }
 
   statusClass(o: Order): string {
+    if (o.status === 'sters')   return 'chip-deleted';
     if (o.status === 'trimis')  return 'chip-wait';
     if (o.status === 'anulat')  return 'chip-cancel';
     if (o.status === 'livrat')  return 'chip-done';
@@ -217,6 +219,15 @@ export class MobileHistoryAllComponent {
 
   canReopen(o: Order): boolean {
     return o.status === 'anulat' && (this.isKeyUser() || this.isOwner(o));
+  }
+
+  canRestoreFromTransport(o: Order): boolean {
+    return o.status === 'sters' && this.isKeyUser();
+  }
+
+  restoreDeletedOrder(o: Order): void {
+    this.ordersService.restoreOrder(o.id);
+    this.snackBar.open('Comanda restaurată (status: Anulat).', 'OK', { duration: 2500 });
   }
 
   ekey(orderId: string, idx: number): string { return `${orderId}:${idx}`; }
