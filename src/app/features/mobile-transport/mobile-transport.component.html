@@ -62,7 +62,7 @@
                          [class.mt-cal-chip--active]="t.status === 'in_livrare' && !isOverdue(t)"
                          [class.mt-cal-chip--overdue]="isOverdue(t)"
                          (click)="openTripFromCalendar(t)">
-                      {{ fmtTime(t.oraPlecare) }}
+                      {{ isOverdue(t) ? '⚠ Întârziat' : calChipLabel(t) }}
                     </div>
                   }
                 </div>

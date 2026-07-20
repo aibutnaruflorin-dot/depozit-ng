@@ -560,6 +560,16 @@ export class MobileTransportComponent implements OnInit {
     return iso.slice(11, 16);
   }
 
+  calChipLabel(t: Transport): string {
+    if (!t.deliveries?.length) return this.fmtTime(t.oraPlecare);
+    const ids = [...new Set(t.deliveries.map(d => d.orderId))];
+    const nums = ids
+      .map(id => this.ordersService.orders().find(o => o.id === id))
+      .filter((o): o is Order => !!o)
+      .map(o => `#${o.orderNumber}`);
+    return nums.length ? nums.join(' · ') : this.fmtTime(t.oraPlecare);
+  }
+
   addProductsToOrder(orderId: string): void {
     this.router.navigate(['/app/m-new-order'], {
       state: { addToOrderId: orderId, addPending: true }
