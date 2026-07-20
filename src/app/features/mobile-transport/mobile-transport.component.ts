@@ -13,6 +13,7 @@ import { Order, OrderProduct } from '../../core/models/order.model';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { Router } from '@angular/router';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
+import { InitValueDirective } from '../../shared/init-textarea.directive';
 
 interface CalDay {
   isoDate: string;
@@ -27,7 +28,7 @@ const STEP_LABELS = ['Planificat', 'Confirmat', 'Pornit', 'Livrat'];
 @Component({
   selector: 'app-mobile-transport',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent, InitValueDirective],
   templateUrl: './mobile-transport.component.html',
   styleUrl: './mobile-transport.component.scss'
 })
@@ -735,6 +736,59 @@ export class MobileTransportComponent implements OnInit {
 
   mapsLink(address: string): string {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  }
+
+  // ── Istoric planificări comenzi — delivery detail ─────────────────────────
+  selectedDelivery = signal<{ order: Order; items: { name: string; qty: number; um: string }[] } | null>(null);
+
+  openDelivery(t: Transport, o: Order): void {
+    this.selectedDelivery.set({ order: o, items: this.deliveryItemsForOrder(t, o.id) });
+  }
+
+  closeDelivery(): void { this.selectedDelivery.set(null); }
+
+  openBestTripForOrder(o: Order): void {
+    const trips = this.tripsForOrderHistory(o.id);
+    if (!trips.length) return;
+    const t = trips.find(tr => tr.status !== 'livrat') ?? trips[trips.length - 1];
+    this.openDelivery(t, o);
+  }
+
+  orderPendingValue(order: Order): { net: number; tva: number } {
+    const delivered = this._getDeliveredQtyArr(order);
+    return order.products.reduce((s, p, i) => {
+      const rem = Math.max(0, p.qty - (delivered[i] || 0));
+      const price = this.productPrice(p);
+      return { net: s.net + price.net * rem, tva: s.tva + price.tva * rem };
+    }, { net: 0, tva: 0 });
+  }
+
+  tripOrderWeight(t: Transport, o: Order): number {
+    const d = t.deliveries.find(d => d.orderId === o.id);
+    if (!d?.items.length) return 0;
+    return d.items.reduce((s, item) => {
+      const p = o.products[item.productIndex];
+      return s + this.getProductMasa(p) * item.qty;
+    }, 0);
+  }
+
+  tripOrderValue(t: Transport, o: Order): { net: number; tva: number } {
+    const d = t.deliveries.find(d => d.orderId === o.id);
+    if (!d?.items.length) return { net: 0, tva: 0 };
+    return d.items.reduce((s, item) => {
+      const p = o.products[item.productIndex];
+      if (!p) return s;
+      const price = this.productPrice(p);
+      return { net: s.net + price.net * item.qty, tva: s.tva + price.tva * item.qty };
+    }, { net: 0, tva: 0 });
+  }
+
+  private _orderObsBuffer = new Map<string, string>();
+  setOrderObsBuffer(orderId: string, val: string): void { this._orderObsBuffer.set(orderId, val); }
+  saveOrderObsBuffer(orderId: string): void {
+    if (!this._orderObsBuffer.has(orderId)) return;
+    this.ordersService.updateOrderObservatii(orderId, this._orderObsBuffer.get(orderId)!);
+    this._orderObsBuffer.delete(orderId);
   }
 
   // ── Editare comandă (mobile inline) ───────────────────────────────────────

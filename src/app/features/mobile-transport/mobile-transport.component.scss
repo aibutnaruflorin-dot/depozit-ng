@@ -498,27 +498,115 @@
 .mt-hist-item {
   background: var(--color-surface); border-radius: 8px;
   margin-bottom: 4px; border-left: 3px solid var(--color-border);
-  overflow: hidden; cursor: pointer;
+  overflow: hidden;
 }
 .mt-hist-row {
   display: flex; align-items: center; gap: 6px;
-  padding: 8px 12px; flex-wrap: wrap;
+  padding: 8px 12px; cursor: pointer;
+}
+.mt-order-nr--link {
+  cursor: pointer; text-decoration: underline; color: var(--color-primary);
+  &:active { opacity: .7; }
+}
+.mt-hist-main {
+  display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px;
+}
+.mt-hist-meta {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.mt-hist-val {
+  font-size: .8rem; font-weight: 700; color: var(--color-text);
+}
+.mt-hist-wt {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: .75rem; font-weight: 600; color: #2e7d32;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+}
+.mt-hist-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0;
 }
 .mt-hist-detail {
   padding: 6px 12px 10px; border-top: 1px solid var(--color-border);
-  display: flex; flex-direction: column; gap: 5px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.mt-hist-contact {
+  display: flex; align-items: center; gap: 5px;
+  font-size: .8rem; color: var(--color-primary); text-decoration: none;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+  &:active { opacity: .7; }
+}
+.mt-hist-obs {
+  width: 100%; box-sizing: border-box;
+  border: 1px solid var(--color-border); border-radius: 6px;
+  padding: 6px 8px; font-size: .8rem; resize: none;
+  background: var(--color-bg); color: var(--color-text);
+  &::placeholder { color: var(--color-text-muted); }
 }
 .mt-hist-trip-line {
   display: flex; align-items: center; gap: 8px;
   mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+  &.mt-hist-trip-line--clickable {
+    cursor: pointer; border-radius: 6px; padding: 4px 6px; margin: 0 -6px;
+    &:active { background: var(--color-border); }
+  }
 }
-.mt-hist-trip-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.mt-hist-trip-info {
+  display: flex; flex-direction: column; flex: 1; min-width: 0;
+  small { font-size: .68rem; }
+}
 .mt-hist-trip-time { font-size: .72rem; color: var(--color-text-muted); }
+.mt-hist-trip-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0;
+}
+.mt-hist-wt-sm {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: .7rem; font-weight: 600; color: #2e7d32;
+  mat-icon { font-size: 12px; width: 12px; height: 12px; }
+}
+.mt-hist-val-sm { font-size: .7rem; font-weight: 700; color: var(--color-text); }
+.mt-hist-chevron { font-size: 16px; width: 16px; height: 16px; color: var(--color-text-muted); }
 .mt-hist-no-trips {
   display: flex; align-items: center; gap: 6px;
   font-size: .78rem; color: var(--color-text-muted); font-style: italic;
   mat-icon { font-size: 16px; width: 16px; height: 16px; }
 }
+
+// ── Delivery detail bottom sheet ──────────────────────────────────────────────
+.mt-dlv-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 220;
+  display: flex; align-items: flex-end;
+}
+.mt-dlv-sheet {
+  width: 100%; background: var(--color-surface);
+  border-radius: 16px 16px 0 0; padding: 16px;
+  max-height: 70vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.mt-dlv-header {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.mt-dlv-client { font-size: 1rem; flex: 1; min-width: 0; }
+.mt-dlv-close {
+  background: none; border: none; cursor: pointer; padding: 4px;
+  color: var(--color-text-muted); display: flex; align-items: center;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+}
+.mt-dlv-title {
+  font-size: .8rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--color-text-muted);
+  padding-top: 4px; border-top: 1px solid var(--color-border);
+}
+.mt-dlv-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--color-border);
+  &:last-child { border-bottom: none; }
+}
+.mt-dlv-name { font-size: .88rem; flex: 1; min-width: 0; }
+.mt-dlv-qty  { font-size: .88rem; font-weight: 700; flex-shrink: 0; }
+.mt-dlv-empty { font-size: .82rem; color: var(--color-text-muted); font-style: italic; }
+
+// badge done (livrat)
+.mto-badge--done { background: #D1FAE5; color: #065F46; }
 
 // Order trip status badges
 .mto-badge {

@@ -313,20 +313,62 @@
         @for (o of orderHistoryList(); track o.id) {
           @let trips = tripsForOrderHistory(o.id);
           @let ts = orderTripStatus(o);
-          <div class="mt-hist-item" (click)="toggleHistoryExpand(o.id)">
-            <div class="mt-hist-row">
-              <span class="mt-order-nr">#{{ o.orderNumber ?? '—' }}</span>
-              <span class="mt-order-client">{{ o.client.name }}</span>
-              @if (o.deliveryDate) {
-                <span class="mt-deadline-sm" [class.mt-deadline-sm--overdue]="isOrderDeadlineOverdue(o)">
-                  {{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
-                </span>
-              }
-              <span class="mto-badge" [ngClass]="ts.cls">{{ ts.label }}</span>
-              <mat-icon class="mt-expand-icon">{{ expandedHistoryIds().has(o.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+          @let ohv = orderPendingValue(o);
+          @let ohw = orderTotalWeight(o);
+          <div class="mt-hist-item">
+            <!-- Header row -->
+            <div class="mt-hist-row" (click)="toggleHistoryExpand(o.id)">
+              <span class="mt-order-nr mt-order-nr--link"
+                    (click)="openBestTripForOrder(o); $event.stopPropagation()">#{{ o.orderNumber ?? '—' }}</span>
+              <div class="mt-hist-main">
+                <span class="mt-order-client">{{ o.client.name }}</span>
+                <div class="mt-hist-meta">
+                  @if (ohv.tva > 0) {
+                    <span class="mt-hist-val">{{ ohv.tva | number:'1.0-0' }} lei</span>
+                  }
+                  @if (ohw > 0) {
+                    <span class="mt-hist-wt"><mat-icon>monitor_weight</mat-icon>{{ fmtWeight(ohw) }}</span>
+                  }
+                </div>
+              </div>
+              <div class="mt-hist-right">
+                @if (o.deliveryDate) {
+                  <span class="mt-deadline-sm" [class.mt-deadline-sm--overdue]="isOrderDeadlineOverdue(o)">
+                    {{ o.deliveryDate | date:'dd.MM' }}{{ o.deliveryTime ? ' ' + o.deliveryTime : '' }}
+                  </span>
+                }
+                @if (o.status === 'livrat') {
+                  <span class="mto-badge mto-badge--done">Livrat</span>
+                } @else if (o.status === 'livrat_partial') {
+                  <span class="mto-badge mto-badge--partial">Parțial</span>
+                } @else {
+                  <span class="mto-badge" [ngClass]="ts.cls">{{ ts.label }}</span>
+                }
+                <mat-icon class="mt-expand-icon">{{ expandedHistoryIds().has(o.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </div>
             </div>
+
             @if (expandedHistoryIds().has(o.id)) {
               <div class="mt-hist-detail" (click)="$event.stopPropagation()">
+                <!-- Contact -->
+                @if (o.client.phone) {
+                  <a [href]="'tel:' + o.client.phone" class="mt-hist-contact">
+                    <mat-icon>phone</mat-icon>{{ o.client.phone }}
+                  </a>
+                }
+                @if (o.client.address) {
+                  <a [href]="mapsLink(o.client.address)" target="_blank" class="mt-hist-contact">
+                    <mat-icon>location_on</mat-icon>{{ o.client.address }}
+                  </a>
+                }
+                <!-- Observații -->
+                <textarea class="mt-hist-obs" rows="2"
+                          [appInitValue]="o.observatii ?? o.client.note ?? ''"
+                          (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
+                          (blur)="saveOrderObsBuffer(o.id)"
+                          placeholder="Notă comandă">
+                </textarea>
+                <!-- Curse asociate -->
                 @if (!trips.length) {
                   <div class="mt-hist-no-trips">
                     <mat-icon>pending_actions</mat-icon>
@@ -334,15 +376,27 @@
                   </div>
                 } @else {
                   @for (t of trips; track t.id) {
-                    <div class="mt-hist-trip-line">
+                    @let tw2 = tripOrderWeight(t, o);
+                    @let tv2 = tripOrderValue(t, o);
+                    <div class="mt-hist-trip-line mt-hist-trip-line--clickable" (click)="openDelivery(t, o)">
                       <mat-icon [style.color]="t.status === 'livrat' ? '#16a34a' : '#3b82f6'">
                         {{ t.status === 'livrat' ? 'check_circle' : 'local_shipping' }}
                       </mat-icon>
                       <div class="mt-hist-trip-info">
                         <span class="mt-vehicle">{{ vehicleName(t) }}</span>
+                        <small class="muted">{{ transportService.getVehicle(t.vehicleId)?.numarInmatriculare }}</small>
                         <span class="mt-hist-trip-time">{{ fmtDT(t.oraPlecare) }}</span>
                       </div>
-                      <span class="mt-chip mt-chip--sm" [class]="statusClass(t)">{{ statusLabel(t.status) }}</span>
+                      <div class="mt-hist-trip-right">
+                        <span class="mt-chip mt-chip--sm" [class]="statusClass(t)">{{ statusLabel(t.status) }}</span>
+                        @if (tw2 > 0) {
+                          <span class="mt-hist-wt-sm"><mat-icon>monitor_weight</mat-icon>{{ fmtWeight(tw2) }}</span>
+                        }
+                        @if (tv2.tva > 0) {
+                          <span class="mt-hist-val-sm">{{ tv2.tva | number:'1.0-0' }} lei</span>
+                        }
+                        <mat-icon class="mt-hist-chevron">chevron_right</mat-icon>
+                      </div>
                     </div>
                   }
                 }
@@ -355,6 +409,33 @@
 
     <div style="height:80px"></div>
   </div>
+
+  <!-- ── Delivery detail bottom sheet ── -->
+  @if (selectedDelivery(); as dlv) {
+    <div class="mt-dlv-backdrop" (click)="closeDelivery()">
+      <div class="mt-dlv-sheet" (click)="$event.stopPropagation()">
+        <div class="mt-dlv-header">
+          <span class="mt-order-nr">#{{ dlv.order.orderNumber }}</span>
+          <strong class="mt-dlv-client">{{ dlv.order.client.name }}</strong>
+          @if (dlv.order.status === 'livrat_partial') {
+            <span class="mto-badge mto-badge--partial">parțial</span>
+          }
+          <button class="mt-dlv-close" (click)="closeDelivery()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="mt-dlv-title">Articole de livrat</div>
+        @if (!dlv.items.length) {
+          <div class="mt-dlv-empty">Livrare fără detalii pe articole.</div>
+        } @else {
+          @for (item of dlv.items; track $index) {
+            <div class="mt-dlv-item">
+              <span class="mt-dlv-name">{{ item.name }}</span>
+              <span class="mt-dlv-qty">{{ item.qty }} {{ item.um }}</span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
 
   <!-- ── Trip card template ── -->
   <ng-template #tripCard let-t>
