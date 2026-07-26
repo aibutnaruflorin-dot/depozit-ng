@@ -27,6 +27,7 @@ export default defineConfig({
         '**/sofer-flow.spec.ts',
         '**/validations.spec.ts',
         '**/integration.spec.ts',
+        '**/supabase-sync.spec.ts',
       ],
     },
     {
