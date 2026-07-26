@@ -454,13 +454,6 @@
                         </span>
                       }
                     </div>
-                    @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
-                      <button class="order-chip-cart-btn" mat-icon-button
-                              (click)="$event.stopPropagation(); addProductsOrderId.set(o.id)"
-                              matTooltip="Adaugă produse">
-                        <mat-icon>add_shopping_cart</mat-icon>
-                      </button>
-                    }
                   </div>
                 }
               </td>
@@ -541,6 +534,13 @@
                     }
                   }
                   @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
+                    @for (o of ordersForTransport(t); track o.id) {
+                      <button mat-icon-button color="primary"
+                              (click)="addProductsOrderId.set(o.id)"
+                              [matTooltip]="ordersForTransport(t).length > 1 ? 'Adaugă produse #' + o.orderNumber : 'Adaugă produse'">
+                        <mat-icon>add_shopping_cart</mat-icon>
+                      </button>
+                    }
                     <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                     <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
                   }
@@ -655,13 +655,6 @@
                         </span>
                       }
                     </div>
-                    @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
-                      <button class="order-chip-cart-btn" mat-icon-button
-                              (click)="$event.stopPropagation(); addProductsOrderId.set(o.id)"
-                              matTooltip="Adaugă produse">
-                        <mat-icon>add_shopping_cart</mat-icon>
-                      </button>
-                    }
                   </div>
                 }
               </td>
@@ -739,6 +732,13 @@
                     }
                   }
                   @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
+                    @for (o of ordersForTransport(t); track o.id) {
+                      <button mat-icon-button color="primary"
+                              (click)="addProductsOrderId.set(o.id)"
+                              [matTooltip]="ordersForTransport(t).length > 1 ? 'Adaugă produse #' + o.orderNumber : 'Adaugă produse'">
+                        <mat-icon>add_shopping_cart</mat-icon>
+                      </button>
+                    }
                     <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                     <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
                   }

@@ -545,13 +545,6 @@
                         [placeholder]="'Observații #' + o.orderNumber"
                         (click)="$event.stopPropagation()">
               </textarea>
-              @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
-                <button class="mt-plan-btn mt-plan-btn--cart"
-                        (click)="$event.stopPropagation(); addProductsToOrder(o.id)"
-                        title="Adaugă produse">
-                  <mat-icon>add_shopping_cart</mat-icon>Adaugă produse
-                </button>
-              }
             }
           }
 
@@ -597,6 +590,12 @@
                 }
               }
               @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
+                @for (o of ordersForTransport(t); track o.id) {
+                  <button class="mt-act-btn mt-act-btn--cart" (click)="addProductsToOrder(o.id)">
+                    <mat-icon>add_shopping_cart</mat-icon>
+                    Adaugă produse{{ ordersForTransport(t).length > 1 ? ' #' + o.orderNumber : '' }}
+                  </button>
+                }
                 <button class="mt-act-btn" (click)="openEdit(t)">
                   <mat-icon>edit</mat-icon>Editează
                 </button>

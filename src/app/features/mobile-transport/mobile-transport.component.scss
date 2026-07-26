@@ -367,6 +367,7 @@
   &.mt-act-btn--wa     { border-color: #25d366; color: #16a34a; }
   &.mt-act-btn--sent   { background: #d1fae5; }
   &.mt-act-btn--danger { border-color: #fca5a5; color: #dc2626; }
+  &.mt-act-btn--cart   { border-color: var(--color-primary); color: var(--color-primary); }
 }
 .mt-sent-chk { font-size: 14px !important; width: 14px !important; height: 14px !important; color: #16a34a; }
 

@@ -1272,12 +1272,6 @@
   &:hover { background: rgba(0,0,0,.05); }
 }
 
-.order-chip-cart-btn {
-  display: flex; align-self: flex-start;
-  width: 28px; height: 28px; margin-top: 2px;
-  color: var(--color-primary);
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-}
 
 /* ── Log tranziții (transport historic) ─────────────────────── */
 .log-cell { vertical-align: top; min-width: 210px; }
