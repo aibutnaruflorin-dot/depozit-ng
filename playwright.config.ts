@@ -28,6 +28,7 @@ export default defineConfig({
         '**/validations.spec.ts',
         '**/integration.spec.ts',
         '**/supabase-sync.spec.ts',
+        '**/export.spec.ts',
       ],
     },
     {
