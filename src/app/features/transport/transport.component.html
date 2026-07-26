@@ -83,7 +83,7 @@
   <div class="wide-section wide-section--overdue">
     <div class="panel-title panel-title--toggle panel-title--overdue"
          (click)="showOverdueOrders.set(!showOverdueOrders())">
-      <mat-icon>warning</mat-icon> Comenzi neplanificate cu termen depăşit
+      <mat-icon>warning</mat-icon> Comenzi neplanificate cu termen depășit
       @if (deliveryOrdersOverdue().length) {
         <span class="badge-pill badge-pill--overdue">{{ deliveryOrdersOverdue().length }}</span>
       }
@@ -93,7 +93,7 @@
       @if (!deliveryOrdersOverdue().length) {
         <div class="empty-state">
           <mat-icon>check_circle_outline</mat-icon>
-          <p>Nicio comandă cu termen depăşit.</p>
+          <p>Nicio comandă cu termen depășit.</p>
         </div>
       } @else {
         <ng-container [ngTemplateOutlet]="deliveryTableTpl"
@@ -222,7 +222,7 @@
   }
 </ng-template>
 
-<!-- ── Comenzi de planificat / cu termen depăşit – tabel wide ── -->
+<!-- ── Comenzi de planificat / cu termen depășit – tabel wide ── -->
 <ng-template #deliveryTableTpl let-orders="orders" let-sortKey="sortKey">
   @let sst = getDeliverySortSt(sortKey ?? 'orders');
   @if (!orders.length) {

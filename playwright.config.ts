@@ -20,12 +20,26 @@ export default defineConfig({
     {
       name: 'Desktop Chrome',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
-      testMatch: '**/flow.spec.ts',
+      testMatch: [
+        '**/flow.spec.ts',
+        '**/auth-roles.spec.ts',
+        '**/agent-flow.spec.ts',
+        '**/sofer-flow.spec.ts',
+        '**/validations.spec.ts',
+        '**/integration.spec.ts',
+      ],
     },
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'], viewport: { width: 393, height: 851 } },
-      testMatch: '**/flow-mobile.spec.ts',
+      testMatch: [
+        '**/flow-mobile.spec.ts',
+        '**/auth-roles-mobile.spec.ts',
+        '**/agent-flow-mobile.spec.ts',
+        '**/sofer-flow-mobile.spec.ts',
+        '**/validations-mobile.spec.ts',
+        '**/integration-mobile.spec.ts',
+      ],
     },
   ],
 

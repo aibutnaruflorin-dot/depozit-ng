@@ -3,7 +3,7 @@
   <!-- Header -->
   <div class="mha-header">
     <div class="mha-header-row">
-      <span class="mha-title">Toate Comenzile</span>
+      <span class="mha-title">Toate comenzile</span>
       <button class="mha-search-btn" (click)="showSearch.update(v => !v)">
         <mat-icon>{{ showSearch() ? 'close' : 'search' }}</mat-icon>
       </button>
@@ -440,7 +440,7 @@
       <div class="mh-ds-footer">
         @if (canAccept(o)) {
           <button class="mh-act-btn primary" (click)="acceptOrder(o)">
-            <mat-icon>check_circle</mat-icon> Acceptă comanda
+            <mat-icon>check_circle</mat-icon> Acceptă
           </button>
         }
         @if (canFinalizeWithChanges(o)) {

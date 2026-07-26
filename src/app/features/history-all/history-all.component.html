@@ -788,7 +788,7 @@
                 <button mat-stroked-button [class.btn-lock-active]="order.locked" (click)="toggleLock(order)"
                         [matTooltip]="order.locked ? 'Comanda blocată — agentul nu poate modifica. Click pentru a debloca.' : 'Click pentru a bloca comanda din Comenzile mele'">
                   <mat-icon>{{ order.locked ? 'lock' : 'lock_open' }}</mat-icon>
-                  {{ order.locked ? 'Deblocheaza' : 'Blocheaza' }}
+                  {{ order.locked ? 'Deblochează' : 'Blochează' }}
                 </button>
               }
               @if (canReopen(order)) {

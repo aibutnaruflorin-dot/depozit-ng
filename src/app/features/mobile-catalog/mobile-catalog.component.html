@@ -212,7 +212,7 @@
           </button>
           <button class="mc-ds-adj-btn mc-ds-adj-remove" (click)="openAdj(p, 'remove')">
             <mat-icon>remove_circle_outline</mat-icon>
-            Scoate stoc
+            Elimină stoc
           </button>
         </div>
       }
@@ -220,7 +220,7 @@
       @if (selectedProductHistory().length > 0) {
         <button class="mc-ds-hist-btn" (click)="openHistory(p)">
           <mat-icon>history</mat-icon>
-          Istoric ajustări ({{ selectedProductHistory().length }})
+          Istoric ajustări stoc ({{ selectedProductHistory().length }})
         </button>
       }
     </div>
@@ -234,13 +234,13 @@
       <div class="mc-hist-header">
         <div class="mc-hist-title">
           <mat-icon>history</mat-icon>
-          Istoric ajustări
+          Istoric ajustări stoc
         </div>
         <button class="mc-ds-close" (click)="closeHistory()"><mat-icon>close</mat-icon></button>
       </div>
       <div class="mc-hist-prod-name">{{ p.name }}</div>
       @if (productHistory().length === 0) {
-        <div class="mc-hist-empty">Nicio ajustare înregistrată.</div>
+        <div class="mc-hist-empty">Nicio ajustare înregistrată pentru acest produs.</div>
       } @else {
         <div class="mc-hist-list">
           @for (e of productHistory(); track e.timestamp) {
@@ -272,7 +272,7 @@
       <div class="mc-adj-header">
         <div class="mc-adj-type-badge" [class.add]="m.type === 'add'" [class.remove]="m.type === 'remove'">
           <mat-icon>{{ m.type === 'add' ? 'add_circle' : 'remove_circle' }}</mat-icon>
-          {{ m.type === 'add' ? 'Adaugă stoc' : 'Scoate stoc' }}
+          {{ m.type === 'add' ? 'Adaugă stoc' : 'Elimină stoc' }}
         </div>
         <button class="mc-ds-close" (click)="closeAdj()"><mat-icon>close</mat-icon></button>
       </div>

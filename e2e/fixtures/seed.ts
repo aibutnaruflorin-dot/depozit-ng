@@ -9,19 +9,13 @@ export const SEED = {
   app_catalogs: [
     { id: 'cat-test', name: 'Catalog Test', color: '#2196F3', dataSource: 'excel' }
   ],
-  [`app_products_cat-test`]: [
+  [`app_catalog_cat-test_products`]: [
     { nr: 1, name: 'Produs Test A', um: 'BUC', qty: 100, category: 'Test', pretCuTVA: 25.50, pretFaraTVA: 21.43, masaNeta: 0.5, catalogId: 'cat-test' },
     { nr: 2, name: 'Produs Test B', um: 'BUC', qty: 50,  category: 'Test', pretCuTVA: 10.00, pretFaraTVA: 8.40,  masaNeta: 1.2, catalogId: 'cat-test' },
   ],
   app_vehicles: [
-    { id: 'v1', name: 'Duba Test', plate: 'TT01TST', maxWeight: 1000 }
+    { id: 'v1', denumire: 'Duba Test', numarInmatriculare: 'TT01TST', marca: 'Test', alias: 'Duba Test', tonajMaxim: 1000 }
   ],
-  app_drivers: [
-    { id: 'd1', name: 'Sofer Test', phone: '0700000001' }
-  ],
-  app_orders: [],
-  app_transports: [],
-  app_stock_log: [],
   app_units: [],
   app_whatsapp_contacts: [],
 };

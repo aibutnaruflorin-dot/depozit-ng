@@ -133,7 +133,7 @@ export class MobileHistoryAllComponent {
 
   statusLabel(o: Order): string {
     if (o.status === 'sters')   return 'Șters din transport';
-    if (o.status === 'trimis')  return 'În aşteptare';
+    if (o.status === 'trimis')  return 'În așteptare';
     if (o.status === 'anulat')  return 'Anulată';
     if (o.status === 'livrat')  return 'Livrat';
     return this.transportService.deriveOrderPlanningStatus(o).label;

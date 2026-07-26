@@ -33,13 +33,13 @@
             <mat-icon>person</mat-icon>
             <span class="mm-driver-name">{{ sec.driver.nume }}</span>
             @if (sec.active.length) {
-              <span class="mm-badge mm-badge--warn">{{ sec.active.length }} activ</span>
+              <span class="mm-badge mm-badge--warn">{{ sec.active.length }} în livrare</span>
             }
             @if (sec.planned.length) {
-              <span class="mm-badge mm-badge--info">{{ sec.planned.length }} planif.</span>
+              <span class="mm-badge mm-badge--info">{{ sec.planned.length }} planificate</span>
             }
             @if (sec.hist.length) {
-              <span class="mm-badge mm-badge--muted">{{ sec.hist.length }} fin.</span>
+              <span class="mm-badge mm-badge--muted">{{ sec.hist.length }} finalizate</span>
             }
           </div>
 
@@ -146,14 +146,14 @@
                         @if (t.confirmedAt) {
                           <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Confirmat șofer</span><span class="mm-log-time">{{ fmtTs(t.confirmedAt) }}</span></div>
                         }
-                        <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Pornit</span><span class="mm-log-time">{{ fmtTs(t.startedAt) }}</span></div>
+                        <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Start livrare</span><span class="mm-log-time">{{ fmtTs(t.startedAt) }}</span></div>
                         <div class="mm-log-entry mm-log-entry--final"><mat-icon class="mm-log-icon mm-log-icon--final">check_circle</mat-icon><span class="mm-log-label">Finalizat</span><span class="mm-log-time">{{ fmtTs(t.completedAt) }}</span></div>
                         <div class="mm-log-sep"></div>
                         @if (tripDuration(t) !== '—') {
-                          <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">timer</mat-icon><span class="mm-log-label">Durată livrare</span><span class="mm-log-time">{{ tripDuration(t) }}</span></div>
+                          <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">timer</mat-icon><span class="mm-log-label">Durata livrare</span><span class="mm-log-time">{{ tripDuration(t) }}</span></div>
                         }
                         @if (tripTotalDuration(t) !== '—') {
-                          <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">schedule</mat-icon><span class="mm-log-label">Durată totală</span><span class="mm-log-time">{{ tripTotalDuration(t) }}</span></div>
+                          <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">schedule</mat-icon><span class="mm-log-label">Durata totală</span><span class="mm-log-time">{{ tripTotalDuration(t) }}</span></div>
                         }
                       </div>
                     </div>
@@ -203,7 +203,7 @@
           }
         </div>
         @if (!tripsInDelivery().length) {
-          <div class="mm-empty-section"><mat-icon>local_shipping</mat-icon><p>Nicio cursă în livrare.</p></div>
+          <div class="mm-empty-section"><mat-icon>local_shipping</mat-icon><p>Nicio cursă în desfășurare.</p></div>
         }
         @for (t of tripsInDelivery(); track t.id) {
           <ng-container [ngTemplateOutlet]="driverTripCard" [ngTemplateOutletContext]="{ $implicit: t }"></ng-container>
@@ -250,7 +250,7 @@
                 <mat-icon>warning</mat-icon>
                 <span>Această cursă a fost ANULATĂ.</span>
                 <button class="mm-cancel-ack-btn" (click)="confirmCancellation(t)">
-                  <mat-icon>check</mat-icon>Am văzut
+                  <mat-icon>check</mat-icon>Am văzut, confirm anularea
                 </button>
               </div>
             </div>
@@ -261,7 +261,7 @@
         @if (history().length > 0) {
           <button class="mm-history-toggle" (click)="showHistory.update(v => !v)">
             <mat-icon>{{ showHistory() ? 'expand_less' : 'expand_more' }}</mat-icon>
-            Curse livrate ({{ history().length }})
+            Curse finalizate ({{ history().length }})
           </button>
 
           @if (showHistory()) {
@@ -344,16 +344,16 @@
                     <div class="mm-log-section">
                       <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Planificat</span><span class="mm-log-time">{{ fmtTs(t.createdAt) }}</span></div>
                       @if (t.confirmedAt) {
-                        <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Confirmat</span><span class="mm-log-time">{{ fmtTs(t.confirmedAt) }}</span></div>
+                        <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Confirmat șofer</span><span class="mm-log-time">{{ fmtTs(t.confirmedAt) }}</span></div>
                       }
-                      <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Pornit</span><span class="mm-log-time">{{ fmtTs(t.startedAt) }}</span></div>
+                      <div class="mm-log-entry"><mat-icon class="mm-log-icon">check_circle</mat-icon><span class="mm-log-label">Start livrare</span><span class="mm-log-time">{{ fmtTs(t.startedAt) }}</span></div>
                       <div class="mm-log-entry mm-log-entry--final"><mat-icon class="mm-log-icon mm-log-icon--final">check_circle</mat-icon><span class="mm-log-label">Finalizat</span><span class="mm-log-time">{{ fmtTs(t.completedAt) }}</span></div>
                       <div class="mm-log-sep"></div>
                       @if (tripDuration(t) !== '—') {
-                        <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">timer</mat-icon><span class="mm-log-label">Durată livrare</span><span class="mm-log-time">{{ tripDuration(t) }}</span></div>
+                        <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">timer</mat-icon><span class="mm-log-label">Durata livrare</span><span class="mm-log-time">{{ tripDuration(t) }}</span></div>
                       }
                       @if (tripTotalDuration(t) !== '—') {
-                        <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">schedule</mat-icon><span class="mm-log-label">Durată totală</span><span class="mm-log-time">{{ tripTotalDuration(t) }}</span></div>
+                        <div class="mm-log-entry mm-log-entry--dur"><mat-icon class="mm-log-icon">schedule</mat-icon><span class="mm-log-label">Durata totală</span><span class="mm-log-time">{{ tripTotalDuration(t) }}</span></div>
                       }
                     </div>
                   </div>
@@ -397,7 +397,7 @@
       @if (t.status === 'planificat') {
         <div class="mm-new-task-banner">
           <mat-icon>notifications_active</mat-icon>
-          <span>Sarcină nouă! Confirmă că ai primit informațiile.</span>
+          <span>Ai o nouă sarcină! Confirmă că ai primit informațiile.</span>
         </div>
       }
 

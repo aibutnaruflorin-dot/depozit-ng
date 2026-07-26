@@ -14,7 +14,7 @@
   <!-- Header -->
   <div class="mn-header">
     <div class="mn-header-row">
-      <span class="mn-title">{{ addToOrderId ? 'Adaugă Produse' : 'Comandă Nouă' }}</span>
+      <span class="mn-title">{{ addToOrderId ? 'Adaugă produse' : 'Comandă nouă' }}</span>
       @if (cartCount() > 0) {
         <button class="mn-cart-btn" (click)="showCart.set(true)">
           <mat-icon>shopping_cart</mat-icon>
@@ -159,7 +159,7 @@
         </div>
         @if (totalMasa() > 0) {
           <div class="mn-total-row">
-            <span>Masă totală</span>
+            <span>Greutate totală</span>
             <span>{{ totalMasa() | number:'1.0-2' }} kg</span>
           </div>
         }
@@ -196,7 +196,7 @@
           </div>
 
           <label class="mn-toggle-row" (click)="cuLivrare.update(v => !v)">
-            <span>Cu livrare</span>
+            <span>Cu livrare la client</span>
             <div class="mn-toggle" [class.on]="cuLivrare()">
               <div class="mn-toggle-thumb"></div>
             </div>
@@ -235,8 +235,8 @@
             <mat-icon>add_circle_outline</mat-icon>
             {{ addPending ? 'Adaugă ' + cartCount() + ' la comandă' : 'Adaugă ' + cartCount() + ' la ciornă' }}
           } @else {
-            <mat-icon>save</mat-icon>
-            Salvează comanda
+            <mat-icon>send</mat-icon>
+            Trimite comanda
           }
         </button>
       </div>

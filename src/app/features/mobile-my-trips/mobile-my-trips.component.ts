@@ -14,7 +14,7 @@ const STATUS_STEPS: TransportStatus[] = ['planificat', 'confirmat_sofer', 'in_li
 const STATUS_LABELS: Record<string, string> = {
   planificat: 'Planificat', confirmat_sofer: 'Confirmat', in_livrare: 'În livrare', livrat: 'Livrat', anulat: 'Anulat'
 };
-const STEP_LABELS  = ['Planificat', 'Confirmat', 'Pornit', 'Livrat'];
+const STEP_LABELS  = ['Așteptare confirmare', 'Confirmat', 'În livrare', 'Finalizare'];
 const STEP_ACTIONS = ['Confirmă', 'Pornește cursa', 'Finalizează', ''];
 
 @Component({

@@ -73,7 +73,7 @@
           </div>
           <div class="mt-cal-legend">
             <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--plan"></span>Planificat</span>
-            <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--confirmat"></span>Confirmat</span>
+            <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--confirmat"></span>Confirmat șofer</span>
             <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--active"></span>În livrare</span>
             <span class="mt-leg-item"><span class="mt-leg-dot mt-leg-dot--overdue"></span>Întârziat</span>
           </div>
@@ -94,7 +94,7 @@
       @if (pendingOnTime().length === 0) {
         <div class="mt-empty">
           <mat-icon>assignment</mat-icon>
-          <p>Nicio comandă de planificat.</p>
+          <p>Nicio comandă în așteptare de livrare.</p>
         </div>
       } @else {
         @for (o of pendingOnTime(); track o.id) {
@@ -182,7 +182,7 @@
       @if (done().length === 0) {
         <div class="mt-empty">
           <mat-icon>check_circle</mat-icon>
-          <p>Nicio cursă livrată.</p>
+          <p>Nicio cursă finalizată.</p>
         </div>
       } @else {
         @for (t of done(); track t.id) {
@@ -445,7 +445,7 @@
     @let ov = isOverdue(t);
     @let val = tripValue(t);
     @let wt  = tripWeight(t);
-    <div class="mt-card" [id]="'trip-' + t.id" [class.mt-card--overdue]="ov" [class.mt-card--cancel]="t.status==='anulat'" (click)="toggleExpand(t.id)">
+    <div class="mt-card" [attr.id]="'trip-' + t.id" [class.mt-card--overdue]="ov" [class.mt-card--cancel]="t.status==='anulat'" (click)="toggleExpand(t.id)">
 
       <div class="mt-card-top">
         <div class="mt-trip-info">
@@ -555,7 +555,7 @@
                 <div class="mt-log-entry"><mat-icon class="mt-log-icon">check_circle</mat-icon><span class="mt-log-label">Confirmat șofer</span><span class="mt-log-time">{{ fmtTs(t.confirmedAt) }}</span></div>
               }
               @if (t.startedAt) {
-                <div class="mt-log-entry"><mat-icon class="mt-log-icon">check_circle</mat-icon><span class="mt-log-label">Pornit</span><span class="mt-log-time">{{ fmtTs(t.startedAt) }}</span></div>
+                <div class="mt-log-entry"><mat-icon class="mt-log-icon">check_circle</mat-icon><span class="mt-log-label">Start livrare</span><span class="mt-log-time">{{ fmtTs(t.startedAt) }}</span></div>
               }
               <div class="mt-log-entry mt-log-entry--final"><mat-icon class="mt-log-icon mt-log-icon--final">check_circle</mat-icon><span class="mt-log-label">Finalizat</span><span class="mt-log-time">{{ fmtTs(t.completedAt) }}</span></div>
               <div class="mt-log-sep"></div>
