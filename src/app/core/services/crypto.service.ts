@@ -19,6 +19,17 @@ export class CryptoService {
     return this._sha256(password);
   }
 
+  /** PBKDF2-SHA-256 cu 100 000 iterații — _v:4, rezistent la brute-force */
+  async hashPBKDF2(password: string, salt: string): Promise<string> {
+    const enc  = new TextEncoder();
+    const key  = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100_000, hash: 'SHA-256' },
+      key, 256
+    );
+    return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   private _sha256(str: string): string {
     const K = [
       0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,

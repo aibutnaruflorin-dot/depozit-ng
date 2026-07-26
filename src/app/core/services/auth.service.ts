@@ -72,7 +72,7 @@ export class AuthService {
       return;
     }
     const actualRole = user.role as string;
-    s = { ...s, role: actualRole, loginTime: Date.now(), isAdmin: this._computeIsAdmin(actualRole), mustChangePassword: user.mustChangePassword ?? false };
+    s = { ...s, role: actualRole, isAdmin: this._computeIsAdmin(actualRole), mustChangePassword: user.mustChangePassword ?? false };
     this.storage.set('app_session', s);
     this._session.set(s);
   }
@@ -86,20 +86,23 @@ export class AuthService {
     const user = users[idx];
 
     let passwordMatch = false;
-    if (user._v === 3 && user.salt) {
-      // SHA-256 + salt (curent)
+    if (user._v === 4 && user.salt) {
+      // PBKDF2 (curent)
+      passwordMatch = user.password === await this.crypto.hashPBKDF2(password, user.salt);
+    } else if (user._v === 3 && user.salt) {
+      // SHA-256 + salt (legacy) — migrează la v4
       passwordMatch = user.password === this.crypto.hashWithSalt(password, user.salt);
     } else if (user._v === 2) {
-      // SHA-256 fără salt (legacy) — migrează la v3 dacă parola e corectă
+      // SHA-256 fără salt (legacy) — migrează la v4
       passwordMatch = user.password === await this.crypto.hash(password);
     } else {
-      // Plaintext (legacy) — migrează la v3 dacă parola e corectă
+      // Plaintext (legacy) — migrează la v4
       passwordMatch = user.password === password;
     }
-    if (passwordMatch && (user._v !== 3 || !user.salt)) {
+    if (passwordMatch && user._v !== 4) {
       const salt   = this.crypto.generateSalt();
-      const hashed = this.crypto.hashWithSalt(password, salt);
-      users[idx]   = { ...user, password: hashed, _v: 3, salt };
+      const hashed = await this.crypto.hashPBKDF2(password, salt);
+      users[idx]   = { ...user, password: hashed, _v: 4, salt };
       this.storage.set('app_users', users);
     }
 
@@ -147,7 +150,7 @@ export class AuthService {
       return null;
     }
     const actualRole = user.role as string;
-    s = { ...s, role: actualRole, loginTime: Date.now(), isAdmin: this._computeIsAdmin(actualRole), mustChangePassword: user.mustChangePassword ?? false };
+    s = { ...s, role: actualRole, isAdmin: this._computeIsAdmin(actualRole), mustChangePassword: user.mustChangePassword ?? false };
     this.storage.set('app_session', s);
     this._session.set(s);
     return s;
@@ -160,7 +163,9 @@ export class AuthService {
 
     const user = users[idx];
     let oldMatch: boolean;
-    if (user._v === 3 && user.salt) {
+    if (user._v === 4 && user.salt) {
+      oldMatch = user.password === await this.crypto.hashPBKDF2(oldPass, user.salt);
+    } else if (user._v === 3 && user.salt) {
       oldMatch = user.password === this.crypto.hashWithSalt(oldPass, user.salt);
     } else if (user._v === 2) {
       oldMatch = user.password === await this.crypto.hash(oldPass);
@@ -168,11 +173,12 @@ export class AuthService {
       oldMatch = user.password === oldPass;
     }
     if (!oldMatch) return { ok: false, msg: 'Parola curentă este incorectă.' };
-    if (newPass.length < MIN_PASS_LEN) return { ok: false, msg: `Parola trebuie să aibă cel puțin ${MIN_PASS_LEN} caractere.` };
+    if (newPass.length < MIN_PASS_LEN || !/[A-Z]/.test(newPass) || !/[0-9]/.test(newPass))
+      return { ok: false, msg: `Parola trebuie să aibă minim ${MIN_PASS_LEN} caractere, cel puțin o literă mare și o cifră.` };
 
     const salt    = this.crypto.generateSalt();
-    const hashed  = this.crypto.hashWithSalt(newPass, salt);
-    users[idx]    = { ...user, password: hashed, _v: 3, salt, mustChangePassword: false };
+    const hashed  = await this.crypto.hashPBKDF2(newPass, salt);
+    users[idx]    = { ...user, password: hashed, _v: 4, salt, mustChangePassword: false };
     this.storage.set('app_users', users);
 
     // Șterge flag-ul din sesiunea curentă

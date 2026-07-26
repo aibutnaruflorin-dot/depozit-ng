@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
+import { CryptoService } from '../../core/services/crypto.service';
 import { User } from '../../core/models/user.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -39,13 +40,14 @@ export class UsersComponent {
     private fb: FormBuilder,
     public auth: AuthService,
     private storage: StorageService,
+    private crypto: CryptoService,
     private snackBar: MatSnackBar
   ) {
     this.users.set(this.storage.get<User[]>('app_users') || []);
     this.form = this.fb.group({
       name:     ['', Validators.required],
       username: ['', Validators.required],
-      password: [''],
+      password: ['', Validators.minLength(8)],
       role:     ['agent', Validators.required]
     });
   }
@@ -53,7 +55,7 @@ export class UsersComponent {
   openAdd(): void {
     this.editingId.set(null);
     this.form.reset({ name: '', username: '', password: '', role: 'agent' });
-    this.form.get('password')?.setValidators(Validators.required);
+    this.form.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
     this.form.get('password')?.updateValueAndValidity();
     this.showModal.set(true);
   }
@@ -78,14 +80,21 @@ export class UsersComponent {
       const dup = users.find(u => u.username === username.trim().toLowerCase());
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
       const newId = Math.max(0, ...users.map(u => u.id)) + 1;
-      users.push({ id: newId, name: name.trim(), username: username.trim().toLowerCase(), password, role, active: true });
+      const s1 = this.crypto.generateSalt();
+      users.push({ id: newId, name: name.trim(), username: username.trim().toLowerCase(),
+        password: this.crypto.hashWithSalt(password, s1), _v: 3, salt: s1,
+        mustChangePassword: true, role, active: true });
     } else {
       const idx = users.findIndex(u => u.id === id);
       if (idx === -1) return;
       const dup = users.find(u => u.username === username.trim().toLowerCase() && u.id !== id);
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
       users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role };
-      if (password) users[idx].password = password;
+      if (password) {
+        const s2 = this.crypto.generateSalt();
+        users[idx] = { ...users[idx], password: this.crypto.hashWithSalt(password, s2),
+          _v: 3, salt: s2, mustChangePassword: true };
+      }
     }
 
     this.storage.set('app_users', users);

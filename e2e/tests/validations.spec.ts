@@ -5,6 +5,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { AUTH_SEED, authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Bloc 1 — Login validations
@@ -246,6 +247,7 @@ test.describe.serial('TC-V: Stock overflow', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
     // Draft order cu qty=200 (stoc disponibil = 100)
     await page.addInitScript(authSeedScript({

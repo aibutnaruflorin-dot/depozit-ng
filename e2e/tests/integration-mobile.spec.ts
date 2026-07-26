@@ -6,6 +6,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { AUTH_SEED, authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Flux 1 — Agent creează comandă, Admin o vede (mobile)
@@ -28,6 +29,7 @@ test.describe.serial('Phase 6 Mobile — Integration: Agent → Admin visibility
   let adminPage: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     // Seed-ul include comanda agentului — persistă pe orice navigare via addInitScript
     agentPage = await browser.newPage();
     await agentPage.addInitScript(authSeedScript({ ...AUTH_SEED, app_orders: [M_INT_ORDER] }));

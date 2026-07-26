@@ -1,6 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { seedAndLogin } from '../helpers/auth';
 import { SEED, seedScript } from '../fixtures/seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 // Flow-ul complet rulează serial — fiecare test se bazează pe starea anterioară
 test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
@@ -8,6 +9,7 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
   });
 

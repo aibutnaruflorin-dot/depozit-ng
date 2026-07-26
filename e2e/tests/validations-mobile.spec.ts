@@ -5,6 +5,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { AUTH_SEED, authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Bloc 1 — Login validations
@@ -196,6 +197,7 @@ test.describe.serial('TC-MV: Order cancel (mobile)', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
     await page.addInitScript(authSeedScript({
       ...AUTH_SEED,
@@ -269,6 +271,7 @@ test.describe.serial('TC-MV: Stock overflow (mobile)', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
     await page.addInitScript(authSeedScript({
       ...AUTH_SEED,

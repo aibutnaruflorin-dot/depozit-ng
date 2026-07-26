@@ -3,9 +3,11 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 
 const SYNC_KEYS = [
-  'app_users', 'app_orders', 'app_catalogs', 'app_transports',
-  'app_vehicles', 'app_permissions', 'app_whatsapp_contacts',
+  'app_orders', 'app_catalogs', 'app_transports',
+  'app_vehicles', 'app_whatsapp_contacts',
   'app_stock_log', 'app_units', 'app_drivers'
+  // app_users: exclus — parolele nu se sincronizează remote (Audit v2)
+  // app_permissions: exclus — privilege escalation via kv_store tampering (Audit v3 AV3-01)
 ];
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +35,13 @@ export class SupabaseService {
       console.warn('Supabase loadAll failed:', e);
       return {};
     }
+  }
+
+  async kvGet(key: string): Promise<any> {
+    try {
+      const { data } = await this.client.from('kv_store').select('value').eq('key', key).maybeSingle();
+      return data?.value ?? null;
+    } catch { return null; }
   }
 
   async upsert(key: string, value: any): Promise<void> {

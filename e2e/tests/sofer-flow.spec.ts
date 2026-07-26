@@ -7,6 +7,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 const TRIP_ID  = `trip-sf-${Date.now().toString(36)}`;
 const ORDER_ID = `order-sf-${Date.now().toString(36)}`;
@@ -18,6 +19,7 @@ test.describe.serial('Phase 4 — Sofer Flow Desktop', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
 
     // Seed + injectare cursă planificată pentru sofer1 (id=3)

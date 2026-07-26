@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { User } from '../models/user.model';
 import { DEFAULT_PERMISSIONS } from '../models/app-permission.model';
 import { SupabaseService } from './supabase.service';
+import { CryptoService } from './crypto.service';
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(private supabase: SupabaseService, private crypto: CryptoService) {}
 
   get<T>(key: string): T | null {
     try {
@@ -35,9 +36,10 @@ export class StorageService {
     // Valorile default se scriu DOAR în localStorage (syncRemote=false)
     // ca să nu suprascrie datele reale din Supabase când conexiunea pică
     if (!this.get('app_users')) {
+      const s1 = this.crypto.generateSalt(), s2 = this.crypto.generateSalt();
       this.set('app_users', [
-        { id: 1, name: 'Administrator', username: 'admin',  password: 'admin123',  _v: 1, mustChangePassword: true, role: 'keyuser', active: true },
-        { id: 2, name: 'Agent 1',       username: 'agent1', password: 'agent123', _v: 1, mustChangePassword: true, role: 'agent',   active: true }
+        { id: 1, name: 'Administrator', username: 'admin',  password: this.crypto.hashWithSalt('admin123', s1),  _v: 3, salt: s1, mustChangePassword: true, role: 'keyuser', active: true },
+        { id: 2, name: 'Agent 1',       username: 'agent1', password: this.crypto.hashWithSalt('agent123', s2), _v: 3, salt: s2, mustChangePassword: true, role: 'agent',   active: true }
       ] as User[], false);
     }
     if (!this.get('app_permissions')) this.set('app_permissions', DEFAULT_PERMISSIONS, false);

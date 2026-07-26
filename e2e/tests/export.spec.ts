@@ -10,6 +10,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { authSeedScript, AUTH_SEED, loginAs } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 
@@ -22,6 +23,7 @@ test.describe.serial('Phase 8 — Export Excel & CSV', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
     await page.addInitScript(authSeedScript({
       ...AUTH_SEED,

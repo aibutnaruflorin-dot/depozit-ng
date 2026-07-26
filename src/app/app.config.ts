@@ -7,10 +7,14 @@ import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
 import { SupabaseService } from './core/services/supabase.service';
 
+// AV3-01: cheile sensibile nu se încarcă niciodată din remote — previne privilege escalation
+const BLOCKED_FROM_REMOTE = new Set(['app_users', 'app_permissions', 'app_session']);
+
 function initSupabase(supabase: SupabaseService) {
   return async () => {
     const remote = await supabase.loadAll();
     for (const [key, value] of Object.entries(remote)) {
+      if (BLOCKED_FROM_REMOTE.has(key)) continue;
       if (value !== null && value !== undefined) {
         try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
       }

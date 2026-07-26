@@ -4,6 +4,8 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
 import { StorageService } from '../../../core/services/storage.service';
+import { SupabaseService } from '../../../core/services/supabase.service';
+import { CryptoService } from '../../../core/services/crypto.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +13,12 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS   = 30_000;
+
+// AV3-04: backoff exponențial — 30s, 2min, 8min, 30min (plafon)
+function lockoutMs(attempts: number): number {
+  const cycles = Math.floor(attempts / MAX_ATTEMPTS);
+  return Math.min(30_000 * Math.pow(4, cycles - 1), 30 * 60_000);
+}
 
 @Component({
   selector: 'app-login',
@@ -37,6 +44,8 @@ export class LoginComponent implements OnDestroy {
     private fb: FormBuilder,
     private auth: AuthService,
     private storage: StorageService,
+    private supabase: SupabaseService,
+    private crypto: CryptoService,
     private router: Router
   ) {
     this.storage.init();
@@ -61,6 +70,17 @@ export class LoginComponent implements OnDestroy {
       const raw = localStorage.getItem('_lk');
       return raw ? JSON.parse(raw) : { attempts: 0, lockedUntil: 0 };
     } catch { return { attempts: 0, lockedUntil: 0 }; }
+  }
+
+  // AV3-08: cheia de lockout = hash SHA-256(username) — nu expune username-ul în kv_store
+  private _lockoutKey(username: string): string {
+    return `_lk_${this.crypto.hashWithSalt(username.trim().toLowerCase(), '_lk_').slice(0, 32)}`;
+  }
+
+  private async getKvLockout(username: string): Promise<{ attempts: number; lockedUntil: number }> {
+    const data = await this.supabase.kvGet(this._lockoutKey(username));
+    if (!data) return { attempts: 0, lockedUntil: 0 };
+    return { attempts: data.attempts ?? 0, lockedUntil: data.lockedUntil ?? 0 };
   }
 
   private _resumeCountdownIfLocked(): void {
@@ -97,12 +117,20 @@ export class LoginComponent implements OnDestroy {
   async submit(): Promise<void> {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
 
-    const lk = this.getLockout();
-    if (lk.lockedUntil > Date.now()) return; // blocat — mesajul se actualizează deja live
+    const { username, password } = this.form.value;
+    const lkKey   = this._lockoutKey(username);
+
+    const lk    = this.getLockout();
+    const kvLk  = await this.getKvLockout(username);
+    // Folosim cel mai strict lockout (localStorage sau kv_store)
+    const lockedUntil = Math.max(lk.lockedUntil, kvLk.lockedUntil);
+    if (lockedUntil > Date.now()) {
+      this._startCountdown(lockedUntil);
+      return;
+    }
 
     this.loading = true;
     this.error   = '';
-    const { username, password } = this.form.value;
     let ok = false;
     try {
       ok = await this.auth.login(username, password);
@@ -116,6 +144,7 @@ export class LoginComponent implements OnDestroy {
 
     if (ok) {
       localStorage.removeItem('_lk');
+      this.supabase.upsert(lkKey, { attempts: 0, lockedUntil: 0 });
       this._clearTimer();
       const session = this.auth.session();
       if (session?.mustChangePassword) {
@@ -125,11 +154,12 @@ export class LoginComponent implements OnDestroy {
         this.router.navigate([isMobile ? '/app/m-catalog' : '/app/catalog']);
       }
     } else {
-      const attempts    = lk.attempts + 1;
-      const lockedUntil = attempts >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_MS : 0;
-      localStorage.setItem('_lk', JSON.stringify({ attempts, lockedUntil }));
-      if (lockedUntil) {
-        this._startCountdown(lockedUntil);
+      const attempts    = Math.max(lk.attempts, kvLk.attempts) + 1;
+      const newLockedUntil = attempts >= MAX_ATTEMPTS ? Date.now() + lockoutMs(attempts) : 0;
+      localStorage.setItem('_lk', JSON.stringify({ attempts, lockedUntil: newLockedUntil }));
+      this.supabase.upsert(lkKey, { attempts, lockedUntil: newLockedUntil });
+      if (newLockedUntil) {
+        this._startCountdown(newLockedUntil);
       } else {
         this.error = `Username sau parolă incorectă. (${attempts}/${MAX_ATTEMPTS})`;
       }

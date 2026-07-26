@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { SEED, seedScript } from '../fixtures/seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 // Același flow ca desktop, dar pe viewport mobil (393×851)
 test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
@@ -7,6 +8,7 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
   });
 

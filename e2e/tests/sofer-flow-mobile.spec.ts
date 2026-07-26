@@ -6,6 +6,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { authSeedScript } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 const TRIP_ID_M  = `trip-msf-${Date.now().toString(36)}`;
 const ORDER_ID_M = `order-msf-${Date.now().toString(36)}`;
@@ -17,6 +18,7 @@ test.describe.serial('Phase 4 — Sofer Flow Mobile', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
 
     await page.addInitScript(authSeedScript({

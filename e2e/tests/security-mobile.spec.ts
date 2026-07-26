@@ -13,10 +13,13 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { authSeedScript, AUTH_SEED, loginAs } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe.serial('Phase 9 — Security Mobile', () => {
+
+  test.beforeAll(async () => { await kvClear(); });
 
   // ── TC-MSEC01: CSP meta header ────────────────────────────────────────────
   test('TC-MSEC01 | CSP meta header prezent (mobil)', async ({ page }) => {
@@ -40,8 +43,9 @@ test.describe.serial('Phase 9 — Security Mobile', () => {
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
 
+    // Folosim 'sofer1' (nu 'admin') pentru a evita conflicte kv_store cu security.spec.ts (rulează în paralel)
     for (let i = 0; i < 5; i++) {
-      await page.locator('input').first().fill('admin');
+      await page.locator('input').first().fill('sofer1');
       await page.locator('input[type="password"]').first().fill('WrongMob!99');
       await page.locator('button[type="submit"]').first().click();
       await page.waitForTimeout(300);

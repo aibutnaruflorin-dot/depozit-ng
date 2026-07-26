@@ -9,6 +9,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { AUTH_SEED, authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 // Date comune pentru tot suita de integrare — generate o singură dată la definire
 const INT_CLIENT_NAME  = `Client INT ${Date.now().toString(36).toUpperCase()}`;
@@ -113,6 +114,7 @@ test.describe.serial('Phase 6 — Integration: Transport → Order status update
 
   // Injectăm direct un scenariu complet: comandă 'trimis' + transport care o conține
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
     await page.addInitScript(authSeedScript({
       ...AUTH_SEED,

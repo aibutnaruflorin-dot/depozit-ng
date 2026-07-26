@@ -7,6 +7,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { AUTH_SEED, authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { kvClear, kvUpsert } from '../fixtures/kv-clear';
 
 // Date client random — unice per rulare, refolosite în toate testele din suite
 const CLIENT = {
@@ -21,6 +22,7 @@ test.describe.serial('Phase 3 — Agent Flow Desktop', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
     await page.addInitScript(authSeedScript());
     await page.goto('/app/login');
@@ -147,6 +149,10 @@ test.describe.serial('Phase 3 — Agent Flow Desktop', () => {
       };
       localStorage.setItem('app_orders', JSON.stringify([newOrder, ...orders]));
     }, client2);
+
+    // Sincronizăm app_orders în kv_store — page.evaluate() ocolește StorageService
+    const ordersAfterInject = await page.evaluate(() => JSON.parse(localStorage.getItem('app_orders') || '[]'));
+    await kvUpsert('app_orders', ordersAfterInject);
 
     await page.goto('/app/history-me');
     await page.waitForLoadState('networkidle');

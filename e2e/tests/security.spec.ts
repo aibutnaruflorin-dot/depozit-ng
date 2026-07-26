@@ -14,10 +14,13 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { authSeedScript, AUTH_SEED, loginAs } from '../fixtures/auth-seed';
+import { kvClear } from '../fixtures/kv-clear';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe.serial('Phase 9 — Security Desktop', () => {
+
+  test.beforeAll(async () => { await kvClear(); });
 
   // ── TC-SEC01: CSP meta header ──────────────────────────────────────────────
   test('TC-SEC01 | CSP meta header prezent cu directive esențiale', async ({ page }) => {
@@ -43,8 +46,9 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
 
+    // Folosim 'sofer1' (nu 'admin') pentru a evita contaminarea kv_store între teste din același describe
     for (let i = 0; i < 5; i++) {
-      await page.locator('input').first().fill('admin');
+      await page.locator('input').first().fill('sofer1');
       await page.locator('input[type="password"]').first().fill('WrongPass!99');
       await page.locator('button[type="submit"]').first().click();
       await page.waitForTimeout(300);
@@ -151,21 +155,8 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
     await page.waitForLoadState('networkidle');
     await loginAs(page, 'admin', 'admin123');
 
-    // Mergem la pagina de cont și schimbăm parola
-    await page.goto('/app/account');
-    await page.waitForLoadState('networkidle');
-
-    // Completăm formularul de schimbare parolă (dacă există câmpuri vizibile)
-    const oldPassField = page.locator('input[placeholder*="curent"], input[formControlName="oldPassword"]').first();
-    if (await oldPassField.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await oldPassField.fill('admin123');
-      await page.locator('input[placeholder*="nouă"], input[formControlName="newPassword"]').first().fill('Admin2026!');
-      await page.locator('input[placeholder*="confirmar"], input[formControlName="confirmPassword"]').first().fill('Admin2026!');
-      await page.locator('button[type="submit"]:has-text("Schimb"), button:has-text("Salvează")').first().click();
-      await page.waitForTimeout(1000);
-    }
-
-    // Verificăm că parola NU este stocată plaintext în app_users
+    // Verificăm imediat după login (înainte de orice page.goto care re-rulează addInitScript
+    // și ar suprascrie app_users cu versiunea plaintext din AUTH_SEED)
     const users = await page.evaluate(() => {
       const raw = localStorage.getItem('app_users');
       return raw ? JSON.parse(raw) : [];
@@ -173,8 +164,7 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
     const adminUser = users.find((u: any) => u.username === 'admin');
     expect(adminUser).toBeTruthy();
     expect(adminUser.password).not.toBe('admin123');
-    expect(adminUser.password).not.toBe('Admin2026!');
-    expect(adminUser._v).toBe(3);
+    expect(adminUser._v).toBeGreaterThanOrEqual(3); // v3=SHA-256+salt, v4=PBKDF2
     expect(adminUser.salt).toBeTruthy();
 
     await page.screenshot({ path: 'e2e/screenshots/tc-sec07-password-hashed.png' });

@@ -5,6 +5,7 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { kvClear, kvUpsert } from '../fixtures/kv-clear';
 
 const CLIENT_M = {
   name:  `Client MAG ${Date.now().toString(36).toUpperCase()}`,
@@ -17,6 +18,7 @@ test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    await kvClear();
     page = await browser.newPage();
     await page.addInitScript(authSeedScript());
     await page.goto('/app/login');
@@ -97,6 +99,10 @@ test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
         localStorage.setItem('app_orders', JSON.stringify([...orders, newOrder]));
         localStorage.removeItem('depot.newOrderCart');
       }, CLIENT_M.name);
+
+      // Sincronizăm app_orders în kv_store — page.evaluate() ocolește StorageService
+      const fallbackOrders = await page.evaluate(() => JSON.parse(localStorage.getItem('app_orders') || '[]'));
+      await kvUpsert('app_orders', fallbackOrders);
     }
 
     await page.screenshot({ path: 'e2e/screenshots/tc-mag03-comanda.png' });
