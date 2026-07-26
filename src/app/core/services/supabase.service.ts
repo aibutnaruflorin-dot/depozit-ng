@@ -42,4 +42,17 @@ export class SupabaseService {
       console.warn('Supabase upsert failed:', key, e);
     }
   }
+
+  async logAudit(userId: number, action: string, detail: string): Promise<void> {
+    try {
+      await this.client.from('audit_log').insert({
+        user_id:    userId,
+        action,
+        details:    detail,
+        created_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.warn('Supabase audit log failed:', e);
+    }
+  }
 }

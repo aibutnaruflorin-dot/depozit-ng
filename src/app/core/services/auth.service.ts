@@ -123,8 +123,8 @@ export class AuthService {
   logout(): void {
     const s = this._session();
     if (s) this.audit.log(s.userId, 'LOGOUT', s.username);
-    this.storage.remove('app_session');
-    localStorage.removeItem('_lk');
+    const toRemove = Object.keys(localStorage).filter(k => k.startsWith('app_') || k === '_lk');
+    toRemove.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
     this._session.set(null);
     this.router.navigate(['/login']);

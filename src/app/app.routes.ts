@@ -29,7 +29,7 @@ export const routes: Routes = [
       { path: 'm-settings-units',    canActivate: [adminGuard], loadComponent: () => import('./features/m-settings-units/m-settings-units.component').then(m => m.MSettingsUnitsComponent) },
       { path: 'm-settings-users',    canActivate: [adminGuard], loadComponent: () => import('./features/m-settings-users/m-settings-users.component').then(m => m.MSettingsUsersComponent) },
       { path: 'm-about',             loadComponent: () => import('./features/mobile-about/mobile-about.component').then(m => m.MobileAboutComponent) },
-      { path: 'm-security',          loadComponent: () => import('./features/mobile-security/mobile-security.component').then(m => m.MobileSecurityComponent) },
+      { path: 'm-security',          canActivate: [adminGuard], loadComponent: () => import('./features/mobile-security/mobile-security.component').then(m => m.MobileSecurityComponent) },
       { path: 'm-manual',            loadComponent: () => import('./features/mobile-manual/mobile-manual.component').then(m => m.MobileManualComponent) },
       { path: 'new-order',   canActivate: [pageGuard], data: { pageId: 'comenzi_noi' }, loadComponent: () => import('./features/new-order/new-order.component').then(m => m.NewOrderComponent) },
       { path: 'history-me',  canActivate: [pageGuard], data: { pageId: 'comenzi' },     loadComponent: () => import('./features/history/history.component').then(m => m.HistoryComponent) },

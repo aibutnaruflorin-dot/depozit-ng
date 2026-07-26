@@ -29,6 +29,8 @@ export default defineConfig({
         '**/integration.spec.ts',
         '**/supabase-sync.spec.ts',
         '**/export.spec.ts',
+        '**/security.spec.ts',
+        '**/supabase-security.spec.ts',
       ],
     },
     {
@@ -41,6 +43,7 @@ export default defineConfig({
         '**/sofer-flow-mobile.spec.ts',
         '**/validations-mobile.spec.ts',
         '**/integration-mobile.spec.ts',
+        '**/security-mobile.spec.ts',
       ],
     },
   ],
