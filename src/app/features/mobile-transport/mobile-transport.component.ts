@@ -572,7 +572,7 @@ export class MobileTransportComponent implements OnInit {
 
   addProductsToOrder(orderId: string): void {
     this.router.navigate(['/app/m-new-order'], {
-      state: { addToOrderId: orderId, addPending: true }
+      state: { addToOrderId: orderId, addPending: true, returnTo: 'transport' }
     });
   }
 
@@ -996,12 +996,30 @@ export class MobileTransportComponent implements OnInit {
     }
 
     if (editId) {
+      const oldDeliveries = this.transportService.getTransport(editId)?.deliveries ?? [];
+      const oldOrderIds   = new Set(oldDeliveries.map(d => d.orderId));
+      const newOrderIds   = new Set(deliveries.map(d => d.orderId));
       this.transportService.updateTransport(editId, { vehicleId: vId, driverId: dId, helper: helperName, deliveries, oraPlecare, oraSosire });
+      for (const order of this.formModalOrders()) {
+        if (!['planificat', 'livrat_partial', 'in_livrare', 'livrat'].includes(order.status)) {
+          this.ordersService.updateOrderStatus(order.id, 'planificat');
+        }
+      }
+      for (const oldId of oldOrderIds) {
+        if (!newOrderIds.has(oldId)) {
+          const order = this.ordersService.orders().find(o => o.id === oldId);
+          if (order?.status === 'planificat') {
+            this.ordersService.updateOrderStatus(oldId, 'acceptat');
+          }
+        }
+      }
       this.snackBar.open('Cursa actualizată.', '', { duration: 2000 });
     } else {
       this.transportService.createTransport({ vehicleId: vId, driverId: dId, helper: helperName, deliveries, oraPlecare, oraSosire });
       for (const order of this.formModalOrders()) {
-        if (order.status === 'acceptat') this.ordersService.updateOrderStatus(order.id, 'planificat');
+        if (!['planificat', 'livrat_partial', 'in_livrare', 'livrat'].includes(order.status)) {
+          this.ordersService.updateOrderStatus(order.id, 'planificat');
+        }
       }
       this.snackBar.open('Cursă planificată.', '', { duration: 2000 });
     }

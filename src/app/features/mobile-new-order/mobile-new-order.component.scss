@@ -1,9 +1,9 @@
-:host { display: block; }
+:host { display: flex; flex-direction: column; height: 100dvh; }
 
 .mn-wrap {
+  flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column;
   background: #F5F6FA;
-  min-height: 100vh;
-  padding-bottom: 64px;
 }
 
 /* ── Add-mode banner ────────────────── */
@@ -19,7 +19,7 @@
 
 /* ── Header ─────────────────────────── */
 .mn-header {
-  position: sticky; top: 0; z-index: 50;
+  flex-shrink: 0;
   background: var(--color-surface);
   padding: 10px 12px 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,.08);
@@ -86,8 +86,19 @@
 }
 
 /* ── List ───────────────────────────── */
-.mn-list { padding: 4px 0 0; }
-.mn-count { padding: 6px 14px; font-size: .75rem; color: var(--color-text-muted); }
+.mn-list {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+}
+.mn-count { flex-shrink: 0; padding: 4px 14px; font-size: .75rem; color: var(--color-text-muted); }
+
+.mn-viewport {
+  flex: 1; min-height: 0;
+}
+
+.mn-viewport ::ng-deep .cdk-virtual-scroll-content-wrapper {
+  padding-bottom: 80px;
+}
 
 .mn-empty {
   display: flex; flex-direction: column; align-items: center;

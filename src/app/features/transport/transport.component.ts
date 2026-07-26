@@ -911,14 +911,31 @@ export class TransportComponent implements OnInit {
     const payload = { vehicleId: val.vehicleId, driverId: val.driverId, deliveries, oraPlecare, oraSosire, helper: helperName };
 
     if (editId) {
+      const oldDeliveries = this.transportService.getTransport(editId)?.deliveries ?? [];
+      const oldOrderIds   = new Set(oldDeliveries.map(d => d.orderId));
+      const newOrderIds   = new Set(deliveries.map(d => d.orderId));
       this.transportService.updateTransport(editId, payload);
+      for (const d of deliveries) {
+        const order = this.getOrder(d.orderId);
+        if (order && !['planificat', 'livrat_partial', 'in_livrare', 'livrat'].includes(order.status)) {
+          this.ordersService.updateOrderStatus(d.orderId, 'planificat');
+        }
+      }
+      for (const oldId of oldOrderIds) {
+        if (!newOrderIds.has(oldId)) {
+          const order = this.getOrder(oldId);
+          if (order?.status === 'planificat') {
+            this.ordersService.updateOrderStatus(oldId, 'acceptat');
+          }
+        }
+      }
       this.snackBar.open('Cursa actualizată.', '', { duration: 2000 });
     } else {
       this.transportService.createTransport(payload);
       for (const d of deliveries) {
         const order = this.getOrder(d.orderId);
         if (!order) continue;
-        if (!['planificat', 'livrat_partial'].includes(order.status)) {
+        if (!['planificat', 'livrat_partial', 'in_livrare', 'livrat'].includes(order.status)) {
           this.ordersService.updateOrderStatus(d.orderId, 'planificat');
         }
       }

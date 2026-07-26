@@ -1,4 +1,4 @@
-:host { display: block; }
+:host { display: flex; flex-direction: column; height: 100dvh; }
 
 $primary: #1B7A6E;
 $primary-dark: #155E56;
@@ -11,14 +11,14 @@ $surface: #FFFFFF;
 $bg: #F5F6FA;
 
 .mc-wrap {
+  flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column;
   background: $bg;
-  min-height: 100vh;
-  padding-bottom: 64px;
 }
 
 /* ── Header verde ──────────────────── */
 .mc-header {
-  position: sticky; top: 0; z-index: 50;
+  flex-shrink: 0;
   background: $primary;
   height: 56px;
   display: flex; align-items: center;
@@ -129,7 +129,15 @@ $bg: #F5F6FA;
 }
 
 /* ── Product cards ──────────────────── */
-.mc-list { padding-top: 4px; }
+.mc-list {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+}
+
+.mc-viewport {
+  flex: 1; min-height: 0;
+  ::ng-deep .cdk-virtual-scroll-content-wrapper { padding-bottom: 80px; }
+}
 
 .mc-card {
   background: $surface;

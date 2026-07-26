@@ -185,7 +185,7 @@
           </div>
           @for (p of o.products; track p.nr) {
             <div class="mh-ds-prod"
-                 [class.mh-ds-prod-removed]="['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded && getEditQty(o.id, $index, p.qty) === 0">
+                 [class.mh-ds-prod-removed]="['draft','trimis','acceptat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded && getEditQty(o.id, $index, p.qty) === 0">
 
               <!-- Name -->
               <div class="mh-ds-prod-name">{{ p.name }}</div>
@@ -259,7 +259,7 @@
                   <span></span>
                 }
 
-                @if (['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded && !o.locked) {
+                @if (['draft','trimis','acceptat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded && !o.locked) {
                   <div class="mh-prod-stepper">
                     <button class="mh-ps-btn" (click)="decEditQty(o.id, $index, p.qty)">
                       <mat-icon>{{ getEditQty(o.id, $index, p.qty) <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>

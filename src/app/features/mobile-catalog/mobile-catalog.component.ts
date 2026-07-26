@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,7 +12,7 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
 @Component({
   selector: 'app-mobile-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent, ScrollingModule],
   templateUrl: './mobile-catalog.component.html',
   styleUrl: './mobile-catalog.component.scss'
 })
@@ -133,6 +134,8 @@ export class MobileCatalogComponent {
     this.historyModal.set(p);
   }
   closeHistory(): void { this.historyModal.set(null); }
+
+  trackProduct(_: number, p: Product): string { return `${p.catalogId}::${p.nr}`; }
 
   stockDotClass(qty: number): string {
     return qty === 0 ? 'dot-zero' : 'dot-ok';

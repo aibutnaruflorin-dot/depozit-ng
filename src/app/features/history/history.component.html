@@ -462,7 +462,7 @@
                   <span class="epc-center">Cantitate</span>
                 </div>
                 @for (p of order.products; track p.nr; let j = $index) {
-                  @if (['draft','trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && !order.locked) {
+                  @if (['draft','trimis','acceptat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && !order.locked) {
                     <!-- Editabil — ciornă sau comandă în așteptare -->
                     <div class="exp-product-row"
                          [class.exp-removed]="(editQtyMap()[ekey(order.id, j)] ?? p.qty) === 0">
@@ -622,7 +622,7 @@
                   Cantități modificate — apasă „Trimite" pentru a le aplica
                 </div>
               }
-              @if (['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && hasEditedQty(order)) {
+              @if (['trimis','acceptat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && hasEditedQty(order)) {
                 <div class="exp-qty-changed-banner">
                   <mat-icon>pending</mat-icon>
                   Cantități modificate — apasă „Retrimite modificat" pentru a le trimite
@@ -841,7 +841,7 @@
                     Anulează
                   </button>
                 }
-                @if (['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && !order.locked) {
+                @if (['trimis','acceptat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && !order.locked) {
                   <button mat-flat-button color="primary" (click)="reviseOrder(order)"
                           [disabled]="!hasPendingChanges(order)"
                           [matTooltip]="hasPendingChanges(order) ? '' : 'Nu există modificări de trimis'">
@@ -853,7 +853,7 @@
                     Anulează
                   </button>
                 }
-                @if (['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && order.locked) {
+                @if (['trimis','acceptat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && order.locked) {
                   <div class="exp-locked-banner">
                     <mat-icon>lock</mat-icon>
                     Comanda este blocată de depozit — nu poți face modificări

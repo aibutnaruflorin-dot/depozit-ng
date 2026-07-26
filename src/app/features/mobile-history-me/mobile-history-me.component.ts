@@ -102,20 +102,22 @@ export class MobileHistoryMeComponent {
   });
 
   statusLabel(o: Order): string {
-    if (o.status === 'sters')   return 'Șters din transport';
-    if (o.status === 'draft')   return 'Ciornă';
-    if (o.status === 'trimis')  return 'În aşteptare';
-    if (o.status === 'anulat')  return 'Anulată';
-    if (o.status === 'livrat')  return 'Livrat';
+    if (o.status === 'sters')      return 'Șters din transport';
+    if (o.status === 'draft')      return 'Ciornă';
+    if (o.status === 'trimis')     return 'În aşteptare';
+    if (o.status === 'anulat')     return 'Anulată';
+    if (o.status === 'livrat')     return 'Livrat';
+    if (o.status === 'planificat') return 'Planificat transport';
     return this.transportService.deriveOrderPlanningStatus(o).label;
   }
 
   statusClass(o: Order): string {
-    if (o.status === 'sters')   return 'chip-deleted';
-    if (o.status === 'draft')   return 'chip-draft';
-    if (o.status === 'trimis')  return 'chip-wait';
-    if (o.status === 'anulat')  return 'chip-cancel';
-    if (o.status === 'livrat')  return 'chip-done';
+    if (o.status === 'sters')      return 'chip-deleted';
+    if (o.status === 'draft')      return 'chip-draft';
+    if (o.status === 'trimis')     return 'chip-wait';
+    if (o.status === 'anulat')     return 'chip-cancel';
+    if (o.status === 'livrat')     return 'chip-done';
+    if (o.status === 'planificat') return 'chip-active';
     const s = this.transportService.deriveOrderPlanningStatus(o);
     if (s.key === 'livrat')             return 'chip-done';
     if (s.key === 'neplanificat')       return 'chip-secondary';
@@ -190,17 +192,17 @@ export class MobileHistoryMeComponent {
   }
 
   canFinalizeWithChanges(o: Order): boolean {
-    return this.isActiveOrder(o) && this.isKeyUser() && this.hasQtyChanges(o);
+    return this.isActiveOrder(o) && o.status !== 'planificat' && this.isKeyUser() && this.hasQtyChanges(o);
   }
 
   canSend(o: Order): boolean        { return o.status === 'draft'; }
   canRevise(o: Order): boolean {
     if (o.locked) return false;
-    const active = ['trimis','acceptat','planificat','in_livrare','livrat_partial'];
+    const active = ['trimis','acceptat','in_livrare','livrat_partial'];
     return active.includes(o.status) && !o.superseded && (this.hasEditedQty(o) || !!(o.pendingProducts?.length));
   }
-  canAddProducts(o: Order): boolean { return !o.locked && ['draft','trimis','acceptat','planificat','livrat_partial'].includes(o.status) && !o.superseded; }
-  canCancel(o: Order): boolean      { return !o.locked && ['draft','trimis','acceptat','planificat'].includes(o.status) && !o.superseded; }
+  canAddProducts(o: Order): boolean { return !o.locked && ['draft','trimis','acceptat','livrat_partial'].includes(o.status) && !o.superseded; }
+  canCancel(o: Order): boolean      { return !o.locked && ['draft','trimis','acceptat'].includes(o.status) && !o.superseded; }
   canReopen(o: Order): boolean      { return o.status === 'anulat'; }
 
   ekey(orderId: string, idx: number): string { return `${orderId}:${idx}`; }

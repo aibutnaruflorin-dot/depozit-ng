@@ -454,6 +454,13 @@
                         </span>
                       }
                     </div>
+                    @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
+                      <button class="order-chip-cart-btn" mat-icon-button
+                              (click)="$event.stopPropagation(); addProductsOrderId.set(o.id)"
+                              matTooltip="Adaugă produse">
+                        <mat-icon>add_shopping_cart</mat-icon>
+                      </button>
+                    }
                   </div>
                 }
               </td>
@@ -510,7 +517,7 @@
                         @if (t.waSentDriverAt) { <mat-icon class="wa-check">check</mat-icon> }
                       </span>
                     </button>
-                    @if (t.helper) {
+                    @if ((t.status === 'planificat' || t.status === 'confirmat_sofer') && t.helper) {
                       <button mat-icon-button (click)="sendHelperWhatsApp(t)"
                               [matTooltip]="t.waSentHelperAt ? 'WA ajutor · ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ' + t.helper"
                               [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
@@ -533,7 +540,7 @@
                       </mat-menu>
                     }
                   }
-                  @if (t.status === 'planificat') {
+                  @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
                     <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                     <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
                   }
@@ -648,6 +655,13 @@
                         </span>
                       }
                     </div>
+                    @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
+                      <button class="order-chip-cart-btn" mat-icon-button
+                              (click)="$event.stopPropagation(); addProductsOrderId.set(o.id)"
+                              matTooltip="Adaugă produse">
+                        <mat-icon>add_shopping_cart</mat-icon>
+                      </button>
+                    }
                   </div>
                 }
               </td>
@@ -701,7 +715,7 @@
                         @if (t.waSentDriverAt) { <mat-icon class="wa-check">check</mat-icon> }
                       </span>
                     </button>
-                    @if (t.helper) {
+                    @if ((t.status === 'planificat' || t.status === 'confirmat_sofer') && t.helper) {
                       <button mat-icon-button (click)="sendHelperWhatsApp(t)"
                               [matTooltip]="t.waSentHelperAt ? 'WA ajutor · ' + fmtWaSent(t.waSentHelperAt) : 'WhatsApp ' + t.helper"
                               [style.color]="t.waSentHelperAt ? '#888' : '#25d366'">
@@ -724,7 +738,7 @@
                       </mat-menu>
                     }
                   }
-                  @if (t.status === 'planificat') {
+                  @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
                     <button mat-icon-button (click)="openEdit(t)" matTooltip="Editează"><mat-icon>edit</mat-icon></button>
                     <button mat-icon-button color="warn" (click)="deleteTransport(t)" matTooltip="Şterg"><mat-icon>delete_outline</mat-icon></button>
                   }

@@ -545,6 +545,13 @@
                         [placeholder]="'Observații #' + o.orderNumber"
                         (click)="$event.stopPropagation()">
               </textarea>
+              @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
+                <button class="mt-plan-btn mt-plan-btn--cart"
+                        (click)="$event.stopPropagation(); addProductsToOrder(o.id)"
+                        title="Adaugă produse">
+                  <mat-icon>add_shopping_cart</mat-icon>Adaugă produse
+                </button>
+              }
             }
           }
 
@@ -576,7 +583,7 @@
                   <mat-icon>local_shipping</mat-icon>WA Șofer
                   @if (t.waSentDriverAt) { <mat-icon class="mt-sent-chk">check</mat-icon> }
                 </button>
-                @if (t.helper) {
+                @if ((t.status === 'planificat' || t.status === 'confirmat_sofer') && t.helper) {
                   <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentHelperAt"
                           (click)="sendHelperWhatsApp(t)">
                     <mat-icon>person_add</mat-icon>WA Ajutor
@@ -589,7 +596,7 @@
                   </button>
                 }
               }
-              @if (t.status === 'planificat') {
+              @if (t.status === 'planificat' || t.status === 'confirmat_sofer') {
                 <button class="mt-act-btn" (click)="openEdit(t)">
                   <mat-icon>edit</mat-icon>Editează
                 </button>

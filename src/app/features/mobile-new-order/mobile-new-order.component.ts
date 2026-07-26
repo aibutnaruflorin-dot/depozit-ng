@@ -1,7 +1,8 @@
 import { Component, computed, signal, effect, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule, FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { CatalogsService } from '../../core/services/catalogs.service';
 import { OrdersService, generateId } from '../../core/services/orders.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -26,7 +27,7 @@ function clearCartStorage(): void {
 @Component({
   selector: 'app-mobile-new-order',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, MobileNavComponent, ScrollingModule],
   templateUrl: './mobile-new-order.component.html',
   styleUrl: './mobile-new-order.component.scss'
 })
@@ -64,7 +65,8 @@ export class MobileNewOrderComponent implements OnInit {
     private ordersService: OrdersService,
     private auth: AuthService,
     private snackBar: MatSnackBar,
-    public router: Router
+    public router: Router,
+    private location: Location
   ) {
     const nav = this.router.getCurrentNavigation();
     const state = (nav?.extras?.state as any) ?? {};
@@ -112,6 +114,7 @@ export class MobileNewOrderComponent implements OnInit {
   }
 
   pkey(p: Product): string { return `${p.catalogId}::${p.nr}`; }
+  trackProduct(_: number, p: Product): string { return this.pkey(p); }
 
   qtyOf(p: Product): number {
     return this.cart().find(i => this.pkey(i.product) === this.pkey(p))?.qty ?? 0;
@@ -188,6 +191,8 @@ export class MobileNewOrderComponent implements OnInit {
   }
 
   closeSheet(): void { this.selectedProduct.set(null); }
+
+  cancel(): void { this.location.back(); }
 
   sheetInc(): void {
     const p = this.selectedProduct();
@@ -277,6 +282,8 @@ export class MobileNewOrderComponent implements OnInit {
       this.cart.set([]); clearCartStorage(); this.showCart.set(false);
       if (this.returnTo === 'history-all') {
         this.router.navigate(['/app/m-history-all'], { state: { openOrderId: this.addToOrderId } });
+      } else if (this.returnTo === 'transport') {
+        this.router.navigate(['/app/m-transport']);
       } else {
         this.router.navigate(['/app/m-history-me']);
       }

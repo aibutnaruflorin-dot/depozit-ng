@@ -72,8 +72,9 @@
         </button>
       </div>
     } @else {
-      @for (p of filtered(); track p.catalogId + p.nr) {
-        <div class="mc-card" (click)="openDetail(p)">
+      <cdk-virtual-scroll-viewport itemSize="75" class="mc-viewport">
+        <div *cdkVirtualFor="let p of filtered(); trackBy: trackProduct"
+             class="mc-card" (click)="openDetail(p)">
 
           <div class="mc-prod-name">{{ p.name }}</div>
 
@@ -102,8 +103,7 @@
           </div>
 
         </div>
-      }
-      <div style="height:72px"></div>
+      </cdk-virtual-scroll-viewport>
     }
   </div>
 
