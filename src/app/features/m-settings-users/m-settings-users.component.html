@@ -42,11 +42,6 @@
                 <span class="msub-inactive-badge">Dezactivat</span>
               }
             </div>
-            @if (u.telefon) {
-              <div class="msub-user-phone">
-                <a [href]="'tel:' + u.telefon" class="msub-tel-link">📞 {{ u.telefon }}</a>
-              </div>
-            }
           </div>
           @if (auth.isAdmin()) {
             <div class="msub-user-actions">
@@ -84,12 +79,6 @@
               <option [value]="p.id">{{ p.name }}</option>
             }
           </select>
-
-          <label class="msub-label">Telefon (10 cifre)</label>
-          <input class="msub-input" [(ngModel)]="formTelefon" type="tel" placeholder="ex: 0761234567" maxlength="10">
-
-          <label class="msub-label">Email recuperare</label>
-          <input class="msub-input" [(ngModel)]="formEmail" type="email" placeholder="ex: ion@firma.ro">
 
           <div class="msub-form-actions">
             <button class="msub-btn primary" (click)="save()"><mat-icon>save</mat-icon> Salvează</button>

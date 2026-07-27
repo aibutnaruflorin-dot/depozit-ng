@@ -125,7 +125,7 @@ export class AuthService {
     const ok = await this.supabase.updatePassword(newPass);
     if (!ok) return { ok: false, msg: 'Eroare la schimbarea parolei. Încearcă din nou.' };
 
-    await this.supabase.updateProfile(s.supabaseId, { must_change_password: false });
+    try { await this.supabase.updateProfile(s.supabaseId, { must_change_password: false }); } catch {}
     this._session.set({ ...s, mustChangePassword: false });
 
     this.audit.log(0, 'PASS_CHANGE', `Utilizatorul ${s.username} si-a schimbat parola`);

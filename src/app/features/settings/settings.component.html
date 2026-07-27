@@ -206,36 +206,8 @@
             <ng-template pTemplate="body" let-user>
               <tr>
                 <td><strong>{{ user.name }}</strong></td>
-                <td>
-                  <div class="dest-cell">
-                    @if (user.telefon) {
-                      <span class="dest-value">{{ user.telefon }}</span>
-                      <button mat-icon-button
-                              [class.dest-toggle--on]="isUserWaEnabled(user)"
-                              (click)="toggleUserWa(user)"
-                              [matTooltip]="isUserWaEnabled(user) ? 'Dezactivează' : 'Activează'">
-                        <mat-icon>{{ isUserWaEnabled(user) ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                      </button>
-                    } @else {
-                      <span class="dest-missing">—</span>
-                    }
-                  </div>
-                </td>
-                <td>
-                  <div class="dest-cell">
-                    @if (user.recoveryEmail) {
-                      <span class="dest-value">{{ user.recoveryEmail }}</span>
-                      <button mat-icon-button
-                              [class.dest-toggle--on]="isUserEmailEnabled(user)"
-                              (click)="toggleUserEmail(user)"
-                              [matTooltip]="isUserEmailEnabled(user) ? 'Dezactivează' : 'Activează'">
-                        <mat-icon>{{ isUserEmailEnabled(user) ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                      </button>
-                    } @else {
-                      <span class="dest-missing">—</span>
-                    }
-                  </div>
-                </td>
+                <td><span class="dest-missing">—</span></td>
+                <td><span class="dest-missing">—</span></td>
               </tr>
             </ng-template>
           </p-table>
@@ -290,7 +262,7 @@
                     <mat-icon matPrefix>person</mat-icon>
                     <mat-select [(ngModel)]="selectedWaUserId">
                       @for (u of availableWaUsers; track u.id) {
-                        <mat-option [value]="u.id">{{ u.name }} — {{ u.telefon }}</mat-option>
+                        <mat-option [value]="u.id">{{ u.name }}</mat-option>
                       }
                     </mat-select>
                   </mat-form-field>
@@ -392,7 +364,7 @@
                     <mat-icon matPrefix>person</mat-icon>
                     <mat-select [(ngModel)]="selectedEmailUserId">
                       @for (u of availableEmailUsers; track u.id) {
-                        <mat-option [value]="u.id">{{ u.name }} — {{ u.recoveryEmail }}</mat-option>
+                        <mat-option [value]="u.id">{{ u.name }}</mat-option>
                       }
                     </mat-select>
                   </mat-form-field>
@@ -563,7 +535,6 @@
               <th>Nume</th>
               <th>Username</th>
               <th>Rol</th>
-              <th>Telefon</th>
               <th>Status</th>
               @if (auth.isAdmin()) {
                 <th style="text-align:right">Acțiuni</th>
@@ -576,11 +547,6 @@
               <td><code>{{ user.username }}</code></td>
               <td>
                 <p-tag [value]="permLabel(user.role)" [severity]="permSeverity(user.role)" />
-              </td>
-              <td>
-                @if (user.telefon) {
-                  <a [href]="'tel:' + user.telefon" style="color:var(--color-primary);text-decoration:none">{{ user.telefon }}</a>
-                } @else { <span style="color:var(--color-text-muted)">—</span> }
               </td>
               <td>
                 <p-tag [value]="user.active !== false ? 'Activ' : 'Dezactivat'"
@@ -890,24 +856,6 @@
               }
             </ul>
           </div>
-          <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Telefon</mat-label>
-            <mat-icon matPrefix>phone</mat-icon>
-            <input matInput formControlName="telefon" placeholder="ex: 0763027577" maxlength="10" inputmode="numeric">
-            <mat-hint>10 cifre, fără spații</mat-hint>
-            @if (userForm.get('telefon')?.hasError('pattern') && userForm.get('telefon')?.touched) {
-              <mat-error>Telefonul trebuie să aibă exact 10 cifre.</mat-error>
-            }
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-w">
-            <mat-label>Email recuperare parolă</mat-label>
-            <mat-icon matPrefix>mail_outline</mat-icon>
-            <input matInput type="email" formControlName="recoveryEmail" placeholder="ex: angajat@firma.ro">
-            <mat-hint>Folosit pentru recuperarea parolei și Destinatari</mat-hint>
-            @if (userForm.get('recoveryEmail')?.hasError('email') && userForm.get('recoveryEmail')?.touched) {
-              <mat-error>Adresa de email nu este validă.</mat-error>
-            }
-          </mat-form-field>
           <mat-form-field appearance="outline" class="full-w">
             <mat-label>Rol *</mat-label>
             <mat-icon matPrefix>shield</mat-icon>

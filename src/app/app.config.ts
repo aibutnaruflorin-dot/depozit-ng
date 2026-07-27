@@ -6,6 +6,7 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
 import { SupabaseService } from './core/services/supabase.service';
+import { TransportService } from './core/services/transport.service';
 
 // AV3-01: cheile sensibile nu se încarcă niciodată din remote — previne privilege escalation
 const BLOCKED_FROM_REMOTE = new Set(['app_users', 'app_permissions', 'app_session']);
@@ -27,14 +28,19 @@ function isValidRemoteShape(key: string, value: unknown): boolean {
   return true;
 }
 
-function initSupabase(supabase: SupabaseService) {
+function initApp(supabase: SupabaseService, transport: TransportService) {
   return async () => {
+    // Încarcă profiluri pentru lista de șoferi (disponibilă pe orice pagină la startup)
+    const profiles = await supabase.getProfiles();
+    if (profiles.length) transport.refreshUsers(profiles);
+
+    // Sincronizează date operaționale din kv_store remote
     const remote = await supabase.loadAll();
     for (const [key, value] of Object.entries(remote)) {
       if (BLOCKED_FROM_REMOTE.has(key)) continue;
       if (value !== null && value !== undefined) {
         if (!isValidRemoteShape(key, value)) {
-          console.warn('[initSupabase] rejected invalid shape for key:', key);
+          console.warn('[initApp] rejected invalid shape for key:', key);
           continue;
         }
         try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
@@ -61,8 +67,8 @@ export const appConfig: ApplicationConfig = {
     }),
     {
       provide: APP_INITIALIZER,
-      useFactory: initSupabase,
-      deps: [SupabaseService],
+      useFactory: initApp,
+      deps: [SupabaseService, TransportService],
       multi: true
     }
   ]

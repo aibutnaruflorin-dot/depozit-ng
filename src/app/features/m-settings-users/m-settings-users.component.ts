@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,10 +6,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../core/services/auth.service';
 import { TransportService } from '../../core/services/transport.service';
-import { CryptoService } from '../../core/services/crypto.service';
-import { AuditService } from '../../core/services/audit.service';
 import { StorageService } from '../../core/services/storage.service';
-import { User, PERMISSION_LABELS, Permission } from '../../core/models/user.model';
+import { SupabaseService } from '../../core/services/supabase.service';
+import { Profile } from '../../core/models/profile.model';
+import { PERMISSION_LABELS } from '../../core/models/user.model';
 import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, SYSTEM_PERM_IDS } from '../../core/models/app-permission.model';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
@@ -32,21 +32,20 @@ const ACCESS_OPTIONS: PageAccess[] = ['full', 'read', 'none'];
   templateUrl: './m-settings-users.component.html',
   styleUrl: './m-settings-users.component.scss'
 })
-export class MSettingsUsersComponent {
+export class MSettingsUsersComponent implements OnInit {
   // ── Tab ────────────────────────────────────────────────────────────────────
   activeTab = signal<'users' | 'roles'>('users');
 
   // ── Users ──────────────────────────────────────────────────────────────────
-  users     = signal<User[]>([]);
+  users     = signal<Profile[]>([]);
   showForm  = signal(false);
-  editingId = signal<number | null>(null);
+  editingId = signal<string | null>(null);
+  saving    = false;
 
   formName     = '';
   formUsername = '';
   formPassword = '';
   formRole     = 'agent';
-  formTelefon  = '';
-  formEmail    = '';
 
   readonly PERMISSION_LABELS = PERMISSION_LABELS;
   editingIsKeyUser = signal(false);
@@ -56,9 +55,6 @@ export class MSettingsUsersComponent {
       .filter(p => !this.LOCKED_PERMS.has(p.id))
       .sort((a, b) => a.name.localeCompare(b.name, 'ro'));
   }
-
-  readonly PHONE_RE = /^\d{10}$/;
-  readonly EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // ── Permissions ────────────────────────────────────────────────────────────
   permissions    = signal<AppPermission[]>([]);
@@ -84,24 +80,22 @@ export class MSettingsUsersComponent {
 
   constructor(
     public  auth: AuthService,
-    private crypto: CryptoService,
     private storage: StorageService,
+    private supabase: SupabaseService,
     private transportService: TransportService,
-    private audit: AuditService,
     private snackBar: MatSnackBar
   ) {
-    let savedUsers = this.storage.get<User[]>('app_users') ?? [];
-    const operationalRoles = new Set(['sofer', 'ajutor_manipulant']);
-    const migrated = savedUsers.map(u => {
-      if (u.jobRole && operationalRoles.has(u.jobRole)) return { ...u, role: u.jobRole as Permission, jobRole: undefined };
-      return u.jobRole ? { ...u, jobRole: undefined } : u;
-    });
-    if (migrated.some((u, i) => u.role !== savedUsers[i].role || u.jobRole !== savedUsers[i].jobRole)) {
-      this.storage.set('app_users', migrated);
-      savedUsers = migrated;
-    }
-    this.users.set(savedUsers);
     this._loadPerms();
+  }
+
+  async ngOnInit(): Promise<void> {
+    await this._reloadUsers();
+  }
+
+  private async _reloadUsers(): Promise<void> {
+    const profiles = await this.supabase.getProfiles();
+    this.users.set(profiles);
+    this.transportService.refreshUsers(profiles);
   }
 
   private _loadPerms(): void {
@@ -125,13 +119,13 @@ export class MSettingsUsersComponent {
   openAdd(): void {
     this.editingId.set(null);
     this.editingIsKeyUser.set(false);
-    this.formName = this.formUsername = this.formPassword = this.formTelefon = this.formEmail = '';
+    this.formName = this.formUsername = this.formPassword = '';
     this.formRole = 'agent';
     this.showForm.set(true);
   }
 
-  openEdit(user: User): void {
-    if ((user.role as string) === 'keyuser') {
+  openEdit(user: Profile): void {
+    if (user.role === 'keyuser') {
       this.snackBar.open('Contul KeyUser se editează din Setări → Securitate.', '', { duration: 3000 }); return;
     }
     this.editingId.set(user.id);
@@ -140,8 +134,6 @@ export class MSettingsUsersComponent {
     this.formUsername = user.username;
     this.formPassword = '';
     this.formRole     = user.role;
-    this.formTelefon  = user.telefon ?? '';
-    this.formEmail    = user.recoveryEmail ?? '';
     this.showForm.set(true);
   }
 
@@ -150,71 +142,54 @@ export class MSettingsUsersComponent {
     const username = this.formUsername.trim().toLowerCase();
     const password = this.formPassword;
     const role     = this.formRole;
-    const telefon  = this.formTelefon.trim() || undefined;
-    const email    = this.formEmail.trim() || undefined;
 
     if (!name || !username) { this.snackBar.open('Completați numele și username-ul.', '', { duration: 3000 }); return; }
-    if (telefon && !this.PHONE_RE.test(telefon)) { this.snackBar.open('Telefonul trebuie să aibă exact 10 cifre.', '', { duration: 3000 }); return; }
-    if (email && !this.EMAIL_RE.test(email)) { this.snackBar.open('Adresa email nu este validă.', '', { duration: 3000 }); return; }
 
-    let users = [...this.users()];
-    const id  = this.editingId();
-    const session = this.auth.session();
-
-    if (id === null) {
-      if (!password) { this.snackBar.open('Parola este obligatorie la creare.', '', { duration: 3000 }); return; }
-      if (users.find(u => u.username === username)) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      if (telefon && users.some(u => u.telefon === telefon)) { this.snackBar.open('Telefonul este deja folosit.', '', { duration: 3000 }); return; }
-      if (email && users.some(u => u.recoveryEmail === email)) { this.snackBar.open('Email-ul este deja folosit.', '', { duration: 3000 }); return; }
-      const newId  = Math.max(0, ...users.map(u => u.id)) + 1;
-      const salt   = this.crypto.generateSalt();
-      const hashed = this.crypto.hashWithSalt(password, salt);
-      users.push({ id: newId, name, username, password: hashed, _v: 3, salt, role, telefon, recoveryEmail: email, active: true });
-      if (session) this.audit.log(session.userId, 'USER_CREATE', `Creat utilizator ${username}`);
-    } else {
-      const idx = users.findIndex(u => u.id === id);
-      if (idx === -1) return;
-      if (users.find(u => u.username === username && u.id !== id)) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      if (telefon && users.some(u => u.telefon === telefon && u.id !== id)) { this.snackBar.open('Telefonul este deja folosit.', '', { duration: 3000 }); return; }
-      if (email && users.some(u => u.recoveryEmail === email && u.id !== id)) { this.snackBar.open('Email-ul este deja folosit.', '', { duration: 3000 }); return; }
-      const savedRole = (users[idx].role as string) === 'keyuser' ? users[idx].role : role;
-      users[idx] = { ...users[idx], name, username, role: savedRole, telefon, recoveryEmail: email };
-      if (password) {
-        const salt   = this.crypto.generateSalt();
-        users[idx].password = this.crypto.hashWithSalt(password, salt);
-        users[idx]._v = 3; users[idx].salt = salt;
+    const id = this.editingId();
+    this.saving = true;
+    try {
+      if (id === null) {
+        if (!password) { this.snackBar.open('Parola este obligatorie la creare.', '', { duration: 3000 }); return; }
+        await this.supabase.callManageUsers('create', { username, password, name, role });
+      } else {
+        await this.supabase.updateProfile(id, { name, role });
+        if (password) {
+          await this.supabase.callManageUsers('reset_password', { userId: id, password });
+        }
       }
-      if (session) this.audit.log(session.userId, 'USER_EDIT', `Editat utilizator ${username}`);
+      await this._reloadUsers();
+      this.showForm.set(false);
+      this.snackBar.open('Utilizatorul a fost salvat.', '', { duration: 2500, panelClass: ['snack-success'] });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare la salvare.', '', { duration: 4000 });
+    } finally {
+      this.saving = false;
     }
-
-    this._persist(users);
-    this.showForm.set(false);
-    this.snackBar.open('Utilizatorul a fost salvat.', '', { duration: 2500, panelClass: ['snack-success'] });
   }
 
-  toggleActive(user: User): void {
-    if ((user.role as string) === 'keyuser') { this.snackBar.open('Contul KeyUser nu poate fi dezactivat.', '', { duration: 3000 }); return; }
+  async toggleActive(user: Profile): Promise<void> {
+    if (user.role === 'keyuser') { this.snackBar.open('Contul KeyUser nu poate fi dezactivat.', '', { duration: 3000 }); return; }
     const session = this.auth.session();
-    if (session?.userId === user.id) { this.snackBar.open('Nu poți dezactiva propriul cont.', '', { duration: 3000 }); return; }
-    const users = this.users().map(u => u.id === user.id ? { ...u, active: !u.active } : u);
-    this._persist(users);
-    this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
+    if (session?.supabaseId === user.id) { this.snackBar.open('Nu poți dezactiva propriul cont.', '', { duration: 3000 }); return; }
+    try {
+      await this.supabase.updateProfile(user.id, { active: !user.active });
+      await this._reloadUsers();
+      this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare.', '', { duration: 3000 });
+    }
   }
 
-  delete(user: User): void {
-    if ((user.role as string) === 'keyuser') { this.snackBar.open('Contul KeyUser nu poate fi șters.', '', { duration: 3000 }); return; }
+  async delete(user: Profile): Promise<void> {
+    if (user.role === 'keyuser') { this.snackBar.open('Contul KeyUser nu poate fi șters.', '', { duration: 3000 }); return; }
     if (!confirm(`Ștergi utilizatorul "${user.name}"? Această acțiune nu poate fi anulată.`)) return;
-    const users = this.users().filter(u => u.id !== user.id);
-    const session = this.auth.session();
-    if (session) this.audit.log(session.userId, 'USER_DELETE', `Șters utilizator ${user.username}`);
-    this._persist(users);
-    this.snackBar.open('Utilizatorul a fost șters.', '', { duration: 2000 });
-  }
-
-  private _persist(users: User[]): void {
-    this.storage.set('app_users', users);
-    this.users.set(users);
-    this.transportService.refreshUsers(users);
+    try {
+      await this.supabase.callManageUsers('delete', { userId: user.id });
+      await this._reloadUsers();
+      this.snackBar.open('Utilizatorul a fost șters.', '', { duration: 2000 });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare la ștergere.', '', { duration: 3000 });
+    }
   }
 
   // ── Permissions CRUD ───────────────────────────────────────────────────────

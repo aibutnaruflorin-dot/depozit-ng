@@ -70,11 +70,8 @@ export class SupabaseService {
   }
 
   async updateProfile(id: string, updates: Partial<Profile>): Promise<void> {
-    try {
-      await this.client.from('profiles').update(updates).eq('id', id);
-    } catch (e) {
-      console.warn('updateProfile failed', e);
-    }
+    const { error } = await this.client.from('profiles').update(updates).eq('id', id);
+    if (error) throw new Error(error.message);
   }
 
   // ─── Edge Function — gestiune utilizatori (doar admin) ────────────────────────

@@ -1,12 +1,10 @@
 import { Injectable } from '@angular/core';
-import { User } from '../models/user.model';
 import { DEFAULT_PERMISSIONS } from '../models/app-permission.model';
 import { SupabaseService } from './supabase.service';
-import { CryptoService } from './crypto.service';
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
-  constructor(private supabase: SupabaseService, private crypto: CryptoService) {}
+  constructor(private supabase: SupabaseService) {}
 
   get<T>(key: string): T | null {
     try {
@@ -34,30 +32,8 @@ export class StorageService {
 
   init(): void {
     // Valorile default se scriu DOAR în localStorage (syncRemote=false)
-    // ca să nu suprascrie datele reale din Supabase când conexiunea pică
-    if (!this.get('app_users')) {
-      const s1 = this.crypto.generateSalt(), s2 = this.crypto.generateSalt();
-      this.set('app_users', [
-        { id: 1, name: 'Administrator', username: 'admin',  password: this.crypto.hashWithSalt('admin123', s1),  _v: 3, salt: s1, mustChangePassword: true, role: 'keyuser', active: true },
-        { id: 2, name: 'Agent 1',       username: 'agent1', password: this.crypto.hashWithSalt('agent123', s2), _v: 3, salt: s2, mustChangePassword: true, role: 'agent',   active: true }
-      ] as User[], false);
-    }
+    // app_users eliminat — autentificarea e prin Supabase Auth (profiles table)
     if (!this.get('app_permissions')) this.set('app_permissions', DEFAULT_PERMISSIONS, false);
-
-    // Cleanup: remove superadmin, migrate admin→keyuser — acestea se sync pentru că sunt modificări reale
-    const storedPerms = this.get<any[]>('app_permissions') ?? [];
-    const customRoleIds = storedPerms.map((p: any) => p.id as string);
-    const builtInRoles  = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
-    const validRoles    = [...builtInRoles, ...customRoleIds];
-
-    const users = this.get<User[]>('app_users') ?? [];
-    const fixed = users
-      .filter(u => u.username !== 'superadmin')
-      .map(u => (u.role as string) === 'admin' ? { ...u, role: 'keyuser' as any } : u)
-      .map(u => validRoles.includes(u.role as string) ? u : { ...u, role: 'keyuser' as any });
-    if (fixed.length !== users.length || fixed.some((u, i) => u.role !== users[i]?.role)) {
-      this.set('app_users', fixed);
-    }
     if (!this.get('app_orders')) this.set('app_orders', [], false);
     if (!this.get('app_catalogs')) {
       this.set('app_catalogs', [

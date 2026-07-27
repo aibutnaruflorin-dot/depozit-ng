@@ -77,38 +77,26 @@ Deno.serve(async (req) => {
       result = { success: true }
 
     } else if (action === 'reset_password') {
-      // Reset parolă de către admin
-      const { data: targetProfile } = await admin
-        .from('profiles')
-        .select('id')
-        .eq('username', payload.username)
-        .single()
+      // Reset parolă de către admin — payload.userId e UUID direct
+      if (!payload.userId) throw new Error('Missing userId')
 
-      if (!targetProfile) throw new Error('User not found')
-
-      const { error } = await admin.auth.admin.updateUserById(targetProfile.id, {
-        password: payload.password,
+      const { error } = await admin.auth.admin.updateUserById(payload.userId as string, {
+        password: payload.password as string,
       })
       if (error) throw error
 
       await admin
         .from('profiles')
         .update({ must_change_password: true })
-        .eq('id', targetProfile.id)
+        .eq('id', payload.userId)
 
       result = { success: true }
 
     } else if (action === 'delete') {
-      // Ștergere utilizator (cascadează și profilul via FK)
-      const { data: targetProfile } = await admin
-        .from('profiles')
-        .select('id')
-        .eq('username', payload.username)
-        .single()
+      // Ștergere utilizator — payload.userId e UUID direct (profilul cascadează via FK)
+      if (!payload.userId) throw new Error('Missing userId')
 
-      if (!targetProfile) throw new Error('User not found')
-
-      const { error } = await admin.auth.admin.deleteUser(targetProfile.id)
+      const { error } = await admin.auth.admin.deleteUser(payload.userId as string)
       if (error) throw error
 
       result = { success: true }

@@ -6,10 +6,19 @@ import { Transport, TransportStatus } from '../models/transport.model';
 import { User } from '../models/user.model';
 import { Order } from '../models/order.model';
 
+interface AnyUser {
+  id: string | number;
+  name: string;
+  role: string;
+  active?: boolean;
+  jobRole?: string;
+  telefon?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TransportService {
   private _vehicles   = signal<Vehicle[]>([]);
-  private _users      = signal<User[]>([]);
+  private _users      = signal<AnyUser[]>([]);
   private _transports = signal<Transport[]>([]);
 
   readonly vehicles   = this._vehicles.asReadonly();
@@ -78,7 +87,7 @@ export class TransportService {
 
   // ── Drivers (derived from users with jobRole='sofer') ────────────────────
 
-  refreshUsers(users: User[]): void {
+  refreshUsers(users: AnyUser[]): void {
     this._users.set(users);
   }
 

@@ -1,16 +1,14 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
-import { StorageService } from '../../core/services/storage.service';
-import { CryptoService } from '../../core/services/crypto.service';
-import { User } from '../../core/models/user.model';
+import { SupabaseService } from '../../core/services/supabase.service';
+import { Profile } from '../../core/models/profile.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -30,26 +28,33 @@ import { DragModalDirective } from '../../shared/drag-modal.directive';
   templateUrl: './users.component.html',
   styleUrl:    './users.component.scss'
 })
-export class UsersComponent {
-  users   = signal<User[]>([]);
+export class UsersComponent implements OnInit {
+  users     = signal<Profile[]>([]);
   showModal = signal(false);
-  editingId = signal<number | null>(null);
+  editingId = signal<string | null>(null);
+  saving    = signal(false);
   form: FormGroup;
 
   constructor(
     private fb: FormBuilder,
     public auth: AuthService,
-    private storage: StorageService,
-    private crypto: CryptoService,
+    private supabase: SupabaseService,
     private snackBar: MatSnackBar
   ) {
-    this.users.set(this.storage.get<User[]>('app_users') || []);
     this.form = this.fb.group({
       name:     ['', Validators.required],
       username: ['', Validators.required],
       password: ['', Validators.minLength(8)],
       role:     ['agent', Validators.required]
     });
+  }
+
+  async ngOnInit(): Promise<void> {
+    await this._reload();
+  }
+
+  private async _reload(): Promise<void> {
+    this.users.set(await this.supabase.getProfiles());
   }
 
   openAdd(): void {
@@ -60,7 +65,7 @@ export class UsersComponent {
     this.showModal.set(true);
   }
 
-  openEdit(user: User): void {
+  openEdit(user: Profile): void {
     this.editingId.set(user.id);
     this.form.patchValue({ name: user.name, username: user.username, password: '', role: user.role });
     this.form.get('password')?.clearValidators();
@@ -73,47 +78,44 @@ export class UsersComponent {
   async save(): Promise<void> {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const { name, username, password, role } = this.form.value;
-    let users = [...this.users()];
     const id = this.editingId();
-
-    if (id === null) {
-      const dup = users.find(u => u.username === username.trim().toLowerCase());
-      if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      const newId = Math.max(0, ...users.map(u => u.id)) + 1;
-      const s1 = this.crypto.generateSalt();
-      // M4: PBKDF2 la creare user — nu SHA-256+salt
-      users.push({ id: newId, name: name.trim(), username: username.trim().toLowerCase(),
-        password: await this.crypto.hashPBKDF2(password, s1), _v: 4, salt: s1,
-        mustChangePassword: true, role, active: true });
-    } else {
-      const idx = users.findIndex(u => u.id === id);
-      if (idx === -1) return;
-      const dup = users.find(u => u.username === username.trim().toLowerCase() && u.id !== id);
-      if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role };
-      if (password) {
-        const s2 = this.crypto.generateSalt();
-        // M4: PBKDF2 la reset parolă
-        users[idx] = { ...users[idx], password: await this.crypto.hashPBKDF2(password, s2),
-          _v: 4, salt: s2, mustChangePassword: true };
+    this.saving.set(true);
+    try {
+      if (id === null) {
+        await this.supabase.callManageUsers('create', {
+          username: username.trim().toLowerCase(),
+          password,
+          name: name.trim(),
+          role,
+        });
+      } else {
+        await this.supabase.updateProfile(id, { name: name.trim(), role });
+        if (password) {
+          await this.supabase.callManageUsers('reset_password', { userId: id, password });
+        }
       }
+      await this._reload();
+      this.showModal.set(false);
+      this.snackBar.open('Utilizatorul a fost salvat.', '', { duration: 2500, panelClass: ['snack-success'] });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare la salvare.', '', { duration: 4000 });
+    } finally {
+      this.saving.set(false);
     }
-
-    this.storage.set('app_users', users);
-    this.users.set(users);
-    this.showModal.set(false);
-    this.snackBar.open('✅ Utilizatorul a fost salvat.', '', { duration: 2500, panelClass: ['snack-success'] });
   }
 
-  toggleActive(user: User): void {
+  async toggleActive(user: Profile): Promise<void> {
     const session = this.auth.session();
-    if (session?.userId === user.id) {
+    if (session?.supabaseId === user.id) {
       this.snackBar.open('Nu puteți dezactiva propriul cont.', '', { duration: 3000 });
       return;
     }
-    let users = this.users().map(u => u.id === user.id ? { ...u, active: !u.active } : u);
-    this.storage.set('app_users', users);
-    this.users.set(users);
-    this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
+    try {
+      await this.supabase.updateProfile(user.id, { active: !user.active });
+      await this._reload();
+      this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare.', '', { duration: 3000 });
+    }
   }
 }

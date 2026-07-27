@@ -9,12 +9,14 @@ import { StorageService } from '../../core/services/storage.service';
 import { TransportService } from '../../core/services/transport.service';
 import { CryptoService } from '../../core/services/crypto.service';
 import { AuditService } from '../../core/services/audit.service';
+import { SupabaseService } from '../../core/services/supabase.service';
+import { Profile } from '../../core/models/profile.model';
 import { Catalog, CatalogMeta, CatalogUpload } from '../../core/models/catalog.model';
 import { UnitOfMeasure } from '../../core/models/unit-of-measure.model';
 import { UnitsService } from '../../core/services/units.service';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { EmailContact } from '../../core/models/email-contact.model';
-import { User, PERMISSION_LABELS, Permission } from '../../core/models/user.model';
+import { PERMISSION_LABELS } from '../../core/models/user.model';
 import { Vehicle } from '../../core/models/vehicle.model';
 import { AppPermission, PageAccess, APP_PAGES, DEFAULT_PERMISSIONS, SYSTEM_PERM_IDS } from '../../core/models/app-permission.model';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -84,22 +86,22 @@ export class SettingsComponent implements OnInit {
   newWaName  = '';
   newWaPhone = '';
   newWaType: 'number' | 'group' = 'number';
-  selectedWaUserId: number | null = null;
+  selectedWaUserId: string | null = null;
 
   emailContacts = signal<EmailContact[]>([]);
   newEmailName  = '';
   newEmailAddr  = '';
   newEmailType: 'individual' | 'list' = 'individual';
-  selectedEmailUserId: number | null = null;
+  selectedEmailUserId: string | null = null;
 
   private readonly PHONE_RE = /^\d{10}$/;
   private readonly EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   readonly permLabels    = PERMISSION_LABELS;
 
-  users         = signal<User[]>([]);
+  users         = signal<Profile[]>([]);
   showUserModal  = signal(false);
-  editingUserId    = signal<number | null>(null);
+  editingUserId    = signal<string | null>(null);
   editingIsKeyUser = signal(false);
   userForm: FormGroup;
 
@@ -163,7 +165,8 @@ export class SettingsComponent implements OnInit {
     private snackBar: MatSnackBar,
     private crypto: CryptoService,
     private audit:  AuditService,
-    public  unitsService: UnitsService
+    public  unitsService: UnitsService,
+    private supabase: SupabaseService
   ) {
     this.userForm = this.fb.group({
       name:     ['', Validators.required],
@@ -192,7 +195,7 @@ export class SettingsComponent implements OnInit {
     this.userForm.get('password')!.valueChanges.subscribe(v => this.userPassValue.set(v ?? ''));
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     for (const cat of this.catalogsService.catalogs()) {
       this._initState(cat.id);
     }
@@ -205,21 +208,7 @@ export class SettingsComponent implements OnInit {
     const savedEmail = this.storage.get<EmailContact[]>('app_email_contacts');
     if (savedEmail) this.emailContacts.set(savedEmail);
 
-    let savedUsers = this.storage.get<User[]>('app_users') ?? [];
-    // Migrate legacy jobRole → role (sofer/ajutor_manipulant only)
-    const operationalRoles = new Set(['sofer', 'ajutor_manipulant']);
-    const migratedUsers = savedUsers.map(u => {
-      if (u.jobRole && operationalRoles.has(u.jobRole)) {
-        return { ...u, role: u.jobRole as Permission, jobRole: undefined };
-      }
-      return u.jobRole ? { ...u, jobRole: undefined } : u;
-    });
-    if (migratedUsers.some((u, i) => u.role !== savedUsers[i].role || u.jobRole !== savedUsers[i].jobRole)) {
-      this.storage.set('app_users', migratedUsers);
-      savedUsers = migratedUsers;
-    }
-    this.users.set(savedUsers);
-    this.transportService.refreshUsers(savedUsers);
+    await this._reloadUsers();
 
     const savedPerms = this.storage.get<AppPermission[]>('app_permissions');
     let perms: AppPermission[] = savedPerms ?? DEFAULT_PERMISSIONS;
@@ -239,6 +228,12 @@ export class SettingsComponent implements OnInit {
     if (!this.catStates[id]) {
       this.catStates[id] = { importing: false, testing: false, syncing: false, apiMsg: null, importMsg: '', importDetected: null };
     }
+  }
+
+  private async _reloadUsers(): Promise<void> {
+    const profiles = await this.supabase.getProfiles();
+    this.users.set(profiles);
+    this.transportService.refreshUsers(profiles);
   }
 
   // ── Catalog management ────────────────────────────────────────────────────
@@ -417,80 +412,38 @@ export class SettingsComponent implements OnInit {
 
   // ── Available users for WA / Email pickers ───────────────────────────────
 
-  get availableWaUsers(): User[] {
-    const existing = new Set(this.whatsappContacts().map(c => c.phone));
-    return this.users().filter(u => u.telefon && !existing.has(u.telefon) && u.active);
+  get availableWaUsers(): Profile[] {
+    return []; // telefon nu mai e disponibil pe Profile — funcție dezactivată după migrarea la Supabase Auth
   }
 
-  get availableEmailUsers(): User[] {
-    const existing = new Set(this.emailContacts().map(c => c.email));
-    return this.users().filter(u => u.recoveryEmail && !existing.has(u.recoveryEmail) && u.active);
+  get availableEmailUsers(): Profile[] {
+    return []; // recoveryEmail nu mai e disponibil pe Profile — funcție dezactivată după migrarea la Supabase Auth
   }
 
   addWaFromUser(): void {
-    const user = this.users().find(u => u.id === this.selectedWaUserId);
-    if (!user?.telefon) return;
-    if (this.whatsappContacts().some(c => c.name.toLowerCase() === user.name.toLowerCase())) {
-      this.snackBar.open(`Există deja un contact WhatsApp cu numele "${user.name}".`, '', { duration: 3000 }); return;
-    }
-    this.whatsappContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, phone: user.telefon!, type: 'number' }]);
-    this._saveWa();
-    this.selectedWaUserId = null;
-    this.snackBar.open('Contact WhatsApp adăugat.', '', { duration: 2000 });
+    // dezactivat după migrarea la Supabase Auth (Profile nu are câmpul telefon)
   }
 
   addEmailFromUser(): void {
-    const user = this.users().find(u => u.id === this.selectedEmailUserId);
-    if (!user?.recoveryEmail) return;
-    if (this.emailContacts().some(c => c.name.toLowerCase() === user.name.toLowerCase())) {
-      this.snackBar.open(`Există deja un contact Email cu numele "${user.name}".`, '', { duration: 3000 }); return;
-    }
-    this.emailContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, email: user.recoveryEmail!, type: 'individual' }]);
-    this._saveEmail();
-    this.selectedEmailUserId = null;
-    this.snackBar.open('Adresă email adăugată.', '', { duration: 2000 });
+    // dezactivat după migrarea la Supabase Auth (Profile nu are câmpul recoveryEmail)
   }
 
   // ── User ↔ WA/Email toggle ─────────────────────────────────────────────────
 
-  isUserWaEnabled(user: User): boolean {
-    return !!user.telefon && this.whatsappContacts().some(c => c.phone === user.telefon);
+  isUserWaEnabled(_user: Profile): boolean {
+    return false;
   }
 
-  toggleUserWa(user: User): void {
-    if (!user.telefon) { this.snackBar.open('Utilizatorul nu are număr de telefon.', '', { duration: 2500 }); return; }
-    if (this.isUserWaEnabled(user)) {
-      this.whatsappContacts.update(list => list.filter(c => c.phone !== user.telefon));
-    } else {
-      if (this.whatsappContacts().some(c => c.phone === user.telefon)) {
-        this.snackBar.open('Numărul este deja în lista WhatsApp.', '', { duration: 2500 }); return;
-      }
-      if (this.whatsappContacts().some(c => c.name.toLowerCase() === user.name.toLowerCase())) {
-        this.snackBar.open(`Există deja un contact WhatsApp cu numele "${user.name}".`, '', { duration: 3000 }); return;
-      }
-      this.whatsappContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, phone: user.telefon!, type: 'number' }]);
-    }
-    this._saveWa();
+  toggleUserWa(_user: Profile): void {
+    this.snackBar.open('Funcție indisponibilă după migrarea la Supabase Auth.', '', { duration: 3000 });
   }
 
-  isUserEmailEnabled(user: User): boolean {
-    return !!user.recoveryEmail && this.emailContacts().some(c => c.email === user.recoveryEmail);
+  isUserEmailEnabled(_user: Profile): boolean {
+    return false;
   }
 
-  toggleUserEmail(user: User): void {
-    if (!user.recoveryEmail) { this.snackBar.open('Utilizatorul nu are email de recuperare.', '', { duration: 2500 }); return; }
-    if (this.isUserEmailEnabled(user)) {
-      this.emailContacts.update(list => list.filter(c => c.email !== user.recoveryEmail));
-    } else {
-      if (this.emailContacts().some(c => c.email === user.recoveryEmail)) {
-        this.snackBar.open('Adresa email este deja în listă.', '', { duration: 2500 }); return;
-      }
-      if (this.emailContacts().some(c => c.name.toLowerCase() === user.name.toLowerCase())) {
-        this.snackBar.open(`Există deja un contact Email cu numele "${user.name}".`, '', { duration: 3000 }); return;
-      }
-      this.emailContacts.update(list => [...list, { id: Date.now().toString(), name: user.name, email: user.recoveryEmail!, type: 'individual' }]);
-    }
-    this._saveEmail();
+  toggleUserEmail(_user: Profile): void {
+    this.snackBar.open('Funcție indisponibilă după migrarea la Supabase Auth.', '', { duration: 3000 });
   }
 
   // ── WhatsApp contacts ─────────────────────────────────────────────────────
@@ -499,9 +452,7 @@ export class SettingsComponent implements OnInit {
     const name  = this.newWaName.trim();
     const phone = this.newWaPhone.trim();
     if (!name || !phone) return;
-    if (this.users().some(u => u.telefon === phone)) {
-      this.snackBar.open('Numărul aparține unui utilizator din sistem. Activați-l din tabel.', '', { duration: 3500 }); return;
-    }
+    // (verificare număr din utilizatori eliminată după migrarea la Supabase Auth)
     if (this.whatsappContacts().some(c => c.phone === phone)) {
       this.snackBar.open('Numărul este deja în lista WhatsApp.', '', { duration: 2500 }); return;
     }
@@ -537,9 +488,7 @@ export class SettingsComponent implements OnInit {
     const name  = this.newEmailName.trim();
     const email = this.newEmailAddr.trim();
     if (!name || !email) return;
-    if (this.users().some(u => u.recoveryEmail === email)) {
-      this.snackBar.open('Adresa aparține unui utilizator din sistem. Activați-o din tabel.', '', { duration: 3500 }); return;
-    }
+    // recoveryEmail nu mai există pe Profile după migrarea la Supabase Auth
     if (this.emailContacts().some(c => c.email === email)) {
       this.snackBar.open('Adresa email este deja în listă.', '', { duration: 2500 }); return;
     }
@@ -576,10 +525,9 @@ export class SettingsComponent implements OnInit {
 
   openAdminSec(username = 'keyuser'): void {
     this.secTargetUsername  = username;
-    const u = this.users().find(u => u.username === username);
     this.adminNewPassword   = '';
     this.adminConfirmPass   = '';
-    this.adminRecoveryEmail = u?.recoveryEmail ?? '';
+    this.adminRecoveryEmail = '';
     this.adminPassError     = '';
     this.showAdminSecModal.set(true);
   }
@@ -595,31 +543,26 @@ export class SettingsComponent implements OnInit {
       this.adminPassError = 'Parola trebuie să aibă minim 8 caractere.';
       return;
     }
-    const target       = this.secTargetUsername;
-    const recoveryEmail = this.adminRecoveryEmail.trim() || undefined;
-    const salt       = np ? this.crypto.generateSalt() : null;
-    const hashedPass = np && salt ? this.crypto.hashWithSalt(np, salt) : null;
+    const target = this.secTargetUsername;
+    if (!np) { this.showAdminSecModal.set(false); return; }
 
-    const updated = this.users().map(u => {
-      if (u.username !== target) return u;
-      const passFields = hashedPass && salt ? { password: hashedPass, _v: 3 as const, salt, mustChangePassword: false } : {};
-      return { ...u, ...passFields, recoveryEmail };
-    });
-    this.users.set(updated);
-    this.storage.set('app_users', updated);
-    this.transportService.refreshUsers(updated);
-    this.showAdminSecModal.set(false);
-
-    const session = this.auth.session();
-    if (np && session) this.audit.log(session.userId, 'ADMIN_SET_PASS', `Parolă setată pentru ${target}`);
-
-    this.snackBar.open(`Setările contului ${target} au fost salvate.`, '', { duration: 2500 });
+    const profile = this.users().find(u => u.username === target);
+    if (!profile) { this.adminPassError = 'Utilizatorul nu a fost găsit.'; return; }
+    try {
+      await this.supabase.callManageUsers('reset_password', { userId: profile.id, password: np });
+      this.showAdminSecModal.set(false);
+      const session = this.auth.session();
+      if (session) this.audit.log(session.userId, 'ADMIN_SET_PASS', `Parolă setată pentru ${target}`);
+      this.snackBar.open(`Parola contului ${target} a fost schimbată.`, '', { duration: 2500 });
+    } catch (e: any) {
+      this.adminPassError = e?.message ?? 'Eroare la schimbarea parolei.';
+    }
   }
 
   openAddUser(): void {
     this.editingUserId.set(null);
     this.editingIsKeyUser.set(false);
-    this.userForm.reset({ name: '', username: '', password: '', role: 'agent', telefon: '', recoveryEmail: '' });
+    this.userForm.reset({ name: '', username: '', password: '', role: 'agent' });
     this.userForm.get('password')?.setValidators(Validators.required);
     this.userForm.get('password')?.updateValueAndValidity();
     this.userPassValue.set('');
@@ -627,10 +570,10 @@ export class SettingsComponent implements OnInit {
     this.showUserModal.set(true);
   }
 
-  openEditUser(user: User): void {
+  openEditUser(user: Profile): void {
     this.editingUserId.set(user.id);
-    this.editingIsKeyUser.set((user.role as string) === 'keyuser');
-    this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role, telefon: user.telefon ?? '', recoveryEmail: user.recoveryEmail ?? '' });
+    this.editingIsKeyUser.set(user.role === 'keyuser');
+    this.userForm.patchValue({ name: user.name, username: user.username, password: '', role: user.role });
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
     this.userPassValue.set('');
@@ -646,97 +589,65 @@ export class SettingsComponent implements OnInit {
 
   async saveUser(): Promise<void> {
     if (this.userForm.invalid) { this.userForm.markAllAsTouched(); return; }
-    const { name, username, password, role, telefon, recoveryEmail } = this.userForm.value;
-    let users = [...this.users()];
-    const id  = this.editingUserId();
-
-    const cleanTelefon       = (telefon || '').trim() || undefined;
-    const cleanRecoveryEmail = (recoveryEmail || '').trim() || undefined;
-
-    if (cleanTelefon && !this.PHONE_RE.test(cleanTelefon)) {
-      this.snackBar.open('Numărul de telefon trebuie să aibă exact 10 cifre.', '', { duration: 3000 }); return;
+    const { name, username, password, role } = this.userForm.value;
+    const id = this.editingUserId();
+    try {
+      if (id === null) {
+        await this.supabase.callManageUsers('create', {
+          username: username.trim().toLowerCase(),
+          password,
+          name: name.trim(),
+          role,
+        });
+      } else {
+        const isProtected = this.editingIsKeyUser();
+        const updates: Partial<Profile> = { name: name.trim() };
+        if (!isProtected) updates.role = role;
+        await this.supabase.updateProfile(id, updates);
+        if (password) {
+          await this.supabase.callManageUsers('reset_password', { userId: id, password });
+        }
+      }
+      await this._reloadUsers();
+      this.showUserModal.set(false);
+      this.snackBar.open('Utilizatorul a fost salvat.', '', { duration: 2500, panelClass: ['snack-success'] });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare la salvare.', '', { duration: 4000 });
     }
-    if (cleanRecoveryEmail && !this.EMAIL_RE.test(cleanRecoveryEmail)) {
-      this.snackBar.open('Adresa de email nu este validă (ex: office@firma.ro).', '', { duration: 3000 }); return;
-    }
-
-    const session = this.auth.session();
-
-    if (id === null) {
-      const dup = users.find(u => u.username === username.trim().toLowerCase());
-      if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      if (cleanTelefon && users.some(u => u.telefon === cleanTelefon)) {
-        this.snackBar.open('Numărul de telefon este deja folosit de un alt utilizator.', '', { duration: 3000 }); return;
-      }
-      if (cleanRecoveryEmail && users.some(u => u.recoveryEmail === cleanRecoveryEmail)) {
-        this.snackBar.open('Adresa de email este deja folosită de un alt utilizator.', '', { duration: 3000 }); return;
-      }
-      const newId     = Math.max(0, ...users.map(u => u.id)) + 1;
-      const salt      = this.crypto.generateSalt();
-      const hashed    = this.crypto.hashWithSalt(password, salt);
-      const cleanName = name.trim();
-      users.push({ id: newId, name: cleanName, username: username.trim().toLowerCase(), password: hashed, _v: 3, salt, role, telefon: cleanTelefon, recoveryEmail: cleanRecoveryEmail, active: true });
-      if (session) this.audit.log(session.userId, 'USER_CREATE', `Creat utilizator ${username.trim().toLowerCase()}`);
-    } else {
-      const idx = users.findIndex(u => u.id === id);
-      if (idx === -1) return;
-      const dup = users.find(u => u.username === username.trim().toLowerCase() && u.id !== id);
-      if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
-      if (cleanTelefon && users.some(u => u.telefon === cleanTelefon && u.id !== id)) {
-        this.snackBar.open('Numărul de telefon este deja folosit de un alt utilizator.', '', { duration: 3000 }); return;
-      }
-      if (cleanRecoveryEmail && users.some(u => u.recoveryEmail === cleanRecoveryEmail && u.id !== id)) {
-        this.snackBar.open('Adresa de email este deja folosită de un alt utilizator.', '', { duration: 3000 }); return;
-      }
-      const isProtected = (users[idx].role as string) === 'keyuser';
-      const savedRole   = isProtected ? users[idx].role : role;
-      users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role: savedRole, telefon: cleanTelefon, recoveryEmail: cleanRecoveryEmail };
-      if (password) {
-        const salt          = this.crypto.generateSalt();
-        users[idx].password = this.crypto.hashWithSalt(password, salt);
-        users[idx]._v       = 3;
-        users[idx].salt     = salt;
-      }
-      if (session) this.audit.log(session.userId, 'USER_EDIT', `Editat utilizator ${username.trim().toLowerCase()}`);
-    }
-
-    this.storage.set('app_users', users);
-    this.users.set(users);
-    this.transportService.refreshUsers(users);
-    this.showUserModal.set(false);
-    this.snackBar.open('✅ Utilizatorul a fost salvat.', '', { duration: 2500, panelClass: ['snack-success'] });
   }
 
-  toggleUserActive(user: User): void {
-    if ((user.role as string) === 'keyuser') {
+  async toggleUserActive(user: Profile): Promise<void> {
+    if (user.role === 'keyuser') {
       this.snackBar.open('Contul KeyUser nu poate fi dezactivat.', '', { duration: 3000 });
       return;
     }
     const session = this.auth.session();
-    if (session?.userId === user.id) {
+    if (session?.supabaseId === user.id) {
       this.snackBar.open('Nu poți dezactiva propriul cont.', '', { duration: 3000 });
       return;
     }
-    const users = this.users().map(u => u.id === user.id ? { ...u, active: !u.active } : u);
-    this.storage.set('app_users', users);
-    this.users.set(users);
-    this.transportService.refreshUsers(users);
-    this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
+    try {
+      await this.supabase.updateProfile(user.id, { active: !user.active });
+      await this._reloadUsers();
+      this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare.', '', { duration: 3000 });
+    }
   }
 
-  deleteUser(user: User): void {
-    if ((user.role as string) === 'keyuser') {
+  async deleteUser(user: Profile): Promise<void> {
+    if (user.role === 'keyuser') {
       this.snackBar.open('Contul KeyUser nu poate fi șters.', '', { duration: 3000 });
       return;
     }
     if (!confirm(`Ștergi utilizatorul "${user.name}"? Această acțiune nu poate fi anulată.`)) return;
-    const users = this.users().filter(u => u.id !== user.id);
-    this.storage.set('app_users', users);
-    this.users.set(users);
-    this.transportService.refreshUsers(users);
-    const session = this.auth.session();
-    if (session) this.audit.log(session.userId, 'USER_DELETE', `Șters utilizator ${user.username}`);
-    this.snackBar.open('Utilizatorul a fost șters.', '', { duration: 2500 });
+    try {
+      await this.supabase.callManageUsers('delete', { userId: user.id });
+      await this._reloadUsers();
+      this.snackBar.open('Utilizatorul a fost șters.', '', { duration: 2500 });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare la ștergere.', '', { duration: 3000 });
+    }
   }
 
   // ── Vehicule ──────────────────────────────────────────────────────────────
