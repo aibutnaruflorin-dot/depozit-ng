@@ -70,7 +70,7 @@ export class UsersComponent {
 
   closeModal(): void { this.showModal.set(false); }
 
-  save(): void {
+  async save(): Promise<void> {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const { name, username, password, role } = this.form.value;
     let users = [...this.users()];
@@ -81,8 +81,9 @@ export class UsersComponent {
       if (dup) { this.snackBar.open('Username deja folosit.', '', { duration: 3000 }); return; }
       const newId = Math.max(0, ...users.map(u => u.id)) + 1;
       const s1 = this.crypto.generateSalt();
+      // M4: PBKDF2 la creare user — nu SHA-256+salt
       users.push({ id: newId, name: name.trim(), username: username.trim().toLowerCase(),
-        password: this.crypto.hashWithSalt(password, s1), _v: 3, salt: s1,
+        password: await this.crypto.hashPBKDF2(password, s1), _v: 4, salt: s1,
         mustChangePassword: true, role, active: true });
     } else {
       const idx = users.findIndex(u => u.id === id);
@@ -92,8 +93,9 @@ export class UsersComponent {
       users[idx] = { ...users[idx], name: name.trim(), username: username.trim().toLowerCase(), role };
       if (password) {
         const s2 = this.crypto.generateSalt();
-        users[idx] = { ...users[idx], password: this.crypto.hashWithSalt(password, s2),
-          _v: 3, salt: s2, mustChangePassword: true };
+        // M4: PBKDF2 la reset parolă
+        users[idx] = { ...users[idx], password: await this.crypto.hashPBKDF2(password, s2),
+          _v: 4, salt: s2, mustChangePassword: true };
       }
     }
 
