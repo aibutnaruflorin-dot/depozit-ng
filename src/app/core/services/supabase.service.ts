@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, Session } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
+import { Profile } from '../models/profile.model';
 
 const SYNC_KEYS = [
   'app_orders', 'app_catalogs', 'app_transports',
@@ -17,6 +18,73 @@ export class SupabaseService {
   constructor() {
     this.client = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
+
+  // ─── Auth ────────────────────────────────────────────────────────────────────
+
+  async signIn(username: string, password: string): Promise<{ user: any; session: Session } | null> {
+    const email = `${username.trim().toLowerCase()}@depozit.internal`;
+    const { data, error } = await this.client.auth.signInWithPassword({ email, password });
+    if (error || !data.session) return null;
+    return { user: data.user, session: data.session };
+  }
+
+  async signOut(): Promise<void> {
+    await this.client.auth.signOut();
+  }
+
+  async getSession(): Promise<Session | null> {
+    const { data } = await this.client.auth.getSession();
+    return data.session;
+  }
+
+  async updatePassword(newPassword: string): Promise<boolean> {
+    const { error } = await this.client.auth.updateUser({ password: newPassword });
+    return !error;
+  }
+
+  // ─── Profiles ────────────────────────────────────────────────────────────────
+
+  async getProfile(userId: string): Promise<Profile | null> {
+    try {
+      const { data } = await this.client
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      return data ?? null;
+    } catch { return null; }
+  }
+
+  async getProfiles(): Promise<Profile[]> {
+    try {
+      const { data } = await this.client
+        .from('profiles')
+        .select('*')
+        .order('created_at');
+      return data ?? [];
+    } catch { return []; }
+  }
+
+  async updateProfile(id: string, updates: Partial<Profile>): Promise<void> {
+    try {
+      await this.client.from('profiles').update(updates).eq('id', id);
+    } catch (e) {
+      console.warn('updateProfile failed', e);
+    }
+  }
+
+  // ─── Edge Function — gestiune utilizatori (doar admin) ────────────────────────
+
+  async callManageUsers(action: string, payload: Record<string, unknown>): Promise<any> {
+    const { data, error } = await this.client.functions.invoke('manage-users', {
+      body: { action, payload }
+    });
+    if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
+    return data;
+  }
+
+  // ─── kv_store ────────────────────────────────────────────────────────────────
 
   isSyncKey(key: string): boolean {
     return SYNC_KEYS.includes(key) || key.startsWith('app_products_') || key.startsWith('app_catalog_');
