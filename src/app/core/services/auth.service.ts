@@ -1,13 +1,13 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { StorageService } from './storage.service';
-import { CryptoService } from './crypto.service';
 import { AuditService } from './audit.service';
-import { Session, User } from '../models/user.model';
+import { SupabaseService } from './supabase.service';
+import { Session } from '../models/user.model';
 import { AppPermission } from '../models/app-permission.model';
+import { Profile } from '../models/profile.model';
 
-const SESSION_DURATION = 8 * 60 * 60 * 1000;
-const MIN_PASS_LEN     = 8;
+const MIN_PASS_LEN = 8;
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -20,24 +20,20 @@ export class AuthService {
   readonly userName    = computed(() => this._session()?.name ?? '');
   readonly userInitial = computed(() => (this._session()?.name ?? 'U').charAt(0).toUpperCase());
   readonly roleLabel   = computed(() => {
-    const map: Record<string, string> = { keyuser: 'KeyUser', contabilitate: 'Contabilitate', agent: 'Agent', 'sub-agent': 'Sub-agent' };
+    const map: Record<string, string> = {
+      keyuser: 'KeyUser', contabilitate: 'Contabilitate',
+      agent: 'Agent', 'sub-agent': 'Sub-agent'
+    };
     return map[this._session()?.role ?? ''] ?? 'Agent';
   });
 
   constructor(
-    private storage: StorageService,
-    private crypto:  CryptoService,
-    private audit:   AuditService,
-    private router:  Router
+    private storage:  StorageService,
+    private supabase: SupabaseService,
+    private audit:    AuditService,
+    private router:   Router
   ) {
     this._loadSession();
-  }
-
-  private _isValidRole(role: string): boolean {
-    const builtIn = ['keyuser', 'sofer', 'ajutor_manipulant', 'agent', 'contabilitate', 'sub-agent'];
-    if (builtIn.includes(role)) return true;
-    const perms: any[] = this.storage.get('app_permissions') ?? [];
-    return perms.some((p: any) => p.id === role);
   }
 
   private _computeIsAdmin(role: string): boolean {
@@ -47,7 +43,6 @@ export class AuthService {
     return perm?.pages?.['setari'] === 'full';
   }
 
-  /** Verifică dacă utilizatorul curent are acces 'full' la o pagină */
   hasFullAccess(pageId: string): boolean {
     const s = this._session();
     if (!s) return false;
@@ -57,75 +52,49 @@ export class AuthService {
     return perm?.pages?.[pageId] === 'full';
   }
 
-  private _loadSession(): void {
-    let s = this.storage.get<Session>('app_session');
-    if (s && (s.role as string) === 'admin') { s = { ...s, role: 'keyuser' }; }
-    if (!s || Date.now() - s.loginTime > SESSION_DURATION) {
-      this.storage.remove('app_session');
-      return;
-    }
-    // Re-read role from user record — previne falsificarea sesiunii
-    const users = this.storage.get<User[]>('app_users') ?? [];
-    const user  = users.find(u => u.id === s!.userId);
-    if (!user || user.active === false || !this._isValidRole(user.role as string)) {
-      this.storage.remove('app_session');
-      return;
-    }
-    const actualRole = user.role as string;
-    s = { ...s, role: actualRole, isAdmin: this._computeIsAdmin(actualRole), mustChangePassword: user.mustChangePassword ?? false };
-    this.storage.set('app_session', s);
-    this._session.set(s);
+  private _buildSession(profile: Profile): Session {
+    return {
+      userId:            0,
+      supabaseId:        profile.id,
+      username:          profile.username,
+      name:              profile.name,
+      role:              profile.role,
+      isAdmin:           this._computeIsAdmin(profile.role),
+      loginTime:         Date.now(),
+      mustChangePassword: profile.must_change_password,
+    };
+  }
+
+  private async _loadSession(): Promise<void> {
+    try {
+      const sbSession = await this.supabase.getSession();
+      if (!sbSession) return;
+      const profile = await this.supabase.getProfile(sbSession.user.id);
+      if (!profile || !profile.active) return;
+      this._session.set(this._buildSession(profile));
+    } catch { /* sesiune indisponibilă — user neautentificat */ }
   }
 
   async login(username: string, password: string): Promise<boolean> {
-    const users = this.storage.get<User[]>('app_users') || [];
-    const idx   = users.findIndex(u =>
-      u.username === username.trim().toLowerCase() && u.active !== false
-    );
-    if (idx === -1) return false;
-    const user = users[idx];
+    const result = await this.supabase.signIn(username, password);
+    if (!result) return false;
 
-    let passwordMatch = false;
-    if (user._v === 4 && user.salt) {
-      // PBKDF2 (curent)
-      passwordMatch = user.password === await this.crypto.hashPBKDF2(password, user.salt);
-    } else if (user._v === 3 && user.salt) {
-      // SHA-256 + salt (legacy) — migrează la v4
-      passwordMatch = user.password === this.crypto.hashWithSalt(password, user.salt);
-    } else if (user._v === 2) {
-      // SHA-256 fără salt (legacy) — migrează la v4
-      passwordMatch = user.password === await this.crypto.hash(password);
-    } else {
-      // Plaintext (legacy) — migrează la v4
-      passwordMatch = user.password === password;
-    }
-    if (passwordMatch && user._v !== 4) {
-      const salt   = this.crypto.generateSalt();
-      const hashed = await this.crypto.hashPBKDF2(password, salt);
-      users[idx]   = { ...user, password: hashed, _v: 4, salt };
-      this.storage.set('app_users', users);
+    const profile = await this.supabase.getProfile(result.user.id);
+    if (!profile || !profile.active) {
+      await this.supabase.signOut();
+      return false;
     }
 
-    if (!passwordMatch) return false;
-
-    const session: Session = {
-      userId:            user.id,
-      username:          user.username,
-      name:              user.name,
-      role:              user.role as string,
-      isAdmin:           this._computeIsAdmin(user.role as string),
-      loginTime:         Date.now(),
-      mustChangePassword: user.mustChangePassword ?? false,
-    };
-    this.storage.set('app_session', session);
+    const session = this._buildSession(profile);
     this._session.set(session);
-    this.audit.log(user.id, 'LOGIN', user.username);
+    this.audit.log(0, 'LOGIN', profile.username);
     return true;
   }
 
   logout(): void {
     const s = this._session();
-    if (s) this.audit.log(s.userId, 'LOGOUT', s.username);
+    if (s) this.audit.log(0, 'LOGOUT', s.username);
+    this.supabase.signOut();
     const toRemove = Object.keys(localStorage).filter(k => k.startsWith('app_') || k === '_lk');
     toRemove.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
@@ -133,63 +102,33 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  refreshSession(): Session | null {
-    let s = this.storage.get<Session>('app_session');
-    if (s && (s.role as string) === 'admin') { s = { ...s, role: 'keyuser' }; }
-    if (!s || Date.now() - s.loginTime > SESSION_DURATION) {
-      this.storage.remove('app_session');
-      this._session.set(null);
-      return null;
-    }
-    // Re-read role from user record — previne falsificarea rolului în sesiune
-    const users = this.storage.get<User[]>('app_users') ?? [];
-    const user  = users.find(u => u.id === s!.userId);
-    if (!user || user.active === false || !this._isValidRole(user.role as string)) {
-      this.storage.remove('app_session');
-      this._session.set(null);
-      return null;
-    }
-    const actualRole = user.role as string;
-    s = { ...s, role: actualRole, isAdmin: this._computeIsAdmin(actualRole), mustChangePassword: user.mustChangePassword ?? false };
-    this.storage.set('app_session', s);
-    this._session.set(s);
-    return s;
+  async refreshSession(): Promise<Session | null> {
+    const cached = this._session();
+    if (cached) return cached;
+    // Dacă sesiunea din memorie e goală (ex: refresh pagină), reîncarcă din Supabase
+    await this._loadSession();
+    return this._session();
   }
 
-  async changePassword(userId: number, oldPass: string, newPass: string): Promise<{ ok: boolean; msg: string }> {
-    const users = this.storage.get<User[]>('app_users') || [];
-    const idx   = users.findIndex(u => u.id === userId);
-    if (idx === -1) return { ok: false, msg: 'Utilizatorul nu a fost găsit.' };
-
-    const user = users[idx];
-    let oldMatch: boolean;
-    if (user._v === 4 && user.salt) {
-      oldMatch = user.password === await this.crypto.hashPBKDF2(oldPass, user.salt);
-    } else if (user._v === 3 && user.salt) {
-      oldMatch = user.password === this.crypto.hashWithSalt(oldPass, user.salt);
-    } else if (user._v === 2) {
-      oldMatch = user.password === await this.crypto.hash(oldPass);
-    } else {
-      oldMatch = user.password === oldPass;
-    }
-    if (!oldMatch) return { ok: false, msg: 'Parola curentă este incorectă.' };
-    if (newPass.length < MIN_PASS_LEN || !/[A-Z]/.test(newPass) || !/[0-9]/.test(newPass))
+  async changePassword(_userId: number, oldPass: string, newPass: string): Promise<{ ok: boolean; msg: string }> {
+    if (newPass.length < MIN_PASS_LEN || !/[A-Z]/.test(newPass) || !/[0-9]/.test(newPass)) {
       return { ok: false, msg: `Parola trebuie să aibă minim ${MIN_PASS_LEN} caractere, cel puțin o literă mare și o cifră.` };
-
-    const salt    = this.crypto.generateSalt();
-    const hashed  = await this.crypto.hashPBKDF2(newPass, salt);
-    users[idx]    = { ...user, password: hashed, _v: 4, salt, mustChangePassword: false };
-    this.storage.set('app_users', users);
-
-    // Șterge flag-ul din sesiunea curentă
-    const s = this._session();
-    if (s && s.userId === userId) {
-      const updated = { ...s, mustChangePassword: false };
-      this.storage.set('app_session', updated);
-      this._session.set(updated);
     }
 
-    this.audit.log(userId, 'PASS_CHANGE', `Utilizatorul ${user.username} și-a schimbat parola`);
+    const s = this._session();
+    if (!s?.supabaseId) return { ok: false, msg: 'Sesiune invalidă.' };
+
+    // Verifică parola veche prin re-autentificare
+    const test = await this.supabase.signIn(s.username, oldPass);
+    if (!test) return { ok: false, msg: 'Parola curentă este incorectă.' };
+
+    const ok = await this.supabase.updatePassword(newPass);
+    if (!ok) return { ok: false, msg: 'Eroare la schimbarea parolei. Încearcă din nou.' };
+
+    await this.supabase.updateProfile(s.supabaseId, { must_change_password: false });
+    this._session.set({ ...s, mustChangePassword: false });
+
+    this.audit.log(0, 'PASS_CHANGE', `Utilizatorul ${s.username} si-a schimbat parola`);
     return { ok: true, msg: 'Parola a fost schimbată cu succes.' };
   }
 }

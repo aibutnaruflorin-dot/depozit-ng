@@ -25,7 +25,8 @@ export interface User {
 }
 
 export interface Session {
-  userId: number;
+  userId: number;         // păstrat pentru compatibilitate (= 0 după migrarea la Supabase Auth)
+  supabaseId?: string;    // UUID din Supabase Auth
   username: string;
   name: string;
   role: string;

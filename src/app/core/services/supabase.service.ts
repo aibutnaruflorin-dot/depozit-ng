@@ -42,6 +42,10 @@ export class SupabaseService {
     return !error;
   }
 
+  onAuthStateChange(callback: (event: string, session: any) => void): void {
+    this.client.auth.onAuthStateChange((event, session) => callback(event, session));
+  }
+
   // ─── Profiles ────────────────────────────────────────────────────────────────
 
   async getProfile(userId: string): Promise<Profile | null> {

@@ -4,13 +4,12 @@ import { AuthService } from '../services/auth.service';
 import { StorageService } from '../services/storage.service';
 import { AppPermission, DEFAULT_PERMISSIONS } from '../models/app-permission.model';
 
-export const authGuard: CanActivateFn = (route, state) => {
+export const authGuard: CanActivateFn = async (route, state) => {
   const auth   = inject(AuthService);
   const router = inject(Router);
-  const session = auth.refreshSession();
+  const session = await auth.refreshSession();
   if (!session) { router.navigate(['/login']); return false; }
 
-  // Dacă parola trebuie schimbată, permite doar /app/account
   if (session.mustChangePassword && !state.url.startsWith('/app/account')) {
     router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
     return false;
@@ -19,24 +18,23 @@ export const authGuard: CanActivateFn = (route, state) => {
   return true;
 };
 
-export const adminGuard: CanActivateFn = () => {
+export const adminGuard: CanActivateFn = async () => {
   const auth   = inject(AuthService);
   const router = inject(Router);
-  const session = auth.refreshSession();
+  const session = await auth.refreshSession();
   if (!session)         { router.navigate(['/login']);        return false; }
   if (!session.isAdmin) { router.navigate(['/app/catalog']); return false; }
   return true;
 };
 
-export const pageGuard: CanActivateFn = (route) => {
+export const pageGuard: CanActivateFn = async (route) => {
   const auth    = inject(AuthService);
   const storage = inject(StorageService);
   const router  = inject(Router);
 
-  const session = auth.refreshSession();
+  const session = await auth.refreshSession();
   if (!session) { router.navigate(['/login']); return false; }
 
-  // Forțează schimbarea parolei înainte de orice altă pagină
   if (session.mustChangePassword) {
     router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
     return false;
@@ -45,7 +43,7 @@ export const pageGuard: CanActivateFn = (route) => {
   if (session.isAdmin) return true;
 
   const pageId = route.data['pageId'] as string;
-  const perms: AppPermission[] = storage.get('app_permissions') ?? [];
+  const perms: AppPermission[] = storage.get('app_permissions') ?? DEFAULT_PERMISSIONS;
   const perm = perms.find(p => p.id === session.role);
   const access = perm?.pages?.[pageId] ?? 'none';
 
