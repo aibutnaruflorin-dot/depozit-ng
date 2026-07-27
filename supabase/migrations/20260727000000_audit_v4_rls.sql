@@ -10,7 +10,12 @@ drop policy if exists "kv anon select" on public.kv_store;
 
 create policy "kv anon select limited" on public.kv_store
   for select to anon
-  using (key not in ('app_users', 'app_permissions'));
+  using (
+    key not in (
+      'app_users', 'app_permissions',
+      'app_whatsapp_contacts', 'app_drivers'
+    )
+  );
 
 -- ─── kv_store: whitelist INSERT/UPDATE (H3) ──────────────────────────────────
 -- Inlocuieste lista neagra cu lista alba explicita — previne injectia de chei arbitrare
