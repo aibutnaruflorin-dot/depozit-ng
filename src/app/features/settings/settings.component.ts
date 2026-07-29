@@ -546,6 +546,7 @@ export class SettingsComponent implements OnInit {
     if (this.userForm.invalid) { this.userForm.markAllAsTouched(); return; }
     const { name, username, password, role } = this.userForm.value;
     const id = this.editingUserId();
+    const session = this.auth.session();
     try {
       if (id === null) {
         await this.supabase.callManageUsers('create', {
@@ -554,6 +555,7 @@ export class SettingsComponent implements OnInit {
           name: name.trim(),
           role,
         });
+        if (session) this.audit.log(session.supabaseId ?? '', 'USER_CREATE', `Utilizator creat: ${username.trim().toLowerCase()} (${role})`);
       } else {
         const isProtected = this.editingIsKeyUser();
         const updates: Partial<Profile> = { name: name.trim() };
@@ -562,6 +564,7 @@ export class SettingsComponent implements OnInit {
         if (password) {
           await this.supabase.callManageUsers('reset_password', { userId: id, password });
         }
+        if (session) this.audit.log(session.supabaseId ?? '', 'USER_EDIT', `Utilizator editat: ${name.trim()} (${id})`);
       }
       await this._reloadUsers();
       this.showUserModal.set(false);
@@ -583,6 +586,7 @@ export class SettingsComponent implements OnInit {
     }
     try {
       await this.supabase.updateProfile(user.id, { active: !user.active });
+      if (session) this.audit.log(session.supabaseId ?? '', 'USER_EDIT', `Utilizator ${user.active ? 'dezactivat' : 'activat'}: ${user.username} (${user.id})`);
       await this._reloadUsers();
       this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
     } catch (e: any) {
@@ -596,8 +600,10 @@ export class SettingsComponent implements OnInit {
       return;
     }
     if (!confirm(`Ștergi utilizatorul "${user.name}"? Această acțiune nu poate fi anulată.`)) return;
+    const session = this.auth.session();
     try {
       await this.supabase.callManageUsers('delete', { userId: user.id });
+      if (session) this.audit.log(session.supabaseId ?? '', 'USER_DELETE', `Utilizator șters: ${user.username} (${user.id})`);
       await this._reloadUsers();
       this.snackBar.open('Utilizatorul a fost șters.', '', { duration: 2500 });
     } catch (e: any) {
