@@ -317,7 +317,7 @@ export class MobileTransportComponent implements OnInit {
   }
 
   driverName(t: Transport): string {
-    return this.transportService.getDriver(t.driverId)?.nume ?? t.driverId;
+    return this.transportService.getDriver(t.driverId)?.nume ?? t.driverName ?? '—';
   }
 
   statusLabel(s: string): string {
@@ -999,7 +999,8 @@ export class MobileTransportComponent implements OnInit {
       const oldDeliveries = this.transportService.getTransport(editId)?.deliveries ?? [];
       const oldOrderIds   = new Set(oldDeliveries.map(d => d.orderId));
       const newOrderIds   = new Set(deliveries.map(d => d.orderId));
-      this.transportService.updateTransport(editId, { vehicleId: vId, driverId: dId, helper: helperName, deliveries, oraPlecare, oraSosire });
+      const driverNameUpd = this.transportService.getDriver(dId)?.nume;
+      this.transportService.updateTransport(editId, { vehicleId: vId, driverId: dId, driverName: driverNameUpd, helper: helperName, deliveries, oraPlecare, oraSosire });
       for (const order of this.formModalOrders()) {
         if (!['planificat', 'livrat_partial', 'in_livrare', 'livrat'].includes(order.status)) {
           this.ordersService.updateOrderStatus(order.id, 'planificat');
@@ -1015,7 +1016,8 @@ export class MobileTransportComponent implements OnInit {
       }
       this.snackBar.open('Cursa actualizată.', '', { duration: 2000 });
     } else {
-      this.transportService.createTransport({ vehicleId: vId, driverId: dId, helper: helperName, deliveries, oraPlecare, oraSosire });
+      const driverName = this.transportService.getDriver(dId)?.nume;
+      this.transportService.createTransport({ vehicleId: vId, driverId: dId, driverName, helper: helperName, deliveries, oraPlecare, oraSosire });
       for (const order of this.formModalOrders()) {
         if (!['planificat', 'livrat_partial', 'in_livrare', 'livrat'].includes(order.status)) {
           this.ordersService.updateOrderStatus(order.id, 'planificat');

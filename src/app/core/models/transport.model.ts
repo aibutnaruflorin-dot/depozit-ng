@@ -15,6 +15,7 @@ export interface Transport {
   id: string;
   vehicleId: string;
   driverId: string;
+  driverName?: string;
   deliveries: TripDelivery[];
   oraPlecare: string;
   oraSosire:  string;

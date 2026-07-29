@@ -908,7 +908,8 @@ export class TransportComponent implements OnInit {
       return;
     }
 
-    const payload = { vehicleId: val.vehicleId, driverId: val.driverId, deliveries, oraPlecare, oraSosire, helper: helperName };
+    const driverName = this.transportService.getDriver(val.driverId)?.nume;
+    const payload = { vehicleId: val.vehicleId, driverId: val.driverId, driverName, deliveries, oraPlecare, oraSosire, helper: helperName };
 
     if (editId) {
       const oldDeliveries = this.transportService.getTransport(editId)?.deliveries ?? [];
@@ -1258,8 +1259,8 @@ export class TransportComponent implements OnInit {
     return v ? (v.alias || v.denumire) : '—';
   }
 
-  getDriverName(id: string): string {
-    return this.transportService.getDriver(id)?.nume ?? '—';
+  getDriverName(id: string, fallback?: string): string {
+    return this.transportService.getDriver(id)?.nume ?? fallback ?? '—';
   }
 
   formatTime(iso: string): string {
