@@ -37,10 +37,7 @@ export class AuthService {
   }
 
   private _computeIsAdmin(role: string): boolean {
-    if (role === 'keyuser') return true;
-    const perms: AppPermission[] = this.storage.get('app_permissions') ?? [];
-    const perm = perms.find((p: any) => p.id === role);
-    return perm?.pages?.['setari'] === 'full';
+    return role === 'keyuser';
   }
 
   hasFullAccess(pageId: string): boolean {
@@ -91,11 +88,12 @@ export class AuthService {
     return true;
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
     const s = this._session();
     if (s) this.audit.log(s.supabaseId ?? '', 'LOGOUT', s.username);
-    this.supabase.signOut();
-    const toRemove = Object.keys(localStorage).filter(k => k.startsWith('app_') || k === '_lk');
+    await this.supabase.signOut();
+    const toRemove = Object.keys(localStorage)
+      .filter(k => k.startsWith('app_') || k.startsWith('_lk_'));
     toRemove.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
     this._session.set(null);

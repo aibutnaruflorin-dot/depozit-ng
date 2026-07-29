@@ -244,7 +244,7 @@ export class MobileNewOrderComponent implements OnInit {
       if (!existing) { this.snackBar.open('Comanda nu mai există.', '', { duration: 2500 }); return; }
 
       const session = this.auth.session();
-      if (!session) { this.auth.logout(); return; }
+      if (!session) { void this.auth.logout(); return; }
 
       const newProds: OrderProduct[] = this.cart().map(item => ({
         nr: item.product.nr, name: item.product.name, um: item.product.um,
@@ -321,7 +321,7 @@ export class MobileNewOrderComponent implements OnInit {
       this.snackBar.open('Adaugă cel puțin un produs.', '', { duration: 2500, panelClass: ['snack-warn', 'snack-center'] }); return;
     }
     const session = this.auth.session();
-    if (!session) { this.auth.logout(); return; }
+    if (!session) { void this.auth.logout(); return; }
 
     const order: Order = {
       id:        generateId(),

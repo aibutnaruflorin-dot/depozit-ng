@@ -71,5 +71,5 @@ export class MobileAccountComponent {
     if (res.ok) { this.form.reset(); this.newPassValue.set(''); this.showPassForm.set(false); }
   }
 
-  logout(): void { this.auth.logout(); }
+  async logout(): Promise<void> { await this.auth.logout(); }
 }

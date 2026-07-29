@@ -120,7 +120,7 @@ export class LayoutComponent implements OnInit {
     }
   }
 
-  logout(): void {
-    if (confirm('Ești sigur că vrei să te deconectezi?')) this.auth.logout();
+  async logout(): Promise<void> {
+    if (confirm('Ești sigur că vrei să te deconectezi?')) await this.auth.logout();
   }
 }

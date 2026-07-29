@@ -502,7 +502,7 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const session = this.auth.session();
-    if (!session) { this.auth.logout(); return; }
+    if (!session) { void this.auth.logout(); return; }
 
     const order: Order = {
       id:        generateId(),

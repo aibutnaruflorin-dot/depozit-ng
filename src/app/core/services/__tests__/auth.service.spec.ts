@@ -213,19 +213,19 @@ describe('AuthService — logout()', () => {
     await service.login('admin', 'admin123');
   });
 
-  it('T-AU-12 | curăță sesiunea din memorie', () => {
-    service.logout();
+  it('T-AU-12 | curăță sesiunea din memorie', async () => {
+    await service.logout();
     expect(service.isLoggedIn()).toBe(false);
     expect(service.session()).toBeNull();
   });
 
-  it('T-AU-13 | apelează supabase.signOut', () => {
-    service.logout();
+  it('T-AU-13 | apelează supabase.signOut', async () => {
+    await service.logout();
     expect(fakeSupabase.signOut).toHaveBeenCalled();
   });
 
-  it('T-AU-14 | navighează la /login', () => {
-    service.logout();
+  it('T-AU-14 | navighează la /login', async () => {
+    await service.logout();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
   });
 });

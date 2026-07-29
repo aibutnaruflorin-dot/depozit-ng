@@ -21,8 +21,8 @@ export class MobileNavComponent {
     this.router.navigate([path]);
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
     this.showMore.set(false);
-    this.auth.logout();
+    await this.auth.logout();
   }
 }
