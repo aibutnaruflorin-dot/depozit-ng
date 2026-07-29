@@ -9,7 +9,6 @@
     @if (!auth.isAdmin()) {
       <span class="driver-chip">
         <mat-icon>person</mat-icon>{{ auth.userName() }}
-        <span class="driver-id-hint">#{{ myDriverId() }}</span>
       </span>
     }
   </div>
