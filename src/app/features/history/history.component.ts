@@ -224,13 +224,13 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     const open = ['draft', 'trimis', 'acceptat', 'livrat_partial'];
     if (!open.includes(order.status) || order.superseded) return false;
     const s = this.auth.session();
-    return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
+    return !!s && (s.role === 'keyuser' || order.agent.id === (s.supabaseId ?? s.userId));
   }
 
   canReopen(order: Order): boolean {
     if (order.status !== 'anulat' || order.superseded) return false;
     const s = this.auth.session();
-    return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
+    return !!s && (s.role === 'keyuser' || order.agent.id === (s.supabaseId ?? s.userId));
   }
 
   reopenOrder(order: Order): void {
@@ -308,7 +308,8 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   ) {}
 
   readonly myOrders = computed(() => {
-    const id = this.auth.session()?.userId;
+    const s = this.auth.session();
+    const id = s?.supabaseId ?? s?.userId;
     return this.ordersService.orders().filter(o => o.agent?.id === id && o.status !== 'sters');
   });
 

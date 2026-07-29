@@ -206,13 +206,13 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
     const open = ['trimis', 'acceptat', 'planificat', 'livrat_partial'];
     if (!open.includes(order.status) || order.superseded) return false;
     const s = this.auth.session();
-    return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
+    return !!s && (s.role === 'keyuser' || order.agent.id === (s.supabaseId ?? s.userId));
   }
 
   canReopen(order: Order): boolean {
     if (order.status !== 'anulat' || order.superseded) return false;
     const s = this.auth.session();
-    return !!s && (s.role === 'keyuser' || order.agent.id === s.userId);
+    return !!s && (s.role === 'keyuser' || order.agent.id === (s.supabaseId ?? s.userId));
   }
 
   canRestoreFromTransport(order: Order): boolean {

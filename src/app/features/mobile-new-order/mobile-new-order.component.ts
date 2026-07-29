@@ -258,7 +258,7 @@ export class MobileNewOrderComponent implements OnInit {
         // Pending — same mechanism as desktop "Adaugă produse" for sent orders
         const result = this.ordersService.addProductsToOrder(existing.id, newProds, {
           timestamp: new Date().toISOString(),
-          userId: session.userId, userName: session.name,
+          userId: session.supabaseId ?? session.userId, userName: session.name,
           source: this.addSource, type: 'products_added',
           products: newProds.map(p => ({ name: p.name, qty: p.qty, um: p.um })),
         });

@@ -37,7 +37,8 @@ export class MyTripsComponent {
 
   /** ID-ul userului curent ca string, pentru a putea fi comparat cu driverId din transport */
   readonly myDriverId = computed(() => {
-    const uid = this.auth.session()?.userId;
+    const s = this.auth.session();
+    const uid = s?.supabaseId ?? s?.userId;
     return uid != null ? String(uid) : null;
   });
 

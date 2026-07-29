@@ -66,7 +66,8 @@ export class MobileHistoryMeComponent {
   ) {}
 
   readonly myOrders = computed(() => {
-    const id = this.auth.session()?.userId;
+    const s = this.auth.session();
+    const id = s?.supabaseId ?? s?.userId;
     return this.ordersService.orders()
       .filter(o => !o.superseded && o.agent?.id === id)
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp));

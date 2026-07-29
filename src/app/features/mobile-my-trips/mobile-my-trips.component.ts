@@ -45,7 +45,8 @@ export class MobileMyTripsComponent {
   // ── Driver-view computeds (U-03: secțiuni separate per status) ────────────
 
   readonly myDriverId = computed(() => {
-    const uid = this.auth.session()?.userId;
+    const s = this.auth.session();
+    const uid = s?.supabaseId ?? s?.userId;
     return uid != null ? String(uid) : null;
   });
 

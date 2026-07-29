@@ -837,7 +837,7 @@ export class MobileTransportComponent implements OnInit {
     const session = this.auth.session();
     const event: Omit<import('../../core/models/order.model').OrderEvent, 'id'> = {
       timestamp: new Date().toISOString(),
-      userId: session?.userId ?? 0,
+      userId: session?.supabaseId ?? session?.userId ?? 0,
       userName: session?.name ?? '—',
       source: 'transport',
       type: 'products_updated',
