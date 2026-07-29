@@ -32,7 +32,7 @@ export class MobileSettingsComponent {
     this.transportService.resetPeriod();
     this.confirmReset.set(false);
     const session = this.auth.session();
-    if (session) this.audit.log(session.userId, 'PERIOD_RESET', 'Curățare sesiune: comenzi și curse șterse');
+    if (session) this.audit.log(session.supabaseId ?? '', 'PERIOD_RESET', 'Curățare sesiune: comenzi și curse șterse');
     this.snackBar.open('Curățare sesiune test finalizată. Comenzi și curse șterse.', 'OK', { duration: 4000, panelClass: ['snack-success'] });
   }
 }

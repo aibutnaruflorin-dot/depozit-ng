@@ -121,7 +121,7 @@ export class SupabaseService {
     }
   }
 
-  async logAudit(userId: number, action: string, detail: string): Promise<void> {
+  async logAudit(userId: string, action: string, detail: string): Promise<void> {
     try {
       await this.client.from('audit_log').insert({
         user_id:    userId,

@@ -425,7 +425,7 @@ export class MobileHistoryMeComponent {
     const newOrder: Order = {
       id:            generateId(),
       timestamp:     new Date().toISOString(),
-      agent:         { id: session.userId, name: session.name, username: session.username },
+      agent:         { id: session.supabaseId ?? session.userId, name: session.name, username: session.username },
       client:        o.client,
       cuLivrare:     o.cuLivrare,
       deliveryDate:  o.deliveryDate,

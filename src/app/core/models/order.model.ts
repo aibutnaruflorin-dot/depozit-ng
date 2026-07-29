@@ -1,7 +1,7 @@
 export interface OrderEvent {
   id: string;
   timestamp: string;
-  userId: number;
+  userId: string | number;
   userName: string;
   source: 'transport' | 'comenzile-mele' | 'toate-comenzile';
   type: 'products_added' | 'products_updated';
@@ -26,7 +26,7 @@ export interface Order {
   id: string;
   orderNumber?: number;
   timestamp: string;
-  agent: { id: number; name: string; username: string };
+  agent: { id: string | number; name: string; username: string };
   client: { name: string; phone: string; email: string; note: string; address?: string };
   helper?: string;
   cuLivrare?: boolean;

@@ -87,13 +87,13 @@ export class AuthService {
 
     const session = this._buildSession(profile);
     this._session.set(session);
-    this.audit.log(0, 'LOGIN', profile.username);
+    this.audit.log(profile.id, 'LOGIN', profile.username);
     return true;
   }
 
   logout(): void {
     const s = this._session();
-    if (s) this.audit.log(0, 'LOGOUT', s.username);
+    if (s) this.audit.log(s.supabaseId ?? '', 'LOGOUT', s.username);
     this.supabase.signOut();
     const toRemove = Object.keys(localStorage).filter(k => k.startsWith('app_') || k === '_lk');
     toRemove.forEach(k => localStorage.removeItem(k));
@@ -128,7 +128,7 @@ export class AuthService {
     try { await this.supabase.updateProfile(s.supabaseId, { must_change_password: false }); } catch {}
     this._session.set({ ...s, mustChangePassword: false });
 
-    this.audit.log(0, 'PASS_CHANGE', `Utilizatorul ${s.username} si-a schimbat parola`);
+    this.audit.log(s.supabaseId ?? '', 'PASS_CHANGE', `Utilizatorul ${s.username} si-a schimbat parola`);
     return { ok: true, msg: 'Parola a fost schimbată cu succes.' };
   }
 }

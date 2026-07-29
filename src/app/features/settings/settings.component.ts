@@ -519,7 +519,7 @@ export class SettingsComponent implements OnInit {
     this.transportService.resetPeriod();
     this.confirmReset.set(false);
     const session = this.auth.session();
-    if (session) this.audit.log(session.userId, 'PERIOD_RESET', 'Curățare sesiune: comenzi și curse șterse');
+    if (session) this.audit.log(session.supabaseId ?? '', 'PERIOD_RESET', 'Curățare sesiune: comenzi și curse șterse');
     this.snackBar.open('Curățare sesiune test finalizată. Comenzi și curse șterse.', 'OK', { duration: 4000 });
   }
 
@@ -552,7 +552,7 @@ export class SettingsComponent implements OnInit {
       await this.supabase.callManageUsers('reset_password', { userId: profile.id, password: np });
       this.showAdminSecModal.set(false);
       const session = this.auth.session();
-      if (session) this.audit.log(session.userId, 'ADMIN_SET_PASS', `Parolă setată pentru ${target}`);
+      if (session) this.audit.log(session.supabaseId ?? '', 'ADMIN_SET_PASS', `Parolă setată pentru ${target}`);
       this.snackBar.open(`Parola contului ${target} a fost schimbată.`, '', { duration: 2500 });
     } catch (e: any) {
       this.adminPassError = e?.message ?? 'Eroare la schimbarea parolei.';

@@ -1,10 +1,10 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuditService, AuditEntry } from '../../core/services/audit.service';
-import { StorageService } from '../../core/services/storage.service';
-import { User } from '../../core/models/user.model';
+import { SupabaseService } from '../../core/services/supabase.service';
+import { Profile } from '../../core/models/profile.model';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
 const ACTION_LABELS: Record<string, string> = {
@@ -25,17 +25,19 @@ const ACTION_LABELS: Record<string, string> = {
   templateUrl: './mobile-security.component.html',
   styleUrl: './mobile-security.component.scss'
 })
-export class MobileSecurityComponent {
+export class MobileSecurityComponent implements OnInit {
   entries      = signal<AuditEntry[]>([]);
   filterAction = signal('');
 
   readonly ACTION_LABELS = ACTION_LABELS;
   readonly allActions    = Object.keys(ACTION_LABELS);
 
-  private users: User[] = [];
+  private profiles: Profile[] = [];
 
-  constructor(private audit: AuditService, private storage: StorageService) {
-    this.users = this.storage.get<User[]>('app_users') ?? [];
+  constructor(private audit: AuditService, private supabase: SupabaseService) {}
+
+  async ngOnInit(): Promise<void> {
+    this.profiles = await this.supabase.getProfiles();
     this.entries.set(this.audit.getAll());
   }
 
@@ -44,8 +46,11 @@ export class MobileSecurityComponent {
     return f ? this.entries().filter(e => e.action === f) : this.entries();
   });
 
-  userName(userId: number): string {
-    return this.users.find(u => u.id === userId)?.username ?? `#${userId}`;
+  userName(userId: string | number): string {
+    const id = String(userId);
+    if (!id || id === '0') return 'System';
+    const profile = this.profiles.find(p => p.id === id);
+    return profile?.username ?? id.substring(0, 8);
   }
 
   actionLabel(action: string): string {
@@ -53,7 +58,9 @@ export class MobileSecurityComponent {
   }
 
   refresh(): void {
-    this.users = this.storage.get<User[]>('app_users') ?? [];
-    this.entries.set(this.audit.getAll());
+    this.supabase.getProfiles().then(profiles => {
+      this.profiles = profiles;
+      this.entries.set(this.audit.getAll());
+    });
   }
 }

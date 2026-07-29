@@ -800,7 +800,7 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
     const newOrder: Order = {
       id:            generateId(),
       timestamp:     new Date().toISOString(),
-      agent:         { id: session.userId, name: session.name, username: session.username },
+      agent:         { id: session.supabaseId ?? session.userId, name: session.name, username: session.username },
       client:        order.client,
       cuLivrare:     order.cuLivrare,
       deliveryDate:  order.deliveryDate,

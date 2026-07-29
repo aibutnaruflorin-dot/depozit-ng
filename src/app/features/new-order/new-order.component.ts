@@ -507,7 +507,7 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     const order: Order = {
       id:        generateId(),
       timestamp: new Date().toISOString(),
-      agent:     { id: session.userId, name: session.name, username: session.username },
+      agent:     { id: session.supabaseId ?? session.userId, name: session.name, username: session.username },
       client:    {
         name:    (this.nameCtrl.value || '').trim(),
         phone:   (this.phoneCtrl.value || '').trim(),

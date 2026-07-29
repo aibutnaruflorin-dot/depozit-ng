@@ -1,4 +1,4 @@
-import { Component, computed, signal, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { Component, computed, signal, AfterViewInit, OnDestroy, OnInit, ViewChild, ElementRef, NgZone } from '@angular/core';
 
 const PAGE_SIZE_LS_KEY = 'depot.tablePageSize';
 function loadPageSize(): number {
@@ -55,7 +55,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Order } from '../../core/models/order.model';
-import { User } from '../../core/models/user.model';
+import { Profile } from '../../core/models/profile.model';
+import { SupabaseService } from '../../core/services/supabase.service';
 import { WhatsAppContact } from '../../core/models/whatsapp.model';
 import { AuthService } from '../../core/services/auth.service';
 import { CatalogsService } from '../../core/services/catalogs.service';
@@ -119,7 +120,7 @@ function sortByFamily(orders: Order[]): Order[] {
   templateUrl: './history-all.component.html',
   styleUrl:    './history-all.component.scss'
 })
-export class HistoryAllComponent implements AfterViewInit, OnDestroy {
+export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('stickyTop') private stickyTopRef!: ElementRef<HTMLElement>;
   readonly tableScrollHeight = signal('calc(100vh - 220px)');
   private resizeObs?: ResizeObserver;
@@ -255,10 +256,9 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
   editingNoteId     = signal<string | null>(null);
   editNoteVal       = '';
 
-  readonly agents = computed(() => {
-    const users = this.storage.get<User[]>('app_users') || [];
-    return users.map(u => ({ id: String(u.id), name: u.name }));
-  });
+  readonly agents = computed(() =>
+    this._profiles().map(p => ({ id: p.id, name: p.name }))
+  );
 
   readonly filtered = computed(() => {
     const agent      = this.filterAgent();
@@ -349,6 +349,8 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     this.storage.get<WhatsAppContact[]>('app_whatsapp_contacts') ?? []
   );
 
+  private _profiles = signal<Profile[]>([]);
+
   constructor(
     private auth: AuthService,
     public  catalogsService: CatalogsService,
@@ -357,8 +359,13 @@ export class HistoryAllComponent implements AfterViewInit, OnDestroy {
     private snackBar: MatSnackBar,
     public  unitsService: UnitsService,
     private zone: NgZone,
-    public  transportService: TransportService
+    public  transportService: TransportService,
+    private supabase: SupabaseService
   ) {}
+
+  async ngOnInit(): Promise<void> {
+    this._profiles.set(await this.supabase.getProfiles());
+  }
 
   private _localDate(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

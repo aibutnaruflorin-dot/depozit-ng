@@ -113,7 +113,10 @@ export class MobileHistoryAllComponent {
   });
 
   isKeyUser(): boolean { return this.auth.isKeyUser(); }
-  isOwner(o: Order): boolean { return o.agent?.id === this.auth.session()?.userId; }
+  isOwner(o: Order): boolean {
+    const s = this.auth.session();
+    return o.agent?.id === (s?.supabaseId ?? s?.userId);
+  }
 
   isActiveOrder(o: Order): boolean {
     return ['trimis','acceptat','planificat','in_livrare','livrat_partial'].includes(o.status) && !o.superseded;

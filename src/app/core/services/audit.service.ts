@@ -4,7 +4,7 @@ import { SupabaseService } from './supabase.service';
 
 export interface AuditEntry {
   ts:     number;
-  userId: number;
+  userId: string | number; // string (UUID) pentru înregistrări noi; number (0) pentru înregistrări vechi pre-migrare
   action: string;
   detail: string;
 }
@@ -19,7 +19,7 @@ export class AuditService {
     private supabase: SupabaseService
   ) {}
 
-  log(userId: number, action: string, detail: string): void {
+  log(userId: string, action: string, detail: string): void {
     const entries: AuditEntry[] = this.storage.get(this.KEY) ?? [];
     entries.unshift({ ts: Date.now(), userId, action, detail });
     if (entries.length > this.MAX_LOGS) entries.splice(this.MAX_LOGS);
