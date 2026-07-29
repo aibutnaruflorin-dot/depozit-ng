@@ -252,27 +252,24 @@
             </div>
 
             @if (newWaType === 'number') {
-              <!-- Adaugă din Utilizatori -->
-              @if (availableWaUsers.length === 0) {
-                <p class="dest-empty" style="margin-top:0.5rem">Toți utilizatorii cu telefon sunt deja adăugați.</p>
-              } @else {
-                <div class="wa-form-row">
-                  <mat-form-field appearance="outline" class="wa-phone-field">
-                    <mat-label>Selectează utilizator</mat-label>
-                    <mat-icon matPrefix>person</mat-icon>
-                    <mat-select [(ngModel)]="selectedWaUserId">
-                      @for (u of availableWaUsers; track u.id) {
-                        <mat-option [value]="u.id">{{ u.name }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                  <button mat-flat-button color="primary" class="wa-add-btn"
-                          [disabled]="!selectedWaUserId"
-                          (click)="addWaFromUser()">
-                    <mat-icon>add</mat-icon>
-                  </button>
-                </div>
-              }
+              <div class="wa-form-row">
+                <mat-form-field appearance="outline" class="wa-name-field">
+                  <mat-label>Nume</mat-label>
+                  <input matInput [(ngModel)]="newWaName" placeholder="ex: Ion Popescu">
+                </mat-form-field>
+              </div>
+              <div class="wa-form-row">
+                <mat-form-field appearance="outline" class="wa-phone-field">
+                  <mat-label>Număr telefon</mat-label>
+                  <mat-icon matPrefix>phone</mat-icon>
+                  <input matInput [(ngModel)]="newWaPhone" placeholder="ex: 0721234567">
+                </mat-form-field>
+                <button mat-flat-button color="primary" class="wa-add-btn"
+                        [disabled]="!newWaName.trim() || !newWaPhone.trim()"
+                        (click)="addWhatsappContact()">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
             } @else {
               <!-- Adaugă grup manual -->
               <div class="wa-form-row">
@@ -354,27 +351,24 @@
             </div>
 
             @if (newEmailType === 'individual') {
-              <!-- Adaugă din Utilizatori -->
-              @if (availableEmailUsers.length === 0) {
-                <p class="dest-empty" style="margin-top:0.5rem">Toți utilizatorii cu email sunt deja adăugați.</p>
-              } @else {
-                <div class="wa-form-row">
-                  <mat-form-field appearance="outline" class="wa-phone-field">
-                    <mat-label>Selectează utilizator</mat-label>
-                    <mat-icon matPrefix>person</mat-icon>
-                    <mat-select [(ngModel)]="selectedEmailUserId">
-                      @for (u of availableEmailUsers; track u.id) {
-                        <mat-option [value]="u.id">{{ u.name }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                  <button mat-flat-button color="primary" class="wa-add-btn"
-                          [disabled]="!selectedEmailUserId"
-                          (click)="addEmailFromUser()">
-                    <mat-icon>add</mat-icon>
-                  </button>
-                </div>
-              }
+              <div class="wa-form-row">
+                <mat-form-field appearance="outline" class="wa-name-field">
+                  <mat-label>Nume</mat-label>
+                  <input matInput [(ngModel)]="newEmailName" placeholder="ex: Ion Popescu">
+                </mat-form-field>
+              </div>
+              <div class="wa-form-row">
+                <mat-form-field appearance="outline" class="wa-phone-field">
+                  <mat-label>Adresă email</mat-label>
+                  <mat-icon matPrefix>email</mat-icon>
+                  <input matInput [(ngModel)]="newEmailAddr" type="email" placeholder="ex: office@firma.ro">
+                </mat-form-field>
+                <button mat-flat-button color="primary" class="wa-add-btn"
+                        [disabled]="!newEmailName.trim() || !newEmailAddr.trim()"
+                        (click)="addEmailContact()">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
             } @else {
               <!-- Adaugă listă manuală -->
               <div class="wa-form-row">

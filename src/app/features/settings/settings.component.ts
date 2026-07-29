@@ -86,13 +86,11 @@ export class SettingsComponent implements OnInit {
   newWaName  = '';
   newWaPhone = '';
   newWaType: 'number' | 'group' = 'number';
-  selectedWaUserId: string | null = null;
 
   emailContacts = signal<EmailContact[]>([]);
   newEmailName  = '';
   newEmailAddr  = '';
   newEmailType: 'individual' | 'list' = 'individual';
-  selectedEmailUserId: string | null = null;
 
   readonly permLabels    = PERMISSION_LABELS;
 
@@ -405,49 +403,12 @@ export class SettingsComponent implements OnInit {
 
   // ── WhatsApp contacts ─────────────────────────────────────────────────────
 
-  // ── Available users for WA / Email pickers ───────────────────────────────
-
-  get availableWaUsers(): Profile[] {
-    return []; // telefon nu mai e disponibil pe Profile — funcție dezactivată după migrarea la Supabase Auth
-  }
-
-  get availableEmailUsers(): Profile[] {
-    return []; // recoveryEmail nu mai e disponibil pe Profile — funcție dezactivată după migrarea la Supabase Auth
-  }
-
-  addWaFromUser(): void {
-    // dezactivat după migrarea la Supabase Auth (Profile nu are câmpul telefon)
-  }
-
-  addEmailFromUser(): void {
-    // dezactivat după migrarea la Supabase Auth (Profile nu are câmpul recoveryEmail)
-  }
-
-  // ── User ↔ WA/Email toggle ─────────────────────────────────────────────────
-
-  isUserWaEnabled(_user: Profile): boolean {
-    return false;
-  }
-
-  toggleUserWa(_user: Profile): void {
-    this.snackBar.open('Funcție indisponibilă după migrarea la Supabase Auth.', '', { duration: 3000 });
-  }
-
-  isUserEmailEnabled(_user: Profile): boolean {
-    return false;
-  }
-
-  toggleUserEmail(_user: Profile): void {
-    this.snackBar.open('Funcție indisponibilă după migrarea la Supabase Auth.', '', { duration: 3000 });
-  }
-
   // ── WhatsApp contacts ─────────────────────────────────────────────────────
 
   addWhatsappContact(): void {
     const name  = this.newWaName.trim();
     const phone = this.newWaPhone.trim();
     if (!name || !phone) return;
-    // (verificare număr din utilizatori eliminată după migrarea la Supabase Auth)
     if (this.whatsappContacts().some(c => c.phone === phone)) {
       this.snackBar.open('Numărul este deja în lista WhatsApp.', '', { duration: 2500 }); return;
     }
@@ -483,7 +444,6 @@ export class SettingsComponent implements OnInit {
     const name  = this.newEmailName.trim();
     const email = this.newEmailAddr.trim();
     if (!name || !email) return;
-    // recoveryEmail nu mai există pe Profile după migrarea la Supabase Auth
     if (this.emailContacts().some(c => c.email === email)) {
       this.snackBar.open('Adresa email este deja în listă.', '', { duration: 2500 }); return;
     }
