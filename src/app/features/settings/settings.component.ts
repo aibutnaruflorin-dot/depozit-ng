@@ -94,9 +94,6 @@ export class SettingsComponent implements OnInit {
   newEmailType: 'individual' | 'list' = 'individual';
   selectedEmailUserId: string | null = null;
 
-  private readonly PHONE_RE = /^\d{10}$/;
-  private readonly EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
   readonly permLabels    = PERMISSION_LABELS;
 
   users         = signal<Profile[]>([]);
@@ -172,9 +169,7 @@ export class SettingsComponent implements OnInit {
       name:     ['', Validators.required],
       username: ['', Validators.required],
       password: [''],
-      role:          ['agent', Validators.required],
-      telefon:       ['', Validators.pattern(/^\d{10}$/)],
-      recoveryEmail: ['', Validators.email]
+      role:     ['agent', Validators.required],
     });
     this.vehicleForm = this.fb.group({
       denumire:            ['', Validators.required],
