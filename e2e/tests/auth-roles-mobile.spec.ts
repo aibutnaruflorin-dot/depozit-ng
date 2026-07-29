@@ -5,7 +5,9 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { authSeedScript, loginAs } from '../fixtures/auth-seed';
+import {
+  injectSession, mockAuthFailure, mockAuthSuccessInactive, mockAuthMustChange, loginViaForm,
+} from '../helpers/supabase-mock';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Blocul 1 — Login failures
@@ -15,7 +17,6 @@ test.describe('TC-MA: Login failures (mobil)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
   });
@@ -23,7 +24,8 @@ test.describe('TC-MA: Login failures (mobil)', () => {
   test.afterAll(async () => { await page.close(); });
 
   test('TC-MA01 | Parolă greșită — rămâne pe /login', async () => {
-    await loginAs(page, 'admin', 'parola_gresita', false);
+    await mockAuthFailure(page);
+    await loginViaForm(page, 'admin', 'parola_gresita', false);
     await expect(page).toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-ma01-fail-pass.png' });
   });
@@ -31,14 +33,16 @@ test.describe('TC-MA: Login failures (mobil)', () => {
   test('TC-MA02 | Username inexistent — rămâne pe /login', async () => {
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'nimeni', 'admin123', false);
+    await mockAuthFailure(page);
+    await loginViaForm(page, 'nimeni', 'admin123', false);
     await expect(page).toHaveURL(/login/);
   });
 
   test('TC-MA03 | Utilizator inactiv — rămâne pe /login', async () => {
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'inactive1', 'pass1234', false);
+    await mockAuthSuccessInactive(page);
+    await loginViaForm(page, 'inactive1', 'pass1234', false);
     await expect(page).toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-ma03-fail-inactive.png' });
   });
@@ -52,16 +56,15 @@ test.describe.serial('TC-MA: Admin flow (mobil)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
-    await page.goto('/app/login');
+    await injectSession(page, 'keyuser');
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
   });
 
   test.afterAll(async () => { await page.close(); });
 
-  test('TC-MA04 | Login ca admin (mobil) → ieșire de pe /login', async () => {
-    await loginAs(page, 'admin', 'admin123');
-    await expect(page).not.toHaveURL(/login/);
+  test('TC-MA04 | Sesiune Administrator activă (mobil) — nu pe /login', async () => {
+    await expect(page).not.toHaveURL(/login/, { timeout: 8000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-ma04-admin-login.png' });
   });
 
@@ -93,9 +96,24 @@ test.describe.serial('TC-MA: Admin flow (mobil)', () => {
   });
 
   test('TC-MA09 | Admin — logout → redirect la /login', async () => {
-    await page.evaluate(() => localStorage.removeItem('app_session'));
-    await page.goto('/app/m-catalog');
+    await page.route('**/auth/v1/logout**', route => route.fulfill({ status: 204, body: '' }));
+
+    await page.goto('/app/account');
     await page.waitForLoadState('networkidle');
+
+    const logoutBtn = page.locator('button').filter({ hasText: /logout|deconect/i }).first();
+
+    if (await logoutBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await Promise.all([
+        page.waitForURL(/login/, { timeout: 8000 }),
+        logoutBtn.click(),
+      ]);
+    } else {
+      await page.evaluate((key: string) => localStorage.removeItem(key), 'sb-127-auth-token');
+      await page.goto('/app/m-catalog');
+      await page.waitForLoadState('networkidle');
+    }
+
     await expect(page).toHaveURL(/login/, { timeout: 5000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-ma09-admin-logout.png' });
   });
@@ -109,7 +127,6 @@ test.describe('TC-MA: Fără sesiune (mobil)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
   });
 
   test.afterAll(async () => { await page.close(); });
@@ -136,15 +153,14 @@ test.describe.serial('TC-MA: Agent flow (mobil)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
-    await page.goto('/app/login');
+    await injectSession(page, 'agent');
+    await page.goto('/app/m-catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
   });
 
   test.afterAll(async () => { await page.close(); });
 
-  test('TC-MA12 | Agent — login reușit (mobil)', async () => {
+  test('TC-MA12 | Agent — sesiune activă (mobil)', async () => {
     await expect(page).not.toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-ma12-agent-login.png' });
   });
@@ -200,15 +216,14 @@ test.describe.serial('TC-MA: Sofer flow (mobil)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
-    await page.goto('/app/login');
+    await injectSession(page, 'sofer');
+    await page.goto('/app/account');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'sofer1', 'sofer123');
   });
 
   test.afterAll(async () => { await page.close(); });
 
-  test('TC-MA19 | Sofer — login reușit (mobil)', async () => {
+  test('TC-MA19 | Sofer — sesiune activă (mobil)', async () => {
     await expect(page).not.toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-ma19-sofer-login.png' });
   });
@@ -227,10 +242,9 @@ test.describe.serial('TC-MA: Sofer flow (mobil)', () => {
     await page.screenshot({ path: 'e2e/screenshots/tc-ma21-sofer-my-trips.png' });
   });
 
-  test('TC-MA22 | Sofer — /app/m-catalog refuzat → redirect la /app/m-account (catalog: none)', async () => {
+  test('TC-MA22 | Sofer — /app/m-catalog refuzat → redirect la /app/account (catalog: none)', async () => {
     await page.goto('/app/m-catalog');
     await page.waitForLoadState('networkidle');
-    // pageGuard: catalog=none → redirect la /app/account (sau /app/m-account)
     await expect(page).toHaveURL(/account/, { timeout: 5000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-ma22-sofer-m-catalog-denied.png' });
   });
@@ -257,10 +271,10 @@ test.describe.serial('TC-MA: mustChangePassword (mobil)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
+    await mockAuthMustChange(page);
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent_cp', 'agent789');
+    await loginViaForm(page, 'agent_cp', 'agent789', true);
   });
 
   test.afterAll(async () => { await page.close(); });

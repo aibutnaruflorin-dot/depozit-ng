@@ -5,7 +5,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { authSeedScript } from '../fixtures/auth-seed';
+import { injectSession, TEST_IDS } from '../helpers/supabase-mock';
 import { kvClear } from '../fixtures/kv-clear';
 
 const TRIP_ID_M  = `trip-msf-${Date.now().toString(36)}`;
@@ -21,50 +21,40 @@ test.describe.serial('Phase 4 — Sofer Flow Mobile', () => {
     await kvClear();
     page = await browser.newPage();
 
-    await page.addInitScript(authSeedScript({
-      ...require('../fixtures/auth-seed').AUTH_SEED,
-      app_orders: [
-        {
-          id: ORDER_ID_M,
-          orderNumber: 43,
-          timestamp: new Date().toISOString(),
-          agent: { id: 2, name: 'Agent Test', username: 'agent1' },
-          client: { name: CLIENT_NAME_M, phone: `07${Math.floor(10000000 + Math.random() * 90000000)}`, email: '', note: '', address: 'Str. Test nr. 2, Cluj' },
-          cuLivrare: true,
-          deliveryDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-          deliveryTime: '11:00',
-          products: [{ nr: 1, name: 'Produs Test A', um: 'BUC', qty: 2, catalogId: 'cat-test', pretCuTVA: 25.5, pretFaraTVA: 21.43, masaNeta: 0.5 }],
-          status: 'acceptat',
-        }
-      ],
-      app_transports: [
-        {
-          id: TRIP_ID_M,
-          vehicleId: 'v1',
-          driverId: '3',          // sofer1 are id=3
-          deliveries: [{ orderId: ORDER_ID_M, items: [], observatii: '' }],
-          oraPlecare: new Date(Date.now() + 3_600_000).toISOString(),
-          oraSosire:  new Date(Date.now() + 7_200_000).toISOString(),
-          status: 'planificat',
-          createdAt: new Date().toISOString(),
-        }
-      ],
-    }));
+    await injectSession(page, 'sofer', {
+      app_orders: [{
+        id: ORDER_ID_M,
+        orderNumber: 43,
+        timestamp: new Date().toISOString(),
+        agent: { id: TEST_IDS.agent, name: 'Agent Test', username: 'agent1' },
+        client: { name: CLIENT_NAME_M, phone: `07${Math.floor(10000000 + Math.random() * 90000000)}`, email: '', note: '', address: 'Str. Test nr. 2, Cluj' },
+        cuLivrare: true,
+        deliveryDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+        deliveryTime: '11:00',
+        products: [{ nr: 1, name: 'Produs Test A', um: 'BUC', qty: 2, catalogId: 'cat-test', pretCuTVA: 25.5, pretFaraTVA: 21.43, masaNeta: 0.5 }],
+        status: 'acceptat',
+      }],
+      app_transports: [{
+        id: TRIP_ID_M,
+        vehicleId: 'v1',
+        driverId: TEST_IDS.sofer,
+        driverName: 'Sofer Test',
+        deliveries: [{ orderId: ORDER_ID_M, items: [], observatii: '' }],
+        oraPlecare: new Date(Date.now() + 3_600_000).toISOString(),
+        oraSosire:  new Date(Date.now() + 7_200_000).toISOString(),
+        status: 'planificat',
+        createdAt: new Date().toISOString(),
+      }],
+    });
 
-    await page.goto('/app/login');
+    await page.goto('/app/m-my-trips');
     await page.waitForLoadState('networkidle');
-
-    // Login sofer1
-    await page.locator('input').first().fill('sofer1');
-    await page.locator('input[type="password"]').first().fill('sofer123');
-    await page.locator('button[type="submit"]').first().click();
-    await page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 8000 });
   });
 
   test.afterAll(async () => { await page.close(); });
 
   // ── TC-MSF01: Login și navigare la m-my-trips ────────────────────────────
-  test('TC-MSF01 | Sofer mobil — login și acces la /app/m-my-trips', async () => {
+  test('TC-MSF01 | Sofer mobil — sesiune activă și acces la /app/m-my-trips', async () => {
     await page.goto('/app/m-my-trips');
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/m-my-trips/);
@@ -79,7 +69,6 @@ test.describe.serial('Phase 4 — Sofer Flow Mobile', () => {
 
   // ── TC-MSF03: Confirmare cursă (mobil) ─────────────────────────────────
   test('TC-MSF03 | Sofer mobil confirmă cursa → status confirmat_sofer', async () => {
-    // .mm-step-btn sunt DIRECT vizibile (nu necesită expand)
     const confirmBtn = page.locator('.mm-step-btn').filter({ hasText: /Confirmat/i }).first();
     await expect(confirmBtn).toBeVisible({ timeout: 5000 });
     await confirmBtn.click();
@@ -163,7 +152,6 @@ test.describe.serial('Phase 4 — Sofer Flow Mobile', () => {
     await page.goto('/app/m-my-trips');
     await page.waitForLoadState('networkidle');
 
-    // Secțiunea "Curse finalizate" poate fi colapsată — toggle dacă există
     const toggleBtn = page.locator('.mm-section-title, .mm-section-header').filter({ hasText: /finalizate/i }).first();
     if (await toggleBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await toggleBtn.click();

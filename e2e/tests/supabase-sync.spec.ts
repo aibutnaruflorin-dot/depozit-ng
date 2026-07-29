@@ -6,10 +6,13 @@
  *   Block 2 (TC-S04..S05): Downstream — date în kv_store → app le restaurează la boot
  *
  * Necesită: supabase start (local instance pe port 54321)
+ *
+ * NOTE: injectSessionForSync/mockAuthSuccessForSync mockuiesc profiles dar NU kv_store,
+ * astfel încât sync-ul real cu Supabase poate funcționa în aceste teste.
  */
 
 import { test, expect, Page, APIRequestContext } from '@playwright/test';
-import { authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { injectSessionForSync, mockAuthSuccessForSync, loginViaForm, TEST_IDS } from '../helpers/supabase-mock';
 
 // ─── Supabase REST helpers ────────────────────────────────────────────────────
 const SB_URL     = 'http://127.0.0.1:54321/rest/v1';
@@ -42,13 +45,10 @@ async function kvSeed(req: APIRequestContext, key: string, value: any): Promise<
 }
 
 async function waitForUpsert(page: Page): Promise<void> {
-  // Așteptăm ca request-ul POST/PATCH către kv_store să se termine
   await page.waitForResponse(
     r => r.url().includes('kv_store') && ['POST','PATCH'].includes(r.request().method()),
     { timeout: 8000 },
-  ).catch(() => {
-    // fallback dacă interceptarea eșuează (ex: upsert deja finalizat)
-  });
+  ).catch(() => {});
   await page.waitForTimeout(400);
 }
 
@@ -63,10 +63,10 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
   test.beforeAll(async ({ browser, request }) => {
     await kvClear(request);
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
-    await page.goto('/app/login');
+    // injectSessionForSync: mockuiește profiles dar NU kv_store (sync real poate funcționa)
+    await injectSessionForSync(page, 'agent');
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
   });
 
   test.afterAll(async ({ request }) => {
@@ -76,7 +76,6 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
 
   // ── TC-S01: Creare comandă → kv_store['app_orders'] conține comanda ─────────
   test('TC-S01 | Creare comandă → kv_store[app_orders] actualizat', async ({ request }) => {
-    // Pune produsul în coș direct în localStorage
     await page.evaluate((clientName: string) => {
       const prods = JSON.parse(localStorage.getItem('app_catalog_cat-test_products') || '[]');
       const p = prods[0];
@@ -86,7 +85,6 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
     await page.goto('/app/new-order');
     await page.waitForLoadState('networkidle');
 
-    // Completăm clientul și trimitem
     const clientInput = page.locator('input[placeholder*="lient"]').first();
     if (await clientInput.isVisible({ timeout: 3000 }).catch(() => false)) {
       await clientInput.fill(ORDER_CLIENT);
@@ -100,7 +98,7 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
       await waitForUpsert(page);
     } else {
       // Fallback: injectăm comanda direct și triggerăm sync manual
-      await page.evaluate((name: string) => {
+      await page.evaluate((args: { name: string; agentId: string }) => {
         const orders = JSON.parse(localStorage.getItem('app_orders') || '[]');
         const prods  = JSON.parse(localStorage.getItem('app_catalog_cat-test_products') || '[]');
         const p = prods[0];
@@ -108,14 +106,13 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
         orders.push({
           id: `order-sb-${Date.now()}`,
           timestamp: new Date().toISOString(),
-          agent: { id: 2, name: 'Agent Test', username: 'agent1' },
-          client: { name, phone: '0741999001', email: '', note: '', address: '' },
+          agent: { id: args.agentId, name: 'Agent Test', username: 'agent1' },
+          client: { name: args.name, phone: '0741999001', email: '', note: '', address: '' },
           cuLivrare: false,
           products: [{ nr: p.nr, name: p.name, um: p.um, qty: 3, catalogId: p.catalogId }],
           status: 'trimis',
         });
         localStorage.setItem('app_orders', JSON.stringify(orders));
-        // Triggerăm sync prin StorageService (Angular DI nu e disponibil — facem upsert direct)
         void fetch('http://127.0.0.1:54321/rest/v1/kv_store', {
           method: 'POST',
           headers: {
@@ -126,7 +123,7 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
           },
           body: JSON.stringify({ key: 'app_orders', value: orders, updated_at: new Date().toISOString() }),
         });
-      }, ORDER_CLIENT);
+      }, { name: ORDER_CLIENT, agentId: TEST_IDS.agent });
       await page.waitForTimeout(1500);
     }
 
@@ -149,12 +146,10 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
       return prods.find((p: any) => p.nr === 1)?.qty ?? null;
     });
 
-    // Trigger o ajustare de stoc manuală prin StorageService via evaluate
     await page.evaluate(() => {
       const prods = JSON.parse(localStorage.getItem('app_catalog_cat-test_products') || '[]');
       const updated = prods.map((p: any) => p.nr === 1 ? { ...p, qty: (p.qty ?? 100) + 5 } : p);
       localStorage.setItem('app_catalog_cat-test_products', JSON.stringify(updated));
-      // Upsert direct
       void fetch('http://127.0.0.1:54321/rest/v1/kv_store', {
         method: 'POST',
         headers: {
@@ -181,7 +176,7 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
     const transport = {
       id: transportId,
       vehicleId: 'vehicle-test',
-      driverId: 3,
+      driverId: TEST_IDS.sofer,
       driverName: 'Sofer Test',
       date: new Date().toISOString().split('T')[0],
       status: 'planificat',
@@ -205,7 +200,6 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
     }, transport);
     await page.waitForTimeout(1500);
 
-    // Actualizăm statusul și sync-uim din nou
     await page.evaluate((id: string) => {
       const transports = JSON.parse(localStorage.getItem('app_transports') || '[]');
       const updated = transports.map((t: any) => t.id === id ? { ...t, status: 'confirmat_sofer' } : t);
@@ -231,10 +225,10 @@ test.describe.serial('TC-S: Upstream sync — App → Supabase', () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────���─────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Block 2 — Downstream sync (Supabase → App)
 // ─────────────────────────────────────────────────────────────────────────────
-const DS_CLIENT = `SB-Restore-${Date.now().toString(36).toUpperCase()}`;
+const DS_CLIENT   = `SB-Restore-${Date.now().toString(36).toUpperCase()}`;
 const DS_ORDER_ID = `order-ds-${Date.now().toString(36)}`;
 
 test.describe.serial('TC-S: Downstream sync — Supabase → App', () => {
@@ -243,12 +237,12 @@ test.describe.serial('TC-S: Downstream sync — Supabase → App', () => {
   test.beforeAll(async ({ browser, request }) => {
     await kvClear(request);
 
-    // Seed kv_store cu o comandă + utilizatori + cataloage
+    // Seed kv_store cu o comandă
     const seedOrders = [{
       id: DS_ORDER_ID,
       orderNumber: 99,
       timestamp: new Date().toISOString(),
-      agent: { id: 2, name: 'Agent Test', username: 'agent1' },
+      agent: { id: TEST_IDS.agent, name: 'Agent Test', username: 'agent1' },
       client: { name: DS_CLIENT, phone: '0741999002', email: '', note: '', address: '' },
       cuLivrare: false,
       products: [{ nr: 1, name: 'Produs Test A', um: 'BUC', qty: 2, catalogId: 'cat-test', pretCuTVA: 25.5, pretFaraTVA: 21.43 }],
@@ -257,10 +251,12 @@ test.describe.serial('TC-S: Downstream sync — Supabase → App', () => {
     await kvSeed(request, 'app_orders', seedOrders);
 
     // Pagina fără addInitScript — app va boot-a cu localStorage gol și va face loadAll()
+    // mockAuthSuccessForSync: mockuiește auth token + profiles dar NU kv_store
     page = await browser.newPage();
+    await mockAuthSuccessForSync(page, 'agent');
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
+    await loginViaForm(page, 'agent1', 'agent123', true);
   });
 
   test.afterAll(async ({ request }) => {
@@ -274,7 +270,6 @@ test.describe.serial('TC-S: Downstream sync — Supabase → App', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
 
-    // Verificăm mai întâi în localStorage (app ar trebui să fi scris din loadAll)
     const restored = await page.evaluate((id: string) => {
       const orders = JSON.parse(localStorage.getItem('app_orders') || '[]');
       return orders.find((o: any) => o.id === id) ?? null;
@@ -287,16 +282,14 @@ test.describe.serial('TC-S: Downstream sync — Supabase → App', () => {
 
   // ── TC-S05: localStorage șters → reload → date revin din Supabase ───────────
   test('TC-S05 | localStorage șters → reload → date restaurate din Supabase', async () => {
-    // Ștergem explicit app_orders din localStorage
     await page.evaluate(() => localStorage.removeItem('app_orders'));
 
     const beforeReload = await page.evaluate((id: string) => {
       const orders = JSON.parse(localStorage.getItem('app_orders') || '[]');
       return orders.find((o: any) => o.id === id) ?? null;
     }, DS_ORDER_ID);
-    expect(beforeReload).toBeNull(); // confirmare că e șters
+    expect(beforeReload).toBeNull();
 
-    // Reload — APP_INITIALIZER apelează loadAll() din nou
     await page.reload();
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);

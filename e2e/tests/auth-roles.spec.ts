@@ -1,11 +1,12 @@
 /**
  * Phase 2 — E2E Auth & Role Access (Desktop)
  * Testele rulează serial — ordinea contează: login-fail → admin flow → agent flow → sofer flow → mustChangePassword
- * Dacă TC-A04 (login admin) eșuează, testele A05-A08 vor eșua în cascadă → indicator clar că problema e la login.
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { AUTH_SEED, authSeedScript, loginAs } from '../fixtures/auth-seed';
+import {
+  injectSession, mockAuthFailure, mockAuthSuccessInactive, mockAuthMustChange, loginViaForm,
+} from '../helpers/supabase-mock';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Blocul 1 — Login failures (independent, fiecare cu pagină fresh)
@@ -15,7 +16,6 @@ test.describe('TC-A: Login failures (desktop)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
   });
@@ -23,7 +23,8 @@ test.describe('TC-A: Login failures (desktop)', () => {
   test.afterAll(async () => { await page.close(); });
 
   test('TC-A01 | Parolă greșită — rămâne pe /login', async () => {
-    await loginAs(page, 'admin', 'parola_gresita', false);
+    await mockAuthFailure(page);
+    await loginViaForm(page, 'admin', 'parola_gresita', false);
     await expect(page).toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-a01-fail-pass.png' });
   });
@@ -31,7 +32,8 @@ test.describe('TC-A: Login failures (desktop)', () => {
   test('TC-A02 | Username inexistent — rămâne pe /login', async () => {
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'nimeni_nu_exista', 'admin123', false);
+    await mockAuthFailure(page);
+    await loginViaForm(page, 'nimeni_nu_exista', 'admin123', false);
     await expect(page).toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-a02-fail-user.png' });
   });
@@ -39,7 +41,8 @@ test.describe('TC-A: Login failures (desktop)', () => {
   test('TC-A03 | Utilizator inactiv — rămâne pe /login', async () => {
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'inactive1', 'pass1234', false);
+    await mockAuthSuccessInactive(page);
+    await loginViaForm(page, 'inactive1', 'pass1234', false);
     await expect(page).toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-a03-fail-inactive.png' });
   });
@@ -53,16 +56,15 @@ test.describe.serial('TC-A: Admin flow (desktop)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
-    await page.goto('/app/login');
+    await injectSession(page, 'keyuser');
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
   });
 
   test.afterAll(async () => { await page.close(); });
 
-  test('TC-A04 | Login ca admin → ieșire de pe /login', async () => {
-    await loginAs(page, 'admin', 'admin123');
-    await expect(page).not.toHaveURL(/login/);
+  test('TC-A04 | Sesiune Administrator activă — nu pe /login', async () => {
+    await expect(page).not.toHaveURL(/login/, { timeout: 8000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-a04-admin-login.png' });
   });
 
@@ -88,10 +90,28 @@ test.describe.serial('TC-A: Admin flow (desktop)', () => {
   });
 
   test('TC-A08 | Admin — logout → redirect la /login', async () => {
-    // Logout prin ștergerea sesiunii din localStorage (simul buton Logout)
-    await page.evaluate(() => localStorage.removeItem('app_session'));
-    await page.goto('/app/catalog');
+    // Mockuim endpoint-ul de logout Supabase
+    await page.route('**/auth/v1/logout**', route => route.fulfill({ status: 204, body: '' }));
+
+    // Căutăm butonul de logout în navigație/account
+    await page.goto('/app/account');
     await page.waitForLoadState('networkidle');
+
+    const logoutBtn = page.locator('button').filter({ hasText: /logout|deconect/i }).first();
+
+    if (await logoutBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      // Click logout → supabase.signOut() → Angular redirecționează automat la /login
+      await Promise.all([
+        page.waitForURL(/login/, { timeout: 8000 }),
+        logoutBtn.click(),
+      ]);
+    } else {
+      // Fallback: ștergem sb-127-auth-token direct și navigăm
+      await page.evaluate((key: string) => localStorage.removeItem(key), 'sb-127-auth-token');
+      await page.goto('/app/catalog');
+      await page.waitForLoadState('networkidle');
+    }
+
     await expect(page).toHaveURL(/login/, { timeout: 5000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-a08-admin-logout.png' });
   });
@@ -104,9 +124,8 @@ test.describe('TC-A: Fără sesiune (desktop)', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    // Pagină fresh — fără addInitScript, fără injectSession
     page = await browser.newPage();
-    // Seed fără sesiune — doar utilizatori și permisiuni
-    await page.addInitScript(authSeedScript());
   });
 
   test.afterAll(async () => { await page.close(); });
@@ -133,15 +152,14 @@ test.describe.serial('TC-A: Agent flow (desktop)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
-    await page.goto('/app/login');
+    await injectSession(page, 'agent');
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
   });
 
   test.afterAll(async () => { await page.close(); });
 
-  test('TC-A11 | Agent — login reușit', async () => {
+  test('TC-A11 | Agent — sesiune activă', async () => {
     await expect(page).not.toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-a11-agent-login.png' });
   });
@@ -171,7 +189,6 @@ test.describe.serial('TC-A: Agent flow (desktop)', () => {
   test('TC-A15 | Agent — /app/settings refuzat → redirect la /app/catalog (adminGuard)', async () => {
     await page.goto('/app/settings');
     await page.waitForLoadState('networkidle');
-    // adminGuard redirectează non-admin la /app/catalog
     await expect(page).toHaveURL(/catalog/, { timeout: 5000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-a15-agent-settings-denied.png' });
   });
@@ -191,15 +208,15 @@ test.describe.serial('TC-A: Sofer flow (desktop)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
-    await page.goto('/app/login');
+    await injectSession(page, 'sofer');
+    // Sofer nu poate accesa /catalog — mergem la /account (sofer are acces)
+    await page.goto('/app/account');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'sofer1', 'sofer123');
   });
 
   test.afterAll(async () => { await page.close(); });
 
-  test('TC-A17 | Sofer — login reușit', async () => {
+  test('TC-A17 | Sofer — sesiune activă', async () => {
     await expect(page).not.toHaveURL(/login/);
     await page.screenshot({ path: 'e2e/screenshots/tc-a17-sofer-login.png' });
   });
@@ -221,7 +238,6 @@ test.describe.serial('TC-A: Sofer flow (desktop)', () => {
   test('TC-A20 | Sofer — /app/catalog refuzat → redirect la /app/account (catalog: none)', async () => {
     await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
-    // pageGuard: catalog=none → redirect la /app/account
     await expect(page).toHaveURL(/account/, { timeout: 5000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-a20-sofer-catalog-denied.png' });
   });
@@ -235,7 +251,6 @@ test.describe.serial('TC-A: Sofer flow (desktop)', () => {
   test('TC-A22 | Sofer — /app/settings: adminGuard→/catalog, pageGuard(catalog:none)→/account', async () => {
     await page.goto('/app/settings');
     await page.waitForLoadState('networkidle');
-    // adminGuard redirectează la /catalog, dar pageGuard (catalog:none pt sofer) redirectează mai departe la /account
     await expect(page).toHaveURL(/account/, { timeout: 5000 });
   });
 });
@@ -248,16 +263,15 @@ test.describe.serial('TC-A: mustChangePassword flow (desktop)', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
+    await mockAuthMustChange(page);
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent_cp', 'agent789');
+    await loginViaForm(page, 'agent_cp', 'agent789', true);
   });
 
   test.afterAll(async () => { await page.close(); });
 
   test('TC-A23 | mustChangePassword — după login, redirect la /app/account', async () => {
-    // authGuard / pageGuard redirecționează la /app/account?forceChange=1
     await expect(page).toHaveURL(/account/, { timeout: 8000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-a23-must-change-pass.png' });
   });

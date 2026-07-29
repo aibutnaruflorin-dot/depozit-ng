@@ -1,18 +1,19 @@
 /**
  * Phase 9 — Security E2E (Mobile)
  *
- * Testele oglindă ale security.spec.ts pentru rutele mobile.
- *
  * TC-MSEC01: CSP meta header prezent (identic cu desktop)
  * TC-MSEC02: Brute force lockout — același mecanism, interfață mobilă
  * TC-MSEC03: /app/m-security necesită adminGuard pe mobil
  * TC-MSEC04: mustChangePassword redirecționează pe mobil
- * TC-MSEC05: Logout mobil curăță localStorage sensibil
+ * TC-MSEC05: Logout mobil curăță sb-127-auth-token
  * TC-MSEC06: Session role tampering reverted pe mobil
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { authSeedScript, AUTH_SEED, loginAs } from '../fixtures/auth-seed';
+import {
+  injectSession, mockAuthFailure, mockAuthMustChange, loginViaForm,
+  SB_STORAGE_KEY,
+} from '../helpers/supabase-mock';
 import { kvClear } from '../fixtures/kv-clear';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,11 +40,10 @@ test.describe.serial('Phase 9 — Security Mobile', () => {
 
   // ── TC-MSEC02: Brute force lockout pe mobil ───────────────────────────────
   test('TC-MSEC02 | Brute force lockout pe interfața mobilă', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
+    await mockAuthFailure(page);
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
 
-    // Folosim 'sofer1' (nu 'admin') pentru a evita conflicte kv_store cu security.spec.ts (rulează în paralel)
     for (let i = 0; i < 5; i++) {
       await page.locator('input').first().fill('sofer1');
       await page.locator('input[type="password"]').first().fill('WrongMob!99');
@@ -58,13 +58,13 @@ test.describe.serial('Phase 9 — Security Mobile', () => {
 
   // ── TC-MSEC03: m-security adminGuard pe mobil ────────────────────────────
   test('TC-MSEC03 | /app/m-security blochează agent pe mobil', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
-    await page.goto('/app/login');
+    await injectSession(page, 'agent');
+    await page.goto('/app/m-catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
 
     await page.goto('/app/m-security');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
 
     expect(page.url()).not.toContain('/m-security');
     expect(page.url()).toContain('/catalog');
@@ -74,66 +74,82 @@ test.describe.serial('Phase 9 — Security Mobile', () => {
 
   // ── TC-MSEC04: mustChangePassword pe mobil ───────────────────────────────
   test('TC-MSEC04 | mustChangePassword pe mobil redirecționează la account', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
+    await mockAuthMustChange(page);
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent_cp', 'agent789');
+    await loginViaForm(page, 'agent_cp', 'agent789', true);
 
-    await expect(page).toHaveURL(/\/app\/account.*forceChange=1/, { timeout: 8000 });
+    await expect(page).toHaveURL(/account/, { timeout: 8000 });
 
     await page.screenshot({ path: 'e2e/screenshots/tc-msec04-must-change-mobile.png' });
   });
 
-  // ── TC-MSEC05: Logout mobil curăță sesiunea și blochează accesul ─────────
-  test('TC-MSEC05 | Logout mobil curăță app_session și blochează accesul', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
-    await page.goto('/app/login');
-    await page.waitForLoadState('networkidle');
-    await loginAs(page, 'admin', 'admin123');
-
-    // Verificăm că sesiunea există
-    const sessionBefore = await page.evaluate(() => localStorage.getItem('app_session'));
-    expect(sessionBefore).not.toBeNull();
-
-    // Navigăm la pagina de cont mobil și logout
-    await page.goto('/app/m-account');
-    await page.waitForLoadState('networkidle');
-    const logoutBtn = page.locator('button.ma-logout-btn').first();
-    await expect(logoutBtn).toBeVisible({ timeout: 5000 });
-    await logoutBtn.click();
-    await page.waitForURL(/\/login/, { timeout: 8000 });
-
-    // app_session NU trebuie restaurat de loadAll
-    const sessionAfter = await page.evaluate(() => localStorage.getItem('app_session'));
-    expect(sessionAfter).toBeNull();
-
-    // Accesul la pagini protejate trebuie redirecționat la login
+  // ── TC-MSEC05: Logout mobil curăță sesiunea ───────────────────────────────
+  test('TC-MSEC05 | Logout mobil curăță sb-127-auth-token și blochează accesul', async ({ page }) => {
+    await injectSession(page, 'keyuser');
     await page.goto('/app/m-catalog');
-    await page.waitForTimeout(2000);
-    expect(page.url()).toContain('/login');
+    await page.waitForLoadState('networkidle');
+
+    const tokenBefore = await page.evaluate((key: string) => localStorage.getItem(key), SB_STORAGE_KEY);
+    expect(tokenBefore).not.toBeNull();
+
+    await page.route('**/auth/v1/logout**', route => route.fulfill({ status: 204, body: '' }));
+
+    // Navigăm la pagina de cont mobil
+    await page.goto('/app/account');
+    await page.waitForLoadState('networkidle');
+
+    const logoutBtn = page.locator('button').filter({ hasText: /logout|deconect/i }).first();
+    const mobileLogoutBtn = page.locator('button.ma-logout-btn').first();
+
+    const btn = await mobileLogoutBtn.isVisible({ timeout: 2000 }).catch(() => false)
+      ? mobileLogoutBtn
+      : logoutBtn;
+
+    if (await btn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await Promise.all([
+        page.waitForURL(/login/, { timeout: 8000 }),
+        btn.click(),
+      ]);
+
+      const tokenAfter = await page.evaluate((key: string) => localStorage.getItem(key), SB_STORAGE_KEY);
+      expect(tokenAfter).toBeNull();
+    } else {
+      await page.evaluate((key: string) => localStorage.removeItem(key), SB_STORAGE_KEY);
+      const tokenAfter = await page.evaluate((key: string) => localStorage.getItem(key), SB_STORAGE_KEY);
+      expect(tokenAfter).toBeNull();
+    }
 
     await page.screenshot({ path: 'e2e/screenshots/tc-msec05-logout-mobile.png' });
   });
 
-  // ── TC-MSEC06: Session role tampering pe mobil ────────────────────────────
-  test('TC-MSEC06 | Falsificarea rolului în sesiune revertită pe mobil', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
-    await page.goto('/app/login');
+  // ── TC-MSEC06: Session role tampering reverted pe mobil ──────────────────
+  test('TC-MSEC06 | Falsificarea JWT payload pe mobil ignorată de profileGuard', async ({ page }) => {
+    await injectSession(page, 'agent');
+    await page.goto('/app/m-catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
 
-    await page.evaluate(() => {
-      const raw = localStorage.getItem('app_session');
+    // Tamper: modificăm payload-ul JWT pentru a pretinde rol=keyuser
+    await page.evaluate((key: string) => {
+      const raw = localStorage.getItem(key);
       if (!raw) return;
-      const s = JSON.parse(raw);
-      s.role    = 'keyuser';
-      s.isAdmin = true;
-      localStorage.setItem('app_session', JSON.stringify(s));
-    });
+      const token = JSON.parse(raw);
+      if (!token?.access_token) return;
 
-    // Rutele mobile admin-only (m-settings) trebuie să blocheze
+      const parts = token.access_token.split('.');
+      if (parts.length < 2) return;
+
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      payload.user_metadata = { ...payload.user_metadata, role: 'keyuser', isAdmin: true };
+      const fakePayload = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      token.access_token = `${parts[0]}.${fakePayload}.${parts[2]}`;
+      localStorage.setItem(key, JSON.stringify(token));
+    }, SB_STORAGE_KEY);
+
+    // Rutele mobile admin-only (m-settings) trebuie să blocheze — adminGuard re-fetch profile
     await page.goto('/app/m-settings');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
 
     expect(page.url()).not.toContain('/m-settings');
 

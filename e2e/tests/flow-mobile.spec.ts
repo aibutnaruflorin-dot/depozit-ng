@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { SEED, seedScript } from '../fixtures/seed';
+import { injectSession, TEST_IDS } from '../helpers/supabase-mock';
 import { kvClear } from '../fixtures/kv-clear';
 
 // Același flow ca desktop, dar pe viewport mobil (393×851)
@@ -10,21 +10,16 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
   test.beforeAll(async ({ browser }) => {
     await kvClear();
     page = await browser.newPage();
+    await injectSession(page, 'keyuser');
+    await page.goto('/app/catalog');
+    await page.waitForLoadState('networkidle');
   });
 
   test.afterAll(async () => {
     await page.close();
   });
 
-  test('TC-M01 | Login ca Administrator (mobil)', async () => {
-    await page.addInitScript(seedScript(SEED as any));
-    await page.goto('/app/login');
-    await page.waitForLoadState('networkidle');
-
-    await page.locator('input').first().fill('admin');
-    await page.locator('input[type="password"]').first().fill('admin123');
-    await page.locator('button[type="submit"]').first().click();
-
+  test('TC-M01 | Sesiune Administrator activă (mobil) — nu pe /login', async () => {
     await expect(page).not.toHaveURL(/login/, { timeout: 8000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-m01-login.png' });
   });
@@ -48,9 +43,7 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
 
   test('TC-M03 | Comandă nouă mobil — creare comandă', async () => {
     // CDK virtual scroll requires a measured viewport height to render items.
-    // In Playwright headless mode, 100dvh may compute to 0 so products don't render.
-    // Work around by pre-seeding the cart in localStorage before navigation;
-    // the component loads the cart on ngOnInit, so the total bar appears immediately.
+    // Pre-seed cart to ensure the total bar appears even in headless mode.
     await page.evaluate(() => {
       const products: any[] = JSON.parse(localStorage.getItem('app_catalog_cat-test_products') || '[]');
       const product = products[0]; // Produs Test A
@@ -62,24 +55,16 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
     await page.goto('/app/m-new-order');
     await page.waitForLoadState('networkidle');
 
-    // Cart is loaded from localStorage — total bar should appear immediately
     const totalBar = page.locator('.mn-total-bar');
     await expect(totalBar).toBeVisible({ timeout: 8000 });
     await totalBar.click();
     await page.waitForTimeout(500);
 
-    // Diagnose DOM state after sheet opens
-    const domDiag = await page.evaluate(() => ({
-      sheetExists: !!document.querySelector('.mn-sheet'),
-      formExists: !!document.querySelector('.mn-form'),
-      inputExists: !!document.querySelector('input[placeholder="Numele clientului"]'),
-      mnTitle: document.querySelector('.mn-title')?.textContent?.trim(),
-      sheetHTML: document.querySelector('.mn-sheet')?.innerHTML?.substring(0, 500),
-    }));
+    const inputExists = await page.locator('input[placeholder="Numele clientului"]').isVisible({ timeout: 2000 }).catch(() => false);
 
-    if (!domDiag.inputExists) {
-      // Form not rendered — create order directly via localStorage (bypasses sheet DOM issue)
-      await page.evaluate(() => {
+    if (!inputExists) {
+      // Form not rendered — create order directly via localStorage
+      await page.evaluate((agentId: string) => {
         const products: any[] = JSON.parse(localStorage.getItem('app_catalog_cat-test_products') || '[]');
         const product = products[0];
         const orders: any[] = JSON.parse(localStorage.getItem('app_orders') || '[]');
@@ -88,7 +73,7 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
           id: 'order-test-e2e-mobil',
           orderNumber: maxNum + 1,
           timestamp: new Date().toISOString(),
-          agent: { id: 1, name: 'Administrator', username: 'admin' },
+          agent: { id: agentId, name: 'Administrator Test', username: 'admin' },
           client: { name: 'Client Test E2E Mobil', phone: '', address: '', note: '', email: '' },
           cuLivrare: false,
           products: product ? [{ nr: product.nr, name: product.name, um: product.um, qty: 2, catalogId: product.catalogId }] : [],
@@ -96,9 +81,8 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
         };
         localStorage.setItem('app_orders', JSON.stringify([...orders, newOrder]));
         localStorage.removeItem('depot.newOrderCart');
-      });
+      }, TEST_IDS.keyuser);
     } else {
-      // Scroll the sheet to reveal the client form
       await page.evaluate(() => {
         const sheet = document.querySelector('.mn-sheet');
         if (sheet) sheet.scrollTop = sheet.scrollHeight;
@@ -126,8 +110,7 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
   });
 
   test('TC-M05 | Transport mobil — cursă planificată vizibilă', async () => {
-    // Inject a planned trip directly to test the mobile transport UI
-    await page.evaluate(() => {
+    await page.evaluate((driverId: string) => {
       const orders: any[] = JSON.parse(localStorage.getItem('app_orders') || '[]');
       const order = orders.find((o: any) => o.client?.name?.includes('Mobil'));
       if (!order) return;
@@ -135,31 +118,26 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
       const transport = {
         id: 'trip-test-m1',
         vehicleId: 'v1',
-        driverId: '3',
+        driverId,
+        driverName: 'Sofer Test',
         status: 'planificat',
         oraPlecare: new Date().toISOString(),
         oraSosire: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-        // items: [] required by TripDelivery interface (tripValue/tripWeight iterate it)
         deliveries: [{ orderId: order.id, items: [], observatii: '' }],
         createdAt: new Date().toISOString(),
       };
       const transports = JSON.parse(localStorage.getItem('app_transports') || '[]');
       localStorage.setItem('app_transports', JSON.stringify([...transports, transport]));
-    });
+    }, TEST_IDS.sofer);
 
     await page.goto('/app/m-transport');
     await page.waitForLoadState('networkidle');
 
-    // Trip card should appear in the active section
     await expect(page.locator('.mt-card').first()).toBeVisible({ timeout: 8000 });
 
     await page.screenshot({ path: 'e2e/screenshots/tc-m05-transport.png' });
   });
 
-  // Helper: expand the trip card programmatically.
-  // Playwright's CDP click bypasses zone.js and can't reliably trigger Angular's
-  // (click) handler on a div. We set the signal directly via ng.getComponent() and
-  // then force a change detection cycle so the @if renders .mt-expanded.
   async function expandTripCard(p: Page, tripId: string): Promise<void> {
     await p.evaluate((id) => {
       const ng = (window as any).ng;
@@ -167,7 +145,6 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
       const comp = ng?.getComponent(root);
       if (!comp?.expandedId) return;
       comp.expandedId.set(id);
-      // Force Angular change detection so the @if (expandedId() === t.id) re-evaluates
       ng?.applyChanges(comp);
     }, tripId);
     await p.waitForSelector('.mt-expanded', { timeout: 5000 });
@@ -182,7 +159,6 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
 
     await expect(page.locator('.mt-mini-stepper').first()).toBeVisible({ timeout: 3000 });
 
-    // "Adaugă produse" button appears when ordersForTransport(t) returns items.
     const cartBtnCount = await page.locator('.mt-act-btn--cart').count();
     if (cartBtnCount > 0) {
       await expect(page.locator('.mt-act-btn--cart').first()).toBeVisible({ timeout: 2000 });
@@ -192,7 +168,7 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
         const transports = JSON.parse(localStorage.getItem('app_transports') || '[]');
         return { orderIds: orders.map((o: any) => o.id), transportDeliveries: transports.map((t: any) => t.deliveries) };
       });
-      expect(cartBtnCount, `mt-act-btn--cart not found. Orders: ${JSON.stringify(diag.orderIds)}, Deliveries: ${JSON.stringify(diag.transportDeliveries)}`).toBeGreaterThan(0);
+      expect(cartBtnCount, `mt-act-btn--cart not found. Diag: ${JSON.stringify(diag)}`).toBeGreaterThan(0);
     }
 
     await page.screenshot({ path: 'e2e/screenshots/tc-m06-buton-adauga-produse.png' });
@@ -205,7 +181,6 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
     await expect(page.locator('.mt-card').first()).toBeVisible({ timeout: 8000 });
     await expandTripCard(page, 'trip-test-m1');
 
-    // Click the "Confirmat" step button (sets status to confirmat_sofer)
     const confirmBtn = page.locator('.mt-step-btn').filter({ hasText: /Confirmat/ }).first();
     await expect(confirmBtn).toBeVisible({ timeout: 3000 });
     await confirmBtn.click();
@@ -227,7 +202,6 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
     await expect(page.locator('.mt-card').first()).toBeVisible({ timeout: 8000 });
     await expandTripCard(page, 'trip-test-m1');
 
-    // Click the "Pornit" step button (sets status to in_livrare)
     const pornitBtn = page.locator('.mt-step-btn').filter({ hasText: /Pornit/ }).first();
     await expect(pornitBtn).toBeVisible({ timeout: 3000 });
     await pornitBtn.click();
@@ -249,10 +223,8 @@ test.describe.serial('Flow complet Mobile: Catalog → Livrat', () => {
     await expect(page.locator('.mt-card').first()).toBeVisible({ timeout: 8000 });
     await expandTripCard(page, 'trip-test-m1');
 
-    // Register dialog handler before clicking "Livrat" — setTripStatus calls confirm()
     page.once('dialog', dialog => dialog.accept());
 
-    // Click the "Livrat" step button (sets status to livrat after confirm dialog)
     const livratBtn = page.locator('.mt-step-btn').filter({ hasText: /Livrat/ }).first();
     await expect(livratBtn).toBeVisible({ timeout: 3000 });
     await livratBtn.click();

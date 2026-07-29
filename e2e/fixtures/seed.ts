@@ -1,11 +1,13 @@
-/** Date injectate în localStorage înainte de fiecare test */
+/** Date injectate în localStorage înainte de fiecare test (fără app_users — auth via Supabase) */
 export const SEED = {
-  app_users: [
-    { id: 1, name: 'Administrator', username: 'admin',   password: 'admin123',  _v: 1, mustChangePassword: false, role: 'keyuser', active: true },
-    { id: 2, name: 'Agent Test',    username: 'agent1',  password: 'agent123',  _v: 1, mustChangePassword: false, role: 'agent',   active: true },
-    { id: 3, name: 'Sofer Test',    username: 'sofer1',  password: 'sofer123',  _v: 1, mustChangePassword: false, role: 'sofer',   active: true },
+  app_permissions: [
+    { id: 'keyuser', name: 'KeyUser', isAdmin: true,
+      pages: { comenzi_noi: 'full', comenzi: 'full', catalog: 'full', transport: 'full', cursele_mele: 'full', istoric: 'full', manual: 'full', setari: 'full' } },
+    { id: 'agent', name: 'Agent', isAdmin: false,
+      pages: { comenzi_noi: 'full', comenzi: 'full', catalog: 'read', transport: 'read', cursele_mele: 'full', istoric: 'read', manual: 'full', setari: 'none' } },
+    { id: 'sofer', name: 'Șofer', isAdmin: false,
+      pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'full', cursele_mele: 'full', istoric: 'none', manual: 'full', setari: 'none' } },
   ],
-  app_permissions: [],
   app_catalogs: [
     { id: 'cat-test', name: 'Catalog Test', color: '#2196F3', dataSource: 'excel' }
   ],

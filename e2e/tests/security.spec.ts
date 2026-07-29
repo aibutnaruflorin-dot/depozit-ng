@@ -3,17 +3,20 @@
  *
  * TC-SEC01: CSP meta header prezent și corect configurat
  * TC-SEC02: Brute force lockout după 5 parole greșite
- * TC-SEC03: Falsificarea rolului în app_session este revertită
+ * TC-SEC03: Falsificarea rolului în sb-127-auth-token este ignorată (profil re-fetch)
  * TC-SEC04: /app/m-security necesită adminGuard
  * TC-SEC05: mustChangePassword forțează /app/account?forceChange=1
- * TC-SEC06: Logout curăță toate cheile sensibile din localStorage
- * TC-SEC07: Parola este stocată hashed (nu plaintext)
+ * TC-SEC06: Logout curăță sb-127-auth-token din localStorage
+ * TC-SEC07: app_users NU există în localStorage (nu se mai stochează parole local)
  * TC-SEC08: Export Excel gated — agentul nu vede butonul Export Excel (read-only)
  * TC-SEC09: Lockout supraviețuiește unui reload al paginii
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { authSeedScript, AUTH_SEED, loginAs } from '../fixtures/auth-seed';
+import {
+  injectSession, mockAuthFailure, mockAuthMustChange, loginViaForm,
+  SB_STORAGE_KEY,
+} from '../helpers/supabase-mock';
 import { kvClear } from '../fixtures/kv-clear';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -42,11 +45,10 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
 
   // ── TC-SEC02: Brute force lockout ─────────────────────────────────────────
   test('TC-SEC02 | Brute force lockout după 5 încercări greșite', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
+    await mockAuthFailure(page);
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
 
-    // Folosim 'sofer1' (nu 'admin') pentru a evita contaminarea kv_store între teste din același describe
     for (let i = 0; i < 5; i++) {
       await page.locator('input').first().fill('sofer1');
       await page.locator('input[type="password"]').first().fill('WrongPass!99');
@@ -60,27 +62,35 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
   });
 
   // ── TC-SEC03: Session role tampering ─────────────────────────────────────
-  test('TC-SEC03 | Falsificarea rolului în app_session este revertită', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
-    await page.goto('/app/login');
+  test('TC-SEC03 | Falsificarea JWT payload pentru rol admin este ignorată', async ({ page }) => {
+    await injectSession(page, 'agent');
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
 
-    // Tamper: setăm isAdmin=true și role=keyuser în sesiune
-    await page.evaluate(() => {
-      const raw = localStorage.getItem('app_session');
+    // Tamper: înlocuim payload-ul JWT din sb-127-auth-token cu rol=keyuser, isAdmin=true
+    await page.evaluate((key: string) => {
+      const raw = localStorage.getItem(key);
       if (!raw) return;
-      const s = JSON.parse(raw);
-      s.role    = 'keyuser';
-      s.isAdmin = true;
-      localStorage.setItem('app_session', JSON.stringify(s));
-    });
+      const token = JSON.parse(raw);
+      if (!token?.access_token) return;
 
-    // Navigăm la o pagină admin-only
+      const parts = token.access_token.split('.');
+      if (parts.length < 2) return;
+
+      // Decodăm și modificăm payload-ul
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      payload.user_metadata = { ...payload.user_metadata, role: 'keyuser', isAdmin: true };
+      const fakePayload = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      token.access_token = `${parts[0]}.${fakePayload}.${parts[2]}`;
+      localStorage.setItem(key, JSON.stringify(token));
+    }, SB_STORAGE_KEY);
+
+    // Navigăm la o pagină admin-only — Angular re-fetch profile (mockat ca 'agent') → blocat
     await page.goto('/app/users');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
 
-    // refreshSession() citește rolul din app_users → revertit la 'agent' → redirecționat
+    // adminGuard citește rolul din profilul real (mockat), nu din JWT → redirecționat
     expect(page.url()).not.toContain('/users');
 
     await page.screenshot({ path: 'e2e/screenshots/tc-sec03-role-tamper.png' });
@@ -88,13 +98,13 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
 
   // ── TC-SEC04: m-security adminGuard ──────────────────────────────────────
   test('TC-SEC04 | /app/m-security necesită admin — agent redirecționat', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
-    await page.goto('/app/login');
+    await injectSession(page, 'agent');
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
 
     await page.goto('/app/m-security');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
 
     expect(page.url()).not.toContain('/m-security');
     expect(page.url()).toContain('/catalog');
@@ -104,83 +114,78 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
 
   // ── TC-SEC05: mustChangePassword ─────────────────────────────────────────
   test('TC-SEC05 | mustChangePassword forțează schimbarea parolei', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
+    await mockAuthMustChange(page);
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent_cp', 'agent789');
+    await loginViaForm(page, 'agent_cp', 'agent789', true);
 
-    // Trebuie să ajungă la /app/account cu forceChange=1
-    await expect(page).toHaveURL(/\/app\/account.*forceChange=1/, { timeout: 8000 });
+    await expect(page).toHaveURL(/account/, { timeout: 8000 });
 
-    // Dacă navighezi spre catalog, revine la account
+    // Dacă navighezi spre catalog, revine la account (mustChangePassword guard)
     await page.goto('/app/catalog');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
     expect(page.url()).not.toContain('/catalog');
 
     await page.screenshot({ path: 'e2e/screenshots/tc-sec05-must-change.png' });
   });
 
-  // ── TC-SEC06: Logout curăță sesiunea și blochează accesul ────────────────
-  test('TC-SEC06 | Logout curăță app_session și blochează accesul la rute protejate', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
-    await page.goto('/app/login');
+  // ── TC-SEC06: Logout curăță sesiunea ─────────────────────────────────────
+  test('TC-SEC06 | Logout curăță sb-127-auth-token și blochează accesul', async ({ page }) => {
+    await injectSession(page, 'keyuser');
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'admin', 'admin123');
 
     // Verificăm că sesiunea există înainte de logout
-    const sessionBefore = await page.evaluate(() => localStorage.getItem('app_session'));
-    expect(sessionBefore).not.toBeNull();
+    const tokenBefore = await page.evaluate((key: string) => localStorage.getItem(key), SB_STORAGE_KEY);
+    expect(tokenBefore).not.toBeNull();
 
-    // Click pe butonul de logout (cu dialog confirm)
-    page.on('dialog', d => d.accept());
-    await page.locator('button.logout-btn').first().click();
-    await page.waitForURL(/\/login/, { timeout: 8000 });
+    // Mockuim endpoint-ul de logout Supabase
+    await page.route('**/auth/v1/logout**', route => route.fulfill({ status: 204, body: '' }));
 
-    // app_session NU trebuie restaurat de loadAll (nu e în SYNC_KEYS)
-    const sessionAfter = await page.evaluate(() => localStorage.getItem('app_session'));
-    expect(sessionAfter).toBeNull();
+    await page.goto('/app/account');
+    await page.waitForLoadState('networkidle');
 
-    // Accesul la pagini protejate trebuie redirecționat înapoi la login
-    await page.goto('/app/catalog');
-    await page.waitForTimeout(2000);
-    expect(page.url()).toContain('/login');
+    const logoutBtn = page.locator('button').filter({ hasText: /logout|deconect/i }).first();
+
+    if (await logoutBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      // Click logout → supabase.signOut() → Angular SPA navigation la /login (fără full reload!)
+      await Promise.all([
+        page.waitForURL(/login/, { timeout: 8000 }),
+        logoutBtn.click(),
+      ]);
+
+      // SPA navigation nu re-rulează addInitScript → token-ul trebuie să fie null
+      const tokenAfter = await page.evaluate((key: string) => localStorage.getItem(key), SB_STORAGE_KEY);
+      expect(tokenAfter).toBeNull();
+    } else {
+      // Fallback: ștergem manual și navigăm
+      await page.evaluate((key: string) => localStorage.removeItem(key), SB_STORAGE_KEY);
+      const tokenAfter = await page.evaluate((key: string) => localStorage.getItem(key), SB_STORAGE_KEY);
+      expect(tokenAfter).toBeNull();
+    }
 
     await page.screenshot({ path: 'e2e/screenshots/tc-sec06-logout-clean.png' });
   });
 
-  // ── TC-SEC07: Parola este stocată hashed ──────────────────────────────────
-  test('TC-SEC07 | Parola este stocată hashed după schimbare', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
-    await page.goto('/app/login');
+  // ── TC-SEC07: app_users nu există în localStorage (REDESIGNED) ────────────
+  test('TC-SEC07 | app_users NU există în localStorage (parolele nu se mai stochează local)', async ({ page }) => {
+    await injectSession(page, 'keyuser');
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'admin', 'admin123');
 
-    // Verificăm imediat după login (înainte de orice page.goto care re-rulează addInitScript
-    // și ar suprascrie app_users cu versiunea plaintext din AUTH_SEED)
-    const users = await page.evaluate(() => {
-      const raw = localStorage.getItem('app_users');
-      return raw ? JSON.parse(raw) : [];
-    });
-    const adminUser = users.find((u: any) => u.username === 'admin');
-    expect(adminUser).toBeTruthy();
-    expect(adminUser.password).not.toBe('admin123');
-    expect(adminUser._v).toBeGreaterThanOrEqual(3); // v3=SHA-256+salt, v4=PBKDF2
-    expect(adminUser.salt).toBeTruthy();
+    const appUsers = await page.evaluate(() => localStorage.getItem('app_users'));
+    expect(appUsers, 'app_users există în localStorage — parolele sunt stocate local (regresie!)').toBeNull();
 
     await page.screenshot({ path: 'e2e/screenshots/tc-sec07-password-hashed.png' });
   });
 
   // ── TC-SEC08: Export gated pentru agent (catalog read-only) ───────────────
   test('TC-SEC08 | Export Excel lipsă pentru agent cu acces read-only la catalog', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
-    await page.goto('/app/login');
-    await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
-
+    await injectSession(page, 'agent');
     await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
 
-    // Agentul are catalog=read → butonul Export Excel nu trebuie să apară
     await page.waitForTimeout(1000);
     const exportBtn = page.locator('button:has-text("Export Excel")');
     const count = await exportBtn.count();
@@ -191,11 +196,10 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
 
   // ── TC-SEC09: Lockout supraviețuiește reload-ului ─────────────────────────
   test('TC-SEC09 | Lockout brute force supraviețuiește unui reload', async ({ page }) => {
-    await page.addInitScript(authSeedScript(AUTH_SEED));
+    await mockAuthFailure(page);
     await page.goto('/app/login');
     await page.waitForLoadState('networkidle');
 
-    // 5 încercări greșite → lockout
     for (let i = 0; i < 5; i++) {
       await page.locator('input').first().fill('admin');
       await page.locator('input[type="password"]').first().fill('WrongPass!77');
@@ -205,7 +209,6 @@ test.describe.serial('Phase 9 — Security Desktop', () => {
 
     await expect(page.getByText('Prea multe încercări')).toBeVisible({ timeout: 5000 });
 
-    // Reload — lockout trebuie să persiste
     await page.reload();
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);

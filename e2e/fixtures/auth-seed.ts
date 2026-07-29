@@ -1,17 +1,10 @@
 /**
  * Seed pentru testele de autentificare și control acces.
- * Include DEFAULT_PERMISSIONS pentru agent și sofer, astfel încât
- * pageGuard poate evalua accesul la pagini.
+ * app_users a fost eliminat — autentificarea se face via Supabase Auth.
+ * Parola este gestionată de Supabase; profilele sunt în tabela profiles.
  */
 
 export const AUTH_SEED = {
-  app_users: [
-    { id: 1, name: 'Administrator',  username: 'admin',    password: 'admin123', _v: 1, mustChangePassword: false, role: 'keyuser', active: true },
-    { id: 2, name: 'Agent Test',     username: 'agent1',   password: 'agent123', _v: 1, mustChangePassword: false, role: 'agent',   active: true },
-    { id: 3, name: 'Sofer Test',     username: 'sofer1',   password: 'sofer123', _v: 1, mustChangePassword: false, role: 'sofer',   active: true },
-    { id: 4, name: 'User Inactiv',   username: 'inactive1',password: 'pass1234', _v: 1, mustChangePassword: false, role: 'agent',   active: false },
-    { id: 5, name: 'Agent CP',       username: 'agent_cp', password: 'agent789', _v: 1, mustChangePassword: true,  role: 'agent',   active: true },
-  ],
   // Permisiunile DEFAULT — necesare pentru ca pageGuard să știe ce poate face fiecare rol
   app_permissions: [
     { id: 'keyuser', name: 'KeyUser', isAdmin: true,
@@ -43,7 +36,11 @@ export function authSeedScript(seed: Record<string, unknown> = AUTH_SEED) {
   `;
 }
 
-/** Login helper: completează formularul și așteaptă ieșirea de pe /login */
+/**
+ * loginAs — completează formularul de login și submite.
+ * Funcționează împreună cu mockAuthSuccess/Failure din supabase-mock.ts.
+ * Rutele Supabase trebuie mockuite ÎNAINTE de page.goto('/app/login').
+ */
 export async function loginAs(
   page: import('@playwright/test').Page,
   username: string,
@@ -56,7 +53,7 @@ export async function loginAs(
   if (expectSuccess) {
     await page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 8000 });
   } else {
-    // Eroare de login — rămâne pe /login; așteptăm minim 1s să fie siguri
+    // Eroare de login — rămâne pe /login; așteptăm minim 1.5s să fie siguri
     await page.waitForTimeout(1500);
   }
 }

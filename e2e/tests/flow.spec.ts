@@ -1,6 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { seedAndLogin } from '../helpers/auth';
-import { SEED, seedScript } from '../fixtures/seed';
+import { injectSession, TEST_IDS } from '../helpers/supabase-mock';
 import { kvClear } from '../fixtures/kv-clear';
 
 // Flow-ul complet rulează serial — fiecare test se bazează pe starea anterioară
@@ -11,6 +10,10 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
   test.beforeAll(async ({ browser }) => {
     await kvClear();
     page = await browser.newPage();
+    // Injectăm sesiune ca keyuser fără a folosi formularul de login
+    await injectSession(page, 'keyuser');
+    await page.goto('/app/catalog');
+    await page.waitForLoadState('networkidle');
   });
 
   test.afterAll(async () => {
@@ -18,21 +21,9 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
   });
 
   // ─────────────────────────────────────────────────────
-  // TC-01: Login
+  // TC-01: Verificare sesiune activă
   // ─────────────────────────────────────────────────────
-  test('TC-01 | Login ca Administrator', async () => {
-    await page.addInitScript(seedScript(SEED as any));
-    await page.goto('/app/login');
-    await page.waitForLoadState('networkidle');
-
-    const userInput = page.locator('input').first();
-    const passInput = page.locator('input[type="password"]').first();
-    const submitBtn = page.locator('button[type="submit"]').first();
-
-    await userInput.fill('admin');
-    await passInput.fill('admin123');
-    await submitBtn.click();
-
+  test('TC-01 | Sesiune Administrator activă — nu pe /login', async () => {
     await expect(page).not.toHaveURL(/login/, { timeout: 8000 });
     await page.screenshot({ path: 'e2e/screenshots/tc01-login.png' });
   });
@@ -112,13 +103,14 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
     }
 
     // Injectăm o comandă pre-acceptată cu livrare pentru testele de transport
-    await page.evaluate(() => {
+    // Agentul este keyuser cu UUID TEST_IDS.keyuser
+    await page.evaluate((agentId: string) => {
       const orders: any[] = JSON.parse(localStorage.getItem('app_orders') || '[]');
       const acceptedOrder = {
         id: 'order-test-e2e-accepted',
         orderNumber: 999,
         timestamp: new Date().toISOString(),
-        agent: { id: 1, name: 'Administrator', username: 'admin' },
+        agent: { id: agentId, name: 'Administrator Test', username: 'admin' },
         client: {
           name: 'Client Transport E2E',
           phone: '0700123456',
@@ -132,7 +124,7 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
         status: 'acceptat',
       };
       localStorage.setItem('app_orders', JSON.stringify([...orders, acceptedOrder]));
-    });
+    }, TEST_IDS.keyuser);
 
     await page.screenshot({ path: 'e2e/screenshots/tc04-comenzile-mele.png' });
   });
@@ -202,8 +194,6 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
   // TC-07: Confirmat șofer
   // ─────────────────────────────────────────────────────
   test('TC-07 | Transport — schimbare status la Confirmat șofer', async () => {
-    // Status change is only available in /my-trips (filtered by driverId).
-    // Logged-in admin (id=1) won't see sofer's trips there, so we update localStorage directly.
     await page.evaluate(() => {
       const transports: any[] = JSON.parse(localStorage.getItem('app_transports') || '[]');
       const updated = transports.map(t =>
@@ -217,7 +207,6 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
     await page.goto('/app/transport');
     await page.waitForLoadState('networkidle');
 
-    // Badge should now show "Confirmat șofer"
     await expect(
       page.locator('span.trip-status-badge').filter({ hasText: 'Confirmat șofer' }).first()
     ).toBeVisible({ timeout: 8000 });
@@ -232,7 +221,6 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
     await page.goto('/app/transport');
     await page.waitForLoadState('networkidle');
 
-    // Butonul add_shopping_cart apare pentru status planificat SAU confirmat_sofer
     const cartBtn = page.locator('mat-icon:has-text("add_shopping_cart")').first();
     await expect(cartBtn).toBeVisible({ timeout: 8000 });
 
@@ -256,7 +244,6 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
     await page.goto('/app/transport');
     await page.waitForLoadState('networkidle');
 
-    // Badge should now show "În livrare"
     await expect(
       page.locator('span.trip-status-badge').filter({ hasText: 'În livrare' }).first()
     ).toBeVisible({ timeout: 8000 });
@@ -269,7 +256,6 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
   // ─────────────────────────────────────────────────────
   test('TC-10 | Transport — schimbare status la Livrat', async () => {
     await page.evaluate(() => {
-      // Mark transport as livrat
       const transports: any[] = JSON.parse(localStorage.getItem('app_transports') || '[]');
       const updatedT = transports.map(t =>
         t.status === 'in_livrare'
@@ -278,7 +264,6 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
       );
       localStorage.setItem('app_transports', JSON.stringify(updatedT));
 
-      // Also mark the order as livrat (bypass updateDeliveryState which runs in-component)
       const orders: any[] = JSON.parse(localStorage.getItem('app_orders') || '[]');
       const updatedO = orders.map(o =>
         o.id === 'order-test-e2e-accepted' ? { ...o, status: 'livrat' } : o
@@ -289,7 +274,6 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
     await page.goto('/app/transport');
     await page.waitForLoadState('networkidle');
 
-    // Trip moves out of active table when livrat — verify via localStorage
     const transportStatus = await page.evaluate(() => {
       const transports: any[] = JSON.parse(localStorage.getItem('app_transports') || '[]');
       return transports[0]?.status;
@@ -309,7 +293,6 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
     const row = page.locator('tr, .order-row').filter({ hasText: 'Client Transport E2E' }).first();
     await expect(row).toBeVisible({ timeout: 8000 });
 
-    // Verificăm statusul 'livrat' direct din localStorage (coloana Status e ascunsă implicit)
     const orderStatus = await page.evaluate(() => {
       const orders: any[] = JSON.parse(localStorage.getItem('app_orders') || '[]');
       const order = orders.find(o => o.client?.name === 'Client Transport E2E');
@@ -327,9 +310,7 @@ test.describe.serial('Flow complet Desktop: Catalog → Livrat', () => {
     await page.goto('/app/history-all');
     await page.waitForLoadState('networkidle');
 
-    // Comanda de livrare trebuie să fie Livrat
     await expect(page.getByText('Client Transport E2E')).toBeVisible({ timeout: 8000 });
-    // Comanda draft trimisă în TC-04
     await expect(page.getByText('Client Test E2E')).toBeVisible({ timeout: 3000 }).catch(() => {});
     await page.screenshot({ path: 'e2e/screenshots/tc12-istoric.png' });
   });

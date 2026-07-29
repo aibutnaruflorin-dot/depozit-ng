@@ -5,7 +5,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { AUTH_SEED, authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { injectSession, TEST_IDS } from '../helpers/supabase-mock';
 import { kvClear } from '../fixtures/kv-clear';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -17,7 +17,7 @@ const M_INT_ORDER = {
   id: M_INT_ORDER_ID,
   orderNumber: 70,
   timestamp: new Date().toISOString(),
-  agent: { id: 2, name: 'Agent Test', username: 'agent1' },
+  agent: { id: TEST_IDS.agent, name: 'Agent Test', username: 'agent1' },
   client: { name: M_INT_CLIENT, phone: '0741000030', email: '', note: '', address: '' },
   cuLivrare: false,
   products: [{ nr: 1, name: 'Produs Test A', um: 'BUC', qty: 1, catalogId: 'cat-test', pretCuTVA: 25.5, pretFaraTVA: 21.43 }],
@@ -30,18 +30,16 @@ test.describe.serial('Phase 6 Mobile — Integration: Agent → Admin visibility
 
   test.beforeAll(async ({ browser }) => {
     await kvClear();
-    // Seed-ul include comanda agentului — persistă pe orice navigare via addInitScript
+
     agentPage = await browser.newPage();
-    await agentPage.addInitScript(authSeedScript({ ...AUTH_SEED, app_orders: [M_INT_ORDER] }));
-    await agentPage.goto('/app/login');
+    await injectSession(agentPage, 'agent', { app_orders: [M_INT_ORDER] });
+    await agentPage.goto('/app/m-catalog');
     await agentPage.waitForLoadState('networkidle');
-    await loginAs(agentPage, 'agent1', 'agent123');
 
     adminPage = await browser.newPage();
-    await adminPage.addInitScript(authSeedScript({ ...AUTH_SEED, app_orders: [M_INT_ORDER] }));
-    await adminPage.goto('/app/login');
+    await injectSession(adminPage, 'keyuser', { app_orders: [M_INT_ORDER] });
+    await adminPage.goto('/app/catalog');
     await adminPage.waitForLoadState('networkidle');
-    await loginAs(adminPage, 'admin', 'admin123');
   });
 
   test.afterAll(async () => {
@@ -84,13 +82,13 @@ test.describe.serial('Phase 6 Mobile — Integration: Sofer UI delivery → orde
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript({
-      ...AUTH_SEED,
+
+    await injectSession(page, 'sofer', {
       app_orders: [{
         id: M_INT2_ORDER_ID,
         orderNumber: 62,
         timestamp: new Date().toISOString(),
-        agent: { id: 2, name: 'Agent Test', username: 'agent1' },
+        agent: { id: TEST_IDS.agent, name: 'Agent Test', username: 'agent1' },
         client: { name: M_INT2_CLIENT, phone: '0741000040', email: '', note: '', address: 'Str. Mobil nr. 1' },
         cuLivrare: true,
         deliveryDate: new Date(Date.now() + 86_400_000).toISOString().split('T')[0],
@@ -101,7 +99,8 @@ test.describe.serial('Phase 6 Mobile — Integration: Sofer UI delivery → orde
       app_transports: [{
         id: M_INT2_TRIP_ID,
         vehicleId: 'v1',
-        driverId: '3',
+        driverId: TEST_IDS.sofer,
+        driverName: 'Sofer Test',
         deliveries: [{
           orderId: M_INT2_ORDER_ID,
           items: [{ nr: 1, name: 'Produs Test A', um: 'BUC', qty: 1, catalogId: 'cat-test', status: 'nelivrat' }],
@@ -112,17 +111,15 @@ test.describe.serial('Phase 6 Mobile — Integration: Sofer UI delivery → orde
         status: 'planificat',
         createdAt: new Date().toISOString(),
       }],
-    }));
-    await page.goto('/app/login');
+    });
+
+    await page.goto('/app/m-my-trips');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'sofer1', 'sofer123');
   });
 
   test.afterAll(async () => { await page.close(); });
 
   test('TC-MI04 | Sofer mobil — cursa este vizibilă în m-my-trips', async () => {
-    await page.goto('/app/m-my-trips');
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/m-my-trips/);
     await expect(page.getByText('Duba Test').first()).toBeVisible({ timeout: 8000 });
     await page.screenshot({ path: 'e2e/screenshots/tc-mi04-sofer-trip.png' });
@@ -182,7 +179,6 @@ test.describe.serial('Phase 6 Mobile — Integration: Sofer UI delivery → orde
   });
 
   test('TC-MI09 | Transport livrat (mobil) — statusul persistă în localStorage', async () => {
-    // Fără navigare (ar reseta seed-ul) — verificăm starea curentă direct
     const transportStatus = await page.evaluate((id: string) => {
       const ts = JSON.parse(localStorage.getItem('app_transports') || '[]');
       return ts.find((t: any) => t.id === id)?.status;

@@ -9,14 +9,14 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { authSeedScript, AUTH_SEED, loginAs } from '../fixtures/auth-seed';
+import { injectSession, TEST_IDS } from '../helpers/supabase-mock';
 import { kvClear } from '../fixtures/kv-clear';
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const EXP_CLIENT  = `Export-Client-${Date.now().toString(36).toUpperCase()}`;
+const EXP_CLIENT   = `Export-Client-${Date.now().toString(36).toUpperCase()}`;
 const EXP_ORDER_ID = `order-exp-${Date.now().toString(36)}`;
 
 test.describe.serial('Phase 8 — Export Excel & CSV', () => {
@@ -25,34 +25,30 @@ test.describe.serial('Phase 8 — Export Excel & CSV', () => {
   test.beforeAll(async ({ browser }) => {
     await kvClear();
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript({
-      ...AUTH_SEED,
-      app_orders: [
-        {
-          id: EXP_ORDER_ID,
-          orderNumber: 77,
-          timestamp: new Date().toISOString(),
-          agent: { id: 1, name: 'Administrator', username: 'admin' },
-          client: { name: EXP_CLIENT, phone: '0741888001', email: '', note: '', address: '' },
-          cuLivrare: false,
-          products: [
-            {
-              nr:         1,
-              name:       'Produs Test A',
-              um:         'BUC',
-              qty:        5,
-              catalogId:  'cat-test',
-              pretCuTVA:  25.5,
-              pretFaraTVA: 21.43,
-            },
-          ],
-          status: 'trimis',
-        },
-      ],
-    }));
-    await page.goto('/app/login');
+
+    await injectSession(page, 'keyuser', {
+      app_orders: [{
+        id: EXP_ORDER_ID,
+        orderNumber: 77,
+        timestamp: new Date().toISOString(),
+        agent: { id: TEST_IDS.keyuser, name: 'Administrator Test', username: 'admin' },
+        client: { name: EXP_CLIENT, phone: '0741888001', email: '', note: '', address: '' },
+        cuLivrare: false,
+        products: [{
+          nr:          1,
+          name:        'Produs Test A',
+          um:          'BUC',
+          qty:         5,
+          catalogId:   'cat-test',
+          pretCuTVA:   25.5,
+          pretFaraTVA: 21.43,
+        }],
+        status: 'trimis',
+      }],
+    });
+
+    await page.goto('/app/catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'admin', 'admin123');
   });
 
   test.afterAll(async () => { await page.close(); });
@@ -76,7 +72,6 @@ test.describe.serial('Phase 8 — Export Excel & CSV', () => {
     const filename = download.suggestedFilename();
     expect(filename).toMatch(/\.xlsx$/i);
 
-    // Parsare cu xlsx
     const workbook = XLSX.readFile(filePath!);
     expect(workbook.SheetNames).toContain('Catalog');
 
@@ -99,20 +94,16 @@ test.describe.serial('Phase 8 — Export Excel & CSV', () => {
     await page.goto('/app/history-me');
     await page.waitForLoadState('networkidle');
 
-    // Verificăm că comanda noastră e vizibilă
     await expect(page.getByText(EXP_CLIENT)).toBeVisible({ timeout: 8000 });
 
     const excelBtn = page.locator('button:has-text("Excel")').first();
     await expect(excelBtn).toBeVisible({ timeout: 5000 });
 
-    // Deschidem modalul
     await excelBtn.click();
     await page.waitForTimeout(500);
 
-    // Modalul CSV e vizibil
     await expect(page.locator('.csv-card').first()).toBeVisible({ timeout: 3000 });
 
-    // Coloanele default sunt deja selectate — click direct pe Descarcă CSV
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.locator('button:has-text("Descarcă CSV")').first().click(),
@@ -124,16 +115,14 @@ test.describe.serial('Phase 8 — Export Excel & CSV', () => {
     const filename = download.suggestedFilename();
     expect(filename).toMatch(/\.csv$/i);
 
-    // Parsare CSV
-    const raw   = fs.readFileSync(filePath!, 'utf-8').replace(/^﻿/, ''); // strip BOM
+    const raw   = fs.readFileSync(filePath!, 'utf-8').replace(/^﻿/, '');
     const lines = raw.split(/\r?\n/).filter(l => l.trim());
-    expect(lines.length, 'CSV-ul nu are rânduri').toBeGreaterThanOrEqual(2); // header + 1 date
+    expect(lines.length, 'CSV-ul nu are rânduri').toBeGreaterThanOrEqual(2);
 
     const header = lines[0];
     expect(header).toContain('Client');
     expect(header).toContain('Nr. comandă');
 
-    // Verificăm că EXP_CLIENT apare în date
     const dataRows = lines.slice(1).join('\n');
     expect(dataRows).toContain(EXP_CLIENT);
 
@@ -142,11 +131,9 @@ test.describe.serial('Phase 8 — Export Excel & CSV', () => {
 
   // ── TC-E03: CSV comandă individuală ──────────────────────────────────────
   test('TC-E03 | Comandă individuală → Export CSV → .csv conține datele comenzii', async () => {
-    // Suntem deja pe /app/history-me cu comanda vizibilă
     const row = page.locator('tr, .history-row').filter({ hasText: EXP_CLIENT }).first();
     await expect(row).toBeVisible({ timeout: 5000 });
 
-    // Click pe butonul download (icon) din rândul comenzii
     const downloadBtn = row.locator('button[mattooltip*="Descarcă"], button mat-icon:text("download")').first();
     const dlBtnAlt    = row.locator('button').filter({ has: page.locator('mat-icon:text("download")') }).first();
 
@@ -155,11 +142,9 @@ test.describe.serial('Phase 8 — Export Excel & CSV', () => {
       : dlBtnAlt;
 
     await expect(btn).toBeVisible({ timeout: 5000 });
-
     await btn.click();
     await page.waitForTimeout(500);
 
-    // Modalul se deschide — Descarcă CSV
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.locator('button:has-text("Descarcă CSV")').first().click(),
@@ -168,7 +153,7 @@ test.describe.serial('Phase 8 — Export Excel & CSV', () => {
     const filePath = await download.path();
     expect(filePath).toBeTruthy();
 
-    const raw  = fs.readFileSync(filePath!, 'utf-8').replace(/^﻿/, '');
+    const raw   = fs.readFileSync(filePath!, 'utf-8').replace(/^﻿/, '');
     const lines = raw.split(/\r?\n/).filter(l => l.trim());
     expect(lines.length).toBeGreaterThanOrEqual(2);
 

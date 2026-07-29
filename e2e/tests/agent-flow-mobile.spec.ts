@@ -4,7 +4,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { authSeedScript, loginAs } from '../fixtures/auth-seed';
+import { injectSession, TEST_IDS } from '../helpers/supabase-mock';
 import { kvClear, kvUpsert } from '../fixtures/kv-clear';
 
 const CLIENT_M = {
@@ -12,7 +12,7 @@ const CLIENT_M = {
   phone: `07${Math.floor(10000000 + Math.random() * 90000000)}`,
 };
 
-// ────────────────────────────────────────────────────────────────────���────────
+// ─────────────────────────────────────────────────────────────────────────────
 test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
 
   let page: Page;
@@ -20,10 +20,9 @@ test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
   test.beforeAll(async ({ browser }) => {
     await kvClear();
     page = await browser.newPage();
-    await page.addInitScript(authSeedScript());
-    await page.goto('/app/login');
+    await injectSession(page, 'agent');
+    await page.goto('/app/m-catalog');
     await page.waitForLoadState('networkidle');
-    await loginAs(page, 'agent1', 'agent123');
   });
 
   test.afterAll(async () => { await page.close(); });
@@ -37,7 +36,7 @@ test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
     await page.screenshot({ path: 'e2e/screenshots/tc-mag01-catalog.png' });
   });
 
-  // ── TC-MAG02: Search mobil ──��────────────────────────────────────────────
+  // ── TC-MAG02: Search mobil ───────────────────────────────────────────────
   test('TC-MAG02 | Catalog mobil — search filtrează corect', async () => {
     const searchInput = page.locator('input[type="search"], .mc-search-input').first();
     await searchInput.fill('Produs Test A');
@@ -48,7 +47,6 @@ test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
 
   // ── TC-MAG03: Comandă nouă mobil ─────────────────────────────────────────
   test('TC-MAG03 | Comandă nouă mobil — creare comandă cu date random', async () => {
-    // Pre-seed coșul în localStorage (CDK virtual scroll poate fi goală în headless)
     await page.evaluate(() => {
       const products: any[] = JSON.parse(localStorage.getItem('app_catalog_cat-test_products') || '[]');
       const product = products[0];
@@ -81,8 +79,8 @@ test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
       await page.locator('button:has-text("Salvează comanda")').first().click();
       await page.waitForTimeout(1000);
     } else {
-      // Fallback: injectare directă în localStorage ca 'draft' (TC-MAG08 va apela Trimite)
-      await page.evaluate((name: string) => {
+      // Fallback: injectare directă în localStorage ca 'draft'
+      await page.evaluate((args: { name: string; agentId: string }) => {
         const products: any[] = JSON.parse(localStorage.getItem('app_catalog_cat-test_products') || '[]');
         const orders: any[] = JSON.parse(localStorage.getItem('app_orders') || '[]');
         const p = products[0];
@@ -90,17 +88,16 @@ test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
         const newOrder = {
           id: `order-mag-${Date.now().toString(36)}`,
           timestamp: new Date().toISOString(),
-          agent: { id: 2, name: 'Agent Test', username: 'agent1' },
-          client: { name, phone: `0741000001`, email: '', note: '', address: '' },
+          agent: { id: args.agentId, name: 'Agent Test', username: 'agent1' },
+          client: { name: args.name, phone: `0741000001`, email: '', note: '', address: '' },
           cuLivrare: false,
           products: [{ nr: p.nr, name: p.name, um: p.um, qty: 2, catalogId: p.catalogId }],
           status: 'draft',
         };
         localStorage.setItem('app_orders', JSON.stringify([...orders, newOrder]));
         localStorage.removeItem('depot.newOrderCart');
-      }, CLIENT_M.name);
+      }, { name: CLIENT_M.name, agentId: TEST_IDS.agent });
 
-      // Sincronizăm app_orders în kv_store — page.evaluate() ocolește StorageService
       const fallbackOrders = await page.evaluate(() => JSON.parse(localStorage.getItem('app_orders') || '[]'));
       await kvUpsert('app_orders', fallbackOrders);
     }
@@ -140,23 +137,19 @@ test.describe.serial('Phase 3 — Agent Flow Mobile', () => {
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/m-history-all/);
     await expect(page).not.toHaveURL(/login/);
-    // Pagina este accesibilă; comenzile sunt vizibile (draft-urile pot fi excluse din all)
     await page.screenshot({ path: 'e2e/screenshots/tc-mag07-history-all.png' });
   });
 
   // ── TC-MAG08: Trimitere draft și verificare stoc (mobil) ─────────────────
   test('TC-MAG08 | Stocul decrementat după trimiterea comenzii draft (mobil)', async () => {
-    // Navigăm la history-me și deschidem bottom sheet-ul comenzii draft
     await page.goto('/app/m-history-me');
     await page.waitForLoadState('networkidle');
 
-    // Click pe cardul cu CLIENT_M.name pentru a deschide detaliile
     const card = page.locator('.mh-card').filter({ hasText: CLIENT_M.name }).first();
     await expect(card).toBeVisible({ timeout: 5000 });
     await card.click();
     await page.waitForTimeout(600);
 
-    // Click "Trimite comanda" din bottom sheet (vizibil pentru draft)
     const sendBtn = page.locator('.mh-act-btn.primary').filter({ hasText: /Trimite/i }).first();
     await expect(sendBtn).toBeVisible({ timeout: 5000 });
     await sendBtn.click();
