@@ -15,6 +15,19 @@ function validatePassword(password: string): void {
   }
 }
 
+// L1: allowlist roluri + normalizare/validare username
+const ALLOWED_ROLES = ['keyuser','contabilitate','agent','sub-agent','sofer','ajutor_manipulant'];
+
+function validateUsername(raw: string): string {
+  const u = String(raw ?? '').trim().toLowerCase();
+  if (!/^[a-z0-9._-]{3,32}$/.test(u)) throw new Error('Invalid username');
+  return u;
+}
+
+function validateRole(role: string): void {
+  if (!ALLOWED_ROLES.includes(role)) throw new Error('Invalid role');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -52,11 +65,14 @@ Deno.serve(async (req) => {
     let result: Record<string, unknown> = {}
 
     if (action === 'create') {
+      // L1: validare username + rol înainte de orice altceva
+      const username = validateUsername(payload.username)
+      validateRole(payload.role)
       // V6: validare parolă înainte de creare
       validatePassword(payload.password)
 
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
-        email:          `${payload.username}@depozit.internal`,
+        email:          `${username}@depozit.internal`,
         password:       payload.password,
         email_confirm:  true,
       })
@@ -64,7 +80,7 @@ Deno.serve(async (req) => {
 
       const { error: profileErr } = await admin.from('profiles').insert({
         id:                   created.user.id,
-        username:             payload.username,
+        username:             username,
         name:                 payload.name,
         role:                 payload.role,
         active:               true,
@@ -75,6 +91,9 @@ Deno.serve(async (req) => {
       result = { id: created.user.id }
 
     } else if (action === 'update') {
+      // L1: validare rol la update
+      validateRole(payload.role)
+
       const { error } = await admin
         .from('profiles')
         .update({
