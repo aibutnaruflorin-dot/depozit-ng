@@ -21,9 +21,13 @@ export class SupabaseService {
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
 
-  async signIn(username: string, password: string): Promise<{ user: any; session: Session } | null> {
+  async signIn(username: string, password: string, captchaToken?: string): Promise<{ user: any; session: Session } | null> {
     const email = `${username.trim().toLowerCase()}@depozit.internal`;
-    const { data, error } = await this.client.auth.signInWithPassword({ email, password });
+    const { data, error } = await this.client.auth.signInWithPassword({
+      email,
+      password,
+      options: captchaToken ? { captchaToken } : undefined,
+    });
     if (error || !data.session) return null;
     return { user: data.user, session: data.session };
   }

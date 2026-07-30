@@ -72,8 +72,8 @@ export class AuthService {
     } catch { /* sesiune indisponibilă — user neautentificat */ }
   }
 
-  async login(username: string, password: string): Promise<boolean> {
-    const result = await this.supabase.signIn(username, password);
+  async login(username: string, password: string, captchaToken?: string): Promise<boolean> {
+    const result = await this.supabase.signIn(username, password, captchaToken);
     if (!result) return false;
 
     const profile = await this.supabase.getProfile(result.user.id);

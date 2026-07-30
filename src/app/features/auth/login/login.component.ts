@@ -1,4 +1,7 @@
-import { Component, OnDestroy, signal } from '@angular/core';
+import { Component, OnDestroy, AfterViewInit, signal } from '@angular/core';
+
+declare const hcaptcha: any;
+const HCAPTCHA_SITE_KEY = 'e07aac7a-fa3a-4fd6-bbce-a90ef2fecc02';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -30,7 +33,7 @@ function lockoutMs(attempts: number): number {
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent implements OnDestroy, AfterViewInit {
   form:        FormGroup;
   error        = '';
   hidePass     = true;
@@ -39,6 +42,8 @@ export class LoginComponent implements OnDestroy {
   countdown    = signal(0);
 
   private _timer: ReturnType<typeof setInterval> | null = null;
+  private _hWidgetId: string | null = null;
+  private _captchaResolver: ((token: string) => void) | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -61,8 +66,29 @@ export class LoginComponent implements OnDestroy {
     this._resumeCountdownIfLocked();
   }
 
+  ngAfterViewInit(): void {
+    // Inițializează widget-ul invizibil hCaptcha (nedisponibil în dev cu Supabase local)
+    if (typeof hcaptcha !== 'undefined') {
+      try {
+        this._hWidgetId = hcaptcha.render('h-captcha-login', {
+          sitekey:  HCAPTCHA_SITE_KEY,
+          size:     'invisible',
+          callback: (token: string) => { this._captchaResolver?.(token); this._captchaResolver = null; },
+        });
+      } catch { /* hcaptcha indisponibil */ }
+    }
+  }
+
   ngOnDestroy(): void {
     this._clearTimer();
+  }
+
+  private _getCaptchaToken(): Promise<string> {
+    return new Promise<string>((resolve) => {
+      if (typeof hcaptcha === 'undefined' || this._hWidgetId === null) { resolve(''); return; }
+      this._captchaResolver = resolve;
+      hcaptcha.execute(this._hWidgetId);
+    });
   }
 
   private getLockout(): { attempts: number; lockedUntil: number } {
@@ -133,7 +159,8 @@ export class LoginComponent implements OnDestroy {
     this.error   = '';
     let ok = false;
     try {
-      ok = await this.auth.login(username, password);
+      const captchaToken = await this._getCaptchaToken();
+      ok = await this.auth.login(username, password, captchaToken);
     } catch (err) {
       this.loading = false;
       this.error = 'Eroare internă la autentificare. Verificați consola.';
@@ -164,6 +191,10 @@ export class LoginComponent implements OnDestroy {
         this.error = `Username sau parolă incorectă. (${attempts}/${MAX_ATTEMPTS})`;
       }
       this.form.get('password')?.reset();
+      // Reset widget pentru tentativa următoare
+      if (typeof hcaptcha !== 'undefined' && this._hWidgetId !== null) {
+        hcaptcha.reset(this._hWidgetId);
+      }
     }
   }
 }
