@@ -1,7 +1,7 @@
 import { Component, OnDestroy, AfterViewInit, signal } from '@angular/core';
 
-declare const hcaptcha: any;
-const HCAPTCHA_SITE_KEY = 'e07aac7a-fa3a-4fd6-bbce-a90ef2fecc02';
+declare const turnstile: any;
+const TURNSTILE_SITE_KEY = '0x4AAAAAÄECCwF-jNxqvrvAr';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -67,15 +67,16 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Inițializează widget-ul invizibil hCaptcha (nedisponibil în dev cu Supabase local)
-    if (typeof hcaptcha !== 'undefined') {
+    // Inițializează widget-ul invizibil Turnstile (nedisponibil în dev cu Supabase local)
+    if (typeof turnstile !== 'undefined') {
       try {
-        this._hWidgetId = hcaptcha.render('h-captcha-login', {
-          sitekey:  HCAPTCHA_SITE_KEY,
-          size:     'invisible',
-          callback: (token: string) => { this._captchaResolver?.(token); this._captchaResolver = null; },
+        this._hWidgetId = turnstile.render('#h-captcha-login', {
+          sitekey:   TURNSTILE_SITE_KEY,
+          execution: 'execute',
+          appearance: 'interaction-only',
+          callback:  (token: string) => { this._captchaResolver?.(token); this._captchaResolver = null; },
         });
-      } catch { /* hcaptcha indisponibil */ }
+      } catch { /* turnstile indisponibil */ }
     }
   }
 
@@ -85,9 +86,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
 
   private _getCaptchaToken(): Promise<string> {
     return new Promise<string>((resolve) => {
-      if (typeof hcaptcha === 'undefined' || this._hWidgetId === null) { resolve(''); return; }
+      if (typeof turnstile === 'undefined' || this._hWidgetId === null) { resolve(''); return; }
       this._captchaResolver = resolve;
-      hcaptcha.execute(this._hWidgetId);
+      turnstile.execute(this._hWidgetId);
     });
   }
 
@@ -192,8 +193,8 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       }
       this.form.get('password')?.reset();
       // Reset widget pentru tentativa următoare
-      if (typeof hcaptcha !== 'undefined' && this._hWidgetId !== null) {
-        hcaptcha.reset(this._hWidgetId);
+      if (typeof turnstile !== 'undefined' && this._hWidgetId !== null) {
+        turnstile.reset(this._hWidgetId);
       }
     }
   }
