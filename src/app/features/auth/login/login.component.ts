@@ -11,9 +11,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { environment } from '../../../../environments/environment';
 
 declare const turnstile: any;
-const TURNSTILE_SITE_KEY = '0x4AAAAAÄECCwF-jNxqvrvAr';
 
 const MAX_ATTEMPTS = 5;
 
@@ -71,10 +71,11 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     if (typeof turnstile !== 'undefined') {
       try {
         this._hWidgetId = turnstile.render('#h-captcha-login', {
-          sitekey:   TURNSTILE_SITE_KEY,
-          execution: 'execute',
-          appearance: 'interaction-only',
-          callback:  (token: string) => { this._captchaResolver?.(token); this._captchaResolver = null; },
+          sitekey:          environment.turnstileSiteKey,
+          execution:        'execute',
+          appearance:       'interaction-only',
+          callback:         (token: string) => { this._captchaResolver?.(token); this._captchaResolver = null; },
+          'error-callback': () => { this._captchaResolver?.(''); this._captchaResolver = null; },
         });
       } catch { /* turnstile indisponibil */ }
     }

@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
   supabaseUrl: 'https://zopcolmhbhfikngfioot.supabase.co',
-  supabaseKey: 'sb_publishable_Bo2QgV9tsh2zc2vnEnZ67Q_Y7XN0Ock'
+  supabaseKey: 'sb_publishable_Bo2QgV9tsh2zc2vnEnZ67Q_Y7XN0Ock',
+  turnstileSiteKey: '0x4AAAAAAECCwF-jNxqrvAr'
 };
