@@ -1,8 +1,18 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// V11: restrânge CORS la originea Vercel de producție (nu mai '*')
+const ALLOWED_ORIGIN = 'https://depozit-ng.vercel.app'
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// V6: validare complexitate parolă pe server (aceeași regulă ca în client)
+function validatePassword(password: string): void {
+  if (!password || password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+    throw new Error('Parola trebuie să aibă minim 8 caractere, o literă mare și o cifră.');
+  }
 }
 
 Deno.serve(async (req) => {
@@ -42,7 +52,9 @@ Deno.serve(async (req) => {
     let result: Record<string, unknown> = {}
 
     if (action === 'create') {
-      // Creare utilizator nou: Auth user + profil
+      // V6: validare parolă înainte de creare
+      validatePassword(payload.password)
+
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email:          `${payload.username}@depozit.internal`,
         password:       payload.password,
@@ -63,7 +75,6 @@ Deno.serve(async (req) => {
       result = { id: created.user.id }
 
     } else if (action === 'update') {
-      // Actualizare metadata profil (nume, rol, activ)
       const { error } = await admin
         .from('profiles')
         .update({
@@ -74,11 +85,27 @@ Deno.serve(async (req) => {
         .eq('username', payload.username)
 
       if (error) throw error
+
+      // V1b: la dezactivare, revocă toate sesiunile active ale utilizatorului
+      if (payload.active === false) {
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('id')
+          .eq('username', payload.username)
+          .single()
+
+        if (profile?.id) {
+          await admin.auth.admin.signOut(profile.id as string)
+        }
+      }
+
       result = { success: true }
 
     } else if (action === 'reset_password') {
-      // Reset parolă de către admin — payload.userId e UUID direct
       if (!payload.userId) throw new Error('Missing userId')
+
+      // V6: validare parolă înainte de reset
+      validatePassword(payload.password)
 
       const { error } = await admin.auth.admin.updateUserById(payload.userId as string, {
         password: payload.password as string,
@@ -93,7 +120,6 @@ Deno.serve(async (req) => {
       result = { success: true }
 
     } else if (action === 'delete') {
-      // Ștergere utilizator — payload.userId e UUID direct (profilul cascadează via FK)
       if (!payload.userId) throw new Error('Missing userId')
 
       const { error } = await admin.auth.admin.deleteUser(payload.userId as string)

@@ -93,7 +93,7 @@ export class AuthService {
     if (s) this.audit.log(s.supabaseId ?? '', 'LOGOUT', s.username);
     await this.supabase.signOut();
     const toRemove = Object.keys(localStorage)
-      .filter(k => k.startsWith('app_') || k.startsWith('_lk_'));
+      .filter(k => k.startsWith('app_') || k.startsWith('_lk_') || k === '_lk');
     toRemove.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
     this._session.set(null);
