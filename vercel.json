@@ -2,7 +2,7 @@
   "buildCommand": "npx ng build --configuration=production",
   "outputDirectory": "dist/depozit-ng/browser",
   "rewrites": [
-    { "source": "/:path*", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
