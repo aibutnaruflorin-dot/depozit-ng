@@ -585,7 +585,13 @@ export class SettingsComponent implements OnInit {
       return;
     }
     try {
-      await this.supabase.updateProfile(user.id, { active: !user.active });
+      // V1b: prin Edge Function ca să revoce sesiunile la dezactivare
+      await this.supabase.callManageUsers('update', {
+        username: user.username,
+        name:     user.name,
+        role:     user.role,
+        active:   !user.active,
+      });
       if (session) this.audit.log(session.supabaseId ?? '', 'USER_EDIT', `Utilizator ${user.active ? 'dezactivat' : 'activat'}: ${user.username} (${user.id})`);
       await this._reloadUsers();
       this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
