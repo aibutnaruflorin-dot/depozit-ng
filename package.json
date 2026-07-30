@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "postbuild": "node -e \"const fs=require('fs');const dirs=['dist/depozit-ng/browser','dist/depozit-ng'];dirs.some(d=>{const s=d+'/index.html';if(fs.existsSync(s)){fs.copyFileSync(s,d+'/404.html');console.log('404.html created in',d);return true}});\"",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:e2e": "playwright test",

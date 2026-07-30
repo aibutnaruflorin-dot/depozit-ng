@@ -1,7 +1,9 @@
 {
-  "framework": null,
-  "buildCommand": "npx ng build --configuration=production && cp dist/depozit-ng/browser/index.html dist/depozit-ng/browser/404.html",
+  "buildCommand": "npm run build -- --configuration=production",
   "outputDirectory": "dist/depozit-ng/browser",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
