@@ -131,8 +131,9 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
       } else {
         const isMobile = window.innerWidth < 768;
         const role = session?.role ?? '';
-        const transportRoles = new Set(['sofer', 'ajutor_manipulant']);
-        if (transportRoles.has(role)) {
+        if (role === 'sofer') {
+          this.router.navigate([isMobile ? '/app/m-my-trips' : '/app/my-trips']);
+        } else if (role === 'ajutor_manipulant') {
           this.router.navigate([isMobile ? '/app/m-transport' : '/app/transport']);
         } else {
           this.router.navigate([isMobile ? '/app/m-catalog' : '/app/catalog']);

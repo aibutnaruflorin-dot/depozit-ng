@@ -22,7 +22,7 @@ export const DEFAULT_PERMISSIONS: AppPermission[] = [
   { id: 'keyuser',          name: 'KeyUser',          isAdmin: true,
     pages: { comenzi_noi: 'full', comenzi: 'full', catalog: 'full', transport: 'full', cursele_mele: 'full', istoric: 'full', manual: 'full', setari: 'full' } },
   { id: 'sofer',            name: 'Șofer',            isAdmin: false,
-    pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'full', cursele_mele: 'full', istoric: 'none', manual: 'full', setari: 'none' } },
+    pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'none', cursele_mele: 'full', istoric: 'none', manual: 'full', setari: 'none' } },
   { id: 'ajutor_manipulant',name: 'Ajutor manipulant',isAdmin: false,
     pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'read', cursele_mele: 'read', istoric: 'none', manual: 'full', setari: 'none' } },
   { id: 'contabilitate',    name: 'Contabilitate',    isAdmin: false,
