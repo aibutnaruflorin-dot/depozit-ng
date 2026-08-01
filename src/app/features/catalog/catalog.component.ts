@@ -382,6 +382,7 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   closeHistory(): void                  { this.historyModal.set(null); }
 
   openResetBuf(): void {
+    if (!this.canAdjust()) return;
     this.resetBufExported.set(false);
     this.resetBufStep.set('export');
   }
@@ -413,6 +414,7 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
     return n;
   }
   confirmResetBuf(): void {
+    if (!this.canAdjust()) return;
     const modes   = this.resetBufModes();
     const toReset = this.resetBufImpact()
       .filter(item => (modes.get(item.key) ?? 'reset') === 'reset')
