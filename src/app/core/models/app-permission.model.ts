@@ -24,7 +24,7 @@ export const DEFAULT_PERMISSIONS: AppPermission[] = [
   { id: 'sofer',            name: 'Șofer',            isAdmin: false,
     pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'none', cursele_mele: 'full', istoric: 'none', manual: 'full', setari: 'none' } },
   { id: 'ajutor_manipulant',name: 'Ajutor manipulant',isAdmin: false,
-    pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'full', cursele_mele: 'none', istoric: 'none', manual: 'full', setari: 'none' } },
+    pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'read', cursele_mele: 'none', istoric: 'none', manual: 'full', setari: 'none' } },
   { id: 'contabilitate',    name: 'Contabilitate',    isAdmin: false,
     pages: { comenzi_noi: 'read', comenzi: 'read', catalog: 'read', transport: 'read', cursele_mele: 'none', istoric: 'full', manual: 'full', setari: 'none' } },
   { id: 'agent',            name: 'Agent',            isAdmin: false,
