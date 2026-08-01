@@ -47,4 +47,9 @@ desktop.ini
 # Playwright generated outputs
 /test-results/
 /e2e/report/
+/e2e/prod-report/
+/e2e/prod-screenshots/
 /playwright-report/
+
+# Credențiale E2E producție
+.env.prod-e2e
