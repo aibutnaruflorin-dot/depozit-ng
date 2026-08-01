@@ -22,15 +22,20 @@ const SKIP_MSG = 'Nu există produse în catalog — adaugă produse din Setting
 test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
 
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    agentPage = await browser.newPage();
-    await loginAs(agentPage, 'agent');
-    // Verifică produse o singură dată în beforeAll
-    await agentPage.goto('/#/app/m-new-order');
-    await agentPage.waitForLoadState('networkidle');
-    hasProducts = await agentPage.locator('.mn-card, .mn-prod-name').count() > 0;
-
+    // Admin are acces garantat la kv_store — folosim pagina lui pentru a verifica produse
     adminPage = await browser.newPage();
     await loginAs(adminPage, 'admin');
+    await adminPage.goto('/#/app/m-new-order');
+    await adminPage.waitForLoadState('networkidle');
+    try {
+      await adminPage.locator('.mn-card, .mn-prod-name').first().waitFor({ state: 'visible', timeout: 12000 });
+      hasProducts = true;
+    } catch {
+      hasProducts = false;
+    }
+
+    agentPage = await browser.newPage();
+    await loginAs(agentPage, 'agent');
 
     soferPage = await browser.newPage();
     await loginAs(soferPage, 'sofer');
@@ -46,8 +51,10 @@ test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
 
   test('MOL-01 | Agent mobil: new-order se încarcă cu produse', async () => {
     test.skip(!hasProducts, SKIP_MSG);
+    await agentPage.goto('/#/app/m-new-order');
+    await agentPage.waitForLoadState('networkidle');
     await expect(agentPage).not.toHaveURL(/login/);
-    await expect(agentPage.locator('.mn-card, .mn-prod-name').first()).toBeVisible({ timeout: 8000 });
+    await expect(agentPage.locator('.mn-card, .mn-prod-name').first()).toBeVisible({ timeout: 12000 });
     await agentPage.screenshot({ path: 'e2e/prod-screenshots/mol01-m-new-order.png' });
   });
 

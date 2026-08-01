@@ -22,15 +22,20 @@ const SKIP_MSG = 'Nu există produse în catalog — adaugă produse din Setting
 test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
 
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    agentPage = await browser.newPage();
-    await loginAs(agentPage, 'agent');
-    // Verifică produse o singură dată în beforeAll
-    await agentPage.goto('/#/app/new-order');
-    await agentPage.waitForLoadState('networkidle');
-    hasProducts = await agentPage.locator('.product-name').count() > 0;
-
+    // Admin are acces garantat la kv_store — folosim pagina lui pentru a verifica produse
     adminPage = await browser.newPage();
     await loginAs(adminPage, 'admin');
+    await adminPage.goto('/#/app/new-order');
+    await adminPage.waitForLoadState('networkidle');
+    try {
+      await adminPage.locator('.product-name').first().waitFor({ state: 'visible', timeout: 12000 });
+      hasProducts = true;
+    } catch {
+      hasProducts = false;
+    }
+
+    agentPage = await browser.newPage();
+    await loginAs(agentPage, 'agent');
 
     soferPage = await browser.newPage();
     await loginAs(soferPage, 'sofer');
@@ -46,8 +51,10 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
 
   test('OL-01 | Agent: new-order se încarcă cu produse', async () => {
     test.skip(!hasProducts, SKIP_MSG);
+    await agentPage.goto('/#/app/new-order');
+    await agentPage.waitForLoadState('networkidle');
     await expect(agentPage).not.toHaveURL(/login/);
-    await expect(agentPage.locator('.product-name').first()).toBeVisible({ timeout: 8000 });
+    await expect(agentPage.locator('.product-name').first()).toBeVisible({ timeout: 10000 });
     await agentPage.screenshot({ path: 'e2e/prod-screenshots/ol01-new-order.png' });
   });
 
@@ -55,7 +62,7 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
     test.skip(!hasProducts, SKIP_MSG);
     // Setează qty = 1 pe primul produs
     const qtyInput = agentPage.locator('input.row-qty').first();
-    await expect(qtyInput).toBeVisible({ timeout: 8000 });
+    await expect(qtyInput).toBeVisible({ timeout: 10000 });
     await qtyInput.fill('1');
     await qtyInput.dispatchEvent('change');
 

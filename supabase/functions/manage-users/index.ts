@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         name:                 payload.name,
         role:                 payload.role,
         active:               true,
-        must_change_password: true,
+        must_change_password: payload.must_change_password ?? true,
       })
       if (profileErr) throw profileErr
 
@@ -103,13 +103,18 @@ Deno.serve(async (req) => {
       // L1: validare rol la update
       validateRole(payload.role)
 
+      const updateData: Record<string, unknown> = {
+        name:   payload.name,
+        role:   payload.role,
+        active: payload.active,
+      }
+      if (payload.must_change_password !== undefined) {
+        updateData['must_change_password'] = payload.must_change_password
+      }
+
       const { error } = await admin
         .from('profiles')
-        .update({
-          name:   payload.name,
-          role:   payload.role,
-          active: payload.active,
-        })
+        .update(updateData)
         .eq('username', payload.username)
 
       if (error) throw error

@@ -5,7 +5,7 @@
  */
 
 import { chromium } from '@playwright/test';
-import { createTestUser, ADMIN_PASS, ADMIN_USER, TEST_USERS } from './helpers/prod-auth';
+import { createTestUser, ensureTestUser, ADMIN_PASS, ADMIN_USER, TEST_USERS } from './helpers/prod-auth';
 
 export default async function globalSetup(): Promise<void> {
   if (!ADMIN_PASS) {
@@ -25,8 +25,7 @@ export default async function globalSetup(): Promise<void> {
   ];
 
   for (const u of users) {
-    const ok = await createTestUser(page, u);
-    console.log(`[prod-setup] User "${u.username}": ${ok ? 'creat' : 'deja existent / eroare (ignorată)'}`);
+    await ensureTestUser(page, u);
   }
 
   await browser.close();
