@@ -866,6 +866,12 @@
                     Anulează
                   </button>
                 }
+                @if (order.status === 'planificat' && !order.superseded && !order.locked) {
+                  <button mat-flat-button class="btn-cancel-order" (click)="cancelOrder(order)">
+                    <mat-icon>block</mat-icon>
+                    Anulează
+                  </button>
+                }
                 @if (['trimis','acceptat','in_livrare','livrat_partial'].includes(order.status) && !order.superseded && order.locked) {
                   <div class="exp-locked-banner">
                     <mat-icon>lock</mat-icon>

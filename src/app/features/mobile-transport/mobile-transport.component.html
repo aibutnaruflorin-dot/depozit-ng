@@ -7,7 +7,7 @@
       @if (cancelled() > 0) {
         <span class="mt-badge-cancelled">{{ cancelled() }} anulat{{ cancelled() === 1 ? '' : 'e' }}</span>
       }
-      @if (auth.isAdmin()) {
+      @if (auth.hasFullAccess('transport')) {
         <button class="mt-fab-btn" (click)="openCreate()" title="Cursă nouă"
                 [disabled]="!transportService.vehicles().length || !transportService.drivers().length">
           <mat-icon>add</mat-icon>
@@ -18,7 +18,7 @@
 
   <div class="mt-body">
 
-    @if (auth.isAdmin() && (!transportService.vehicles().length || !transportService.drivers().length)) {
+    @if (auth.hasFullAccess('transport') && (!transportService.vehicles().length || !transportService.drivers().length)) {
       <div class="mt-setup-hint">
         <mat-icon>info</mat-icon>
         Adaugă mașini și șoferi în <strong>Setări → Mașini / Șoferi</strong>.
@@ -220,7 +220,7 @@
                   <span class="mt-driver">{{ driverName(t) }}</span>
                 </div>
               </div>
-              @if (auth.isAdmin()) {
+              @if (auth.hasFullAccess('transport')) {
                 <div class="mt-del-actions">
                   <button class="mt-restore-btn" (click)="notifyDriverDeleted(t)" title="Notifică șofer că cursa a fost anulată" style="color:#16a34a">
                     <mat-icon>chat</mat-icon>
@@ -286,7 +286,7 @@
                   <span class="mt-pmeta-wt">{{ o.products.length + (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }} prod.</span>
                 </div>
               </div>
-              @if (auth.isAdmin()) {
+              @if (auth.hasFullAccess('transport')) {
                 <button class="mt-restore-btn" (click)="$event.stopPropagation(); restoreDeletedOrder(o)" title="Restaurează comanda">
                   <mat-icon>restore</mat-icon>
                 </button>
@@ -365,7 +365,7 @@
                   </a>
                 }
                 <!-- Observații -->
-                @if (auth.isAdmin()) {
+                @if (auth.hasFullAccess('transport')) {
                   <textarea class="mt-hist-obs" rows="2"
                             [appInitValue]="o.observatii ?? o.client.note ?? ''"
                             (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
@@ -539,7 +539,7 @@
                 }
               </div>
             }
-            @if (auth.isAdmin()) {
+            @if (auth.hasFullAccess('transport')) {
               <textarea class="mt-note-input" rows="1"
                         [value]="getDeliveryNote(t, o.id)"
                         (input)="setObsBuffer(t.id, o.id, $any($event.target).value)"
@@ -570,7 +570,7 @@
             </div>
           }
 
-          @if (auth.isAdmin()) {
+          @if (auth.hasFullAccess('transport')) {
             <div class="mt-act-row">
               @if (t.status !== 'anulat' && t.status !== 'livrat') {
                 <button class="mt-act-btn mt-act-btn--wa" [class.mt-act-btn--sent]="!!t.waSentDriverAt"
@@ -657,7 +657,7 @@
             <mat-icon>add_shopping_cart</mat-icon>
           </button>
         }
-        @if (auth.isAdmin()) {
+        @if (auth.hasFullAccess('transport')) {
           <button class="mt-plan-btn" style="color:#dc2626" (click)="$event.stopPropagation(); deleteOrder(o)" title="Șterge comanda definitiv">
             <mat-icon>delete_forever</mat-icon>
           </button>
@@ -737,7 +737,7 @@
                   </div>
                 }
               </div>
-              @if (auth.isAdmin()) {
+              @if (auth.hasFullAccess('transport')) {
                 <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
                   <mat-icon>check_circle</mat-icon>Finalizează cu modificări
                 </button>
