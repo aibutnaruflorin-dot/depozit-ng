@@ -30,6 +30,7 @@ export class AccountComponent implements AfterViewInit {
   hideOld     = true;
   hideNew     = true;
   hideConfirm = true;
+  saving      = false;
 
   newPassValue = signal('');
 
@@ -86,6 +87,7 @@ export class AccountComponent implements AfterViewInit {
   }
 
   async save(): Promise<void> {
+    if (this.saving) return;
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const { oldPass, newPass, confirm } = this.form.value;
     if (newPass !== confirm) {
@@ -95,17 +97,22 @@ export class AccountComponent implements AfterViewInit {
     }
     const session = this.auth.session();
     if (!session) return;
-    const captchaToken = await this._getCaptchaToken();
-    const res = await this.auth.changePassword(session.userId, oldPass, newPass, captchaToken);
-    this.msg   = res.msg;
-    this.msgOk = res.ok;
-    if (res.ok) {
-      this.form.reset();
-      this.newPassValue.set('');
-      this.forced = false;
-      if (typeof turnstile !== 'undefined' && this._hWidgetId !== null) {
-        turnstile.reset(this._hWidgetId);
+    this.saving = true;
+    try {
+      const captchaToken = await this._getCaptchaToken();
+      const res = await this.auth.changePassword(session.userId, oldPass, newPass, captchaToken);
+      this.msg   = res.msg;
+      this.msgOk = res.ok;
+      if (res.ok) {
+        this.form.reset();
+        this.newPassValue.set('');
+        this.forced = false;
+        if (typeof turnstile !== 'undefined' && this._hWidgetId !== null) {
+          turnstile.reset(this._hWidgetId);
+        }
       }
+    } finally {
+      this.saving = false;
     }
   }
 }

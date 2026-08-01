@@ -261,6 +261,7 @@
   border-radius: 4px; padding: 2px 4px; transition: background 0.15s;
   &:hover { background: var(--color-surface); }
   &:hover .address-edit-icon { opacity: 1; }
+  &--readonly { cursor: default; &:hover { background: transparent; } }
 }
 .address-text {
   font-size: 0.82rem; flex: 1; min-width: 0;
@@ -515,6 +516,7 @@ $_epc-cols: minmax(180px, 1fr) 120px 50px 145px 90px 130px 108px 108px 80px 130p
 .obs-text {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 0.88rem; color: var(--color-text); cursor: pointer;
+  &--readonly { cursor: default; &:hover { background: transparent; } }
   padding: 2px 4px; border-radius: 4px; min-height: 28px;
   &:hover { background: var(--color-surface); }
 }

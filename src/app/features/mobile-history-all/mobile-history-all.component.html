@@ -310,7 +310,7 @@
                   </div>
                   <div class="mh-ds-prod-bottom">
                     <span></span>
-                    @if (!o.locked) {
+                    @if (!o.locked && (isKeyUser() || isOwner(o))) {
                       <div class="mh-prod-stepper">
                         <button class="mh-ps-btn" (click)="decPendingQty(o.id, pi)">
                           <mat-icon>{{ p.qty <= 1 ? 'delete_outline' : 'remove' }}</mat-icon>

@@ -85,7 +85,8 @@ export class LayoutComponent implements OnInit {
     if (!session) return [];
     if (session.isAdmin) return this.navItems;
 
-    const perms: AppPermission[] = this.storage.get('app_permissions') ?? [];
+    const stored: AppPermission[] = this.storage.get('app_permissions') ?? [];
+    const perms = stored.length > 0 ? stored : DEFAULT_PERMISSIONS;
     const perm = perms.find(p => p.id === session.role);
 
     return this.navItems.filter(item => {

@@ -320,12 +320,14 @@
                 } @else { <span class="muted">—</span> }
               </td>
               <td class="notes-col col-obs">
-                <textarea class="chip-note-input" rows="1"
-                          [appInitValue]="o.observatii ?? o.client.note ?? ''"
-                          (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
-                          (blur)="saveOrderObsBuffer(o.id)"
-                          placeholder="Notă comandă">
-                </textarea>
+                @if (auth.isAdmin()) {
+                  <textarea class="chip-note-input" rows="1"
+                            [appInitValue]="o.observatii ?? o.client.note ?? ''"
+                            (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
+                            (blur)="saveOrderObsBuffer(o.id)"
+                            placeholder="Notă comandă">
+                  </textarea>
+                }
               </td>
               <td class="actions-cell col-actiuni">
                 @if (auth.hasFullAccess('transport')) {
@@ -1040,10 +1042,12 @@
                   } @else { — }
                 </td>
                 <td class="col-actiuni">
-                  <button mat-icon-button color="primary" matTooltip="Restaurează comanda"
-                          (click)="restoreDeletedOrder(o)">
-                    <mat-icon>restore</mat-icon>
-                  </button>
+                  @if (auth.isAdmin()) {
+                    <button mat-icon-button color="primary" matTooltip="Restaurează comanda"
+                            (click)="restoreDeletedOrder(o)">
+                      <mat-icon>restore</mat-icon>
+                    </button>
+                  }
                 </td>
               </tr>
             }

@@ -22,7 +22,8 @@ export class AuthService {
   readonly roleLabel   = computed(() => {
     const map: Record<string, string> = {
       keyuser: 'KeyUser', contabilitate: 'Contabilitate',
-      agent: 'Agent', 'sub-agent': 'Sub-agent'
+      agent: 'Agent', 'sub-agent': 'Sub-agent',
+      sofer: 'Șofer', ajutor_manipulant: 'Ajutor manipulant'
     };
     return map[this._session()?.role ?? ''] ?? 'Agent';
   });

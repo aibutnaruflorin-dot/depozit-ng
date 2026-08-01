@@ -30,7 +30,7 @@
         <td><strong>{{ user.name }}</strong></td>
         <td><code>{{ user.username }}</code></td>
         <td>
-          <p-tag [value]="user.role === 'keyuser' ? 'KeyUser' : user.role"
+          <p-tag [value]="getRoleLabel(user.role)"
                  [severity]="user.role === 'keyuser' ? 'warn' : 'info'" />
         </td>
         <td>

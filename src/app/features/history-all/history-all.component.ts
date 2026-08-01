@@ -582,6 +582,7 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cancelOrder(order: Order): void {
+    if (!confirm(`Anulezi comanda #${order.orderNumber}?`)) return;
     this.ordersService.cancelOrder(order.id);
     this.collapseRow(order.id);
     this.snackBar.open('Comanda anulată.', '', { duration: 2500 });

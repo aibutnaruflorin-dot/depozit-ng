@@ -45,12 +45,20 @@
         <mat-icon>list_alt</mat-icon> Toate comenzile
       </button>
     }
+    @if (auth.canAccessPage('manual')) {
+      <button class="m-more-item" (click)="navigateTo('/app/m-manual')">
+        <mat-icon>menu_book</mat-icon> Manual
+      </button>
+    }
     @if (auth.isAdmin()) {
       <button class="m-more-item" (click)="navigateTo('/app/m-settings')">
         <mat-icon>settings</mat-icon> Setări
       </button>
     }
     <div class="m-more-divider"></div>
+    <button class="m-more-item" (click)="navigateTo('/app/m-account')">
+      <mat-icon>manage_accounts</mat-icon> Contul meu
+    </button>
     <button class="m-more-item m-more-item-danger" (click)="logout()">
       <mat-icon>logout</mat-icon> Deconectare
     </button>

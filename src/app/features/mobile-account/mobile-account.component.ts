@@ -96,21 +96,29 @@ export class MobileAccountComponent implements AfterViewInit {
     return map[this.auth.session()?.role ?? ''] ?? this.auth.session()?.role ?? '';
   }
 
+  saving = false;
+
   async save(): Promise<void> {
+    if (this.saving) return;
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const { oldPass, newPass, confirm } = this.form.value;
     if (newPass !== confirm) { this.msg.set('Parolele noi nu coincid.'); this.msgOk.set(false); return; }
     const session = this.auth.session();
     if (!session) return;
-    const captchaToken = await this._getCaptchaToken();
-    const res = await this.auth.changePassword(session.userId, oldPass, newPass, captchaToken);
-    this.msg.set(res.msg); this.msgOk.set(res.ok);
-    if (res.ok) {
-      this.form.reset(); this.newPassValue.set('');
-      if (!this.forced) this.showPassForm.set(false);
-      if (typeof turnstile !== 'undefined' && this._hWidgetId !== null) {
-        turnstile.reset(this._hWidgetId);
+    this.saving = true;
+    try {
+      const captchaToken = await this._getCaptchaToken();
+      const res = await this.auth.changePassword(session.userId, oldPass, newPass, captchaToken);
+      this.msg.set(res.msg); this.msgOk.set(res.ok);
+      if (res.ok) {
+        this.form.reset(); this.newPassValue.set('');
+        if (!this.forced) this.showPassForm.set(false);
+        if (typeof turnstile !== 'undefined' && this._hWidgetId !== null) {
+          turnstile.reset(this._hWidgetId);
+        }
       }
+    } finally {
+      this.saving = false;
     }
   }
 

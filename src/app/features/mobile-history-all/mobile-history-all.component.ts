@@ -156,15 +156,21 @@ export class MobileHistoryAllComponent {
   }
 
   orderTotal(o: Order): number {
-    return o.products.reduce((s, p) => s + (p.pretCuTVA ?? 0) * p.qty, 0);
+    const prod = o.products.reduce((s, p) => s + (p.pretCuTVA ?? 0) * p.qty, 0);
+    const admin = (o.adminProducts ?? []).reduce((s, p) => s + (p.pretCuTVA ?? 0) * p.qty, 0);
+    return prod + admin;
   }
 
   orderTotalFaraTVA(o: Order): number {
-    return o.products.reduce((s, p) => s + (p.pretFaraTVA ?? 0) * p.qty, 0);
+    const prod = o.products.reduce((s, p) => s + (p.pretFaraTVA ?? 0) * p.qty, 0);
+    const admin = (o.adminProducts ?? []).reduce((s, p) => s + (p.pretFaraTVA ?? 0) * p.qty, 0);
+    return prod + admin;
   }
 
   orderMasa(o: Order): number {
-    return o.products.reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0);
+    const prod = o.products.reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0);
+    const admin = (o.adminProducts ?? []).reduce((s, p) => s + (p.masaNeta ?? 0) * p.qty, 0);
+    return prod + admin;
   }
 
   shortDate(iso: string): string {
@@ -205,18 +211,18 @@ export class MobileHistoryAllComponent {
   }
 
   canFinalizeWithChanges(o: Order): boolean {
-    return this.isActiveOrder(o) && this.isKeyUser() && this.hasQtyChanges(o);
+    return this.isActiveOrder(o) && this.isKeyUser() && this.hasQtyChanges(o) && o.status !== 'planificat';
   }
 
   canAddProducts(o: Order): boolean {
     return ['trimis', 'acceptat', 'planificat', 'livrat_partial'].includes(o.status)
-      && !o.superseded
+      && !o.superseded && !o.locked
       && (this.isKeyUser() || this.isOwner(o));
   }
 
   canCancel(o: Order): boolean {
     return ['trimis', 'acceptat', 'planificat'].includes(o.status)
-      && !o.superseded
+      && !o.superseded && !o.locked
       && (this.isKeyUser() || this.isOwner(o));
   }
 

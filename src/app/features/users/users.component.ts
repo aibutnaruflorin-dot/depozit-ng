@@ -55,6 +55,15 @@ export class UsersComponent implements OnInit {
     });
   }
 
+  readonly ROLE_LABELS: Record<string, string> = {
+    keyuser: 'KeyUser', agent: 'Agent', 'sub-agent': 'Sub-agent',
+    contabilitate: 'Contabilitate', sofer: 'Șofer', ajutor_manipulant: 'Ajutor manipulant'
+  };
+
+  getRoleLabel(role: string): string {
+    return this.ROLE_LABELS[role] ?? role;
+  }
+
   async ngOnInit(): Promise<void> {
     await this._reload();
   }
