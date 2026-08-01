@@ -74,7 +74,12 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   private _getCaptchaToken(): Promise<string> {
     return new Promise<string>((resolve) => {
       if (typeof turnstile === 'undefined' || this._hWidgetId === null) { resolve(''); return; }
-      this._captchaResolver = resolve;
+      const timeout = setTimeout(() => {
+        console.warn('[Turnstile] token timeout — proceeding without captcha');
+        this._captchaResolver = null;
+        resolve('');
+      }, 15000);
+      this._captchaResolver = (token: string) => { clearTimeout(timeout); resolve(token); };
       turnstile.execute(this._hWidgetId);
     });
   }
