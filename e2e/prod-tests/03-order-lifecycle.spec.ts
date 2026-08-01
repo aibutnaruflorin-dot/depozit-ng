@@ -15,12 +15,19 @@ const CLIENT_NAME  = `Client E2E ${TS}`;
 let agentPage: Page;
 let adminPage: Page;
 let soferPage: Page;
+let hasProducts = false;
+
+const SKIP_MSG = 'Nu există produse în catalog — adaugă produse din Settings înainte de a rula testul';
 
 test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
 
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
     agentPage = await browser.newPage();
     await loginAs(agentPage, 'agent');
+    // Verifică produse o singură dată în beforeAll
+    await agentPage.goto('/#/app/new-order');
+    await agentPage.waitForLoadState('networkidle');
+    hasProducts = await agentPage.locator('.product-name').count() > 0;
 
     adminPage = await browser.newPage();
     await loginAs(adminPage, 'admin');
@@ -37,82 +44,54 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
 
   // ── AGENT: creare comandă ─────────────────────────────────────────────────
 
-  test('OL-01 | Agent: catalog se încarcă cu produse', async () => {
-    await agentPage.goto('/#/app/catalog');
-    await agentPage.waitForLoadState('networkidle');
+  test('OL-01 | Agent: new-order se încarcă cu produse', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
     await expect(agentPage).not.toHaveURL(/login/);
-
-    // Trebuie să existe cel puțin un produs
-    const productCards = agentPage.locator('mat-card, .product-card, .product-item');
-    const count = await productCards.count();
-    if (count === 0) {
-      test.skip(true, 'Nu există produse în catalog — adaugă produse din Settings înainte de a rula testul');
-    }
-    await agentPage.screenshot({ path: 'e2e/prod-screenshots/ol01-catalog.png' });
+    await expect(agentPage.locator('.product-name').first()).toBeVisible({ timeout: 8000 });
+    await agentPage.screenshot({ path: 'e2e/prod-screenshots/ol01-new-order.png' });
   });
 
-  test('OL-02 | Agent: adaugă produs în coș', async () => {
-    // Click pe primul produs sau buton Add To Cart
-    const addBtn = agentPage.locator('button').filter({ hasText: /adaugă|add|coș|\+/i }).first();
-    if (!await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      // Încearcă click pe cardul produsului pentru a-l selecta
-      await agentPage.locator('mat-card, .product-card').first().click();
-      await agentPage.waitForTimeout(500);
-    } else {
-      await addBtn.click();
-    }
+  test('OL-02 | Agent: setează cantitate și adaugă în coș', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
+    // Setează qty = 1 pe primul produs
+    const qtyInput = agentPage.locator('input.row-qty').first();
+    await expect(qtyInput).toBeVisible({ timeout: 8000 });
+    await qtyInput.fill('1');
+    await qtyInput.dispatchEvent('change');
 
-    // Navighează la New Order sau coșul trebuie să afișeze produsul
-    await agentPage.goto('/#/app/new-order');
-    await agentPage.waitForLoadState('networkidle');
-    await expect(agentPage).not.toHaveURL(/login/);
-    await agentPage.screenshot({ path: 'e2e/prod-screenshots/ol02-new-order.png' });
+    // Click pe butonul add-to-cart al primului produs
+    const addBtn = agentPage.locator('button.add-btn').first();
+    await addBtn.click();
+    await agentPage.waitForTimeout(300);
+
+    // Deschide coșul
+    const cartBtn = agentPage.locator('button.cart-btn').first();
+    await cartBtn.click();
+    await agentPage.waitForTimeout(500);
+
+    await agentPage.screenshot({ path: 'e2e/prod-screenshots/ol02-cart-open.png' });
   });
 
-  test('OL-03 | Agent: completează și trimite comanda', async () => {
-    await agentPage.goto('/#/app/new-order');
+  test('OL-03 | Agent: completează datele și trimite comanda', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
+    // Completează numele clientului
+    const nameInput = agentPage.locator('input[placeholder="Numele clientului"]');
+    await expect(nameInput).toBeVisible({ timeout: 8000 });
+    await nameInput.fill(CLIENT_NAME);
+
+    await agentPage.screenshot({ path: 'e2e/prod-screenshots/ol03-cart-filled.png' });
+
+    // Trimite comanda
+    const submitBtn = agentPage.locator('button.submit-btn');
+    await expect(submitBtn).toBeVisible({ timeout: 5000 });
+    await submitBtn.click();
     await agentPage.waitForLoadState('networkidle');
 
-    // Selectează primul produs dacă există câmp de selecție
-    const firstProduct = agentPage.locator('mat-checkbox, .product-row').first();
-    if (await firstProduct.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await firstProduct.click();
-    }
-
-    // Qty — setează cantitate 1 pe primul input numeric
-    const qtyInputs = agentPage.locator('input[type="number"], input.qty');
-    if (await qtyInputs.count() > 0) {
-      await qtyInputs.first().fill('1');
-    }
-
-    // Client name
-    const clientInput = agentPage.locator('input').filter({ hasText: /client|destinatar/i }).first();
-    const allInputs   = agentPage.locator('input[type="text"], input:not([type])');
-    const clientField = await clientInput.isVisible({ timeout: 1000 }).catch(() => false)
-      ? clientInput
-      : allInputs.last();
-    await clientField.fill(CLIENT_NAME).catch(() => {});
-
-    // Data livrare — selectează o dată viitoare
-    const dateInput = agentPage.locator('input[type="date"]');
-    if (await dateInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      await dateInput.fill(tomorrow.toISOString().split('T')[0]);
-    }
-
-    await agentPage.screenshot({ path: 'e2e/prod-screenshots/ol03-order-form.png' });
-
-    // Trimite
-    const submitBtn = agentPage.locator('button').filter({ hasText: /trimite|submit|comandă/i }).first();
-    if (await submitBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await submitBtn.click();
-      await agentPage.waitForLoadState('networkidle');
-    }
     await agentPage.screenshot({ path: 'e2e/prod-screenshots/ol03b-after-submit.png' });
   });
 
   test('OL-04 | Agent: comanda apare în comenzile mele', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
     await agentPage.goto('/#/app/history-me');
     await agentPage.waitForLoadState('networkidle');
     await expect(agentPage).not.toHaveURL(/login/);
@@ -126,6 +105,7 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
   // ── ADMIN: planificare transport ──────────────────────────────────────────
 
   test('OL-05 | Admin: vede comanda în History All', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
     await adminPage.goto('/#/app/history-all');
     await adminPage.waitForLoadState('networkidle');
     await expect(adminPage).not.toHaveURL(/login/);
@@ -136,6 +116,7 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
   });
 
   test('OL-06 | Admin: Transport — creează cursă nouă', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
     await adminPage.goto('/#/app/transport');
     await adminPage.waitForLoadState('networkidle');
     await expect(adminPage).not.toHaveURL(/login/);
@@ -196,6 +177,7 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
   // ── SOFER: confirm + livrare ──────────────────────────────────────────────
 
   test('OL-07 | Sofer: vede transportul în My Trips', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
     await soferPage.goto('/#/app/my-trips');
     await soferPage.waitForLoadState('networkidle');
     await expect(soferPage).not.toHaveURL(/login/);
@@ -207,6 +189,7 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
   });
 
   test('OL-08 | Sofer: confirmă transportul', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
     const confirmBtn = soferPage.locator('button').filter({ hasText: /confirm|accept/i }).first();
     if (await confirmBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await confirmBtn.click();
@@ -216,6 +199,7 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
   });
 
   test('OL-09 | Sofer: Transport — marchează Pornit → Livrat', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
     await soferPage.goto('/#/app/transport');
     await soferPage.waitForLoadState('networkidle');
 
@@ -239,6 +223,7 @@ test.describe.serial('Order Lifecycle: Agent → Admin → Sofer', () => {
   // ── ADMIN: verificare finală ──────────────────────────────────────────────
 
   test('OL-10 | Admin: history-all reflectă statusul final', async () => {
+    test.skip(!hasProducts, SKIP_MSG);
     await adminPage.goto('/#/app/history-all');
     await adminPage.waitForLoadState('networkidle');
     await adminPage.screenshot({ path: 'e2e/prod-screenshots/ol10-final-status.png' });

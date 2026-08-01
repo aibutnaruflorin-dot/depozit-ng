@@ -32,42 +32,32 @@ test.describe.serial('Admin flow — Users + Settings', () => {
   });
 
   test('AF-02 | Deschide dialog adaugă utilizator', async () => {
-    const addBtn = page.locator('button').filter({ hasText: /adaugă|add|nou|new/i }).first();
+    // Butonul din header: "Adaugă utilizator"
+    const addBtn = page.locator('button').filter({ hasText: /adaugă utilizator/i }).first();
     await expect(addBtn).toBeVisible({ timeout: 8000 });
     await addBtn.click();
 
-    const dialog = page.locator('mat-dialog-container, [role="dialog"]');
+    // Dialogul e un mat-card custom cu role="dialog"
+    const dialog = page.locator('mat-card.modal-card[role="dialog"]');
     await expect(dialog).toBeVisible({ timeout: 5000 });
     await page.screenshot({ path: 'e2e/prod-screenshots/af02-add-user-dialog.png' });
   });
 
   test('AF-03 | Completează și salvează utilizatorul nou', async () => {
-    const dialog = page.locator('mat-dialog-container, [role="dialog"]');
+    const dialog = page.locator('mat-card.modal-card[role="dialog"]');
 
-    // Username
-    const usernameInput = dialog.locator('input').filter({ hasText: /username|utilizator/i }).first();
-    const inputs = dialog.locator('input');
-    await inputs.nth(0).fill(NEW_USER);
+    // Ordinea câmpurilor în formular: Nume complet, Username, Parolă, Rol
+    const inputs = dialog.locator('input:not([type="hidden"])');
+    await inputs.nth(0).fill(NEW_NAME);    // Nume complet
+    await inputs.nth(1).fill(NEW_USER);    // Username
+    await dialog.locator('input[type="password"]').fill('ProdTest#2026!');
 
-    // Name / Nume
-    const nameInput = inputs.nth(1);
-    if (await nameInput.isVisible()) await nameInput.fill(NEW_NAME);
-
-    // Parola
-    const passInputs = dialog.locator('input[type="password"]');
-    if (await passInputs.count() >= 1) await passInputs.nth(0).fill('ProdTest#2026!');
-    if (await passInputs.count() >= 2) await passInputs.nth(1).fill('ProdTest#2026!');
-
-    // Rol — selectează 'agent'
-    const roleSelect = dialog.locator('mat-select, select').first();
-    if (await roleSelect.isVisible()) {
-      await roleSelect.click();
-      const agentOption = page.locator('mat-option').filter({ hasText: /agent/i }).first();
-      if (await agentOption.isVisible()) await agentOption.click();
-    }
+    // Rol — mat-select cu valoarea 'agent'
+    await dialog.locator('mat-select').click();
+    await page.locator('mat-option[value="agent"]').click();
 
     // Salvează
-    const saveBtn = dialog.locator('button').filter({ hasText: /salvează|save|adaugă|ok/i }).last();
+    const saveBtn = dialog.locator('button').filter({ hasText: /salvează/i }).last();
     await saveBtn.click();
     await page.waitForLoadState('networkidle');
 
