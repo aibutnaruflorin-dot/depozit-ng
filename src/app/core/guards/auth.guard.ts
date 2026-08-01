@@ -51,7 +51,8 @@ export const pageGuard: CanActivateFn = async (route) => {
   if (session.isAdmin) return true;
 
   const pageId = route.data['pageId'] as string;
-  const perms: AppPermission[] = storage.get('app_permissions') ?? DEFAULT_PERMISSIONS;
+  const stored: AppPermission[] = storage.get('app_permissions') ?? [];
+  const perms = stored.length > 0 ? stored : DEFAULT_PERMISSIONS;
   const perm = perms.find(p => p.id === session.role);
   const access = perm?.pages?.[pageId] ?? 'none';
 

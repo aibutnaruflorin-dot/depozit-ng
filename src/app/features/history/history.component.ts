@@ -669,7 +669,7 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   }
 
   hasPendingChanges(order: Order): boolean {
-    return this.hasEditedQty(order) || !!(order.pendingProducts?.length);
+    return this.hasEditedQty(order) || !!(order.pendingProducts?.length) || !!(order.adminProducts?.length);
   }
 
   hasEditedQty(order: Order): boolean {

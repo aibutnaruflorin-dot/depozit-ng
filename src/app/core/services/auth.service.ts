@@ -45,7 +45,8 @@ export class AuthService {
     const s = this._session();
     if (!s) return false;
     if (s.isAdmin) return true;
-    const perms: AppPermission[] = this.storage.get('app_permissions') ?? DEFAULT_PERMISSIONS;
+    const stored: AppPermission[] = this.storage.get('app_permissions') ?? [];
+    const perms = stored.length > 0 ? stored : DEFAULT_PERMISSIONS;
     const perm = perms.find((p: any) => p.id === s.role);
     return perm?.pages?.[pageId] === 'full';
   }
@@ -54,7 +55,8 @@ export class AuthService {
     const s = this._session();
     if (!s) return false;
     if (s.isAdmin) return true;
-    const perms: AppPermission[] = this.storage.get('app_permissions') ?? DEFAULT_PERMISSIONS;
+    const stored: AppPermission[] = this.storage.get('app_permissions') ?? [];
+    const perms = stored.length > 0 ? stored : DEFAULT_PERMISSIONS;
     const perm = perms.find((p: any) => p.id === s.role);
     return (perm?.pages?.[pageId] ?? 'none') !== 'none';
   }

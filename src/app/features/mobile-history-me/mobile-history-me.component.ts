@@ -201,10 +201,10 @@ export class MobileHistoryMeComponent {
   canRevise(o: Order): boolean {
     if (o.locked) return false;
     const active = ['trimis','acceptat','in_livrare','livrat_partial'];
-    return active.includes(o.status) && !o.superseded && (this.hasEditedQty(o) || !!(o.pendingProducts?.length));
+    return active.includes(o.status) && !o.superseded && this.hasQtyChanges(o);
   }
   canAddProducts(o: Order): boolean { return !o.locked && ['draft','trimis','acceptat','livrat_partial'].includes(o.status) && !o.superseded; }
-  canCancel(o: Order): boolean      { return !o.locked && ['draft','trimis','acceptat'].includes(o.status) && !o.superseded; }
+  canCancel(o: Order): boolean      { return ['draft','trimis','acceptat','planificat'].includes(o.status) && !o.superseded && (!o.locked || this.isKeyUser()); }
   canReopen(o: Order): boolean      { return o.status === 'anulat'; }
 
   ekey(orderId: string, idx: number): string { return `${orderId}:${idx}`; }

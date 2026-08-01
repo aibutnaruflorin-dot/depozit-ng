@@ -127,7 +127,7 @@
         <div class="mh-ds-header-info">
           <span class="mh-order-nr">#{{ o.orderNumber ?? '—' }}</span>
           <span class="mh-ds-client">{{ o.client.name }}</span>
-          @if (o.agent && o.agent.id !== auth.session()?.userId) {
+          @if (o.agent && !isOwner(o)) {
             <span class="mh-ds-agent-label">
               <mat-icon>person</mat-icon>{{ o.agent.name }}
             </span>
