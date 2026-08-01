@@ -28,7 +28,11 @@ export class SupabaseService {
       password,
       options: captchaToken ? { captchaToken } : undefined,
     });
-    if (error || !data.session) return null;
+    if (error) {
+      if (error.status === 429) throw error;
+      return null;
+    }
+    if (!data.session) return null;
     return { user: data.user, session: data.session };
   }
 

@@ -21,10 +21,6 @@ function isValidRemoteShape(key: string, value: unknown): boolean {
   if (ARRAY_KEYS.has(key) || key.startsWith('app_catalog_') || key.startsWith('app_products_')) {
     return Array.isArray(value);
   }
-  if (key.startsWith('_lk_')) {
-    const v = value as Record<string, unknown>;
-    return typeof v['attempts'] === 'number' && typeof v['lockedUntil'] === 'number';
-  }
   return true;
 }
 

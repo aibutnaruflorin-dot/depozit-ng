@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, signal } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -23,7 +23,7 @@ declare const turnstile: any;
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent implements AfterViewInit {
+export class LoginComponent implements AfterViewInit, OnDestroy {
   form:       FormGroup;
   error       = '';
   hidePass    = true;
