@@ -155,6 +155,7 @@ export class MobileCatalogComponent {
   }
 
   openAdj(product: Product, type: 'add' | 'remove'): void {
+    if (!this.canAdjust()) return;
     this.adjModal.set({ product, type });
     this.adjQty.set(1);
     this.adjComment.set('');
@@ -172,6 +173,7 @@ export class MobileCatalogComponent {
   }
 
   saveAdj(): void {
+    if (!this.canAdjust()) return;
     const m = this.adjModal();
     if (!m) return;
     if (!this.adjComment().trim()) {

@@ -340,11 +340,13 @@ export class MobileHistoryMeComponent {
   }
 
   acceptOrder(o: Order): void {
+    if (!this.isKeyUser()) return;
     this.ordersService.acceptOrder(o.id);
     this.snackBar.open(`Comanda #${o.orderNumber ?? '?'} acceptată!`, 'OK', { duration: 2500, panelClass: ['snack-success'] });
   }
 
   toggleLock(o: Order): void {
+    if (!this.isKeyUser()) return;
     this.ordersService.setOrderLocked(o.id, !o.locked);
     const msg = o.locked
       ? 'Comanda deblocată — agentul poate modifica din nou.'
@@ -353,6 +355,7 @@ export class MobileHistoryMeComponent {
   }
 
   finalizeOrder(o: Order): void {
+    if (!this.isKeyUser()) return;
     const withEditedQty = o.products.map((p, i) => ({ ...p, qty: this.getEditQty(o.id, i, p.qty) }));
     const overStock = withEditedQty.filter(p => {
       if (!p.catalogId) return false;

@@ -468,6 +468,7 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ── Submit ── */
   submit(): void {
+    if (!this.auth.hasFullAccess('comenzi_noi')) return;
     this.nameCtrl.markAsTouched();
     if (this.nameCtrl.invalid) {
       this.snackBar.open('Introduceți numele clientului.', '', { duration: 2500, panelClass: ['snack-warn'] });

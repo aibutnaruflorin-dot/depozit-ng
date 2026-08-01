@@ -501,6 +501,7 @@ export class MobileTransportComponent implements OnInit {
   }
 
   openCreateForVehicleDay(vehicleId: string, isoDate: string): void {
+    if (!this.auth.hasFullAccess('transport')) return;
     this.editingId.set(null);
     this.formLockedToOrder.set(false);
     this.formVehicleId.set(vehicleId);
@@ -866,6 +867,7 @@ export class MobileTransportComponent implements OnInit {
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   openCreate(preselect?: string): void {
+    if (!this.auth.hasFullAccess('transport')) return;
     this.editingId.set(null);
     this.formVehicleId.set('');
     this.formDriverId.set('');
@@ -920,6 +922,7 @@ export class MobileTransportComponent implements OnInit {
   closeForm(): void { this.showForm.set(false); }
 
   save(): void {
+    if (!this.auth.hasFullAccess('transport')) return;
     const vId = this.formVehicleId(), dId = this.formDriverId();
     if (!vId || !dId) {
       this.snackBar.open('Selectați mașina și șoferul.', '', { duration: 2500 }); return;

@@ -465,6 +465,7 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openAdj(product: Product, type: 'add' | 'remove'): void {
+    if (!this.canAdjust()) return;
     this.adjModal.set({ product, type });
     this.adjQty.set(1);
     this.adjComment.set('');
@@ -479,6 +480,7 @@ export class CatalogComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveAdj(): void {
+    if (!this.canAdjust()) return;
     const modal = this.adjModal();
     if (!modal) return;
     const comment = this.adjComment().trim();

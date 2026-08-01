@@ -539,6 +539,7 @@ export class TransportComponent implements OnInit {
   // ── Modal open/close ──────────────────────────────────────────────────────
 
   openCreate(): void {
+    if (!this.auth.hasFullAccess('transport')) return;
     this.editingId.set(null);
     this.singleOrderMode.set(false);
     this._resetModal();
@@ -547,6 +548,7 @@ export class TransportComponent implements OnInit {
   }
 
   openCreateForOrder(order: Order): void {
+    if (!this.auth.hasFullAccess('transport')) return;
     this.editingId.set(null);
     this.singleOrderMode.set(true);
     this._resetModal();
@@ -573,6 +575,7 @@ export class TransportComponent implements OnInit {
   }
 
   openEdit(t: Transport): void {
+    if (!this.auth.hasFullAccess('transport')) return;
     this.editingId.set(t.id);
     this.singleOrderMode.set(false);
     this._resetModal();
@@ -844,6 +847,7 @@ export class TransportComponent implements OnInit {
   // ── Save ──────────────────────────────────────────────────────────────────
 
   save(): void {
+    if (!this.auth.hasFullAccess('transport')) return;
     this.form.markAllAsTouched();
     if (this.form.invalid) {
       if (this.form.hasError('plecareInPast')) {

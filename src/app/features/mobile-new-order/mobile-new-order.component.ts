@@ -235,6 +235,7 @@ export class MobileNewOrderComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.auth.hasFullAccess('comenzi_noi') && !this.addToOrderId) return;
     if (this.addToOrderId) {
       if (this.cart().length === 0) {
         this.snackBar.open('Adaugă cel puțin un produs.', '', { duration: 2500, panelClass: ['snack-warn', 'snack-center'] });

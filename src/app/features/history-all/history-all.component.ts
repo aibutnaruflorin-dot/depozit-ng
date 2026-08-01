@@ -551,6 +551,7 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startEditDelivery(order: Order, e: Event): void {
+    if (!this.auth.hasFullAccess('istoric')) return;
     e.stopPropagation();
     this.editingDeliveryId.set(order.id);
     this.editDeliveryDate = order.deliveryDate ?? '';
@@ -558,6 +559,7 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveDelivery(order: Order, e: Event): void {
+    if (!this.auth.hasFullAccess('istoric')) return;
     e.stopPropagation();
     if (order.cuLivrare && (!this.editDeliveryDate || !this.editDeliveryTime)) {
       this.snackBar.open('Data și ora livrării sunt obligatorii pentru comenzile cu livrare.', 'OK', { duration: 3500, panelClass: ['snack-warn'] });
@@ -588,6 +590,7 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   acceptOrder(order: Order): void {
+    if (!this.auth.isKeyUser()) return;
     if (!this._checkDelivery(order)) return;
     this.ordersService.acceptOrder(order.id);
     this.collapseRow(order.id);
@@ -613,6 +616,7 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   finalizeOrder(order: Order): void {
+    if (!this.auth.isKeyUser()) return;
     if (!this._checkDelivery(order)) return;
     const withEditedQty = order.products.map((p, i) => ({ ...p, qty: this.getEditQty(order.id, i, p.qty) }));
     const overStock = withEditedQty.filter(p => {
@@ -771,12 +775,14 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startEditAddress(order: Order, e: Event): void {
+    if (!this.auth.hasFullAccess('istoric')) return;
     e.stopPropagation();
     this.editingAddressId.set(order.id);
     this.editAddressVal = order.client.address ?? '';
   }
 
   saveDeliveryAddress(order: Order, e: Event): void {
+    if (!this.auth.hasFullAccess('istoric')) return;
     e.stopPropagation();
     if (order.cuLivrare && !this.editAddressVal.trim()) {
       this.snackBar.open('Adresa de livrare este obligatorie pentru comenzile cu livrare.', 'OK', { duration: 3000, panelClass: ['snack-warn'] });
@@ -792,12 +798,14 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startEditPhone(order: Order, e: Event): void {
+    if (!this.auth.hasFullAccess('istoric')) return;
     e.stopPropagation();
     this.editingPhoneId.set(order.id);
     this.editPhoneVal = order.client.phone ?? '';
   }
 
   savePhone(order: Order, e: Event): void {
+    if (!this.auth.hasFullAccess('istoric')) return;
     e.stopPropagation();
     const phone = this.editPhoneVal.trim().replace(/\D/g, '');
     if (order.cuLivrare && !phone) {
@@ -814,12 +822,14 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startEditNote(order: Order, e: Event): void {
+    if (!this.auth.hasFullAccess('istoric')) return;
     e.stopPropagation();
     this.editingNoteId.set(order.id);
     this.editNoteVal = order.client.note ?? '';
   }
 
   saveNote(order: Order, e: Event): void {
+    if (!this.auth.hasFullAccess('istoric')) return;
     e.stopPropagation();
     this.ordersService.updateClientNote(order.id, this.editNoteVal);
     this.editingNoteId.set(null);
@@ -918,6 +928,7 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleLock(order: Order): void {
+    if (!this.auth.isKeyUser()) return;
     this.ordersService.setOrderLocked(order.id, !order.locked);
     const msg = order.locked
       ? 'Comanda deblocată — agentul poate modifica din nou.'
