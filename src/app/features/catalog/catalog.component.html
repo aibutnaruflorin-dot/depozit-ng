@@ -9,9 +9,11 @@
     <span class="count-badge">{{ filtered().length }}</span>
   </h1>
   <div class="page-actions">
-    <button mat-stroked-button (click)="openResetBuf()" color="warn">
-      <mat-icon>restart_alt</mat-icon> Resetare Buffer
-    </button>
+    @if (canAdjust()) {
+      <button mat-stroked-button (click)="openResetBuf()" color="warn">
+        <mat-icon>restart_alt</mat-icon> Resetare Buffer
+      </button>
+    }
     @if (canExport()) {
       <button mat-stroked-button (click)="exportExcel()">
         <mat-icon>download</mat-icon> Export Excel

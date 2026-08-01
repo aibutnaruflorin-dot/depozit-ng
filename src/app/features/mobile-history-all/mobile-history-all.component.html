@@ -69,7 +69,7 @@
             <span class="mha-sep">·</span>
             <span>{{ shortDate(o.timestamp) }}</span>
             <span class="mha-sep">·</span>
-            <span>{{ o.products.length + (o.pendingProducts?.length ?? 0) }} produse</span>
+            <span>{{ o.products.length + (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }} produse</span>
             @if (o.cuLivrare) {
               <span class="mha-sep">·</span>
               <mat-icon class="mha-meta-icon">local_shipping</mat-icon>
@@ -194,7 +194,7 @@
         <!-- Products -->
         <div class="mh-ds-section">
           <div class="mh-ds-section-label">
-            Produse ({{ o.products.length + (o.pendingProducts?.length ?? 0) }})
+            Produse ({{ o.products.length + (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }})
             @if (o.pendingProducts?.length) {
               <span class="mh-ds-pending-badge">+{{ o.pendingProducts!.length }} neconfirmate</span>
             }

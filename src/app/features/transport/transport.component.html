@@ -1500,7 +1500,7 @@
                         </span>
                       }
                       @if (o.status === 'livrat_partial') { <span class="partial-badge">parțial</span> }
-                      <span class="order-pick-count">{{ o.products.length }} art.</span>
+                      <span class="order-pick-count">{{ o.products.length + (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }} art.</span>
                     </div>
                     <mat-icon class="add-order-icon">add_circle</mat-icon>
                   </div>

@@ -247,7 +247,10 @@ export class MobileHistoryMeComponent {
   }
 
   hasEditedQty(order: Order): boolean {
-    return order.products.some((_, i) => this._editQty()[this.ekey(order.id, i)] !== undefined);
+    return order.products.some((p, i) => {
+      const edited = this._editQty()[this.ekey(order.id, i)];
+      return edited !== undefined && edited !== p.qty;
+    });
   }
 
   incPendingQty(orderId: string, idx: number): void {

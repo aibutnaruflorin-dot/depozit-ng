@@ -47,7 +47,7 @@
           <div class="mh-card-meta">
             <span>{{ shortDate(o.timestamp) }}</span>
             <span class="mh-sep">·</span>
-            <span>{{ o.products.length + (o.pendingProducts?.length ?? 0) }} produse</span>
+            <span>{{ o.products.length + (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }} produse</span>
             @if (o.cuLivrare) {
               <span class="mh-sep">·</span>
               <mat-icon class="mh-meta-icon">local_shipping</mat-icon>

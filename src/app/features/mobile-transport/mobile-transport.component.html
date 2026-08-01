@@ -283,7 +283,7 @@
                     <span class="mt-pmeta-val">{{ o.deletedAt | date:'dd.MM.yyyy HH:mm' }}</span>
                   }
                   <span class="mt-sep">·</span>
-                  <span class="mt-pmeta-wt">{{ o.products.length }} prod.</span>
+                  <span class="mt-pmeta-wt">{{ o.products.length + (o.pendingProducts?.length ?? 0) + (o.adminProducts?.length ?? 0) }} prod.</span>
                 </div>
               </div>
               @if (auth.isAdmin()) {

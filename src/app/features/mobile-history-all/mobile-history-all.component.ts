@@ -216,14 +216,14 @@ export class MobileHistoryAllComponent {
   }
 
   canAddProducts(o: Order): boolean {
-    return ['trimis', 'acceptat', 'planificat', 'livrat_partial'].includes(o.status)
+    return ['trimis', 'acceptat', 'livrat_partial'].includes(o.status)
       && !o.superseded && !o.locked
       && (this.isKeyUser() || this.isOwner(o));
   }
 
   canCancel(o: Order): boolean {
     return ['trimis', 'acceptat', 'planificat'].includes(o.status)
-      && !o.superseded && !o.locked
+      && !o.superseded && (!o.locked || this.isKeyUser())
       && (this.isKeyUser() || this.isOwner(o));
   }
 
