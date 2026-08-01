@@ -161,7 +161,8 @@ export class MobileHistoryMeComponent {
     if (!p.catalogId) return [];
     const statusMap: Record<string, string> = {
       draft: 'Ciornă', trimis: 'În așteptare', acceptat: 'Acceptată',
-      planificat: 'Planificat', in_livrare: 'În livrare', livrat: 'Livrat'
+      planificat: 'Planificat', in_livrare: 'În livrare', livrat: 'Livrat',
+      livrat_partial: 'Parțial livrat', anulat: 'Anulată'
     };
     return this.ordersService.getBlockingOrders(p.catalogId, p.nr)
       .filter(b => b.orderNumber !== undefined || b.clientName !== '')

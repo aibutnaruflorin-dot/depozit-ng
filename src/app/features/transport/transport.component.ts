@@ -783,12 +783,11 @@ export class TransportComponent implements OnInit {
   }
 
   orderTotalWeight(o: Order): number {
-    return o.products.reduce((s, p) => {
-      const masa = p.masaNeta
-        ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta
-        ?? 0;
-      return s + masa * p.qty;
-    }, 0);
+    const getMasa = (p: { masaNeta?: number; catalogId?: string; nr: number | string }) =>
+      p.masaNeta ?? this.catalogsService.findProduct(p.catalogId ?? '', p.nr)?.masaNeta ?? 0;
+    const prod  = o.products.reduce((s, p) => s + getMasa(p) * p.qty, 0);
+    const admin = (o.adminProducts ?? []).reduce((s, p) => s + getMasa(p) * p.qty, 0);
+    return prod + admin;
   }
 
   tripTotalWeight(t: Transport): number {

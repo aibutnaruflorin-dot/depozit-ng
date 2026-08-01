@@ -365,12 +365,14 @@
                   </a>
                 }
                 <!-- Observații -->
-                <textarea class="mt-hist-obs" rows="2"
-                          [appInitValue]="o.observatii ?? o.client.note ?? ''"
-                          (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
-                          (blur)="saveOrderObsBuffer(o.id)"
-                          placeholder="Notă comandă">
-                </textarea>
+                @if (auth.isAdmin()) {
+                  <textarea class="mt-hist-obs" rows="2"
+                            [appInitValue]="o.observatii ?? o.client.note ?? ''"
+                            (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
+                            (blur)="saveOrderObsBuffer(o.id)"
+                            placeholder="Notă comandă">
+                  </textarea>
+                }
                 <!-- Curse asociate -->
                 @if (!trips.length) {
                   <div class="mt-hist-no-trips">

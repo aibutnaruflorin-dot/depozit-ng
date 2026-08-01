@@ -553,7 +553,9 @@ export class MobileTransportComponent implements OnInit {
   }
 
   orderTotalWeight(o: Order): number {
-    return o.products.reduce((s, p) => s + this.productMasa(p) * p.qty, 0);
+    const prod  = o.products.reduce((s, p) => s + this.productMasa(p) * p.qty, 0);
+    const admin = (o.adminProducts ?? []).reduce((s, p) => s + this.productMasa(p) * p.qty, 0);
+    return prod + admin;
   }
 
   fmtTime(iso: string): string {

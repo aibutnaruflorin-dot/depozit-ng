@@ -426,7 +426,8 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
 
   readonly _statusLabelMap: Record<string, string> = {
     draft: 'Ciornă', trimis: 'În așteptare', acceptat: 'Acceptată',
-    planificat: 'Planificat', in_livrare: 'În livrare', livrat: 'Livrat'
+    planificat: 'Planificat', in_livrare: 'În livrare', livrat: 'Livrat',
+    livrat_partial: 'Parțial livrat', anulat: 'Anulată'
   };
 
   getBlockingOrdersFor(catalogId: string | undefined, productNr: string | number): { orderNumber?: number; clientName: string; qty: number; statusLabel: string }[] {

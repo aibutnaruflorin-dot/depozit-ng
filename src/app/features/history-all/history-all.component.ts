@@ -203,8 +203,9 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   private _csvOrder?: Order;
 
   canAddProducts(order: Order): boolean {
-    const open = ['trimis', 'acceptat', 'planificat', 'livrat_partial'];
-    if (!open.includes(order.status) || order.superseded) return false;
+    if (order.locked || order.superseded) return false;
+    const open = ['draft', 'trimis', 'acceptat', 'livrat_partial'];
+    if (!open.includes(order.status)) return false;
     const s = this.auth.session();
     return !!s && (s.role === 'keyuser' || order.agent.id === (s.supabaseId ?? s.userId));
   }
@@ -430,22 +431,30 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
     return null;
   }
   orderTotalFaraTVA(order: Order): number {
-    return order.products.reduce((s, p) => s + (this.pFaraTVA(p) ?? 0) * p.qty, 0);
+    const prod = order.products.reduce((s, p) => s + (this.pFaraTVA(p) ?? 0) * p.qty, 0);
+    const admin = (order.adminProducts ?? []).reduce((s, p) => s + (this.pFaraTVA(p) ?? 0) * p.qty, 0);
+    return prod + admin;
   }
   orderTotalCuTVA(order: Order): number {
-    return order.products.reduce((s, p) => s + (this.pCuTVA(p) ?? 0) * p.qty, 0);
+    const prod = order.products.reduce((s, p) => s + (this.pCuTVA(p) ?? 0) * p.qty, 0);
+    const admin = (order.adminProducts ?? []).reduce((s, p) => s + (this.pCuTVA(p) ?? 0) * p.qty, 0);
+    return prod + admin;
   }
   editTotalFaraTVA(order: Order): number {
-    return order.products.reduce((s, p, j) => {
+    const prod = order.products.reduce((s, p, j) => {
       const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
       return s + (this.pFaraTVA(p) ?? 0) * qty;
     }, 0);
+    const admin = (order.adminProducts ?? []).reduce((s, p) => s + (this.pFaraTVA(p) ?? 0) * p.qty, 0);
+    return prod + admin;
   }
   editTotalCuTVA(order: Order): number {
-    return order.products.reduce((s, p, j) => {
+    const prod = order.products.reduce((s, p, j) => {
       const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
       return s + (this.pCuTVA(p) ?? 0) * qty;
     }, 0);
+    const admin = (order.adminProducts ?? []).reduce((s, p) => s + (this.pCuTVA(p) ?? 0) * p.qty, 0);
+    return prod + admin;
   }
 
   pMasa(p: { masaNeta?: number; catalogId?: string; nr: number | string }): number {
@@ -454,13 +463,17 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
     return 0;
   }
   orderTotalMasa(order: Order): number {
-    return order.products.reduce((s, p) => s + this.pMasa(p) * p.qty, 0);
+    const prod = order.products.reduce((s, p) => s + this.pMasa(p) * p.qty, 0);
+    const admin = (order.adminProducts ?? []).reduce((s, p) => s + this.pMasa(p) * p.qty, 0);
+    return prod + admin;
   }
   editTotalMasa(order: Order): number {
-    return order.products.reduce((s, p, j) => {
+    const prod = order.products.reduce((s, p, j) => {
       const qty = this.editQtyMap()[this.ekey(order.id, j)] ?? p.qty;
       return s + this.pMasa(p) * qty;
     }, 0);
+    const admin = (order.adminProducts ?? []).reduce((s, p) => s + this.pMasa(p) * p.qty, 0);
+    return prod + admin;
   }
   formatMasa(kg: number): string {
     if (kg <= 0) return '—';

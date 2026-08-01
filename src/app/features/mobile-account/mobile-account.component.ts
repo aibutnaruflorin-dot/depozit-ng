@@ -90,7 +90,7 @@ export class MobileAccountComponent implements AfterViewInit {
 
   roleLabel(): string {
     const map: Record<string, string> = {
-      keyuser: 'Administrator', sofer: 'Șofer', agent: 'Agent',
+      keyuser: 'KeyUser', sofer: 'Șofer', agent: 'Agent',
       ajutor_manipulant: 'Ajutor manipulant', contabilitate: 'Contabilitate', 'sub-agent': 'Sub-agent',
     };
     return map[this.auth.session()?.role ?? ''] ?? this.auth.session()?.role ?? '';

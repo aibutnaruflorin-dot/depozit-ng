@@ -478,6 +478,10 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
         this.snackBar.open('Telefonul este obligatoriu pentru comenzile cu livrare.', '', { duration: 3000, panelClass: ['snack-warn'] });
         return;
       }
+      if (this.phoneCtrl.invalid) {
+        this.snackBar.open('Numărul de telefon trebuie să aibă exact 10 cifre.', '', { duration: 3000, panelClass: ['snack-warn'] });
+        return;
+      }
       if (!this.addressCtrl.value?.trim()) {
         this.snackBar.open('Adresa de livrare este obligatorie.', '', { duration: 3000, panelClass: ['snack-warn'] });
         return;
