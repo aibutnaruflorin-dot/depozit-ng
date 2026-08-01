@@ -32,9 +32,9 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   // UX: afișează cronometru de așteptare când GoTrue returnează 429
   countdown   = signal(0);
 
-  private _timer:           ReturnType<typeof setInterval> | null = null;
-  private _hWidgetId:       string | null = null;
-  private _captchaResolver: ((token: string) => void) | null = null;
+  private _timer:        ReturnType<typeof setInterval> | null = null;
+  private _hWidgetId:    string | null = null;
+  private _captchaToken: string = '';
 
   constructor(
     private fb:      FormBuilder,
@@ -57,11 +57,12 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
     if (typeof turnstile !== 'undefined') {
       try {
         this._hWidgetId = turnstile.render('#h-captcha-login', {
-          sitekey:          environment.turnstileSiteKey,
-          execution:        'execute',
-          appearance:       'interaction-only',
-          callback:         (token: string) => { this._captchaResolver?.(token); this._captchaResolver = null; },
-          'error-callback': () => { this._captchaResolver?.(''); this._captchaResolver = null; },
+          sitekey:           environment.turnstileSiteKey,
+          execution:         'render',
+          appearance:        'interaction-only',
+          callback:          (token: string) => { this._captchaToken = token; },
+          'error-callback':  () => { this._captchaToken = ''; },
+          'expire-callback': () => { this._captchaToken = ''; },
         });
       } catch { /* turnstile indisponibil */ }
     }
@@ -72,16 +73,7 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   }
 
   private _getCaptchaToken(): Promise<string> {
-    return new Promise<string>((resolve) => {
-      if (typeof turnstile === 'undefined' || this._hWidgetId === null) { resolve(''); return; }
-      const timeout = setTimeout(() => {
-        console.warn('[Turnstile] token timeout — proceeding without captcha');
-        this._captchaResolver = null;
-        resolve('');
-      }, 15000);
-      this._captchaResolver = (token: string) => { clearTimeout(timeout); resolve(token); };
-      turnstile.execute(this._hWidgetId);
-    });
+    return Promise.resolve(this._captchaToken);
   }
 
   // UX: afișează cronometru când GoTrue returnează 429 (rate-limiting nativ)
@@ -148,6 +140,7 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
       this.error = 'Username sau parolă incorectă.';
       this.form.get('password')?.reset();
       if (typeof turnstile !== 'undefined' && this._hWidgetId !== null) {
+        this._captchaToken = '';
         turnstile.reset(this._hWidgetId);
       }
     }
