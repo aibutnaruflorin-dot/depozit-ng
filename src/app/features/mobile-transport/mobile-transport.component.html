@@ -735,9 +735,11 @@
                   </div>
                 }
               </div>
-              <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
-                <mat-icon>check_circle</mat-icon>Finalizează cu modificări
-              </button>
+              @if (auth.isAdmin()) {
+                <button class="mt-finalize-btn" (click)="finalizeWithChanges(o)">
+                  <mat-icon>check_circle</mat-icon>Finalizează cu modificări
+                </button>
+              }
             }
           }
         </div>
