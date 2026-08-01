@@ -63,7 +63,7 @@ export class MobileNewOrderComponent implements OnInit {
   constructor(
     public catalogsService: CatalogsService,
     private ordersService: OrdersService,
-    private auth: AuthService,
+    public  auth: AuthService,
     private snackBar: MatSnackBar,
     public router: Router,
     private location: Location

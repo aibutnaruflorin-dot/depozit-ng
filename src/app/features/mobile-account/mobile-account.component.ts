@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../environments/environment';
 
 declare const turnstile: any;
 

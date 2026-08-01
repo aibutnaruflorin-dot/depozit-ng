@@ -352,7 +352,7 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
   private _profiles = signal<Profile[]>([]);
 
   constructor(
-    private auth: AuthService,
+    public  auth: AuthService,
     public  catalogsService: CatalogsService,
     private ordersService: OrdersService,
     private storage: StorageService,

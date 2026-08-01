@@ -162,7 +162,7 @@ export class NewOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   lastOrderText = '';
 
   constructor(
-    private auth: AuthService,
+    public  auth: AuthService,
     public  catalogsService: CatalogsService,
     private ordersService: OrdersService,
     private snackBar: MatSnackBar,
