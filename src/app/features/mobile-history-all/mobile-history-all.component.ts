@@ -182,7 +182,7 @@ export class MobileHistoryAllComponent {
   getBlockingOrders(p: OrderProduct, currentOrderId: string): { orderNumber?: number; clientName: string; qty: number; statusLabel: string }[] {
     if (!p.catalogId) return [];
     const statusMap: Record<string, string> = {
-      draft: 'Ciornă', trimis: 'În așteptare', acceptat: 'Acceptat',
+      draft: 'Ciornă', trimis: 'În așteptare', acceptat: 'Acceptată',
       planificat: 'Planificat', in_livrare: 'În livrare', livrat: 'Livrat'
     };
     return this.ordersService.getBlockingOrders(p.catalogId, p.nr)

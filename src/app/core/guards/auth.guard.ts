@@ -10,8 +10,11 @@ export const authGuard: CanActivateFn = async (route, state) => {
   const session = await auth.refreshSession();
   if (!session) { router.navigate(['/login']); return false; }
 
-  if (session.mustChangePassword && !state.url.startsWith('/app/account')) {
-    router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
+  if (session.mustChangePassword &&
+      !state.url.startsWith('/app/account') &&
+      !state.url.startsWith('/app/m-account')) {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    router.navigate([isMobile ? '/app/m-account' : '/app/account'], { queryParams: { forceChange: '1' } });
     return false;
   }
 
@@ -36,7 +39,8 @@ export const pageGuard: CanActivateFn = async (route) => {
   if (!session) { router.navigate(['/login']); return false; }
 
   if (session.mustChangePassword) {
-    router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    router.navigate([isMobile ? '/app/m-account' : '/app/account'], { queryParams: { forceChange: '1' } });
     return false;
   }
 

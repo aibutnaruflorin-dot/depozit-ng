@@ -126,10 +126,17 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
     if (ok) {
       const session = this.auth.session();
       if (session?.mustChangePassword) {
-        this.router.navigate(['/app/account'], { queryParams: { forceChange: '1' } });
+        const isMobile = window.innerWidth < 768;
+        this.router.navigate([isMobile ? '/app/m-account' : '/app/account'], { queryParams: { forceChange: '1' } });
       } else {
         const isMobile = window.innerWidth < 768;
-        this.router.navigate([isMobile ? '/app/m-catalog' : '/app/catalog']);
+        const role = session?.role ?? '';
+        const transportRoles = new Set(['sofer', 'ajutor_manipulant']);
+        if (transportRoles.has(role)) {
+          this.router.navigate([isMobile ? '/app/m-transport' : '/app/transport']);
+        } else {
+          this.router.navigate([isMobile ? '/app/m-catalog' : '/app/catalog']);
+        }
       }
     } else {
       this.error = 'Username sau parolă incorectă.';

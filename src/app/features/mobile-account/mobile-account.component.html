@@ -17,8 +17,13 @@
   <!-- Actions -->
   <div class="ma-section">
     <div class="ma-section-title">Contul meu</div>
+
+    @if (forced) {
+      <div class="ma-msg" style="margin-bottom:12px">Trebuie să îți schimbi parola înainte de a continua.</div>
+    }
+
     <div class="ma-menu">
-      <button class="ma-menu-item" (click)="showPassForm.update(v => !v)">
+      <button class="ma-menu-item" [disabled]="forced" (click)="showPassForm.update(v => !v)">
         <mat-icon>lock</mat-icon>
         <span>Schimbă parola</span>
         <mat-icon class="ma-chevron">{{ showPassForm() ? 'expand_less' : 'chevron_right' }}</mat-icon>
@@ -73,6 +78,7 @@
         <button type="submit" class="ma-btn-primary">Salvează parola</button>
       </form>
     }
+    <div id="h-captcha-m-account" style="display:none"></div>
   </div>
 
   <!-- Logout -->

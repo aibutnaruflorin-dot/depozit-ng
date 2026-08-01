@@ -42,6 +42,10 @@
             <button mat-icon-button (click)="openEdit(user)" matTooltip="Editează">
               <mat-icon>edit</mat-icon>
             </button>
+            <button mat-icon-button (click)="openReset(user)" matTooltip="Resetează parola"
+                    [disabled]="user.role === 'keyuser'">
+              <mat-icon>lock_reset</mat-icon>
+            </button>
             <button mat-icon-button (click)="toggleActive(user)"
                     [matTooltip]="user.active !== false ? 'Dezactivează' : 'Activează'"
                     [style.color]="user.active !== false ? 'var(--color-error)' : 'var(--color-success)'">
@@ -53,6 +57,41 @@
     </ng-template>
   </p-table>
 </div>
+
+<!-- Modal reset parolă -->
+@if (showResetModal()) {
+  <div class="modal-overlay">
+    <mat-card appearance="outlined" class="modal-card" role="dialog" appDragModal>
+      <mat-card-header>
+        <mat-card-title>Resetează parola — {{ resetUserName() }}</mat-card-title>
+        <button mat-icon-button (click)="showResetModal.set(false)" style="position:absolute;right:8px;top:8px">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+          Utilizatorul va fi forțat să schimbe parola la următorul login.
+        </p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <mat-form-field appearance="outline" style="flex:1">
+            <mat-label>Parolă nouă</mat-label>
+            <input matInput type="text" [(ngModel)]="resetNewPass" placeholder="min 8, o literă mare, o cifră">
+          </mat-form-field>
+          <button mat-stroked-button type="button" (click)="generatePassword()" style="margin-bottom:22px">
+            <mat-icon>casino</mat-icon>
+            Generează
+          </button>
+        </div>
+      </mat-card-content>
+      <mat-card-actions class="modal-actions">
+        <button mat-stroked-button (click)="showResetModal.set(false)">Anulează</button>
+        <button mat-flat-button class="btn-save" (click)="confirmReset()" [disabled]="resetting()">
+          {{ resetting() ? 'Se salvează...' : 'Resetează' }}
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
 
 <!-- Modal add/edit -->
 @if (showModal()) {
@@ -81,8 +120,12 @@
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Rol *</mat-label>
             <mat-select formControlName="role">
+              <mat-option value="keyuser">KeyUser / Administrator</mat-option>
               <mat-option value="agent">Agent</mat-option>
-              <mat-option value="keyuser">Administrator</mat-option>
+              <mat-option value="sub-agent">Sub-agent</mat-option>
+              <mat-option value="contabilitate">Contabilitate</mat-option>
+              <mat-option value="sofer">Șofer</mat-option>
+              <mat-option value="ajutor_manipulant">Ajutor manipulant</mat-option>
             </mat-select>
           </mat-form-field>
         </form>

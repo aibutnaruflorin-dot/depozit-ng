@@ -425,7 +425,7 @@ export class HistoryComponent implements AfterViewInit, OnDestroy {
   }
 
   readonly _statusLabelMap: Record<string, string> = {
-    draft: 'Ciornă', trimis: 'În așteptare', acceptat: 'Acceptat',
+    draft: 'Ciornă', trimis: 'În așteptare', acceptat: 'Acceptată',
     planificat: 'Planificat', in_livrare: 'În livrare', livrat: 'Livrat'
   };
 

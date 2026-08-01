@@ -38,7 +38,8 @@ export class SecurityComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.profiles = await this.supabase.getProfiles();
-    this.entries.set(this.audit.getAll());
+    const remote = await this.supabase.getAuditLogs();
+    this.entries.set(remote.length ? remote : this.audit.getAll());
   }
 
   readonly filtered = computed(() => {
@@ -58,9 +59,9 @@ export class SecurityComponent implements OnInit {
   }
 
   refresh(): void {
-    this.supabase.getProfiles().then(profiles => {
+    Promise.all([this.supabase.getProfiles(), this.supabase.getAuditLogs()]).then(([profiles, remote]) => {
       this.profiles = profiles;
-      this.entries.set(this.audit.getAll());
+      this.entries.set(remote.length ? remote : this.audit.getAll());
     });
   }
 }

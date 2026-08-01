@@ -46,6 +46,9 @@
           @if (auth.isAdmin()) {
             <div class="msub-user-actions">
               <button class="msub-btn-icon" (click)="openEdit(u)" title="Editează"><mat-icon>edit</mat-icon></button>
+              @if (u.role !== 'keyuser') {
+                <button class="msub-btn-icon" (click)="openReset(u)" title="Resetează parola"><mat-icon>lock_reset</mat-icon></button>
+              }
               <button class="msub-btn-icon" (click)="toggleActive(u)"
                       [style.color]="u.active !== false ? '#ef4444' : '#10b981'"
                       [title]="u.active !== false ? 'Dezactivează' : 'Activează'">
@@ -56,6 +59,27 @@
               }
             </div>
           }
+        </div>
+      }
+
+      <!-- Formular resetare parolă -->
+      @if (showResetForm()) {
+        <div class="msub-form-card">
+          <div class="msub-form-title">Resetează parola — {{ resetUserName() }}</div>
+          <p style="font-size:12px;color:#94a3b8;margin-bottom:12px">
+            Utilizatorul va fi forțat să schimbe parola la următorul login.
+          </p>
+          <label class="msub-label">Parolă nouă</label>
+          <input class="msub-input" [(ngModel)]="resetNewPass" type="text" placeholder="min 8, o literă mare, o cifră">
+          <div class="msub-form-actions" style="margin-top:8px">
+            <button class="msub-btn" type="button" (click)="generatePassword()">
+              <mat-icon>casino</mat-icon> Generează
+            </button>
+            <button class="msub-btn primary" (click)="confirmReset()" [disabled]="resetting">
+              <mat-icon>lock_reset</mat-icon> {{ resetting ? 'Se salvează...' : 'Resetează' }}
+            </button>
+            <button class="msub-btn" (click)="showResetForm.set(false)">Anulează</button>
+          </div>
         </div>
       }
 

@@ -141,4 +141,24 @@ export class SupabaseService {
       console.warn('Supabase audit log failed:', e);
     }
   }
+
+  async getAuditLogs(limit = 500): Promise<{ ts: number; userId: string; action: string; detail: string }[]> {
+    try {
+      const { data, error } = await this.client
+        .from('audit_log')
+        .select('user_id, action, details, created_at')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) { console.warn('getAuditLogs error:', error.message); return []; }
+      return (data ?? []).map(r => ({
+        ts:     new Date(r.created_at).getTime(),
+        userId: r.user_id ?? '',
+        action: r.action,
+        detail: r.details ?? '',
+      }));
+    } catch (e) {
+      console.warn('getAuditLogs failed:', e);
+      return [];
+    }
+  }
 }

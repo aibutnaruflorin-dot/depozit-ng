@@ -47,6 +47,12 @@ export class MSettingsUsersComponent implements OnInit {
   formPassword = '';
   formRole     = 'agent';
 
+  showResetForm  = signal(false);
+  resetUserId    = signal<string | null>(null);
+  resetUserName  = signal('');
+  resetNewPass   = '';
+  resetting      = false;
+
   readonly PERMISSION_LABELS = PERMISSION_LABELS;
   editingIsKeyUser = signal(false);
 
@@ -183,6 +189,44 @@ export class MSettingsUsersComponent implements OnInit {
       this.snackBar.open(`Utilizatorul ${user.active ? 'dezactivat' : 'activat'}.`, '', { duration: 2000 });
     } catch (e: any) {
       this.snackBar.open(e?.message ?? 'Eroare.', '', { duration: 3000 });
+    }
+  }
+
+  openReset(user: Profile): void {
+    this.resetUserId.set(user.id);
+    this.resetUserName.set(user.name);
+    this.resetNewPass = '';
+    this.showResetForm.set(true);
+  }
+
+  generatePassword(): void {
+    const upper  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789';
+    const lower  = 'abcdefghijklmnopqrstuvwxyz';
+    const all    = upper + digits + lower;
+    const arr = Array.from({ length: 8 }, () => all[Math.floor(Math.random() * all.length)]);
+    arr[0] = upper[Math.floor(Math.random() * upper.length)];
+    arr[1] = digits[Math.floor(Math.random() * digits.length)];
+    this.resetNewPass = arr.sort(() => Math.random() - 0.5).join('');
+  }
+
+  async confirmReset(): Promise<void> {
+    const id  = this.resetUserId();
+    const pwd = this.resetNewPass;
+    if (!id || !pwd) return;
+    if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[0-9]/.test(pwd)) {
+      this.snackBar.open('Parola trebuie să aibă minim 8 caractere, o literă mare și o cifră.', '', { duration: 3500 });
+      return;
+    }
+    this.resetting = true;
+    try {
+      await this.supabase.callManageUsers('reset_password', { userId: id, password: pwd });
+      this.showResetForm.set(false);
+      this.snackBar.open('Parola a fost resetată. Utilizatorul va fi forțat să o schimbe la login.', '', { duration: 4000, panelClass: ['snack-success'] });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare la resetare.', '', { duration: 4000 });
+    } finally {
+      this.resetting = false;
     }
   }
 

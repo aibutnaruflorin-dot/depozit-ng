@@ -24,13 +24,13 @@ export const DEFAULT_PERMISSIONS: AppPermission[] = [
   { id: 'sofer',            name: 'Șofer',            isAdmin: false,
     pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'full', cursele_mele: 'full', istoric: 'none', manual: 'full', setari: 'none' } },
   { id: 'ajutor_manipulant',name: 'Ajutor manipulant',isAdmin: false,
-    pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'read', cursele_mele: 'none', istoric: 'none', manual: 'full', setari: 'none' } },
+    pages: { comenzi_noi: 'none', comenzi: 'none', catalog: 'none', transport: 'read', cursele_mele: 'read', istoric: 'none', manual: 'full', setari: 'none' } },
   { id: 'contabilitate',    name: 'Contabilitate',    isAdmin: false,
     pages: { comenzi_noi: 'read', comenzi: 'read', catalog: 'read', transport: 'read', cursele_mele: 'none', istoric: 'full', manual: 'full', setari: 'none' } },
   { id: 'agent',            name: 'Agent',            isAdmin: false,
     pages: { comenzi_noi: 'full', comenzi: 'full', catalog: 'read', transport: 'read', cursele_mele: 'full', istoric: 'read', manual: 'full', setari: 'none' } },
   { id: 'sub-agent',        name: 'Sub-agent',        isAdmin: false,
-    pages: { comenzi_noi: 'full', comenzi: 'none', catalog: 'read', transport: 'none', cursele_mele: 'none', istoric: 'none', manual: 'full', setari: 'none' } },
+    pages: { comenzi_noi: 'full', comenzi: 'read', catalog: 'read', transport: 'none', cursele_mele: 'none', istoric: 'none', manual: 'full', setari: 'none' } },
 ];
 
 export const SYSTEM_PERM_IDS = ['keyuser', 'sofer', 'ajutor_manipulant'] as const;

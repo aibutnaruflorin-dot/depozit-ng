@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { Profile } from '../../core/models/profile.model';
@@ -20,7 +20,7 @@ import { DragModalDirective } from '../../shared/drag-modal.directive';
   selector: 'app-users',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule,
+    CommonModule, ReactiveFormsModule, FormsModule,
     MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatSnackBarModule, MatCardModule, MatTooltipModule,
     TableModule, TagModule, DragModalDirective
@@ -34,6 +34,12 @@ export class UsersComponent implements OnInit {
   editingId = signal<string | null>(null);
   saving    = signal(false);
   form: FormGroup;
+
+  showResetModal  = signal(false);
+  resetUserId     = signal<string | null>(null);
+  resetUserName   = signal('');
+  resetNewPass    = '';
+  resetting       = signal(false);
 
   constructor(
     private fb: FormBuilder,
@@ -101,6 +107,44 @@ export class UsersComponent implements OnInit {
       this.snackBar.open(e?.message ?? 'Eroare la salvare.', '', { duration: 4000 });
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  openReset(user: Profile): void {
+    this.resetUserId.set(user.id);
+    this.resetUserName.set(user.name);
+    this.resetNewPass = '';
+    this.showResetModal.set(true);
+  }
+
+  generatePassword(): void {
+    const upper  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789';
+    const lower  = 'abcdefghijklmnopqrstuvwxyz';
+    const all    = upper + digits + lower;
+    const arr = Array.from({ length: 8 }, () => all[Math.floor(Math.random() * all.length)]);
+    arr[0] = upper[Math.floor(Math.random() * upper.length)];
+    arr[1] = digits[Math.floor(Math.random() * digits.length)];
+    this.resetNewPass = arr.sort(() => Math.random() - 0.5).join('');
+  }
+
+  async confirmReset(): Promise<void> {
+    const id  = this.resetUserId();
+    const pwd = this.resetNewPass;
+    if (!id || !pwd) return;
+    if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[0-9]/.test(pwd)) {
+      this.snackBar.open('Parola trebuie să aibă minim 8 caractere, o literă mare și o cifră.', '', { duration: 3500 });
+      return;
+    }
+    this.resetting.set(true);
+    try {
+      await this.supabase.callManageUsers('reset_password', { userId: id, password: pwd });
+      this.showResetModal.set(false);
+      this.snackBar.open('Parola a fost resetată. Utilizatorul va fi forțat să o schimbe la login.', '', { duration: 4000, panelClass: ['snack-success'] });
+    } catch (e: any) {
+      this.snackBar.open(e?.message ?? 'Eroare la resetare.', '', { duration: 4000 });
+    } finally {
+      this.resetting.set(false);
     }
   }
 
