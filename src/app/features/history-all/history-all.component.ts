@@ -394,6 +394,12 @@ export class HistoryAllComponent implements OnInit, AfterViewInit, OnDestroy {
     return active.includes(order.status) && !order.superseded;
   }
 
+  isOwner(order: Order): boolean {
+    const s = this.auth.session();
+    if (!s) return false;
+    return order.agent?.id === (s.supabaseId ?? s.userId);
+  }
+
   getCodExtern(p: import('../../core/models/order.model').OrderProduct): string {
     if (p.codExtern) return p.codExtern;
     if (!p.catalogId) return '';
