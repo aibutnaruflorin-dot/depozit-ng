@@ -96,16 +96,16 @@ export class MobileAccountComponent implements AfterViewInit {
     return map[this.auth.session()?.role ?? ''] ?? this.auth.session()?.role ?? '';
   }
 
-  saving = false;
+  saving = signal(false);
 
   async save(): Promise<void> {
-    if (this.saving) return;
+    if (this.saving()) return;
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const { oldPass, newPass, confirm } = this.form.value;
     if (newPass !== confirm) { this.msg.set('Parolele noi nu coincid.'); this.msgOk.set(false); return; }
     const session = this.auth.session();
     if (!session) return;
-    this.saving = true;
+    this.saving.set(true);
     try {
       const captchaToken = await this._getCaptchaToken();
       const res = await this.auth.changePassword(session.userId, oldPass, newPass, captchaToken);
@@ -118,7 +118,7 @@ export class MobileAccountComponent implements AfterViewInit {
         }
       }
     } finally {
-      this.saving = false;
+      this.saving.set(false);
     }
   }
 

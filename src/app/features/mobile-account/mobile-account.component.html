@@ -75,7 +75,9 @@
           <div class="ma-msg" [class.ok]="msgOk()">{{ msg() }}</div>
         }
 
-        <button type="submit" class="ma-btn-primary">Salvează parola</button>
+        <button type="submit" class="ma-btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Se salvează...' : 'Salvează parola' }}
+        </button>
       </form>
     }
     <div id="h-captcha-m-account" style="display:none"></div>

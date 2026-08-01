@@ -198,6 +198,9 @@
             @if (o.pendingProducts?.length) {
               <span class="mh-ds-pending-badge">+{{ o.pendingProducts!.length }} neconfirmate</span>
             }
+            @if (o.adminProducts?.length) {
+              <span class="mh-ds-pending-badge" style="background:#e0f2fe;color:#0369a1">+{{ o.adminProducts!.length }} de depozit</span>
+            }
           </div>
           @for (p of o.products; track p.nr) {
             <div class="mh-ds-prod"
@@ -327,6 +330,36 @@
                       <span class="mh-ds-qty-val">{{ p.qty }} {{ p.um }}</span>
                     }
                   </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Adăugate de depozit — în așteptare (înainte de finalizare) -->
+          @if (o.adminProducts?.length) {
+            <div class="mh-ds-pending-section mh-ds-admin-section">
+              <div class="mh-ds-pending-title">
+                <mat-icon>store</mat-icon>
+                Adăugate de depozit — vor fi confirmate când depozitul finalizează
+              </div>
+              @for (p of o.adminProducts!; track p.nr) {
+                <div class="mh-ds-prod mh-ds-prod-pending">
+                  <div class="mh-ds-prod-name">{{ p.name }}</div>
+                  <div class="mh-ds-prod-meta">
+                    @if (p.category) { <span class="mh-ds-tag">{{ p.category }}</span> }
+                    <span class="mh-ds-um">{{ p.um }}</span>
+                  </div>
+                  @if (p.catalogId) {
+                    @let psAd = catalogsService.getStockThreeCol(p.catalogId, p.nr);
+                    <div class="mh-ds-stoc-row">
+                      <div class="mh-ds-stoc-col">
+                        <span class="mh-ds-stoc-label">Importat</span><span class="mh-ds-stoc-val">{{ psAd.importedQty }}</span>
+                        <span class="mh-ds-stoc-label">Consumat</span><span class="mh-ds-stoc-val s3-neg">{{ psAd.consumedQty > 0 ? '−' + psAd.consumedQty : psAd.consumedQty }}</span>
+                        <span class="mh-ds-stoc-label">Final</span><span class="mh-ds-stoc-final-val" [class]="stockDotClass(psAd.finalQty)">{{ psAd.finalQty }}</span>
+                      </div>
+                      <div class="mh-ds-qty-static">{{ p.qty }} {{ p.um }}</div>
+                    </div>
+                  }
                 </div>
               }
             </div>
