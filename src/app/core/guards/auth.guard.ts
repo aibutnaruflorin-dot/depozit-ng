@@ -26,7 +26,11 @@ export const adminGuard: CanActivateFn = async () => {
   const router = inject(Router);
   const session = await auth.refreshSession();
   if (!session)         { router.navigate(['/login']);        return false; }
-  if (!session.isAdmin) { router.navigate(['/app/catalog']); return false; }
+  if (!session.isAdmin) {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    router.navigate([isMobile ? '/app/m-account' : '/app/account']);
+    return false;
+  }
   return true;
 };
 
@@ -53,6 +57,7 @@ export const pageGuard: CanActivateFn = async (route) => {
 
   if (access !== 'none') return true;
 
-  router.navigate(['/app/account']);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  router.navigate([isMobile ? '/app/m-account' : '/app/account']);
   return false;
 };

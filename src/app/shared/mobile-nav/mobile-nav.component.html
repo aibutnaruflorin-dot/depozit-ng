@@ -1,21 +1,29 @@
 <!-- Bottom Nav -->
 <nav class="m-nav">
-  <a class="m-nav-item" routerLink="/app/m-catalog" routerLinkActive="active">
-    <mat-icon>sell</mat-icon>
-    <span>Catalog</span>
-  </a>
-  <a class="m-nav-item" routerLink="/app/m-new-order" routerLinkActive="active">
-    <mat-icon>add_shopping_cart</mat-icon>
-    <span>Comandă</span>
-  </a>
-  <a class="m-nav-item" routerLink="/app/m-history-me" routerLinkActive="active">
-    <mat-icon>receipt_long</mat-icon>
-    <span>Comenzi</span>
-  </a>
-  <a class="m-nav-item" routerLink="/app/m-my-trips" routerLinkActive="active">
-    <mat-icon>directions_car</mat-icon>
-    <span>Cursele mele</span>
-  </a>
+  @if (auth.canAccessPage('catalog')) {
+    <a class="m-nav-item" routerLink="/app/m-catalog" routerLinkActive="active">
+      <mat-icon>sell</mat-icon>
+      <span>Catalog</span>
+    </a>
+  }
+  @if (auth.canAccessPage('comenzi_noi')) {
+    <a class="m-nav-item" routerLink="/app/m-new-order" routerLinkActive="active">
+      <mat-icon>add_shopping_cart</mat-icon>
+      <span>Comandă</span>
+    </a>
+  }
+  @if (auth.canAccessPage('comenzi')) {
+    <a class="m-nav-item" routerLink="/app/m-history-me" routerLinkActive="active">
+      <mat-icon>receipt_long</mat-icon>
+      <span>Comenzi</span>
+    </a>
+  }
+  @if (auth.canAccessPage('cursele_mele')) {
+    <a class="m-nav-item" routerLink="/app/m-my-trips" routerLinkActive="active">
+      <mat-icon>directions_car</mat-icon>
+      <span>Cursele mele</span>
+    </a>
+  }
   <button class="m-nav-item" [class.active]="showMore()" (click)="showMore.update(v => !v)">
     <mat-icon>menu</mat-icon>
     <span>Mai mult</span>
@@ -27,15 +35,21 @@
   <div class="m-more-backdrop" (click)="showMore.set(false)"></div>
   <div class="m-more-sheet">
     <div class="m-more-handle"></div>
-    <button class="m-more-item" (click)="navigateTo('/app/m-history-all')">
-      <mat-icon>list_alt</mat-icon> Toate comenzile
-    </button>
-    <button class="m-more-item" (click)="navigateTo('/app/m-transport')">
-      <mat-icon>local_shipping</mat-icon> Transport
-    </button>
-    <button class="m-more-item" (click)="navigateTo('/app/m-settings')">
-      <mat-icon>settings</mat-icon> Setări
-    </button>
+    @if (auth.canAccessPage('transport')) {
+      <button class="m-more-item" (click)="navigateTo('/app/m-transport')">
+        <mat-icon>local_shipping</mat-icon> Transport
+      </button>
+    }
+    @if (auth.canAccessPage('istoric')) {
+      <button class="m-more-item" (click)="navigateTo('/app/m-history-all')">
+        <mat-icon>list_alt</mat-icon> Toate comenzile
+      </button>
+    }
+    @if (auth.isAdmin()) {
+      <button class="m-more-item" (click)="navigateTo('/app/m-settings')">
+        <mat-icon>settings</mat-icon> Setări
+      </button>
+    }
     <div class="m-more-divider"></div>
     <button class="m-more-item m-more-item-danger" (click)="logout()">
       <mat-icon>logout</mat-icon> Deconectare

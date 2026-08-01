@@ -4,7 +4,7 @@ import { StorageService } from './storage.service';
 import { AuditService } from './audit.service';
 import { SupabaseService } from './supabase.service';
 import { Session } from '../models/user.model';
-import { AppPermission } from '../models/app-permission.model';
+import { AppPermission, DEFAULT_PERMISSIONS } from '../models/app-permission.model';
 import { Profile } from '../models/profile.model';
 
 const MIN_PASS_LEN = 8;
@@ -47,6 +47,15 @@ export class AuthService {
     const perms: AppPermission[] = this.storage.get('app_permissions') ?? [];
     const perm = perms.find((p: any) => p.id === s.role);
     return perm?.pages?.[pageId] === 'full';
+  }
+
+  canAccessPage(pageId: string): boolean {
+    const s = this._session();
+    if (!s) return false;
+    if (s.isAdmin) return true;
+    const perms: AppPermission[] = this.storage.get('app_permissions') ?? DEFAULT_PERMISSIONS;
+    const perm = perms.find((p: any) => p.id === s.role);
+    return (perm?.pages?.[pageId] ?? 'none') !== 'none';
   }
 
   private _buildSession(profile: Profile): Session {

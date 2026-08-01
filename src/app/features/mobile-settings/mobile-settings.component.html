@@ -42,11 +42,13 @@
         <span>Contul meu</span>
         <mat-icon class="ms-chevron">chevron_right</mat-icon>
       </a>
-      <a class="ms-menu-item" routerLink="/app/m-security">
-        <mat-icon>shield</mat-icon>
-        <span>Securitate</span>
-        <mat-icon class="ms-chevron">chevron_right</mat-icon>
-      </a>
+      @if (auth.isAdmin()) {
+        <a class="ms-menu-item" routerLink="/app/m-security">
+          <mat-icon>shield</mat-icon>
+          <span>Securitate</span>
+          <mat-icon class="ms-chevron">chevron_right</mat-icon>
+        </a>
+      }
     </div>
   </div>
 
