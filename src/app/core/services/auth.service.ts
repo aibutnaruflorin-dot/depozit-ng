@@ -93,7 +93,7 @@ export class AuthService {
     if (s) this.audit.log(s.supabaseId ?? '', 'LOGOUT', s.username);
     await this.supabase.signOut();
     const toRemove = Object.keys(localStorage)
-      .filter(k => k.startsWith('app_') || k.startsWith('_lk_') || k === '_lk');
+      .filter(k => k.startsWith('app_'));
     toRemove.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
     this._session.set(null);
@@ -108,7 +108,7 @@ export class AuthService {
     return this._session();
   }
 
-  async changePassword(_userId: number, oldPass: string, newPass: string): Promise<{ ok: boolean; msg: string }> {
+  async changePassword(_userId: number, oldPass: string, newPass: string, captchaToken?: string): Promise<{ ok: boolean; msg: string }> {
     if (newPass.length < MIN_PASS_LEN || !/[A-Z]/.test(newPass) || !/[0-9]/.test(newPass)) {
       return { ok: false, msg: `Parola trebuie să aibă minim ${MIN_PASS_LEN} caractere, cel puțin o literă mare și o cifră.` };
     }
@@ -116,14 +116,15 @@ export class AuthService {
     const s = this._session();
     if (!s?.supabaseId) return { ok: false, msg: 'Sesiune invalidă.' };
 
-    // Verifică parola veche prin re-autentificare
-    const test = await this.supabase.signIn(s.username, oldPass);
+    // L-C: pasăm captchaToken la re-autentificare (necesar dacă enforcement Turnstile e ON)
+    const test = await this.supabase.signIn(s.username, oldPass, captchaToken);
     if (!test) return { ok: false, msg: 'Parola curentă este incorectă.' };
 
     const ok = await this.supabase.updatePassword(newPass);
     if (!ok) return { ok: false, msg: 'Eroare la schimbarea parolei. Încearcă din nou.' };
 
-    try { await this.supabase.updateProfile(s.supabaseId, { must_change_password: false }); } catch {}
+    // L-A: folosim Edge Function (service_role) pentru a ocoli trigger-ul profiles_field_protection
+    await this.supabase.callManageUsers('clear_must_change_password', {});
     this._session.set({ ...s, mustChangePassword: false });
 
     this.audit.log(s.supabaseId ?? '', 'PASS_CHANGE', `Utilizatorul ${s.username} si-a schimbat parola`);

@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     // Client admin — are acces complet (service_role, bypass RLS)
     const admin = createClient(supabaseUrl, serviceKey)
 
-    // Client user — verifică că cel care apelează e admin keyuser
+    // Client user — verifică că cel care apelează e autentificat
     const caller = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } }
     })
@@ -52,15 +52,24 @@ Deno.serve(async (req) => {
     const { data: { user: callerUser }, error: callerErr } = await caller.auth.getUser()
     if (callerErr || !callerUser) throw new Error('Unauthorized')
 
-    const { data: callerProfile } = await admin
-      .from('profiles')
-      .select('role')
-      .eq('id', callerUser.id)
-      .single()
-
-    if (callerProfile?.role !== 'keyuser') throw new Error('Forbidden')
-
+    // Citim body-ul o singură dată înainte de verificarea rolului
     const { action, payload } = await req.json()
+
+    // M-C: verifică role + active pentru toate acțiunile privilegiate
+    // clear_must_change_password e permis oricărui user autentificat (pentru propriul cont)
+    const requiresAdmin = action !== 'clear_must_change_password'
+
+    if (requiresAdmin) {
+      const { data: callerProfile } = await admin
+        .from('profiles')
+        .select('role, active')
+        .eq('id', callerUser.id)
+        .single()
+
+      if (callerProfile?.role !== 'keyuser' || callerProfile?.active !== true) {
+        throw new Error('Forbidden')
+      }
+    }
 
     let result: Record<string, unknown> = {}
 
@@ -142,6 +151,16 @@ Deno.serve(async (req) => {
       if (!payload.userId) throw new Error('Missing userId')
 
       const { error } = await admin.auth.admin.deleteUser(payload.userId as string)
+      if (error) throw error
+
+      result = { success: true }
+
+    } else if (action === 'clear_must_change_password') {
+      // L-A: curăță flag-ul must_change_password pentru user-ul curent (service_role bypass trigger)
+      const { error } = await admin
+        .from('profiles')
+        .update({ must_change_password: false })
+        .eq('id', callerUser.id)
       if (error) throw error
 
       result = { success: true }

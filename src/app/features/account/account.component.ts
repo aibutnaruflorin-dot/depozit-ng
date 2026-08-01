@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, AfterViewInit, computed, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -8,6 +8,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '../../core/services/auth.service';
+import { environment } from '../../../environments/environment';
+
+declare const turnstile: any;
 
 interface PassRule { label: string; ok: boolean; }
 
@@ -18,7 +21,7 @@ interface PassRule { label: string; ok: boolean; }
   templateUrl: './account.component.html',
   styleUrl: './account.component.scss'
 })
-export class AccountComponent {
+export class AccountComponent implements AfterViewInit {
   form:   FormGroup;
   msg     = '';
   msgOk   = false;
@@ -29,6 +32,9 @@ export class AccountComponent {
   hideConfirm = true;
 
   newPassValue = signal('');
+
+  private _hWidgetId:       string | null = null;
+  private _captchaResolver: ((token: string) => void) | null = null;
 
   readonly rules = computed<PassRule[]>(() => {
     const v = this.newPassValue();
@@ -57,6 +63,28 @@ export class AccountComponent {
     this.form.get('newPass')!.valueChanges.subscribe(v => this.newPassValue.set(v ?? ''));
   }
 
+  ngAfterViewInit(): void {
+    if (typeof turnstile !== 'undefined') {
+      try {
+        this._hWidgetId = turnstile.render('#h-captcha-account', {
+          sitekey:          environment.turnstileSiteKey,
+          execution:        'execute',
+          appearance:       'interaction-only',
+          callback:         (token: string) => { this._captchaResolver?.(token); this._captchaResolver = null; },
+          'error-callback': () => { this._captchaResolver?.(''); this._captchaResolver = null; },
+        });
+      } catch { /* turnstile indisponibil */ }
+    }
+  }
+
+  private _getCaptchaToken(): Promise<string> {
+    return new Promise<string>((resolve) => {
+      if (typeof turnstile === 'undefined' || this._hWidgetId === null) { resolve(''); return; }
+      this._captchaResolver = resolve;
+      turnstile.execute(this._hWidgetId);
+    });
+  }
+
   async save(): Promise<void> {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const { oldPass, newPass, confirm } = this.form.value;
@@ -67,13 +95,17 @@ export class AccountComponent {
     }
     const session = this.auth.session();
     if (!session) return;
-    const res = await this.auth.changePassword(session.userId, oldPass, newPass);
+    const captchaToken = await this._getCaptchaToken();
+    const res = await this.auth.changePassword(session.userId, oldPass, newPass, captchaToken);
     this.msg   = res.msg;
     this.msgOk = res.ok;
     if (res.ok) {
       this.form.reset();
       this.newPassValue.set('');
       this.forced = false;
+      if (typeof turnstile !== 'undefined' && this._hWidgetId !== null) {
+        turnstile.reset(this._hWidgetId);
+      }
     }
   }
 }
