@@ -541,12 +541,14 @@
             }
           </div>
         }
-        <button mat-flat-button color="primary" class="submit-btn"
-                [disabled]="cart().length === 0 || submitting"
-                (click)="submit()">
-          <mat-icon>send</mat-icon>
-          Trimite comanda
-        </button>
+        @if (auth.hasFullAccess('comenzi_noi')) {
+          <button mat-flat-button color="primary" class="submit-btn"
+                  [disabled]="cart().length === 0 || submitting"
+                  (click)="submit()">
+            <mat-icon>send</mat-icon>
+            Trimite comanda
+          </button>
+        }
         @if (cart().length > 0) {
           <button mat-button color="warn" (click)="clearCart()">Golește coșul</button>
         }

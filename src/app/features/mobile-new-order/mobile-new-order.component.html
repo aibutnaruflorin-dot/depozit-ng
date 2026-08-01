@@ -230,15 +230,17 @@
 
       <div class="mn-sheet-footer">
         <button class="mn-btn-secondary" (click)="clearCart()">Golește coșul</button>
-        <button class="mn-btn-primary" (click)="submit()">
-          @if (addToOrderId) {
-            <mat-icon>add_circle_outline</mat-icon>
-            {{ addPending ? 'Adaugă ' + cartCount() + ' la comandă' : 'Adaugă ' + cartCount() + ' la ciornă' }}
-          } @else {
-            <mat-icon>send</mat-icon>
-            Trimite comanda
-          }
-        </button>
+        @if (addToOrderId || auth.hasFullAccess('comenzi_noi')) {
+          <button class="mn-btn-primary" (click)="submit()">
+            @if (addToOrderId) {
+              <mat-icon>add_circle_outline</mat-icon>
+              {{ addPending ? 'Adaugă ' + cartCount() + ' la comandă' : 'Adaugă ' + cartCount() + ' la ciornă' }}
+            } @else {
+              <mat-icon>send</mat-icon>
+              Trimite comanda
+            }
+          </button>
+        }
       </div>
     </div>
   }
