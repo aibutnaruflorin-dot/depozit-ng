@@ -275,21 +275,27 @@
               <button mat-icon-button (click)="cancelEditPhone($event)" matTooltip="Anulează"><mat-icon>close</mat-icon></button>
             </div>
           } @else {
-            <div class="address-cell" [class.line-through]="order.superseded || order.status === 'anulat'" (click)="startEditPhone(order, $event)">
+            <div class="address-cell" [class.line-through]="order.superseded || order.status === 'anulat'"
+                 [class.address-cell--readonly]="!auth.hasFullAccess('istoric')"
+                 (click)="auth.hasFullAccess('istoric') && startEditPhone(order, $event)">
               <span class="address-text" [class.address-empty]="!order.client.phone">{{ order.client.phone || '—' }}</span>
-              <mat-icon class="address-edit-icon">edit</mat-icon>
+              @if (auth.hasFullAccess('istoric')) { <mat-icon class="address-edit-icon">edit</mat-icon> }
             </div>
           }
         </td>
       }
       @if (colVisible('livrare')) {
         <td (click)="$event.stopPropagation()">
-          <button mat-icon-button class="delivery-toggle-btn"
-                  [class.delivery-on]="order.cuLivrare"
-                  (click)="toggleDelivery(order, $event)"
-                  [matTooltip]="order.cuLivrare ? 'Cu livrare – click pentru a scoate' : 'Fără livrare – click pentru a activa'">
-            <mat-icon>{{ order.cuLivrare ? 'local_shipping' : 'remove' }}</mat-icon>
-          </button>
+          @if (auth.hasFullAccess('istoric')) {
+            <button mat-icon-button class="delivery-toggle-btn"
+                    [class.delivery-on]="order.cuLivrare"
+                    (click)="toggleDelivery(order, $event)"
+                    [matTooltip]="order.cuLivrare ? 'Cu livrare – click pentru a scoate' : 'Fără livrare – click pentru a activa'">
+              <mat-icon>{{ order.cuLivrare ? 'local_shipping' : 'remove' }}</mat-icon>
+            </button>
+          } @else {
+            <mat-icon [style.opacity]="0.5">{{ order.cuLivrare ? 'local_shipping' : 'remove' }}</mat-icon>
+          }
         </td>
       }
       @if (colVisible('adresa')) {
@@ -305,11 +311,13 @@
               </button>
             </div>
           } @else {
-            <div class="address-cell" (click)="startEditAddress(order, $event)">
+            <div class="address-cell"
+                 [class.address-cell--readonly]="!auth.hasFullAccess('istoric')"
+                 (click)="auth.hasFullAccess('istoric') && startEditAddress(order, $event)">
               <span class="address-text" [class.address-empty]="!order.client.address">
                 {{ order.client.address || '—' }}
               </span>
-              <mat-icon class="address-edit-icon">edit</mat-icon>
+              @if (auth.hasFullAccess('istoric')) { <mat-icon class="address-edit-icon">edit</mat-icon> }
             </div>
           }
         </td>
@@ -328,11 +336,13 @@
               </button>
             </div>
           } @else {
-            <div class="address-cell" (click)="startEditDelivery(order, $event)">
+            <div class="address-cell"
+                 [class.address-cell--readonly]="!auth.hasFullAccess('istoric')"
+                 (click)="auth.hasFullAccess('istoric') && startEditDelivery(order, $event)">
               <span class="address-text" [class.address-empty]="!order.deliveryDate">
                 {{ formatDelivery(order.deliveryDate, order.deliveryTime) || '—' }}
               </span>
-              <mat-icon class="address-edit-icon">edit</mat-icon>
+              @if (auth.hasFullAccess('istoric')) { <mat-icon class="address-edit-icon">edit</mat-icon> }
             </div>
           }
         </td>
@@ -762,8 +772,11 @@
                   <button mat-button (click)="cancelNote($event)">Anulează</button>
                 </div>
               } @else {
-                <span class="obs-text" (click)="startEditNote(order, $event)">
-                  {{ order.client.note || '—' }}<mat-icon class="obs-edit-icon">edit</mat-icon>
+                <span class="obs-text"
+                      [class.obs-text--readonly]="!auth.hasFullAccess('istoric')"
+                      (click)="auth.hasFullAccess('istoric') && startEditNote(order, $event)">
+                  {{ order.client.note || '—' }}
+                  @if (auth.hasFullAccess('istoric')) { <mat-icon class="obs-edit-icon">edit</mat-icon> }
                 </span>
               }
             </div>
