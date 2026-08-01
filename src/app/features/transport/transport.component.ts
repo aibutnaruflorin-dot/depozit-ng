@@ -556,6 +556,7 @@ export class TransportComponent implements OnInit {
   }
 
   openCreateForVehicleDay(vehicleId: string, day: CalDay): void {
+    if (!this.auth.hasFullAccess('transport')) return;
     this.editingId.set(null);
     this.singleOrderMode.set(false);
     this._resetModal();

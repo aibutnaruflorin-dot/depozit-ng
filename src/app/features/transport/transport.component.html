@@ -187,7 +187,7 @@
             @for (day of planningDays(); track day.isoDate) {
               <div class="cal-day-cell"
                    (click)="openCreateForVehicleDay(vehicle.id, day)"
-                   [matTooltip]="'Cursă nouă ' + day.dayName + ' ' + day.dateStr">
+                   [matTooltip]="auth.hasFullAccess('transport') ? 'Cursă nouă ' + day.dayName + ' ' + day.dateStr : ''">
                 @for (h of CAL_HOURS; track h.hour) {
                   <div class="cal-grid-line" [style.left.%]="h.pct"></div>
                 }
