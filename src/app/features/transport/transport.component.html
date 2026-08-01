@@ -8,7 +8,7 @@
     </h1>
 
     <div class="page-actions">
-      @if (auth.isAdmin()) {
+      @if (auth.hasFullAccess('transport')) {
         <button mat-stroked-button (click)="openCreate()"
                 [disabled]="!transportService.vehicles().length || !transportService.drivers().length">
           <mat-icon>add</mat-icon> Cursă nouă
@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  @if (auth.isAdmin() && (!transportService.vehicles().length || !transportService.drivers().length)) {
+  @if (auth.hasFullAccess('transport') && (!transportService.vehicles().length || !transportService.drivers().length)) {
     <div class="setup-hint">
       <mat-icon>info</mat-icon>
       Adaugă mașini și șoferi în <strong>Setări → Mașini / Șoferi</strong>.
@@ -320,7 +320,7 @@
                 } @else { <span class="muted">—</span> }
               </td>
               <td class="notes-col col-obs">
-                @if (auth.isAdmin()) {
+                @if (auth.hasFullAccess('transport')) {
                   <textarea class="chip-note-input" rows="1"
                             [appInitValue]="o.observatii ?? o.client.note ?? ''"
                             (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
@@ -340,7 +340,7 @@
                     <mat-icon>add_shopping_cart</mat-icon>
                   </button>
                 }
-                @if (auth.isAdmin()) {
+                @if (auth.hasFullAccess('transport')) {
                   <button mat-icon-button class="btn-delete-order"
                           (click)="deleteOrder(o)" matTooltip="Șterge comanda">
                     <mat-icon>delete</mat-icon>
@@ -488,7 +488,7 @@
                 }
               </td>
               <td class="notes-col col-obs">
-                @if (auth.isAdmin()) {
+                @if (auth.hasFullAccess('transport')) {
                   @for (o of ordersForTransport(t); track o.id) {
                     <div class="obs-row">
                       <textarea class="chip-note-input" rows="2"
@@ -502,7 +502,7 @@
                 }
               </td>
               <td class="actions-cell col-actiuni">
-                @if (auth.isAdmin()) {
+                @if (auth.hasFullAccess('transport')) {
                   @if (t.status === 'planificat' || t.status === 'confirmat_sofer' || t.status === 'in_livrare') {
                     <button mat-icon-button (click)="sendDriverWhatsApp(t)"
                             [matTooltip]="t.waSentDriverAt ? 'WA şofer · ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp şofer'"
@@ -686,7 +686,7 @@
                 }
               </td>
               <td class="notes-col col-obs">
-                @if (auth.isAdmin()) {
+                @if (auth.hasFullAccess('transport')) {
                   @for (o of ordersForTransport(t); track o.id) {
                     <div class="obs-row">
                       <textarea class="chip-note-input" rows="2"
@@ -700,7 +700,7 @@
                 }
               </td>
               <td class="actions-cell col-actiuni">
-                @if (auth.isAdmin()) {
+                @if (auth.hasFullAccess('transport')) {
                   @if (t.status !== 'anulat') {
                     <button mat-icon-button (click)="sendDriverWhatsApp(t)"
                             [matTooltip]="t.waSentDriverAt ? 'WA şofer · ' + fmtWaSent(t.waSentDriverAt) : 'WhatsApp şofer'"
@@ -953,7 +953,7 @@
                     <span class="val-tva">{{ dv.tva | number:'1.2-2' }} cu TVA</span>
                   </td>
                   <td>
-                    @if (auth.isAdmin()) {
+                    @if (auth.hasFullAccess('transport')) {
                       <button mat-icon-button color="primary" (click)="restoreTransport(t)" matTooltip="Redeschide cursa">
                         <mat-icon>restore</mat-icon>
                       </button>
@@ -1042,7 +1042,7 @@
                   } @else { — }
                 </td>
                 <td class="col-actiuni">
-                  @if (auth.isAdmin()) {
+                  @if (auth.hasFullAccess('transport')) {
                     <button mat-icon-button color="primary" matTooltip="Restaurează comanda"
                             (click)="restoreDeletedOrder(o)">
                       <mat-icon>restore</mat-icon>
@@ -1150,7 +1150,7 @@
                     } @else { <span class="muted">—</span> }
                   </td>
                   <td class="notes-col col-obs" (click)="$event.stopPropagation()">
-                    @if (auth.isAdmin()) {
+                    @if (auth.hasFullAccess('transport')) {
                       <textarea class="chip-note-input" rows="2"
                                 [appInitValue]="o.observatii ?? o.client.note ?? ''"
                                 (input)="setOrderObsBuffer(o.id, $any($event.target).value)"
