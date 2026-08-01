@@ -30,6 +30,7 @@ export class SupabaseService {
     });
     if (error) {
       if (error.status === 429) throw error;
+      console.error('[Auth signIn error]', error.status, error.message, error);
       return null;
     }
     if (!data.session) return null;
