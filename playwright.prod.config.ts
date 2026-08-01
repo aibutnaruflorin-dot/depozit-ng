@@ -49,7 +49,7 @@ export default defineConfig({
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'], viewport: { width: 393, height: 851 } },
-      testMatch: ['**/04-mobile.spec.ts'],
+      testMatch: ['**/04-mobile.spec.ts', '**/05-order-lifecycle-mobile.spec.ts'],
     },
   ],
 });
