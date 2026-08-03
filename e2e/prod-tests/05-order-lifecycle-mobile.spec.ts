@@ -97,7 +97,8 @@ test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
     await agentPage.waitForLoadState('networkidle');
     await expect(agentPage).not.toHaveURL(/login/);
 
-    const rows = agentPage.locator('mat-card, .order-card, mat-list-item').first();
+    // mobile-history-me folosește .mh-card
+    const rows = agentPage.locator('.mh-card, mat-card, .order-card, mat-list-item').first();
     await expect(rows).toBeVisible({ timeout: 10000 });
     await agentPage.screenshot({ path: 'e2e/prod-screenshots/mol05-m-history-me.png' });
   });
@@ -110,7 +111,8 @@ test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
     await adminPage.waitForLoadState('networkidle');
     await expect(adminPage).not.toHaveURL(/login/);
 
-    const rows = adminPage.locator('mat-card, .order-card, mat-list-item').first();
+    // mobile-history-all folosește .mha-card
+    const rows = adminPage.locator('.mha-card, .mh-card, mat-card, .order-card, mat-list-item').first();
     await expect(rows).toBeVisible({ timeout: 10000 });
     await adminPage.screenshot({ path: 'e2e/prod-screenshots/mol06-m-history-all.png' });
   });
@@ -123,9 +125,12 @@ test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
 
     await adminPage.screenshot({ path: 'e2e/prod-screenshots/mol07-m-transport-before.png' });
 
-    const addBtn = adminPage.locator('button[mat-fab], button').filter({ hasText: /adaugă|add|nou|\+/i }).first();
-    if (!await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      test.skip(true, 'Butonul adaugă transport nu e vizibil pe mobil');
+    // Butonul .mt-fab-btn — dezactivat dacă nu există vehicule/șoferi
+    const addBtn = adminPage.locator('button.mt-fab-btn').first();
+    const btnVisible = await addBtn.isVisible({ timeout: 5000 }).catch(() => false);
+    const btnEnabled = btnVisible && await addBtn.isEnabled().catch(() => false);
+    if (!btnVisible || !btnEnabled) {
+      test.skip(true, 'Butonul Cursă nouă mobil nu e activ — configurează vehicule și șoferi în Setări');
     }
     await addBtn.click();
     await adminPage.waitForLoadState('networkidle');
@@ -178,7 +183,8 @@ test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
 
     await soferPage.screenshot({ path: 'e2e/prod-screenshots/mol08-m-my-trips.png' });
 
-    const tripCard = soferPage.locator('mat-card, .trip-card, mat-list-item').first();
+    // mobile-my-trips folosește .mm-driver-section sau .mm-admin-trip
+    const tripCard = soferPage.locator('.mm-driver-section, .mm-admin-trip, .trips-table tr, mat-card, .trip-card').first();
     await expect(tripCard).toBeVisible({ timeout: 10000 });
   });
 
