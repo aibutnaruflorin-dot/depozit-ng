@@ -6,8 +6,10 @@
  * Necesită: cel puțin un catalog cu produse configurat în aplicație.
  */
 
-import { test, expect, Browser, Page } from '@playwright/test';
+import { test, expect, Browser, BrowserContext, Page, devices } from '@playwright/test';
 import { loginAs } from './helpers/prod-auth';
+
+const MOBILE_VIEWPORT = { ...devices['Pixel 5'], viewport: { width: 393, height: 851 } };
 
 const TS          = Date.now().toString(36).toUpperCase();
 const CLIENT_NAME = `Client M-E2E ${TS}`;
@@ -22,22 +24,46 @@ const SKIP_MSG = 'Nu există produse în catalog — adaugă produse din Setting
 test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
 
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    // Admin are acces garantat la kv_store — folosim pagina lui pentru a verifica produse
-    adminPage = await browser.newPage();
+    // Creăm contextele cu viewport mobil explicit (browser.newPage() nu moștenește Pixel 5)
+    const adminCtx: BrowserContext = await browser.newContext(MOBILE_VIEWPORT);
+    adminPage = await adminCtx.newPage();
     await loginAs(adminPage, 'admin');
     await adminPage.goto('/#/app/m-new-order');
     await adminPage.waitForLoadState('networkidle');
     try {
-      await adminPage.locator('.mn-card, .mn-prod-name').first().waitFor({ state: 'visible', timeout: 12000 });
-      hasProducts = true;
+      // .mn-count apare imediat (nu depinde de CDK virtual scroll)
+      const countEl = adminPage.locator('.mn-count').first();
+      await countEl.waitFor({ state: 'visible', timeout: 12000 });
+      const txt = await countEl.textContent() ?? '0';
+      hasProducts = parseInt(txt) > 0;
     } catch {
       hasProducts = false;
     }
 
-    agentPage = await browser.newPage();
+    const agentCtx: BrowserContext = await browser.newContext(MOBILE_VIEWPORT);
+    agentPage = await agentCtx.newPage();
     await loginAs(agentPage, 'agent');
+    // Injectăm CSS înainte ca Angular să booteze — 100dvh = 0 în headless,
+    // CDK virtual scroll măsoară înălțimea la ngAfterViewInit și nu mai re-randează
+    await agentPage.addInitScript(() => {
+      const inject = () => {
+        if (document.getElementById('pw-dvh-fix')) return;
+        const s = document.createElement('style');
+        s.id = 'pw-dvh-fix';
+        s.textContent =
+          'app-mobile-new-order { height: 851px !important; }\n' +
+          'cdk-virtual-scroll-viewport { min-height: 600px !important; }';
+        (document.head ?? document.documentElement).appendChild(s);
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', inject, { once: true });
+      } else {
+        inject();
+      }
+    });
 
-    soferPage = await browser.newPage();
+    const soferCtx: BrowserContext = await browser.newContext(MOBILE_VIEWPORT);
+    soferPage = await soferCtx.newPage();
     await loginAs(soferPage, 'sofer');
   });
 
@@ -54,14 +80,15 @@ test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
     await agentPage.goto('/#/app/m-new-order');
     await agentPage.waitForLoadState('networkidle');
     await expect(agentPage).not.toHaveURL(/login/);
-    await expect(agentPage.locator('.mn-card, .mn-prod-name').first()).toBeVisible({ timeout: 12000 });
+    await expect(agentPage.locator('.mn-count').first()).toBeVisible({ timeout: 12000 });
     await agentPage.screenshot({ path: 'e2e/prod-screenshots/mol01-m-new-order.png' });
   });
 
   test('MOL-02 | Agent mobil: adaugă produs în coș', async () => {
     test.skip(!hasProducts, SKIP_MSG);
+    // button.mn-qty-add e în CDK virtual scroll — CSS fix injectat via addInitScript
     const addBtn = agentPage.locator('button.mn-qty-add').first();
-    await expect(addBtn).toBeVisible({ timeout: 8000 });
+    await expect(addBtn).toBeVisible({ timeout: 15000 });
     await addBtn.click();
     await agentPage.waitForTimeout(300);
     await agentPage.screenshot({ path: 'e2e/prod-screenshots/mol02-m-product-added.png' });

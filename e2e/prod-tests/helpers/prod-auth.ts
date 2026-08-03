@@ -8,12 +8,15 @@ export const PROD_URL = 'https://depozit-ng.vercel.app';
 export const ADMIN_USER = process.env['ADMIN_USER'] ?? 'admin';
 export const ADMIN_PASS = process.env['ADMIN_PASS'] ?? '';
 
-export type ProdRole = 'admin' | 'agent' | 'sofer' | 'ajutor';
+export type ProdRole = 'admin' | 'agent' | 'sofer' | 'ajutor' | 'sofer2' | 'subagent' | 'contabilitate';
 export const TEST_USERS: Record<ProdRole, { username: string; password: string }> = {
-  admin:  { username: ADMIN_USER, password: ADMIN_PASS },
-  agent:  { username: 'e2e_agent',  password: process.env['AGENT_PASS']  ?? 'E2eAgent#2026!' },
-  sofer:  { username: 'e2e_sofer',  password: process.env['SOFER_PASS']  ?? 'E2eSofer#2026!' },
-  ajutor: { username: 'e2e_ajutor', password: process.env['AJUTOR_PASS'] ?? 'E2eAjutor#2026!' },
+  admin:         { username: ADMIN_USER,           password: ADMIN_PASS },
+  agent:         { username: 'e2e_agent',           password: process.env['AGENT_PASS']   ?? 'E2eAgent#2026!' },
+  sofer:         { username: 'e2e_sofer',           password: process.env['SOFER_PASS']   ?? 'E2eSofer#2026!' },
+  ajutor:        { username: 'e2e_ajutor',          password: process.env['AJUTOR_PASS']  ?? 'E2eAjutor#2026!' },
+  sofer2:        { username: 'e2e_sofer2',          password: process.env['SOFER2_PASS']  ?? 'E2eSofer2#2026!' },
+  subagent:      { username: 'e2e_subagent',        password: process.env['SUBAGENT_PASS']?? 'E2eSubagent#2026!' },
+  contabilitate: { username: 'e2e_contabilitate',   password: process.env['CONTAB_PASS']  ?? 'E2eContab#2026!' },
 };
 
 // Stocăm datele KV ca string-uri serializate — evităm triple JSON parse/stringify
@@ -189,4 +192,100 @@ export async function createTestUser(
   );
   const result = await fnRes.json();
   return !result.error;
+}
+
+// ── KV Store helpers ──────────────────────────────────────────────────────────
+
+async function getAdminToken(page: Page): Promise<string | null> {
+  const res = await page.request.post(
+    `${SB_URL}/auth/v1/token?grant_type=password`,
+    {
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY },
+      data: { email: `${ADMIN_USER}@depozit.internal`, password: ADMIN_PASS },
+      timeout: 20000,
+    }
+  );
+  const json = await res.json();
+  return json.access_token ?? null;
+}
+
+export async function getKvValue(page: Page, key: string): Promise<unknown> {
+  const token = await getAdminToken(page);
+  if (!token) return null;
+  const res = await page.request.get(
+    `${SB_URL}/rest/v1/kv_store?key=eq.${key}&select=value`,
+    { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}` }, timeout: 15000 }
+  );
+  const rows = await res.json() as { value: unknown }[];
+  return rows[0]?.value ?? null;
+}
+
+export async function setKvValue(page: Page, key: string, value: unknown): Promise<void> {
+  const token = await getAdminToken(page);
+  if (!token) { console.warn(`[setKvValue] No admin token for "${key}"`); return; }
+  const res = await page.request.patch(
+    `${SB_URL}/rest/v1/kv_store?key=eq.${key}`,
+    {
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+      },
+      data: { value },
+      timeout: 15000,
+    }
+  );
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '');
+    console.warn(`[setKvValue] PATCH "${key}" failed (${res.status()}): ${body}`);
+  } else {
+    const rows = await res.json().catch(() => []) as unknown[];
+    if (rows.length === 0) {
+      console.warn(`[setKvValue] PATCH "${key}": 0 rows updated (row may not exist)`);
+    }
+  }
+}
+
+/**
+ * Asigură că vehiculele E2E există în kv_store (app_vehicles).
+ * Le adaugă dacă lipsesc — idempotent.
+ */
+export async function ensureTestVehicles(page: Page): Promise<void> {
+  const E2E_VEHICLES = [
+    { id: 'e2e-van-3t',      denumire: 'E2E-Van-3T',      numarInmatriculare: 'E2E-001', marca: 'E2E', alias: 'van3t',    tonajMaxim: 3  },
+    { id: 'e2e-camion-10t',  denumire: 'E2E-Camion-10T',  numarInmatriculare: 'E2E-002', marca: 'E2E', alias: 'camion10t', tonajMaxim: 10 },
+    { id: 'e2e-tir-25t',     denumire: 'E2E-TIR-25T',     numarInmatriculare: 'E2E-003', marca: 'E2E', alias: 'tir25t',   tonajMaxim: 25 },
+  ];
+
+  const current = (await getKvValue(page, 'app_vehicles') ?? []) as { id: string }[];
+  const existingIds = new Set(current.map(v => v.id));
+  const toAdd = E2E_VEHICLES.filter(v => !existingIds.has(v.id));
+  if (toAdd.length === 0) {
+    console.log('[prod-setup] Vehicule E2E: deja există');
+    return;
+  }
+  await setKvValue(page, 'app_vehicles', [...current, ...toAdd]);
+  console.log(`[prod-setup] Vehicule E2E adăugate: ${toAdd.map(v => v.denumire).join(', ')}`);
+}
+
+/**
+ * Asigură că șoferii E2E există în kv_store (app_drivers).
+ * Driver id = username-ul profilului, pentru a putea fi asociat cu cursa.
+ */
+export async function ensureTestDrivers(page: Page): Promise<void> {
+  const E2E_DRIVERS = [
+    { id: 'e2e_sofer',  nume: 'E2E Sofer',  telefon: '0700000001' },
+    { id: 'e2e_sofer2', nume: 'E2E Sofer2', telefon: '0700000002' },
+  ];
+
+  const current = (await getKvValue(page, 'app_drivers') ?? []) as { id: string }[];
+  const existingIds = new Set(current.map(d => d.id));
+  const toAdd = E2E_DRIVERS.filter(d => !existingIds.has(d.id));
+  if (toAdd.length === 0) {
+    console.log('[prod-setup] Șoferi E2E: deja există');
+    return;
+  }
+  await setKvValue(page, 'app_drivers', [...current, ...toAdd]);
+  console.log(`[prod-setup] Șoferi E2E adăugați: ${toAdd.map(d => d.nume).join(', ')}`);
 }

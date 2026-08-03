@@ -13,7 +13,9 @@
     "test:e2e:report": "playwright show-report e2e/report",
     "test:prod": "playwright test --config=playwright.prod.config.ts",
     "test:prod:ui": "playwright test --config=playwright.prod.config.ts --ui",
-    "test:prod:report": "playwright show-report e2e/prod-report"
+    "test:prod:report": "playwright show-report e2e/prod-report",
+    "test:prod:desktop": "playwright test --config=playwright.prod.config.ts --project=\"Desktop - Auth & Permissions\" --project=\"Desktop - Catalog & Buffer\" --project=\"Desktop - Order Draft\" --project=\"Desktop - Order Lifecycle\" --project=\"Desktop - Transport & Tonnage\" --project=\"Desktop - Transport Multi\" --project=\"Desktop - Driver Lifecycle\" --project=\"Desktop - Notifications\" --project=\"Desktop - Settings & Users\"",
+    "test:prod:mobile": "playwright test --config=playwright.prod.config.ts --project=\"Mobile - Auth & Permissions\" --project=\"Mobile - Catalog & Buffer\" --project=\"Mobile - Order Draft\" --project=\"Mobile - Order Lifecycle\" --project=\"Mobile - Transport & Tonnage\" --project=\"Mobile - Transport Multi\" --project=\"Mobile - Driver Lifecycle\" --project=\"Mobile - Notifications\" --project=\"Mobile - Settings & Users\" --project=\"Mobile - Navigation & UX\""
   },
   "private": true,
   "packageManager": "npm@11.11.0",
