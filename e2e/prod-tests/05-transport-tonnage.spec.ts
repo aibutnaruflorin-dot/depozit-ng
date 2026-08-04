@@ -266,13 +266,26 @@ test.describe('TRN-03 | Cursă nouă: creare și vehicul', { tag: '@serial' }, (
       await e2eOption.click();
     }
     await page.screenshot({ path: 'e2e/prod-screenshots/trn03-vehicle-select.png' });
-    await page.keyboard.press('Escape');
+    // Escape poate fi disabled pe dialog — click Anulează
+    const anuleaza1 = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleaza1.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await anuleaza1.click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+    await page.locator('.modal-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   });
 
   test('TRN-03-03 | Tonaj maxim afișat în dialog cursă', async () => {
     await gotoTransport(page);
     const newTripBtn = page.locator('button').filter({ hasText: /Cursă nouă/i }).first();
     if (!await newTripBtn.isEnabled({ timeout: 5000 }).catch(() => false)) { return; }
+    // Închide orice modal rămas deschis din testul anterior
+    const anuleazaPrev = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleazaPrev.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await anuleazaPrev.click();
+      await page.locator('.modal-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
     await newTripBtn.click();
     await page.waitForTimeout(500);
 

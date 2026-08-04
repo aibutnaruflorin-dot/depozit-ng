@@ -223,26 +223,27 @@ export async function getKvValue(page: Page, key: string): Promise<unknown> {
 export async function setKvValue(page: Page, key: string, value: unknown): Promise<void> {
   const token = await getAdminToken(page);
   if (!token) { console.warn(`[setKvValue] No admin token for "${key}"`); return; }
-  const res = await page.request.patch(
-    `${SB_URL}/rest/v1/kv_store?key=eq.${key}`,
+  // UPSERT: inserează dacă nu există, actualizează dacă există
+  const res = await page.request.post(
+    `${SB_URL}/rest/v1/kv_store`,
     {
       headers: {
         'apikey': SB_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
+        'Prefer': 'return=representation,resolution=merge-duplicates',
       },
-      data: { value },
+      data: { key, value },
       timeout: 15000,
     }
   );
   if (!res.ok()) {
     const body = await res.text().catch(() => '');
-    console.warn(`[setKvValue] PATCH "${key}" failed (${res.status()}): ${body}`);
+    console.warn(`[setKvValue] UPSERT "${key}" failed (${res.status()}): ${body}`);
   } else {
     const rows = await res.json().catch(() => []) as unknown[];
     if (rows.length === 0) {
-      console.warn(`[setKvValue] PATCH "${key}": 0 rows updated (row may not exist)`);
+      console.warn(`[setKvValue] UPSERT "${key}": 0 rows returned`);
     }
   }
 }
