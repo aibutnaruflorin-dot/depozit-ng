@@ -87,7 +87,14 @@ test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
   test('MOL-02 | Agent mobil: adaugă produs în coș', async () => {
     test.skip(!hasProducts, SKIP_MSG);
     // button.mn-qty-add e în CDK virtual scroll — CSS fix injectat via addInitScript
+    // dacă CDK a măsurat înălțimea ca 0 înainte de CSS (race condition), renavighează
     const addBtn = agentPage.locator('button.mn-qty-add').first();
+    const alreadyVisible = await addBtn.isVisible({ timeout: 3000 }).catch(() => false);
+    if (!alreadyVisible) {
+      await agentPage.goto('/#/app/m-new-order');
+      await agentPage.waitForLoadState('networkidle');
+      await agentPage.waitForTimeout(800);
+    }
     await expect(addBtn).toBeVisible({ timeout: 15000 });
     await addBtn.click();
     await agentPage.waitForTimeout(300);
