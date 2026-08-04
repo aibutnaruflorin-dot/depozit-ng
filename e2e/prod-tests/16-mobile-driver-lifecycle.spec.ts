@@ -39,8 +39,8 @@ async function gotoMobileMyTrips(page: Page): Promise<void> {
 }
 
 async function gotoMobileTransport(page: Page): Promise<void> {
-  await page.goto(PROD_URL + '/#/app/m-transport');
-  await page.waitForLoadState('networkidle');
+  await page.goto(PROD_URL + '/#/app/m-transport', { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('load');
   await page.waitForTimeout(800);
 }
 
