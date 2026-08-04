@@ -91,9 +91,12 @@ test.describe.serial('Order Lifecycle MOBIL: Agent → Admin → Sofer', () => {
     const addBtn = agentPage.locator('button.mn-qty-add').first();
     const alreadyVisible = await addBtn.isVisible({ timeout: 3000 }).catch(() => false);
     if (!alreadyVisible) {
-      await agentPage.goto('/#/app/m-new-order');
-      await agentPage.waitForLoadState('networkidle');
+      // goto() pe același URL hash nu forțează reload în Angular SPA — folosim reload()
+      await agentPage.reload({ waitUntil: 'networkidle' });
       await agentPage.waitForTimeout(800);
+      // dispatch resize ca să forțăm CDK să remăsoare viewport-ul
+      await agentPage.evaluate(() => window.dispatchEvent(new Event('resize')));
+      await agentPage.waitForTimeout(500);
     }
     await expect(addBtn).toBeVisible({ timeout: 15000 });
     await addBtn.click();
