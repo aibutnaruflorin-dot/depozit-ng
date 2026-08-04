@@ -191,7 +191,13 @@ test.describe('MDRV-03 | Admin: asignare șofer pe m-transport', () => {
     const has = await driverSelect.isVisible({ timeout: 5000 }).catch(() => false);
     console.log(`[MDRV-03-01] Select șofer în dialog mobil: ${has}`);
     await page.screenshot({ path: 'e2e/prod-screenshots/mdrv03-driver-select.png' });
-    await page.keyboard.press('Escape');
+    const anuleaza1 = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleaza1.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await anuleaza1.click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+    await page.locator('.mt-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   });
 
   test('MDRV-03-02 | m-transport: șoferii E2E în dropdown', async () => {
@@ -199,6 +205,11 @@ test.describe('MDRV-03 | Admin: asignare șofer pe m-transport', () => {
     await page.waitForTimeout(1000);
     const fabBtn = page.locator('button.mt-fab-btn').first();
     if (!await fabBtn.isEnabled({ timeout: 5000 }).catch(() => false)) { return; }
+    const anuleazaPrev = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleazaPrev.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await anuleazaPrev.click();
+      await page.locator('.mt-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
     await fabBtn.click();
     await page.waitForTimeout(500);
 
@@ -210,7 +221,13 @@ test.describe('MDRV-03 | Admin: asignare șofer pe m-transport', () => {
       const has = await e2eOption.isVisible({ timeout: 3000 }).catch(() => false);
       console.log(`[MDRV-03-02] E2E Sofer în dropdown mobil: ${has}`);
     }
-    await page.keyboard.press('Escape');
+    const anuleaza2 = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleaza2.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await anuleaza2.click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+    await page.locator('.mt-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   });
 
   test('MDRV-03-03 | m-transport: date șofer în carduri curse', async () => {

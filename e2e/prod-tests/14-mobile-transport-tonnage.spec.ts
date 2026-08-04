@@ -295,8 +295,13 @@ test.describe('MTRN-05 | Dialog cursă nouă pe mobil', { tag: '@serial' }, () =
     const visible = await dialog.isVisible({ timeout: 5000 }).catch(() => false);
     console.log(`[MTRN-05-01] Dialog cursă nouă (mobil): ${visible}`);
     await page.screenshot({ path: 'e2e/prod-screenshots/mtrn05-new-trip-dialog.png' });
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
+    const anuleaza1 = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleaza1.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await anuleaza1.click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+    await page.locator('.mt-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   });
 
   test('MTRN-05-02 | Dialog: select vehicul disponibil', async () => {
@@ -304,6 +309,11 @@ test.describe('MTRN-05 | Dialog cursă nouă pe mobil', { tag: '@serial' }, () =
     await page.waitForTimeout(1000);
     const fabBtn = page.locator('button.mt-fab-btn').first();
     if (!await fabBtn.isEnabled({ timeout: 5000 }).catch(() => false)) { return; }
+    const anuleazaPrev2 = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleazaPrev2.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await anuleazaPrev2.click();
+      await page.locator('.mt-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
     await fabBtn.click();
     await page.waitForTimeout(500);
 
@@ -321,7 +331,13 @@ test.describe('MTRN-05 | Dialog cursă nouă pe mobil', { tag: '@serial' }, () =
       }
     }
     await page.screenshot({ path: 'e2e/prod-screenshots/mtrn05-vehicle-select.png' });
-    await page.keyboard.press('Escape');
+    const anuleaza2 = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleaza2.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await anuleaza2.click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+    await page.locator('.mt-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   });
 
   test('MTRN-05-03 | Dialog: info tonaj maxim afișat', async () => {
@@ -329,6 +345,11 @@ test.describe('MTRN-05 | Dialog cursă nouă pe mobil', { tag: '@serial' }, () =
     await page.waitForTimeout(1000);
     const fabBtn = page.locator('button.mt-fab-btn').first();
     if (!await fabBtn.isEnabled({ timeout: 5000 }).catch(() => false)) { return; }
+    const anuleazaPrev3 = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleazaPrev3.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await anuleazaPrev3.click();
+      await page.locator('.mt-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
     await fabBtn.click();
     await page.waitForTimeout(500);
 
@@ -336,7 +357,13 @@ test.describe('MTRN-05 | Dialog cursă nouă pe mobil', { tag: '@serial' }, () =
     const hasTonaj = await tonajEl.isVisible({ timeout: 5000 }).catch(() => false);
     console.log(`[MTRN-05-03] Info tonaj în dialog cursă mobil: ${hasTonaj}`);
     await page.screenshot({ path: 'e2e/prod-screenshots/mtrn05-tonaj.png' });
-    await page.keyboard.press('Escape');
+    const anuleaza3 = page.locator('button').filter({ hasText: /Anulează/i }).first();
+    if (await anuleaza3.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await anuleaza3.click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+    await page.locator('.mt-overlay').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   });
 });
 
