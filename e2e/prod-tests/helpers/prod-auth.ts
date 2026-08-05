@@ -22,6 +22,11 @@ export const TEST_USERS: Record<ProdRole, { username: string; password: string }
 // Stocăm datele KV ca string-uri serializate — evităm triple JSON parse/stringify
 let _kvCache: Record<string, string> | null = null;
 
+/** Actualizează o cheie din cache-ul KV — util când testele scriu date noi în KV. */
+export function updateKvCache(key: string, valueJson: string): void {
+  if (_kvCache !== null) _kvCache[key] = valueJson;
+}
+
 async function getKvStrings(page: Page): Promise<Record<string, string>> {
   if (_kvCache) return _kvCache;
 
@@ -132,7 +137,13 @@ export async function ensureTestUser(
         timeout: 20000,
       }
     );
-    return res.json();
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      console.warn(`[prod-setup] Non-JSON from manage-users (${action} ${String(payload['username'] ?? '')}): ${text.slice(0, 120)}`);
+      return { error: `non-json-response: ${res.status()}` };
+    }
   };
 
   // Încearcă creare
