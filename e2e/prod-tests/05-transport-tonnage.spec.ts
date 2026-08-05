@@ -6,7 +6,7 @@
  */
 
 import { test, expect, Browser, BrowserContext, Page } from '@playwright/test';
-import { loginAs, PROD_URL, getKvValue, ensureTestVehicles, ensureTestDrivers } from './helpers/prod-auth';
+import { loginAs, PROD_URL, getKvValue, getKvSetup, ensureTestVehicles, ensureTestDrivers } from './helpers/prod-auth';
 
 const E2E_PREFIX = '[E2E-TRN]';
 
@@ -112,7 +112,7 @@ test.describe('TRN-01 | Vehicule E2E: verificare și înregistrare', () => {
 
   test('TRN-01-03 | Șoferii E2E există în kv_store', async () => {
     await ensureTestDrivers(page);
-    const drivers = await getKvValue(page, 'app_drivers') as { id: string; nume: string }[] ?? [];
+    const drivers = await getKvSetup(page, 'app_drivers') as { id: string; nume: string }[] ?? [];
     const e2eDrivers = drivers.filter(d => d.id.startsWith('e2e_'));
     console.log(`[TRN-01-03] Șoferi E2E: ${e2eDrivers.map(d => d.id).join(', ')}`);
     if (e2eDrivers.length < 2) {

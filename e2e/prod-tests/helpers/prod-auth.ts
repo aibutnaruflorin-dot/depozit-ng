@@ -262,9 +262,9 @@ export async function setKvValue(page: Page, key: string, value: unknown): Promi
 
 /**
  * Citește o cheie din kv_store ocolind RLS (service_role key).
- * Folosit EXCLUSIV pentru setup date de test — nu în testele propriu-zise.
+ * Folosit EXCLUSIV pentru setup/verificare date de test — nu în testele propriu-zise.
  */
-async function getKvSetup(page: Page, key: string): Promise<unknown> {
+export async function getKvSetup(page: Page, key: string): Promise<unknown> {
   if (!SB_SERVICE_KEY) return getKvValue(page, key);
   const res = await page.request.get(
     `${SB_URL}/rest/v1/kv_store?key=eq.${key}&select=value`,

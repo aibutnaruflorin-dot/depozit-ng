@@ -6,7 +6,7 @@
  */
 
 import { test, expect, Browser, BrowserContext, Page } from '@playwright/test';
-import { loginAs, PROD_URL, getKvValue } from './helpers/prod-auth';
+import { loginAs, PROD_URL, getKvValue, getKvSetup, ensureTestDrivers } from './helpers/prod-auth';
 
 async function gotoMyTrips(page: Page): Promise<void> {
   await page.goto(PROD_URL + '/#/app/my-trips');
@@ -33,12 +33,13 @@ test.describe('DRV-01 | Șoferi E2E: structură și date', () => {
     ctx = await browser.newContext();
     page = await ctx.newPage();
     await loginAs(page, 'admin');
+    await ensureTestDrivers(page);
   });
 
   test.afterAll(async () => { await ctx.close(); });
 
   test('DRV-01-01 | Șoferii E2E există în kv_store (app_drivers)', async () => {
-    const drivers = await getKvValue(page, 'app_drivers') as { id: string; nume: string }[] ?? [];
+    const drivers = await getKvSetup(page, 'app_drivers') as { id: string; nume: string }[] ?? [];
     const e2eDrivers = drivers.filter(d => d.id.startsWith('e2e_'));
     console.log(`[DRV-01-01] Șoferi E2E: ${e2eDrivers.map(d => d.id).join(', ')}`);
     if (e2eDrivers.length < 2) {
@@ -50,7 +51,7 @@ test.describe('DRV-01 | Șoferi E2E: structură și date', () => {
   });
 
   test('DRV-01-02 | e2e_sofer și e2e_sofer2 sunt prezenți', async () => {
-    const drivers = await getKvValue(page, 'app_drivers') as { id: string }[] ?? [];
+    const drivers = await getKvSetup(page, 'app_drivers') as { id: string }[] ?? [];
     const ids = drivers.map(d => d.id);
     if (!ids.includes('e2e_sofer') || !ids.includes('e2e_sofer2')) {
       console.warn('[DRV-01-02] SKIP: e2e_sofer/e2e_sofer2 lipsesc din kv_store (RLS producție)');

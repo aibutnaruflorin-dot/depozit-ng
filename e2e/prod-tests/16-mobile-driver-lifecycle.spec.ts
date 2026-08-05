@@ -6,7 +6,7 @@
  */
 
 import { test, expect, Browser, BrowserContext, Page, devices } from '@playwright/test';
-import { loginAs, PROD_URL, getKvValue } from './helpers/prod-auth';
+import { loginAs, PROD_URL, getKvValue, getKvSetup, ensureTestDrivers } from './helpers/prod-auth';
 
 const MOBILE_VIEWPORT = { ...devices['Pixel 5'], viewport: { width: 393, height: 851 } };
 
@@ -293,7 +293,8 @@ test.describe('MDRV-05 | Șoferi E2E verificare pe mobil', () => {
   test('MDRV-05-01 | Șoferii E2E există în kv_store', async ({ browser }) => {
     const { ctx, page } = await newMobilePage(browser);
     await loginAs(page, 'admin');
-    const drivers = await getKvValue(page, 'app_drivers') as { id: string }[] ?? [];
+    await ensureTestDrivers(page);
+    const drivers = await getKvSetup(page, 'app_drivers') as { id: string }[] ?? [];
     const e2eDrivers = drivers.filter(d => d.id.startsWith('e2e_'));
     console.log(`[MDRV-05-01] Șoferi E2E: ${e2eDrivers.length}`);
     if (e2eDrivers.length < 2) {
