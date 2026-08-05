@@ -1,5 +1,5 @@
 .manual-page {
-  max-width: 860px;
+  max-width: 900px;
 }
 
 .intro {
@@ -15,7 +15,7 @@
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .swim-headers {
@@ -40,8 +40,8 @@
   &:not(:last-child) { border-right: 1px solid var(--color-border); }
 
   &--agent  { background: #e8f4fd; color: #1565c0; }
-  &--system { background: #fff8e1; color: #e65100; }
   &--admin  { background: #e8f5e9; color: #2e7d32; }
+  &--sofer  { background: #fce4ec; color: #ad1457; }
 }
 
 /* Rows */
@@ -59,7 +59,6 @@
   position: relative;
 
   &:not(:last-child) { border-right: 1px dashed var(--color-border); }
-
   &--empty { background: var(--color-bg); }
 }
 
@@ -91,13 +90,12 @@
     }
   }
 
-  /* Arrow pointing down in col 1 */
-  .agent-line  { color: #1565c0; grid-column: 1; }
-  .system-line { color: #e65100; }
-  .admin-line  { color: #2e7d32; }
+  .agent-line { color: #1565c0; grid-column: 1; }
+  .admin-line { color: #2e7d32; }
+  .sofer-line { color: #ad1457; }
 }
 
-/* Arrow from col1 → col2 */
+/* Arrow col1 → col2 */
 .swim-arrow--right {
   .arrow-line {
     grid-column: 1 / 3;
@@ -119,7 +117,7 @@
   }
 }
 
-/* Arrow from col2 → col3 */
+/* Arrow col2 → col3 */
 .swim-arrow--right2 {
   .arrow-line {
     grid-column: 2 / 4;
@@ -141,35 +139,44 @@
   }
 }
 
-/* Arrow pointing down in col 3 */
+/* Arrow down col2 */
+.swim-arrow--col2 {
+  .arrow-line {
+    grid-column: 2;
+  }
+}
+
+/* Arrow down col3 */
 .swim-arrow--col3 {
   .arrow-line {
     grid-column: 3;
   }
 }
 
-/* Arrow from col3 → col1 */
-.swim-arrow--left {
-  height: 40px;
+/* Return arrow col3 → col1 (wide arc) */
+.swim-arrow--left-wide {
+  height: 36px;
 
-  .arrow-line {
+  .arrow-return {
     grid-column: 1 / 4;
     position: relative;
 
     &::before {
-      content: '';
-      position: absolute;
-      right: 16%;
+      left: 16.5%;
       top: 0;
       width: 2px;
-      height: 40px;
+      height: 36px;
       background: currentColor;
     }
 
-    &::after { display: none; }
+    &::after {
+      left: calc(16.5% - 5px);
+      bottom: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid currentColor;
+    }
   }
-
-  /* Show horizontal and then down arrow via box-shadow trick */
 }
 
 /* Step cards */
@@ -182,9 +189,8 @@
   border: 1px solid var(--color-border);
   padding: 0.75rem;
   width: 100%;
-  max-width: 220px;
+  max-width: 230px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  position: relative;
 }
 
 .step-num {
@@ -200,10 +206,7 @@
 
 .step-icon {
   flex-shrink: 0;
-  mat-icon {
-    font-size: 20px; width: 20px; height: 20px;
-    color: var(--color-text-muted);
-  }
+  mat-icon { font-size: 20px; width: 20px; height: 20px; color: var(--color-text-muted); }
 }
 
 .step-title {
@@ -217,6 +220,23 @@
   font-size: 0.78rem;
   color: var(--color-text-muted);
   line-height: 1.4;
+  margin-bottom: 0.4rem;
+}
+
+.step-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.step-badges-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
 }
 
 /* Color per actor */
@@ -226,15 +246,15 @@
     .step-num { background: #e3f2fd; color: #1565c0; }
     .step-icon mat-icon { color: #1565c0; }
   }
-  &.system .step-card {
-    border-color: #ffcc80;
-    .step-num { background: #fff8e1; color: #e65100; }
-    .step-icon mat-icon { color: #e65100; }
-  }
   &.admin .step-card {
     border-color: #a5d6a7;
     .step-num { background: #e8f5e9; color: #2e7d32; }
     .step-icon mat-icon { color: #2e7d32; }
+  }
+  &.sofer .step-card {
+    border-color: #f48fb1;
+    .step-num { background: #fce4ec; color: #ad1457; }
+    .step-icon mat-icon { color: #ad1457; }
   }
 }
 
@@ -244,6 +264,7 @@
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 6px;
+  margin-bottom: 4px;
 }
 
 .chip {
@@ -262,7 +283,7 @@
   display: flex;
   gap: 1.5rem;
   flex-wrap: wrap;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .legend-item {
@@ -278,9 +299,9 @@
   border-radius: 50%;
   flex-shrink: 0;
 
-  &.agent-dot  { background: #1565c0; }
-  &.system-dot { background: #e65100; }
-  &.admin-dot  { background: #2e7d32; }
+  &.agent-dot { background: #1565c0; }
+  &.admin-dot { background: #2e7d32; }
+  &.sofer-dot { background: #ad1457; }
 }
 
 /* ── QUICK REFERENCE ────────────────────────────────────── */
@@ -306,7 +327,7 @@
 .status-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .status-item {
@@ -316,19 +337,23 @@
   flex-wrap: wrap;
 }
 
-.status-badge {
+/* Status badges — shared between step cards and quick ref */
+.status-badge, .step-badge {
   padding: 3px 12px;
   border-radius: 10px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
-  min-width: 80px;
   text-align: center;
 
-  &.s-trimis   { background: #e3f2fd; color: #1565c0; }
-  &.s-acceptat { background: #e8f5e9; color: #2e7d32; }
-  &.s-finalizat{ background: #ede7f6; color: #4527a0; }
-  &.s-anulat   { background: #ffebee; color: #c62828; }
+  &.s-trimis         { background: #e3f2fd; color: #1565c0; }
+  &.s-acceptat       { background: #e8f5e9; color: #2e7d32; }
+  &.s-planificat     { background: #f3e5f5; color: #6a1b9a; }
+  &.s-in-livrare     { background: #fff8e1; color: #e65100; }
+  &.s-livrat-partial { background: #fce4ec; color: #ad1457; }
+  &.s-livrat         { background: #e0f2f1; color: #00695c; }
+  &.s-finalizat      { background: #ede7f6; color: #4527a0; }
+  &.s-anulat         { background: #ffebee; color: #c62828; }
 }
 
 .status-info {
@@ -338,17 +363,10 @@
 
 @media (max-width: 600px) {
   .swim-headers,
-  .swim-row {
-    grid-template-columns: 1fr;
-  }
-
+  .swim-row { grid-template-columns: 1fr; }
   .swim-cell--empty { display: none; }
-
   .swim-arrow { display: none; }
-
-  .swimlane {
-    .swim-row:not(:last-child) {
-      border-bottom: 1px solid var(--color-border);
-    }
+  .swimlane .swim-row:not(:last-child) {
+    border-bottom: 1px solid var(--color-border);
   }
 }

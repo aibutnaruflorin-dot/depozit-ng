@@ -6,7 +6,7 @@
 
   <div class="mman-body">
     <div class="mman-intro">
-      Ghid rapid pentru utilizarea aplicației D2C pe mobil.
+      Ghid complet pentru fluxul comenzilor și al transportului în aplicația D2C.
     </div>
 
     <div class="mman-sections">
@@ -20,11 +20,37 @@
             <mat-icon class="mman-expand-icon">{{ sec.open ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
           @if (sec.open) {
-            <div class="mman-item-body">{{ sec.content }}</div>
+            <div class="mman-item-body" [innerHTML]="sec.content"></div>
           }
         </div>
       }
     </div>
+
+    <!-- Status reference -->
+    <div class="mman-status-ref">
+      <div class="mman-status-title">
+        <mat-icon>info</mat-icon>
+        Statusuri comenzi
+      </div>
+      @for (st of orderStatuses; track st.key) {
+        <div class="mman-status-row">
+          <span class="mman-badge" [ngClass]="'s-' + st.key">{{ st.label }}</span>
+          <span class="mman-status-desc">{{ st.desc }}</span>
+        </div>
+      }
+
+      <div class="mman-status-title mman-status-title--2">
+        <mat-icon>local_shipping</mat-icon>
+        Statusuri curse transport
+      </div>
+      @for (st of transportStatuses; track st.key) {
+        <div class="mman-status-row">
+          <span class="mman-badge" [ngClass]="'s-' + st.key">{{ st.label }}</span>
+          <span class="mman-status-desc">{{ st.desc }}</span>
+        </div>
+      }
+    </div>
+
   </div>
 
   <div style="height:80px"></div>
