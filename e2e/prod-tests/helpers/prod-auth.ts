@@ -1,7 +1,8 @@
 import { Page } from '@playwright/test';
 
-const SB_URL     = 'https://zopcolmhbhfikngfioot.supabase.co';
-const SB_KEY     = 'sb_publishable_Bo2QgV9tsh2zc2vnEnZ67Q_Y7XN0Ock';
+const SB_URL         = 'https://zopcolmhbhfikngfioot.supabase.co';
+const SB_KEY         = 'sb_publishable_Bo2QgV9tsh2zc2vnEnZ67Q_Y7XN0Ock';
+const SB_SERVICE_KEY = process.env['SB_SERVICE_KEY'] ?? '';
 export const SB_STORAGE_KEY = 'sb-zopcolmhbhfikngfioot-auth-token';
 
 export const PROD_URL = 'https://depozit-ng.vercel.app';
@@ -260,6 +261,40 @@ export async function setKvValue(page: Page, key: string, value: unknown): Promi
 }
 
 /**
+ * Citește o cheie din kv_store ocolind RLS (service_role key).
+ * Folosit EXCLUSIV pentru setup date de test — nu în testele propriu-zise.
+ */
+async function getKvSetup(page: Page, key: string): Promise<unknown> {
+  if (!SB_SERVICE_KEY) return getKvValue(page, key);
+  const res = await page.request.get(
+    `${SB_URL}/rest/v1/kv_store?key=eq.${key}&select=value`,
+    { headers: { 'apikey': SB_SERVICE_KEY, 'Authorization': `Bearer ${SB_SERVICE_KEY}` }, timeout: 15000 }
+  );
+  if (!res.ok()) return null;
+  const rows = await res.json() as { value: unknown }[];
+  return rows[0]?.value ?? null;
+}
+
+/**
+ * Scrie o cheie în kv_store ocolind RLS (service_role key).
+ * Folosit EXCLUSIV pentru setup date de test — nu în testele propriu-zise.
+ */
+async function setKvSetup(page: Page, key: string, value: unknown): Promise<void> {
+  const headers = SB_SERVICE_KEY
+    ? { 'apikey': SB_SERVICE_KEY, 'Authorization': `Bearer ${SB_SERVICE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation,resolution=merge-duplicates' }
+    : { 'apikey': SB_KEY, 'Authorization': `Bearer ${await getAdminToken(page) ?? ''}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation,resolution=merge-duplicates' };
+
+  const res = await page.request.post(`${SB_URL}/rest/v1/kv_store`, { headers, data: { key, value }, timeout: 15000 });
+  if (!res.ok()) {
+    console.warn(`[setKvSetup] UPSERT "${key}" failed (${res.status()}): ${await res.text().catch(() => '')}`);
+  } else {
+    const rows = await res.json().catch(() => []) as unknown[];
+    if (rows.length === 0) console.warn(`[setKvSetup] UPSERT "${key}": 0 rows — adaugă SB_SERVICE_KEY în .env.prod-e2e`);
+    else console.log(`[setKvSetup] UPSERT "${key}": ok (${rows.length} rows)`);
+  }
+}
+
+/**
  * Asigură că vehiculele E2E există în kv_store (app_vehicles).
  * Le adaugă dacă lipsesc — idempotent.
  */
@@ -270,14 +305,14 @@ export async function ensureTestVehicles(page: Page): Promise<void> {
     { id: 'e2e-tir-25t',     denumire: 'E2E-TIR-25T',     numarInmatriculare: 'E2E-003', marca: 'E2E', alias: 'tir25t',   tonajMaxim: 25 },
   ];
 
-  const current = (await getKvValue(page, 'app_vehicles') ?? []) as { id: string }[];
+  const current = (await getKvSetup(page, 'app_vehicles') ?? []) as { id: string }[];
   const existingIds = new Set(current.map(v => v.id));
   const toAdd = E2E_VEHICLES.filter(v => !existingIds.has(v.id));
   if (toAdd.length === 0) {
     console.log('[prod-setup] Vehicule E2E: deja există');
     return;
   }
-  await setKvValue(page, 'app_vehicles', [...current, ...toAdd]);
+  await setKvSetup(page, 'app_vehicles', [...current, ...toAdd]);
   console.log(`[prod-setup] Vehicule E2E adăugate: ${toAdd.map(v => v.denumire).join(', ')}`);
 }
 
@@ -291,13 +326,13 @@ export async function ensureTestDrivers(page: Page): Promise<void> {
     { id: 'e2e_sofer2', nume: 'E2E Sofer2', telefon: '0700000002' },
   ];
 
-  const current = (await getKvValue(page, 'app_drivers') ?? []) as { id: string }[];
+  const current = (await getKvSetup(page, 'app_drivers') ?? []) as { id: string }[];
   const existingIds = new Set(current.map(d => d.id));
   const toAdd = E2E_DRIVERS.filter(d => !existingIds.has(d.id));
   if (toAdd.length === 0) {
     console.log('[prod-setup] Șoferi E2E: deja există');
     return;
   }
-  await setKvValue(page, 'app_drivers', [...current, ...toAdd]);
+  await setKvSetup(page, 'app_drivers', [...current, ...toAdd]);
   console.log(`[prod-setup] Șoferi E2E adăugați: ${toAdd.map(d => d.nume).join(', ')}`);
 }
