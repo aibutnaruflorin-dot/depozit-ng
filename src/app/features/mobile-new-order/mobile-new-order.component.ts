@@ -114,7 +114,7 @@ export class MobileNewOrderComponent implements OnInit {
   }
 
   pkey(p: Product): string { return `${p.catalogId}::${p.nr}`; }
-  trackProduct(_: number, p: Product): string { return this.pkey(p); }
+  readonly trackProduct = (_: number, p: Product): string => this.pkey(p);
 
   qtyOf(p: Product): number {
     return this.cart().find(i => this.pkey(i.product) === this.pkey(p))?.qty ?? 0;

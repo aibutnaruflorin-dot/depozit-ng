@@ -52,8 +52,8 @@
   </div>
 
   <!-- Product List -->
+  <div class="mn-count">{{ filtered().length }} produse</div>
   <div class="mn-list">
-    <div class="mn-count">{{ filtered().length }} produse</div>
     @if (filtered().length === 0) {
       <div class="mn-empty">
         <mat-icon>search_off</mat-icon>
