@@ -93,7 +93,7 @@
 .mn-count { flex-shrink: 0; padding: 4px 14px; font-size: .75rem; color: var(--color-text-muted); }
 
 .mn-viewport {
-  flex: 1; min-height: 0;
+  flex: 1; min-height: 0; height: 100%;
 }
 
 .mn-viewport ::ng-deep .cdk-virtual-scroll-content-wrapper {
